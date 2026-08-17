@@ -3,7 +3,6 @@
 .RData
 .Ruserdata
 tabloToR.Rproj
-.Rbuildignore
 *.rds
 # History files
 .Rhistory
@@ -44,3 +43,6 @@ vignettes/*.pdf
 
 # R Environment Variables
 .Renviron
+!.Rbuildignore
+AGENTS.md
+.benchmark-data/

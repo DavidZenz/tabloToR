@@ -1,0 +1,4 @@
+^\.benchmark-data$
+^\.git$
+^\.Rcheck$
+^\.Rproj.user$
