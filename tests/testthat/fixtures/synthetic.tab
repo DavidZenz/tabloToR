@@ -1,0 +1,4 @@
+set reg (r1,r2);
+variable (all,r,reg)(change) x(r);
+variable (all,r,reg) a(r);
+equation eq (all,r,reg) x(r) = a(r);
