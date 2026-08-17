@@ -3,14 +3,24 @@ removeFunctions = function(exp) {
     '\\(', '[', deparse1(exp)
   ))))
 }
-correctFormula = function(formulaText) {
+correctFormula = function(formulaText, preserve_assignment = TRUE) {
 
   #formulaText = str2lang(gsub('\\]', ')', gsub('\\[', '(', deparse(gsub(":", "%:%", gsub("\\(all,", "all(", gsub('>==','>=',gsub('<==','<=',gsub('=','==',formulaText)))))))))
-  formulaText = str2lang(gsub('\\]', ')', gsub('\\[', '(', deparse1(formulaText))))
-  exp = str2lang(formulaText)
-
-  exp = functionToData(exp)
-  return(exp)
+  formulaText = normalizeTabloExpression(if (is.character(formulaText)) paste(formulaText, collapse = " ") else deparse1(formulaText))
+  assignment_match = regexec("^\\s*([^=]+?)\\s*=\\s*(.*)$", formulaText,
+                             perl = TRUE)
+  assignment_match = regmatches(formulaText, assignment_match)[[1]]
+  if (isTRUE(preserve_assignment) && length(assignment_match)) {
+    rhs = gsub("(?<![<>=!])=(?!=)", "==", assignment_match[[3]],
+               perl = TRUE)
+    formulaText = paste0(assignment_match[[2]], " = ", rhs)
+  } else {
+    formulaText = gsub("(?<![<>=!])=(?!=)", "==", formulaText,
+                       perl = TRUE)
+  }
+  formulaText = gsub("\\]", ")", gsub("\\[", "(", formulaText))
+  exp = normalizeIfCalls(str2lang(formulaText))
+  return(functionToData(exp))
 }
 
 functionToData = function(exp) {
@@ -26,7 +36,16 @@ functionToData = function(exp) {
                 '==',
                 '!=',
                 '<',
-                '>')
+                '>',
+                '<=',
+                '>=',
+                '&',
+                '|',
+                '!',
+                '^',
+                'ifelse',
+                'isin',
+                'setpos')
   if (length(exp) == 1) {
     return(exp)
   } else    if (!(as.character(exp[[1]]) %in% dataNames)) {
@@ -47,6 +66,18 @@ functionToData = function(exp) {
     }
     return(exp)
   }
+}
+normalizeIfCalls = function(exp) {
+  if (!is.language(exp) || is.name(exp) || length(exp) == 0L) return(exp)
+  for (i in seq_along(exp)) {
+    exp[[i]] = normalizeIfCalls(exp[[i]])
+  }
+  operator = tolower(as.character(exp[[1]]))
+  if (operator %in% c("if", "ifelse")) {
+    exp[[1]] = as.name("ifelse")
+    if (length(exp) == 3L) exp[[4]] = 0
+  }
+  exp
 }
 
 

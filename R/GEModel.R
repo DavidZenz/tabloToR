@@ -11,6 +11,7 @@ GEModel = setRefClass(
   fields = list(
     shocks = "numeric",
     skeletonGenerator = 'function',
+    sparseSkeletonGenerator = 'function',
     equationCoefficientMatrixGenerator = 'function',
     equationCoefficientGenerator = 'function',
     generateVariables = 'function',
@@ -20,13 +21,36 @@ GEModel = setRefClass(
     changeVariables = 'character',
     variables = 'character',
     basicChangeVariables = 'character',
-    variableValues = 'list'
+    variableValues = 'list',
+    tabloStatements = 'list',
+    sparseSpec = 'list',
+    sparseIndex = 'list',
+    sparseState = 'environment',
+    loadedEngine = 'character',
+    closure = 'character',
+    explicitShocks = 'list',
+    sourceData = 'list',
+    memoryBudget = 'numeric',
+    lastDiagnostics = 'list',
+    compactOutput = 'list'
   ),
   methods = list(
     # Loads a tablo without any data (only produces generic functions to genrate coefficients/equation coefficients etc.)
     loadTablo = function(tabloPath) {
-      results = processTablo(tabloPath)
+      legacy_results = tryCatch(processTablo(tabloPath),
+                                error = function(e) NULL)
+      sparse_results = tryCatch(sparse_process_tablo(tabloPath),
+                                error = function(e) NULL)
+      results = if (!is.null(legacy_results)) legacy_results else sparse_results
+      if (is.null(results)) {
+        stop(sprintf("Unable to process TABLO file: %s", tabloPath),
+             call. = FALSE)
+      }
       skeletonGenerator <<- results$skeletonGenerator
+      sparseSkeletonGenerator <<- if (!is.null(sparse_results)) {
+        sparse_results$skeletonGenerator
+      } else results$skeletonGenerator
+
       equationCoefficientMatrixGenerator <<-
         results$equationCoefficientMatrixGenerator
       equationCoefficientGenerator <<- results$equationCoefficientGenerator
@@ -36,17 +60,82 @@ GEModel = setRefClass(
       basicChangeVariables <<- results$changeVariables
       }
       variables <<- results$variables
+      tabloStatements <<- results$statements
+      sparseSpec <<- if (!is.null(sparse_results) &&
+                          !is.null(sparse_results$sparseSpec)) {
+        sparse_results$sparseSpec
+      } else if (!is.null(results$sparseSpec)) {
+        results$sparseSpec
+      } else sparse_compile_spec(tabloStatements)
+      loadedEngine <<- character()
     },
-    loadData = function(inputData) {
+    loadData = function(inputData, engine = c("legacy", "sparse")) {
       #browser()
-      data <<- skeletonGenerator(inputData)
+      engine = match.arg(engine)
+      generator = if (engine == "sparse" &&
+                      is.function(sparseSkeletonGenerator)) {
+        sparseSkeletonGenerator
+      } else skeletonGenerator
+      data <<- generator(inputData)
+      if (engine == "sparse") {
+        data <<- generateVariables(data)
+        variableValues <<- list()
+        changeVariables <<- basicChangeVariables
+        sparseState <<- sparse_make_state(data)
+        sparseIndex <<- sparse_build_index(sparseSpec, data)
+        sparseIndex <<- sparse_rebuild_columns(sparseIndex, closure)
+        sparseIndex <<- sparse_build_row_layout(sparseSpec, sparseIndex, sparseState)
+        sparse_initialize_update_targets(
+          sparseState, sparseIndex, sparseSpec,
+          updates = sparseSpec$simulation_updates
+        )
+        sparse_apply_updates(
+          sparseState, sparseIndex, sparseSpec,
+          updates = sparseSpec$initial_updates
+        )
+        sourceData <<- list()
+        loadedEngine <<- "sparse"
+        return(invisible(.self))
+      }
       data <<- equationCoefficientMatrixGenerator(data)
       data <<- generateVariables(data)
       variableValues <<- data[variables]
       changeVariables <<- data$variables[substr(data$variables,1,regexpr('\\[',data$variables)-1) %in% basicChangeVariables]
+      loadedEngine <<- "legacy"
     },
     setShocks = function(shocks) {
       shocks <<- shocks
+      explicitShocks <<- sparse_normalize_shocks(shocks)
+    },
+    setClosure = function(exogenous_variables) {
+      sparse_set_closure_state(.self, exogenous_variables)
+    },
+    setMemoryBudget = function(bytes) {
+      sparse_set_memory_budget_state(.self, bytes)
+    },
+    estimateMemory = function(engine = c("legacy", "sparse"),
+                              postsim = TRUE) {
+      engine = match.arg(engine)
+      if (engine == "sparse") {
+        if (!length(sparseIndex)) {
+          stop("Sparse engine is not loaded; call loadData(engine='sparse')",
+               call. = FALSE)
+        }
+        idx = sparse_rebuild_columns(sparseIndex, closure)
+        if (!isTRUE(idx$row_layout_ready) && is.environment(sparseState)) {
+          idx = sparse_build_row_layout(sparseSpec, idx, sparseState)
+        }
+        return(sparse_estimate_memory(
+          .self, idx, engine = engine, budget = memoryBudget,
+          postsim = postsim, state = sparseState
+        ))
+      }
+      list(
+        engine = "legacy",
+        har_input_bytes = as.numeric(object.size(data)),
+        dense_fallback = TRUE,
+        post_simulation_retained = isTRUE(postsim)
+      )
     },
     generateSolution = function(subShocks){
       #browser()
@@ -57,7 +146,7 @@ GEModel = setRefClass(
         i$variable, data$equationMatrixList))
       jNumbers = data$variableNumbers[jNames]
 
-      tictoc::tic()
+      invisible(NULL)
       xValues = unlist(Map(
         function(i)
           i$expression,
@@ -78,11 +167,11 @@ GEModel = setRefClass(
       #xValues[pctChanges] = xValues[pctChanges] * 0.01
       #xValues2[relChangeVariables] = xValues2[relChangeVariables] * 0.01
 
-      tictoc::toc()
+      invisible(NULL)
 
       #browser()
 
-      data$eqcoeff = sparseMatrix(
+      data$eqcoeff = Matrix::sparseMatrix(
         i = iNumbers,
         j = jNumbers,
         x = xValues,
@@ -131,17 +220,37 @@ GEModel = setRefClass(
 
       return(iterationSolution)
     },
-    solveModel = function(iter = 3, steps = c(1,3)) {
+    solveModel = function(iter = 3, steps = c(1,3),
+                          engine = c("legacy", "sparse"),
+                          postsim = TRUE, diagnostics = FALSE,
+                          output = c("full", "compact"),
+                          variables = NULL, dimensions = NULL,
+                          backend = "Matrix",
+                          reduction = c("auto", "off", "on"),
+                          memory_budget = NULL) {
+      engine = match.arg(engine)
+      if (engine == "sparse") {
+        return(sparse_solve_model(
+          .self, iter = iter, steps = steps, postsim = postsim,
+          diagnostics = diagnostics, output = output,
+          variables = variables, dimensions = dimensions,
+          backend = backend, reduction = reduction,
+          memory_budget = memory_budget
+        ))
+      }
 
       # Create a shock variable
 
       #browser()
 
-      shocks <<- do.call(c,unname(Map(function(f){
-        toVector(variableValues[[f]],f)
-      }, names(variableValues))))
-
-      shocks<<-shocks[!is.na(shocks)]
+      if (!is.null(explicitShocks) && length(explicitShocks$labels)) {
+        shocks <<- legacy_shocks_from_explicit(.self)
+      } else {
+        shocks <<- do.call(c,unname(Map(function(f){
+          toVector(variableValues[[f]],f)
+        }, names(variableValues))))
+        shocks <<- shocks[!is.na(shocks)]
+      }
 
       #browser()
 
@@ -231,11 +340,19 @@ GEModel = setRefClass(
           #browser()
 
 
-          stepSolution[[step]] = rowSums(do.call(cbind,subStepSolution))
+          subStepMatrix = do.call(cbind, lapply(
+            subStepSolution, as.numeric
+          ))
+          row_names = rownames(subStepSolution[[1]])
+          if (is.null(row_names)) row_names = names(subStepSolution[[1]])
+          if (!is.null(row_names)) rownames(subStepMatrix) = row_names
+          stepSolution[[step]] = rowSums(subStepMatrix)
 
           solutionPctChangeVariables = setdiff(names(stepSolution[[step]]), changeVariables)
 
-          stepSolution[[step]][solutionPctChangeVariables] = ((apply(do.call(cbind,subStepSolution)/100+1, MARGIN=1, FUN = prod)-1)*100)[solutionPctChangeVariables]
+          stepSolution[[step]][solutionPctChangeVariables] = ((apply(
+            subStepMatrix / 100 + 1, MARGIN = 1, FUN = prod
+          ) - 1) * 100)[solutionPctChangeVariables]
           #browser()
           # If any step <-100 we have to treat it as a change variable (like GEMPACK)
           # sols = apply(do.call(cbind,subStepSolution)<=-100,MARGIN = 1, any)
@@ -287,18 +404,18 @@ GEModel = setRefClass(
 
         data <<-originalData
 
-        tictoc::tic()
+        invisible(NULL)
         data <<- within(data,{
           eval(parse(text=sprintf("%s=%s;", names(iterationSolution[[it]]), iterationSolution[[it]][names(iterationSolution[[it]])])))
         })
-        tictoc::toc()
+        invisible(NULL)
 
 
-        tictoc::tic()
+        invisible(NULL)
         data <<- within(data,{
           eval(parse(text=sprintf("%s=%s;", names(shocks), subShocks[names(shocks)])))
         })
-        tictoc::toc()
+        invisible(NULL)
 
         #browser()
         data <<- generateUpdates(data)
@@ -309,25 +426,33 @@ GEModel = setRefClass(
       if(length(iterationSolution)==1){
         solution <<- iterationSolution[[1]]
       } else {
-        solution <<- rowSums(do.call(cbind,iterationSolution))
+        iterationMatrix = do.call(cbind, lapply(
+          iterationSolution, as.numeric
+        ))
+        row_names = rownames(iterationSolution[[1]])
+        if (is.null(row_names)) row_names = names(iterationSolution[[1]])
+        if (!is.null(row_names)) rownames(iterationMatrix) = row_names
+        solution <<- rowSums(iterationMatrix)
         solutionPctChangeVariables = setdiff(names(solution), changeVariables)
-        solution[solutionPctChangeVariables] <<- ((apply(1+do.call(cbind,iterationSolution)/100, MARGIN = 1, FUN = prod)-1)*100)[solutionPctChangeVariables]
+        solution[solutionPctChangeVariables] <<- ((apply(
+          1 + iterationMatrix / 100, MARGIN = 1, FUN = prod
+        ) - 1) * 100)[solutionPctChangeVariables]
       }
 
       #solution[solutionPctChangeVariables]<<- (exp(rowSums(log(1+do.call(cbind,iterationSolution)[solutionPctChangeVariables,, drop = FALSE]/100)))-1)*100
 
-      tictoc::tic()
+      invisible(NULL)
       data <<- within(data,{
         eval(parse(text=sprintf("%s=%s;", names(solution), solution[names(solution)])))
       })
-      tictoc::toc()
+      invisible(NULL)
 
-      tictoc::tic()
+      invisible(NULL)
       data <<- within(data,{
         eval(parse(text=sprintf("%s=%s;", names(shocks), shocks[names(shocks)])))
       })
 
-      tictoc::toc()
+      invisible(NULL)
 
     }
   )

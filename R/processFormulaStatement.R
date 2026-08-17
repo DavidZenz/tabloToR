@@ -12,7 +12,7 @@ processFormulaStatement = function(s){
     for (l in 1:length(qualifiers)) {
       q = str2lang(qualifiers[[l]])
       if (length(q) == 4) {
-        condition[[length(condition) + 1]] = paste0(deparse1(correctFormula(deparse1(q[[4]]))),collapse=' ')
+        condition[[length(condition) + 1]] = paste0(deparse1(correctFormula(deparse1(q[[4]]), preserve_assignment = FALSE)),collapse=' ')
       }
     }
 

@@ -26,6 +26,25 @@ processSetStatement = function(s) {
     #toRet[[deparse(command[[2]])]] = eval(command[[3]], toRet)
     toRet = sprintf('%s=%s', deparse1(command[[2]]), deparse1(command[[3]]))
   }
+  else if (grepl(".* = .* \\+ .*", s$command)) {
+    lhs = trimws(sub("=.*$", "", s$command))
+    rhs = trimws(sub("^[^=]*=", "", s$command))
+    parts = trimws(strsplit(rhs, "\\+")[[1]])
+    expression = parts[[1]]
+    if (length(parts) > 1L) {
+      for (part in parts[-1L]) {
+        expression = sprintf("union(%s,%s)", expression, part)
+      }
+    }
+    toRet = sprintf("%s=%s", lhs, expression)
+  }
+  else if (grepl(".* = .* [xX] .*", s$command)) {
+    rhs = sub("^[^=]*=\\s*", "", s$command)
+    parts = strsplit(rhs, "\\s+[xX]\\s+")[[1]]
+    toRet = sprintf("%s=as.vector(outer(%s,%s,paste,sep='.'))",
+                    trimws(sub("=.*$", "", s$command)),
+                    trimws(parts[[1]]), trimws(parts[[2]]))
+  }
   # SET INTERSECTION
   else if (grepl(".* = .* intersect .*", s$command)) {
     command = str2lang(gsub('intersect', '+', s$command))
@@ -35,7 +54,9 @@ processSetStatement = function(s) {
   }
   # SET FORMULA
   else if (grepl(".* = \\(all,.*,.*\\)", s$command)) {
-    preCommand = str2lang(gsub(":", ",", gsub("\\(all,", "all(", gsub('>==','>=',gsub('<==','<=',gsub('=','==',s$command))))))
+    command = normalizeTabloExpression(s$command)
+    command = sub("=", "==", command, fixed = TRUE)
+    preCommand = str2lang(gsub(":", ",", gsub("\\(all,", "all(", command)))
 
     setName = deparse1(preCommand[[3]][[3]])
     standIn = deparse1(preCommand[[3]][[2]])
@@ -56,10 +77,10 @@ processSetStatement = function(s) {
     #eval(quote(SLUG[ENDW_COMM]),toRet)
   }
   # SET SPECIFIED
-  else if (grepl(".* \\(.*\\)", s$command)) {
+  else if (grepl(".*\\(.*\\)", s$command)) {
     from = regexpr('\\(', s$command)
     to = regexpr('\\)', s$command)
-    elements = strsplit(substr(s$command, from + 1, to - 1), ',')[[1]]
+    elements = trimws(strsplit(substr(s$command, from + 1, to - 1), ',')[[1]])
 
     #toRet[[trimws(substr(s$command, 1, from - 1))]] = elements
     toRet = sprintf('%s=c(%s)',

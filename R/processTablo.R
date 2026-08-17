@@ -4,7 +4,6 @@
 # a function to formulas to update coefficients, a model matrix to allow for solution
 
 processTablo = function(tablo) {
-  require(Matrix)
   statements = tabloToStatements(tablo)
 
   generator = generateSkeleton(Filter(
@@ -46,7 +45,7 @@ processTablo = function(tablo) {
         Filter(
           function(f)
             #!'(change)' %in% f$parsed$element,
-            any(grepl('change',f$parsed$element)),
+            any(grepl('change',f$parsed$elements)),
           Filter(function(f)
             f$class == 'variable', statements)
         )
@@ -65,7 +64,8 @@ processTablo = function(tablo) {
       )),
       generateEquationLevelValues = geq,
       generateVariables = gev,
-      generateUpdates = gup
+      generateUpdates = gup,
+      statements = statements
     )
   )
 }

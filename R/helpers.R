@@ -1,4 +1,6 @@
 loge = log
+# TABLO's membership operator is also used by generated legacy formulas.
+isin = function(x, set) x %in% set
 
 # `%loosein%` = function(a, b) {
 #   return(as.logical(apply(do.call(`cbind`,as.list(Map(function(f)grepl(f,a),b))),MARGIN=1,max)))
