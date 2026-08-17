@@ -506,6 +506,11 @@ sparse_emit_system_scalar = function(state, index, shocks) {
   raw_j = if (capacity) integer(capacity) else integer()
   raw_x = if (capacity) numeric(capacity) else numeric()
   raw_count = 0L
+  inverse_order = if (length(index$column_order)) {
+    inverse = integer(index$endogenous_count)
+    inverse[index$column_order] = seq_along(index$column_order)
+    inverse
+  } else integer()
   rhs = numeric(index$equation_count)
   shock_map = sparse_shock_map(shocks)
   row = 0L
@@ -518,7 +523,9 @@ sparse_emit_system_scalar = function(state, index, shocks) {
       raw_x <<- c(raw_x, numeric(max(1024L, length(raw_x))))
     }
     raw_i[[raw_count]] <<- row_number
-    raw_j[[raw_count]] <<- variable_position
+    raw_j[[raw_count]] <<- if (length(inverse_order)) {
+      inverse_order[[variable_position]]
+    } else variable_position
     raw_x[[raw_count]] <<- value
   }
 
@@ -600,11 +607,14 @@ sparse_vectorized_expr_supported = function(expr) {
   if (!is.language(expr) || length(expr) == 0L) return(TRUE)
   op = tolower(as.character(expr[[1]]))
   supported = c(
-    "[", "(", "setpos", "isin", "ifelse", "!", "+", "-", "*", "/", "^",
+    "[", "(", "sum", "setpos", "isin", "ifelse", "!", "+", "-", "*", "/", "^",
     "==", "!=", "<", ">", "<=", ">=", "&", "|",
     "exp", "loge", "log", "sqrt", "abs"
   )
-  if (!(op %in% supported)) return(FALSE)
+  if (!(op %in% supported) &&
+      (!grepl("^[A-Za-z][A-Za-z0-9_.]*$", op) || length(expr) < 2L)) {
+    return(FALSE)
+  }
   if (length(expr) <= 1L) return(TRUE)
   all(vapply(as.list(expr)[-1L], sparse_vectorized_expr_supported,
              logical(1)))
@@ -701,6 +711,17 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
   if (length(expr) == 0L) return(rep(NA_real_, n))
 
   op = tolower(as.character(expr[[1]]))
+  if (!(op %in% c(
+    "[", "(", "sum", "setpos", "isin", "ifelse", "!",
+    "+", "-", "*", "/", "^", "==", "!=", "<", ">",
+    "<=", ">=", "&", "|", "exp", "loge", "log", "sqrt", "abs"
+  )) && !is.null(sparse_state_data(state)[[op]])) {
+    ref = as.call(c(
+      list(as.name("["), as.name(op)),
+      as.list(expr)[-1L]
+    ))
+    return(sparse_eval_expr_vectorized(ref, state, bindings, index, n))
+  }
   if (op == "[") {
     ref = sparse_parse_ref(expr)
     data = sparse_state_data(state)[[ref$name]]
@@ -787,6 +808,27 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
       value = index$sets[[source_name]]$values[as.integer(value)]
     }
     return(as.character(value) %in% as.character(set$values))
+  }
+
+  if (op == "sum" && length(expr) >= 4L) {
+    set_name = tolower(as.character(expr[[3]]))
+    set = index$sets[[set_name]]
+    if (is.null(set)) {
+      stop(sprintf("Unknown sum set %s", set_name), call. = FALSE)
+    }
+    sum_value = numeric(n)
+    index_name = as.character(expr[[2]])
+    for (position in seq_along(set$values)) {
+      next_bindings = bindings
+      next_bindings[[index_name]] = rep(position, n)
+      next_bindings[[paste0(".set:", index_name)]] = set_name
+      term_value = sparse_eval_expr_vectorized(
+        expr[[4]], state, next_bindings, index, n
+      )
+      sum_value = sum_value +
+        rep(as.numeric(term_value), length.out = n)
+    }
+    return(sum_value)
   }
 
   if (op == "ifelse") {
@@ -883,6 +925,11 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
   raw_j = if (capacity) integer(capacity) else integer()
   raw_x = if (capacity) numeric(capacity) else numeric()
   raw_count = 0L
+  inverse_order = if (length(index$column_order)) {
+    inverse = integer(index$endogenous_count)
+    inverse[index$column_order] = seq_along(index$column_order)
+    inverse
+  } else integer()
   rhs = numeric(index$equation_count)
   shock_positions = shocks$positions
   shock_values = shocks$values
@@ -899,7 +946,9 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
       raw_x <<- c(raw_x, numeric(growth))
     }
     raw_i[start:end] <<- as.integer(row_number)
-    raw_j[start:end] <<- as.integer(variable_position)
+    raw_j[start:end] <<- if (length(inverse_order)) {
+      inverse_order[as.integer(variable_position)]
+    } else as.integer(variable_position)
     raw_x[start:end] <<- as.numeric(value)
     raw_count <<- end
     invisible(NULL)
@@ -1010,6 +1059,85 @@ sparse_emit_system = function(state, index, shocks) {
   }
   sparse_emit_system_scalar(state, index, shocks)
 }
+sparse_lhs_column_order = function(index, state) {
+  n = as.integer(index$endogenous_count)
+  if (!n || index$equation_count != n ||
+      !isTRUE(index$row_layout_ready)) {
+    return(NULL)
+  }
+  if (!is.null(index$column_order) &&
+      length(index$column_order) == n &&
+      !anyNA(index$column_order)) {
+    return(as.integer(index$column_order))
+  }
+
+  # TABLO often orders equations by economic identity rather than by the
+  # variable columns.  Use left-hand-side variables as cheap structural pivots
+  # before SuperLU chooses its fill-reducing ordering.  Composite left sides
+  # and repeated identities are handled as a partial matching; the remaining
+  # rows receive the remaining columns so this is always a permutation.
+  column_order = rep(NA_integer_, n)
+  used = rep(FALSE, n)
+  for (equation in index$equations) {
+    if (any(vapply(equation$domains, function(domain) {
+      !is.null(domain$predicate)
+    }, logical(1)))) {
+      return(NULL)
+    }
+    rows = seq.int(equation$row_start, equation$row_end)
+    candidates = equation$lhs_terms
+    if (is.null(candidates) || !length(candidates)) {
+      candidates = if (length(equation$terms)) {
+        equation$terms[1L]
+      } else list()
+    }
+    if (!length(candidates)) next
+    vectorized = sparse_vectorized_bindings(equation$domains, index)
+    mapped = lapply(candidates, function(term) {
+      id = index$variable_by_name[[term$ref$name]]
+      if (is.null(id)) return(rep(NA_integer_, length(rows)))
+      variable = index$variables[[id]]
+      if (isTRUE(variable$exogenous)) {
+        return(rep(NA_integer_, length(rows)))
+      }
+      global = sparse_vectorized_ref_positions(
+        term$ref, vectorized$bindings, state, index, vectorized$n
+      )
+      local = global - variable$global_start + 1
+      result = rep(NA_integer_, length(global))
+      valid = !is.na(local) &
+        local == as.integer(local) &
+        local >= 1 & local <= variable$n
+      result[valid] = as.integer(variable$endo_start + local[valid] - 1L)
+      result
+    })
+    scores = vapply(mapped, function(candidate) {
+      valid = !is.na(candidate) & candidate >= 1L & candidate <= n
+      if (!any(valid)) return(0L)
+      unique_candidate = candidate[valid][!duplicated(candidate[valid])]
+      as.integer(sum(!used[unique_candidate]))
+    }, integer(1))
+    if (!length(scores) || max(scores) == 0L) next
+    candidate = mapped[[which.max(scores)]]
+    valid = !is.na(candidate) & candidate >= 1L & candidate <= n
+    take = rep(FALSE, length(candidate))
+    if (any(valid)) {
+      valid_rows = which(valid)
+      take[valid_rows] = !duplicated(candidate[valid_rows]) &
+        !used[candidate[valid_rows]]
+    }
+    if (any(take)) {
+      column_order[rows[take]] = candidate[take]
+      used[candidate[take]] = TRUE
+    }
+  }
+  unmatched_rows = which(is.na(column_order))
+  remaining_columns = which(!used)
+  if (length(unmatched_rows) != length(remaining_columns)) return(NULL)
+  column_order[unmatched_rows] = remaining_columns
+  if (anyNA(column_order) || anyDuplicated(column_order)) return(NULL)
+  as.integer(column_order)
+}
 sparse_as_sparsem_csr = function(A) {
   if (!requireNamespace("SparseM", quietly = TRUE)) {
     stop("backend='SparseM' requires the SparseM package", call. = FALSE)
@@ -1030,7 +1158,7 @@ sparse_as_sparsem_csr = function(A) {
 }
 solve_sparse_system = function(A, rhs, backend = "Matrix",
                                reduction = c("auto", "off", "on")) {
-  backend = match.arg(backend, c("Matrix", "SparseM"))
+  backend = match.arg(backend, c("Matrix", "SuiteSparse", "SparseM"))
   reduction = match.arg(reduction)
   if (!inherits(A, "sparseMatrix")) {
     stop("Sparse solver received a non-sparse coefficient matrix", call. = FALSE)
@@ -1039,8 +1167,13 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
     stop(sprintf("Sparse system is not square: %s x %s", nrow(A), ncol(A)),
          call. = FALSE)
   }
+  rhs = as.numeric(rhs)
+  if (length(rhs) != nrow(A) || anyNA(rhs) || any(!is.finite(rhs))) {
+    stop("Sparse system received an invalid right-hand side", call. = FALSE)
+  }
+  if (!any(rhs != 0)) return(numeric(ncol(A)))
   reduced = if (reduction == "off") {
-    list(A = A, rhs = rhs, keep = seq_len(ncol(A)), eliminated = list())
+    list(A = A, rhs = rhs, stages = list())
   } else {
     sparse_reduce_system(A, rhs)
   }
@@ -1068,55 +1201,129 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
       }
     )
     reduced_solution = as.numeric(Matrix::solve(factor, reduced$rhs))
+  } else if (backend == "SuiteSparse") {
+    reduced_solution = sparse_suite_sparse_solver(
+      reduced$A, reduced$rhs
+    )
   } else {
     csr = sparse_as_sparsem_csr(reduced$A)
     reduced_solution = as.numeric(SparseM::solve(csr, reduced$rhs))
   }
-  solution = numeric(ncol(A))
-  if (length(reduced$keep)) solution[reduced$keep] = reduced_solution
-  if (length(reduced$eliminated)) {
-    for (item in reduced$eliminated) {
-      solution[[item$column]] = item$value
+  if (length(reduced$stages)) {
+    for (stage in rev(reduced$stages)) {
+      stage_solution = numeric(length(stage$keep) +
+                                 length(stage$eliminated$columns))
+      if (length(stage$keep)) {
+        stage_solution[stage$keep] = reduced_solution
+      }
+      if (length(stage$eliminated$columns)) {
+        matrix = stage$eliminated$matrix
+        contribution = if (!is.null(matrix) && nrow(matrix) &&
+                            ncol(matrix)) {
+          as.numeric(matrix %*% reduced_solution)
+        } else numeric(length(stage$eliminated$columns))
+        stage_solution[stage$eliminated$columns] = (
+          stage$eliminated$rhs - contribution
+        ) / stage$eliminated$pivots
+      }
+      reduced_solution = stage_solution
     }
   }
-  solution
+  reduced_solution
 }
 
 sparse_reduce_system = function(A, rhs) {
-  summary = Matrix::summary(A)
-  row_count = tabulate(summary$i, nbins = nrow(A))
-  column_count = tabulate(summary$j, nbins = ncol(A))
-  candidate = which(row_count == 1L)
-  if (!length(candidate)) {
-    return(list(A = A, rhs = rhs, keep = seq_len(ncol(A)),
-                eliminated = list()))
+  if (length(A@x) && any(!is.finite(A@x) | A@x == 0)) {
+    A = Matrix::drop0(A)
   }
-  eliminate_rows = integer()
-  eliminate_columns = integer()
-  eliminated = list()
-  for (row in candidate) {
-    position = which(summary$i == row)[1L]
-    column = summary$j[[position]]
-    if (column_count[[column]] != 1L) next
-    eliminate_rows = c(eliminate_rows, row)
-    eliminate_columns = c(eliminate_columns, column)
-    eliminated[[length(eliminated) + 1L]] = list(
-      column = column,
-      value = rhs[[row]] / summary$x[[position]]
+  stages = list()
+  current_A = A
+  current_rhs = as.numeric(rhs)
+  A = NULL
+
+  repeat {
+    # A row singleton directly solves its only variable.  Substitute that
+    # value into the other rows before removing the row and column.
+    row_count = tabulate(current_A@i + 1L, nbins = nrow(current_A))
+    singleton_entries = which(row_count[current_A@i + 1L] == 1L)
+    if (length(singleton_entries)) {
+      singleton_columns = findInterval(singleton_entries - 1L, current_A@p)
+      singleton_column_count = tabulate(
+        singleton_columns, nbins = ncol(current_A)
+      )
+      take = singleton_column_count[singleton_columns] == 1L &
+        is.finite(current_A@x[singleton_entries]) &
+        current_A@x[singleton_entries] != 0
+      if (any(take)) {
+        eliminate_entries = singleton_entries[take]
+        eliminate_rows = as.integer(current_A@i[eliminate_entries] + 1L)
+        eliminate_columns = as.integer(singleton_columns[take])
+        pivots = as.numeric(current_A@x[eliminate_entries])
+        keep_rows = setdiff(seq_len(nrow(current_A)), eliminate_rows)
+        keep_columns = setdiff(seq_len(ncol(current_A)), eliminate_columns)
+        eliminated_values = current_rhs[eliminate_rows] / pivots
+        next_rhs = current_rhs[keep_rows]
+        cross = current_A[
+          keep_rows, eliminate_columns, drop = FALSE
+        ] %*% eliminated_values
+        next_rhs = next_rhs - as.numeric(cross)
+        stages[[length(stages) + 1L]] = list(
+          keep = keep_columns,
+          eliminated = list(
+            columns = eliminate_columns,
+            pivots = pivots,
+            rhs = current_rhs[eliminate_rows],
+            matrix = NULL
+          )
+        )
+        current_A = current_A[keep_rows, keep_columns, drop = FALSE]
+        current_rhs = next_rhs
+        next
+      }
+    }
+
+    column_count = diff(current_A@p)
+    candidate_columns = which(column_count == 1L)
+    if (!length(candidate_columns)) break
+
+    # A column singleton can be solved from its only row.  It is safe to
+    # remove that row and column only when the row has no second singleton;
+    # otherwise removing the row would strand the other singleton column.
+    entry = current_A@p[candidate_columns] + 1L
+    candidate_rows = current_A@i[entry] + 1L
+    singleton_count = tabulate(
+      candidate_rows, nbins = nrow(current_A)
     )
+    take = singleton_count[candidate_rows] == 1L &
+      is.finite(current_A@x[entry]) & current_A@x[entry] != 0
+    if (!any(take)) break
+
+    eliminate_columns = as.integer(candidate_columns[take])
+    eliminate_rows = as.integer(candidate_rows[take])
+    pivots = as.numeric(current_A@x[entry[take]])
+    keep_rows = setdiff(seq_len(nrow(current_A)), eliminate_rows)
+    keep_columns = setdiff(seq_len(ncol(current_A)), eliminate_columns)
+
+    # Keep the non-pivot coefficients needed to reconstruct each eliminated
+    # variable after the reduced solve.  Both matrices remain sparse.
+    reconstruction = current_A[
+      eliminate_rows, keep_columns, drop = FALSE
+    ]
+    stages[[length(stages) + 1L]] = list(
+      keep = keep_columns,
+      eliminated = list(
+        columns = eliminate_columns,
+        pivots = pivots,
+        rhs = current_rhs[eliminate_rows],
+        matrix = reconstruction
+      )
+    )
+
+    current_A = current_A[keep_rows, keep_columns, drop = FALSE]
+    current_rhs = current_rhs[keep_rows]
   }
-  if (!length(eliminate_rows)) {
-    return(list(A = A, rhs = rhs, keep = seq_len(ncol(A)),
-                eliminated = list()))
-  }
-  keep_rows = setdiff(seq_len(nrow(A)), eliminate_rows)
-  keep_columns = setdiff(seq_len(ncol(A)), eliminate_columns)
-  list(
-    A = A[keep_rows, keep_columns, drop = FALSE],
-    rhs = rhs[keep_rows],
-    keep = keep_columns,
-    eliminated = eliminated
-  )
+
+  list(A = current_A, rhs = current_rhs, stages = stages)
 }
 
 sparse_apply_solution = function(state, index, solution) {
@@ -1172,7 +1379,13 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
   for (update_id in seq_along(updates)) {
     update = updates[[update_id]]
     sparse_initialize_update_target(update, state, index)
-    result = tryCatch({
+    vectorized = tryCatch(
+      sparse_apply_update_vectorized(update, state, index),
+      error = function(error) FALSE
+    )
+    result = if (isTRUE(vectorized)) {
+      NULL
+    } else tryCatch({
       sparse_for_each_domain(
         update$domains, state, index, callback = function(bindings) {
           value = sparse_eval_expr(
@@ -1217,6 +1430,88 @@ sparse_restore_checkpoint = function(state, checkpoint) {
   }
   if (is.environment(state)) state$data = data
   invisible(NULL)
+}
+
+sparse_apply_update_vectorized = function(update, state, index) {
+  domains = update$domains
+  if (!sparse_vectorized_expr_supported(update$expression)) return(FALSE)
+  if (any(vapply(domains, function(domain) {
+    !is.null(domain$predicate) &&
+      !sparse_vectorized_expr_supported(domain$predicate)
+  }, logical(1)))) {
+    return(FALSE)
+  }
+
+  lengths = if (length(domains)) {
+    vapply(domains, function(domain) {
+      length(index$sets[[domain$set]]$values)
+    }, integer(1))
+  } else integer()
+  n = if (length(lengths)) as.numeric(prod(lengths)) else 1
+  vectorized = sparse_vectorized_bindings(domains, index)
+  value = sparse_eval_expr_vectorized(
+    update$expression, state, vectorized$bindings, index, n
+  )
+  value = rep(as.numeric(value), length.out = n)
+  active = rep(TRUE, n)
+  for (domain in domains) {
+    if (!is.null(domain$predicate)) {
+      predicate = sparse_eval_expr_vectorized(
+        domain$predicate, state, vectorized$bindings, index, n
+      )
+      predicate = rep(as.logical(predicate), length.out = n)
+      predicate[is.na(predicate)] = FALSE
+      active = active & predicate
+    }
+  }
+
+  data = sparse_state_data(state)
+  array = data[[update$target$name]]
+  if (is.null(array)) return(FALSE)
+  dimensions = dim(array)
+  target_indices = update$target$indices
+  if (is.null(dimensions) ||
+      length(dimensions) != length(target_indices)) return(FALSE)
+  if (!length(target_indices)) {
+    if (length(array) != 1L) return(FALSE)
+    if (active[[1L]]) data[[update$target$name]] = value[[1L]]
+  } else {
+    array_dim_names = dimnames(array)
+    positions = lapply(seq_along(target_indices), function(d) {
+      item = target_indices[[d]]
+      source_set = if (is.name(item)) {
+        vectorized$bindings[[paste0(".set:", as.character(item))]]
+      } else NULL
+      set_name = if (!is.null(array_dim_names) &&
+                     !is.null(names(array_dim_names)) &&
+                     d <= length(names(array_dim_names))) {
+        names(array_dim_names)[[d]]
+      } else NULL
+      sparse_vectorized_positions(
+        sparse_vectorized_index_value(
+          item, vectorized$bindings, state, index, n
+        ),
+        dimensions[[d]],
+        if (!is.null(array_dim_names)) array_dim_names[[d]] else NULL,
+        set_name,
+        source_set,
+        index,
+        n
+      )
+    })
+    if (any(vapply(positions, anyNA, logical(1)))) return(FALSE)
+    target_linear = rep(1, n)
+    target_stride = 1
+    for (d in seq_along(positions)) {
+      target_linear = target_linear +
+        (positions[[d]] - 1) * target_stride
+      target_stride = target_stride * dimensions[[d]]
+    }
+    array[as.integer(target_linear[active])] = value[active]
+    data[[update$target$name]] = array
+  }
+  if (is.environment(state)) state$data = data
+  TRUE
 }
 
 sparse_change_mask = function(index) {
@@ -1379,17 +1674,26 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     before_bytes = sparse_gc_bytes()
     matrix_start = proc.time()[[3L]]
   }
+  column_order = sparse_lhs_column_order(index, state)
+  index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
   index = emitted$index
   model$sparseIndex = index
+  coefficient_matrix = emitted$A
   if (isTRUE(measure)) {
     matrix_end = proc.time()[[3L]]
     matrix_bytes = sparse_gc_bytes()
     solve_start = proc.time()[[3L]]
   }
   solution = solve_sparse_system(
-    emitted$A, emitted$rhs, backend = backend, reduction = reduction
+    coefficient_matrix, emitted$rhs, backend = backend, reduction = reduction
   )
+  if (length(column_order)) {
+    original_solution = numeric(length(solution))
+    original_solution[column_order] = solution
+    solution = original_solution
+  }
+  coefficient_matrix = NULL
   if (isTRUE(measure)) {
     solve_end = proc.time()[[3L]]
     solve_bytes = sparse_gc_bytes()
@@ -1415,7 +1719,13 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   } else {
     phase = NULL
   }
-  list(solution = solution, nnz = emitted$nnz, phase = phase, index = index)
+  list(
+    solution = solution,
+    nnz = emitted$nnz,
+    column_permuted = length(column_order) > 0L,
+    phase = phase,
+    index = index
+  )
 }
 
 sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
@@ -1435,7 +1745,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   }
   output = match.arg(output)
   reduction = match.arg(reduction)
-  backend = match.arg(backend, c("Matrix", "SparseM"))
+  backend = match.arg(backend, c("Matrix", "SuiteSparse", "SparseM"))
   index = model$sparseIndex
   if (is.null(index) || !length(index)) {
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",

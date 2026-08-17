@@ -110,6 +110,54 @@ test_that("zero shocks stay implicit and nonzero shocks build a sparse RHS", {
   )
 })
 
+test_that("column singleton reduction reconstructs coupled variables", {
+  A <- Matrix::sparseMatrix(
+    i = c(1, 1, 2),
+    j = c(1, 2, 2),
+    x = c(2, 1, 2),
+    dims = c(2, 2)
+  )
+  rhs <- c(5, 4)
+
+  reduced <- solve_sparse_system(A, rhs, reduction = "auto")
+  direct <- solve_sparse_system(A, rhs, reduction = "off")
+
+  expect_equal(reduced, c(1.5, 2), tolerance = 1e-12)
+  expect_equal(reduced, direct, tolerance = 1e-12)
+})
+
+test_that("row singleton reduction reconstructs coupled variables", {
+  A <- Matrix::sparseMatrix(
+    i = c(1, 2, 2),
+    j = c(1, 1, 2),
+    x = c(2, 1, 3),
+    dims = c(2, 2)
+  )
+  rhs <- c(4, 11)
+
+  reduced <- solve_sparse_system(A, rhs, reduction = "auto")
+  direct <- solve_sparse_system(A, rhs, reduction = "off")
+
+  expect_equal(reduced, c(2, 3), tolerance = 1e-12)
+  expect_equal(reduced, direct, tolerance = 1e-12)
+})
+
+test_that("SuiteSparse backend uses sparse LU without densifying", {
+  skip_if_not(sparse_suite_sparse_available())
+  A <- Matrix::sparseMatrix(
+    i = c(1, 1, 2),
+    j = c(1, 2, 2),
+    x = c(2, 1, 2),
+    dims = c(2, 2)
+  )
+
+  solution <- solve_sparse_system(
+    A, c(5, 4), backend = "SuiteSparse", reduction = "off"
+  )
+
+  expect_equal(solution, c(1.5, 2), tolerance = 1e-12)
+})
+
 test_that("GEModel exposes sparse closure, shocks, memory, and compact output", {
   model <- make_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
