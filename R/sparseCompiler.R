@@ -330,10 +330,17 @@ sparse_compile_spec = function(statements) {
         list()
       }
     )
+    lhs_terms = if (!is.null(formula) && length(formula) >= 3L) {
+      tryCatch(
+        sparse_terms_from_expr(formula[[2]], variable_names),
+        error = function(e) list()
+      )
+    } else list()
     equations[[length(equations) + 1L]] = list(
       name = tolower(s$parsed$equationName),
       domains = domains,
-      terms = terms
+      terms = terms,
+      lhs_terms = lhs_terms
     )
   }
 
@@ -397,7 +404,12 @@ sparse_compile_spec = function(statements) {
   simulation_updates = Filter(function(update) {
     update$class == "update" ||
       (update$class == "formula" &&
+         !isTRUE(update$initial) &&
          update$target$name %in% required_formula_names)
+  }, updates)
+  formula_initialization_updates = Filter(function(update) {
+    update$class == "formula" &&
+      update$target$name %in% required_formula_names
   }, updates)
   list(
     variables = variables,
@@ -406,6 +418,7 @@ sparse_compile_spec = function(statements) {
     updates = updates,
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
+    formula_initialization_updates = formula_initialization_updates,
     post_updates = updates,
     formula_names = formula_names,
     required_formula_names = required_formula_names,
@@ -544,6 +557,7 @@ sparse_build_index = function(spec, data) {
     closure_names = character(),
     endogenous_count = as.integer(global_start - 1L),
     pattern_cache = NULL,
+    column_order = NULL,
     row_layout_ready = FALSE
   )
   sparse_rebuild_columns(index, character())
@@ -572,6 +586,7 @@ sparse_rebuild_columns = function(index, closure_names) {
   index$closure_names = closure_names
   index$endogenous_count = as.integer(endo_start - 1L)
   index$pattern_cache = NULL
+  index$column_order = NULL
   index$row_layout_ready = FALSE
   index
 }
@@ -686,6 +701,14 @@ sparse_eval_expr = function(expr, state, bindings, index) {
   if (length(expr) == 0L) return(NA_real_)
 
   op = as.character(expr[[1]])
+  if (op != "[" && !is.null(state) &&
+      !is.null(sparse_state_data(state)[[tolower(op)]])) {
+    ref = as.call(c(
+      list(as.name("["), as.name(tolower(op))),
+      as.list(expr)[-1L]
+    ))
+    return(sparse_eval_expr(ref, state, bindings, index))
+  }
   if (op == "[") {
     ref = sparse_parse_ref(expr)
     array = if (is.null(state)) NULL else {
@@ -917,6 +940,7 @@ sparse_domain_count = function(domains, state, index) {
   index$equation_count = as.integer(next_row - 1L)
   index$row_layout_ready = TRUE
   index$pattern_cache = NULL
+  index$column_order = NULL
   index
 }
 

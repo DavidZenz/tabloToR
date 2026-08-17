@@ -91,7 +91,7 @@ GEModel = setRefClass(
         )
         sparse_apply_updates(
           sparseState, sparseIndex, sparseSpec,
-          updates = sparseSpec$initial_updates
+          updates = sparseSpec$formula_initialization_updates
         )
         sourceData <<- list()
         loadedEngine <<- "sparse"
