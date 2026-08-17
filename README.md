@@ -138,7 +138,14 @@ model$compactOutput
 
 Use `model$setMemoryBudget(bytes)` or `memory_budget = bytes` to make the solver fail during preflight when the estimate exceeds the available budget. `setClosure()` accepts base variable names; indexed labels belong in `setShocks()`. Existing `variableValues` initialization remains supported when `setShocks()` is omitted.
 
-The sparse path uses Matrix sparse LU with fill-reducing ordering. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
+The sparse path uses Matrix sparse LU with fill-reducing ordering by default. For systems where SuperLU runs out of fill workspace, use the optional SuiteSparse/UMFPACK backend:
+
+```r
+options(tabloToR.sparse.suite_sparse_ordering = "amd")
+model$solveModel(engine = "sparse", backend = "SuiteSparse")
+```
+
+The SuiteSparse ordering can be `cholmod`, `amd`, `metis`, `best`, or `natural`; it requires Rcpp and a system SuiteSparse installation. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
 
 For a separate-process GTAP 12a measurement, install the package and run:
 
