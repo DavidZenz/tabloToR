@@ -4,6 +4,22 @@ sparse_elimination_cpp = local({
   compiled = NULL
   function() {
     if (!is.null(compiled)) return(compiled)
+    if (is.loaded(
+      "_tabloToR_tabloToR_eliminate_blocks", PACKAGE = "tabloToR"
+    )) {
+      eliminate = get0(
+        "tabloToR_eliminate_blocks", envir = environment(),
+        mode = "function", inherits = TRUE
+      )
+      reconstruct = get0(
+        "tabloToR_reconstruct_blocks", envir = environment(),
+        mode = "function", inherits = TRUE
+      )
+      if (is.function(eliminate) && is.function(reconstruct)) {
+        compiled <<- list(eliminate = eliminate, reconstruct = reconstruct)
+        return(compiled)
+      }
+    }
     if (!requireNamespace("Rcpp", quietly = TRUE)) {
       stop(
         "The structured sparse backend requires the optional Rcpp package",

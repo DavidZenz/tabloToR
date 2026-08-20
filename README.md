@@ -159,7 +159,7 @@ model$solveModel(
 )
 ```
 
-This backend requires Rcpp, keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use Matrix, SuiteSparse, or SparseM.
+Its native elimination helper is compiled during package installation, so solves do not invoke a compiler at runtime. The backend keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use Matrix, SuiteSparse, or SparseM.
 
 When the remaining BTF block is numerically difficult, use the matrix-free regional Schur backend:
 
