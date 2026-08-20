@@ -327,6 +327,38 @@ test_that("structured elimination reconstructs eliminated variables", {
   )
 })
 
+test_that("structured elimination composes exact reduction stages", {
+  skip_if_not_installed("Rcpp")
+  A <- Matrix::sparseMatrix(
+    i = c(1L, 1L, 2L, 2L, 3L),
+    j = c(1L, 2L, 2L, 3L, 3L),
+    x = c(2, 1, 3, 1, 4),
+    dims = c(3L, 3L)
+  )
+  expected <- c(1, 2, 3)
+  partition <- list(
+    stages = list(
+      first = list(
+        row_group = as.integer(c(0L, -1L, -1L)),
+        column_group = as.integer(c(0L, -1L, -1L)),
+        n_groups = 1L
+      ),
+      second = list(
+        row_group = as.integer(c(-1L, 0L, -1L)),
+        column_group = as.integer(c(-1L, 0L, -1L)),
+        n_groups = 1L
+      )
+    )
+  )
+  result <- sparse_exact_structured_solve(
+    A, as.numeric(A %*% expected), partition
+  )
+
+  expect_equal(result$solution, expected, tolerance = 1e-10)
+  expect_equal(result$reduced_dimension, 1L)
+  expect_equal(result$stage_count, 2L)
+})
+
 test_that("vectorized and scalar emitters agree", {
   model <- make_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))

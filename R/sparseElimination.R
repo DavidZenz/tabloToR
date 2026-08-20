@@ -131,6 +131,42 @@ sparse_elimination_family = function(index, state, selected_sets,
   )
 }
 
+sparse_compact_elimination_partition = function(row_group, column_group,
+                                                n_groups) {
+  row_group = as.integer(row_group)
+  column_group = as.integer(column_group)
+  n_groups = as.integer(n_groups)
+  if (length(row_group) != length(column_group) || n_groups < 1L) {
+    stop("Invalid structured elimination partition", call. = FALSE)
+  }
+  if (any(row_group < -1L | row_group >= n_groups) ||
+      any(column_group < -1L | column_group >= n_groups)) {
+    stop("Structured elimination partition contains an invalid block",
+         call. = FALSE)
+  }
+  row_counts = tabulate(row_group[row_group >= 0L] + 1L,
+                        nbins = n_groups)
+  column_counts = tabulate(column_group[column_group >= 0L] + 1L,
+                           nbins = n_groups)
+  if (any(row_counts != column_counts)) {
+    stop("Structured elimination partition has non-square blocks",
+         call. = FALSE)
+  }
+  keep = which(row_counts > 0L)
+  if (!length(keep)) return(NULL)
+  remap = rep.int(-1L, n_groups)
+  remap[keep] = seq_along(keep) - 1L
+  take = row_group >= 0L
+  row_group[take] = remap[row_group[take] + 1L]
+  take = column_group >= 0L
+  column_group[take] = remap[column_group[take] + 1L]
+  list(
+    row_group = row_group,
+    column_group = column_group,
+    n_groups = as.integer(length(keep))
+  )
+}
+
 sparse_gtap_elimination_partition = function(index, state) {
   production = sparse_elimination_family(
     index, state, c("comm", "acts", "reg"),
@@ -160,12 +196,32 @@ sparse_gtap_elimination_partition = function(index, state) {
          call. = FALSE)
   }
   column_group[take] = bilateral$column_group[take] + offset
-  list(
+  first = list(
     row_group = as.integer(row_group),
     column_group = as.integer(column_group),
     n_groups = as.integer(production$n_groups + bilateral$n_groups),
     production_groups = production$n_groups,
     bilateral_groups = bilateral$n_groups
+  )
+  endowment = tryCatch(
+    sparse_elimination_family(
+      index, state, c("acts", "reg"),
+      c("pes", "qes", "peb", "qfe", "pfe", "afe"),
+      c("e_qfe", "e_afe", "e_pfe", "e_pes", "e_peb",
+        "e_qes1", "e_qes2", "e_qes3")
+    ),
+    error = function(error) NULL
+  )
+  list(
+    row_group = first$row_group,
+    column_group = first$column_group,
+    n_groups = first$n_groups,
+    production_groups = production$n_groups,
+    bilateral_groups = bilateral$n_groups,
+    stages = c(
+      list(first = first),
+      if (is.null(endowment)) list() else list(endowment = endowment)
+    )
   )
 }
 
@@ -261,30 +317,143 @@ sparse_exact_structured_solve = function(A, rhs, partition,
                                          lu_order = 3L,
                                          pivot_tolerance = 1e-12) {
   compiled = sparse_elimination_cpp()
-  reduced = compiled$eliminate(
-    A, as.numeric(rhs), partition$row_group, partition$column_group,
-    as.integer(partition$n_groups), as.numeric(pivot_tolerance)
-  )
-  if (!isTRUE(reduced$ok)) {
-    stop(sprintf(
-      paste(
-        "Structured elimination found %s singular local block(s).",
-        "Use backend='Matrix' for this closure or inspect the model partition."
-      ), reduced$singular_count
-    ), call. = FALSE)
+  rhs = as.numeric(rhs)
+  if (length(rhs) != nrow(A) || nrow(A) != ncol(A)) {
+    stop("Structured sparse solve received incompatible dimensions",
+         call. = FALSE)
   }
-  reduced_solution = sparse_btf_solve(reduced$A, reduced$rhs, lu_order)
-  solution = compiled$reconstruct(
-    A, as.numeric(rhs), reduced_solution,
-    partition$row_group, partition$column_group,
-    as.integer(partition$n_groups), as.numeric(pivot_tolerance)
-  )
+  stages = if (!is.null(partition$stages) &&
+               length(partition$stages)) {
+    partition$stages
+  } else list(partition)
+  current_A = A
+  current_rhs = rhs
+  original_rows = seq_len(nrow(A))
+  original_columns = seq_len(ncol(A))
+  records = list()
+  stage_diagnostics = vector("list", length(stages))
+  product_upper = 0
+  max_block = 0L
+  for (stage_id in seq_along(stages)) {
+    stage = stages[[stage_id]]
+    if (is.null(stage) || is.null(stage$row_group)) next
+    if (length(stage$row_group) != nrow(A) ||
+        length(stage$column_group) != ncol(A)) {
+      stop("Structured elimination stages must use original coordinates",
+           call. = FALSE)
+    }
+    row_group = stage$row_group[original_rows]
+    column_group = stage$column_group[original_columns]
+    effective = tryCatch(
+      sparse_compact_elimination_partition(
+        row_group, column_group, stage$n_groups
+      ),
+      error = function(error) error
+    )
+    if (inherits(effective, "error")) {
+      if (stage_id == 1L) stop(conditionMessage(effective), call. = FALSE)
+      stage_diagnostics[[stage_id]] = list(
+        applied = FALSE, reason = conditionMessage(effective)
+      )
+      next
+    }
+    if (is.null(effective)) {
+      stage_diagnostics[[stage_id]] = list(applied = FALSE,
+                                           reason = "empty")
+      next
+    }
+    result = tryCatch(
+      compiled$eliminate(
+        current_A, current_rhs, effective$row_group,
+        effective$column_group, effective$n_groups,
+        as.numeric(pivot_tolerance)
+      ),
+      error = function(error) error
+    )
+    if (inherits(result, "error")) {
+      if (stage_id == 1L) stop(conditionMessage(result), call. = FALSE)
+      stage_diagnostics[[stage_id]] = list(
+        applied = FALSE, reason = conditionMessage(result)
+      )
+      next
+    }
+    singular = if (isTRUE(result$ok)) integer() else {
+      sort(unique(as.integer(result$singular_groups)))
+    }
+    if (length(singular)) {
+      effective$row_group[effective$row_group %in% singular] = -1L
+      effective$column_group[effective$column_group %in% singular] = -1L
+      effective = sparse_compact_elimination_partition(
+        effective$row_group, effective$column_group,
+        effective$n_groups
+      )
+      if (is.null(effective)) {
+        stage_diagnostics[[stage_id]] = list(
+          applied = FALSE, reason = "all local blocks singular",
+          singular_groups = length(singular)
+        )
+        next
+      }
+      result = tryCatch(
+        compiled$eliminate(
+          current_A, current_rhs, effective$row_group,
+          effective$column_group, effective$n_groups,
+          as.numeric(pivot_tolerance)
+        ),
+        error = function(error) error
+      )
+      if (inherits(result, "error") || !isTRUE(result$ok)) {
+        message = if (inherits(result, "error")) {
+          conditionMessage(result)
+        } else sprintf("%s singular local block(s)", result$singular_count)
+        if (stage_id == 1L) stop(message, call. = FALSE)
+        stage_diagnostics[[stage_id]] = list(
+          applied = FALSE, reason = message,
+          singular_groups = length(singular)
+        )
+        next
+      }
+    }
+    records[[length(records) + 1L]] = list(
+      A = current_A, rhs = current_rhs,
+      row_group = effective$row_group,
+      column_group = effective$column_group,
+      n_groups = effective$n_groups
+    )
+    stage_diagnostics[[stage_id]] = list(
+      applied = TRUE, eliminated_groups = effective$n_groups,
+      reduced_dimension = result$kept_dimension,
+      reduced_nnz = length(result$A@x),
+      singular_groups = length(singular)
+    )
+    product_upper = product_upper + result$product_upper
+    max_block = max(max_block, result$max_block)
+    current_A = result$A
+    current_rhs = result$rhs
+    original_rows = original_rows[effective$row_group < 0L]
+    original_columns = original_columns[effective$column_group < 0L]
+    rm(result)
+  }
+  reduced_solution = sparse_btf_solve(current_A, current_rhs, lu_order)
+  solution = reduced_solution
+  if (length(records)) for (stage_id in rev(seq_along(records))) {
+    record = records[[stage_id]]
+    solution = compiled$reconstruct(
+      record$A, record$rhs, solution,
+      record$row_group, record$column_group,
+      as.integer(record$n_groups), as.numeric(pivot_tolerance)
+    )
+  }
   list(
     solution = as.numeric(solution),
-    reduced_dimension = nrow(reduced$A),
-    reduced_nnz = length(reduced$A@x),
-    eliminated_groups = partition$n_groups,
-    product_upper = reduced$product_upper,
-    max_block = reduced$max_block
+    reduced_dimension = nrow(current_A),
+    reduced_nnz = length(current_A@x),
+    eliminated_groups = if (length(records)) {
+      sum(vapply(records, function(record) record$n_groups, integer(1)))
+    } else 0L,
+    product_upper = product_upper,
+    max_block = max_block,
+    stage_count = length(records),
+    stage_diagnostics = stage_diagnostics
   )
 }
