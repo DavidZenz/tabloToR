@@ -114,7 +114,11 @@ sparse_required_formula_names = function(equations, updates) {
       sparse_expr_data_names(term$coefficient)
     }), use.names = FALSE)
   }), use.names = FALSE))
-  needed = intersect(needed, formula_names)
+  update_needed = unique(unlist(lapply(
+    Filter(function(update) update$class == "update", updates),
+    function(update) sparse_expr_data_names(update$expression)
+  ), use.names = FALSE))
+  needed = intersect(union(needed, update_needed), formula_names)
   repeat {
     more = unique(unlist(dependencies[needed], use.names = FALSE))
     next_needed = union(needed, more)
@@ -452,6 +456,9 @@ sparse_compile_spec = function(statements) {
     update$class == "formula" &&
       update$target$name %in% required_formula_names
   }, updates)
+  post_updates = Filter(function(update) {
+    update$class == "formula" && !isTRUE(update$initial)
+  }, updates)
   list(
     variables = variables,
     variable_by_name = variable_by_name,
@@ -460,7 +467,7 @@ sparse_compile_spec = function(statements) {
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
     formula_initialization_updates = formula_initialization_updates,
-    post_updates = updates,
+    post_updates = post_updates,
     formula_names = formula_names,
     required_formula_names = required_formula_names,
     simulation_equation_candidates = simulation_equation_candidates,
@@ -743,7 +750,12 @@ sparse_eval_expr = function(expr, state, bindings, index) {
   if (length(expr) == 0L) return(NA_real_)
 
   op = as.character(expr[[1]])
-  if (op != "[" && !is.null(state) &&
+  builtin_ops = c(
+    "[", "(", "setpos", "sum", "isin", "ifelse", "!",
+    "+", "-", "*", "/", "^", "==", "!=", "<", ">",
+    "<=", ">=", "&", "|", "exp", "loge", "log", "sqrt", "abs"
+  )
+  if (!(tolower(op) %in% builtin_ops) && !is.null(state) &&
       !is.null(sparse_state_data(state)[[tolower(op)]])) {
     ref = as.call(c(
       list(as.name("["), as.name(tolower(op))),

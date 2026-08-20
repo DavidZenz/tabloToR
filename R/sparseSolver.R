@@ -2061,10 +2061,6 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   if (is.null(final_solution)) final_solution = numeric(index$endogenous_count)
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
-  sparse_apply_updates(
-    state, index, model$sparseSpec,
-    updates = model$sparseSpec$simulation_updates
-  )
   if (postsim) {
     sparse_apply_updates(
       state, index, model$sparseSpec,

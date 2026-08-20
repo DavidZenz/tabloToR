@@ -246,6 +246,64 @@ test_that("sparse and legacy engines agree on the fixture", {
   )
 })
 
+test_that("sparse updates match legacy across iterations and post-simulation", {
+  fixture <- test_path("fixtures", "update.tab")
+  configurations <- list(
+    list(iter = 1, steps = 1),
+    list(iter = 3, steps = 1),
+    list(iter = 3, steps = c(1, 3))
+  )
+
+  for (configuration in configurations) {
+    legacy <- GEModel$new()
+    legacy$loadTablo(fixture)
+    legacy$setClosure("a")
+    legacy$loadData(list(), engine = "legacy")
+    legacy$setShocks(setNames(10, "a[]"))
+    legacy$solveModel(
+      iter = configuration$iter,
+      steps = configuration$steps
+    )
+
+    for (postsim_value in c(FALSE, TRUE)) {
+      sparse <- GEModel$new()
+      sparse$loadTablo(fixture)
+      sparse$setClosure("a")
+      sparse$loadData(list(), engine = "sparse")
+      sparse$setShocks(setNames(10, "a[]"))
+      sparse$solveModel(
+        iter = configuration$iter,
+        steps = configuration$steps,
+        engine = "sparse",
+        postsim = postsim_value,
+        reduction = "off"
+      )
+
+      sparse_data <- sparse_state_data(sparse$sparseState)
+      expect_equal(
+        as.numeric(sparse$solution),
+        as.numeric(legacy$solution),
+        tolerance = 1e-7
+      )
+      expect_equal(
+        as.numeric(sparse_data$v),
+        as.numeric(legacy$data$v),
+        tolerance = 1e-7
+      )
+      if (configuration$iter == 1 && identical(configuration$steps, 1)) {
+        expect_equal(as.numeric(sparse_data$v), 110, tolerance = 1e-7)
+      }
+      if (postsim_value) {
+        expect_equal(
+          as.numeric(sparse_data$reported),
+          as.numeric(sparse_data$v),
+          tolerance = 1e-7
+        )
+      }
+    }
+  }
+})
+
 test_that("sparse Euler steps stream without dense substep matrices", {
   model <- make_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))

@@ -1,0 +1,8 @@
+coefficient v;
+formula (initial) v = 100;
+coefficient reported;
+formula reported = v;
+variable (change) x;
+variable a;
+equation eq x = a;
+update v = x;
