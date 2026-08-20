@@ -436,3 +436,26 @@ test_that("cross-set indexed references resolve by label", {
   expect_equal(emitted$nnz, 6L)
   expect_equal(emitted$rhs, c(0, 0, 5, 7, 0, 0), tolerance = 1e-12)
 })
+
+test_that("exact Schur FGMRES preserves a multi-region sparse system", {
+  skip_if_not_installed("Matrix")
+  set.seed(7)
+  dense = matrix(rnorm(81), 9L, 9L)
+  diag(dense) = diag(dense) + 10
+  A = Matrix::Matrix(dense, sparse = TRUE)
+  row_groups = as.integer(c(0L, 0L, 1L, 1L, 2L, 2L, 1L, 1L, 3L))
+  column_groups = as.integer(c(1L, 0L, 2L, 1L, 0L, 2L, 1L, 1L, 3L))
+  rhs = rnorm(9L)
+
+  result = sparse_exact_schur_solve(
+    A, rhs, row_groups, column_groups, local_count = 1L, region_count = 2L,
+    global_group = 3L, panel_size = 2L, restart = 8L, max_iterations = 30L,
+    tolerance = 1e-10, true_residual_frequency = 1L
+  )
+
+  expect_true(result$converged)
+  expect_equal(result$solution, as.numeric(solve(dense, rhs)),
+               tolerance = 1e-8)
+  expect_lt(result$diagnostics$true_relative_residual, 1e-10)
+  expect_false(result$diagnostics$dense_full_system_operations)
+})
