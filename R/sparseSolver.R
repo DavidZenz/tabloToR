@@ -483,6 +483,9 @@ sparse_aggregate_triplets = function(i, j, x) {
   if (anyNA(sorted_i) || anyNA(sorted_j) || anyNA(sorted_x)) {
     stop("Sparse triplet emission produced missing indices or values", call. = FALSE)
   }
+  if (any(!is.finite(sorted_x))) {
+    stop("Sparse triplet emission produced non-finite coefficients", call. = FALSE)
+  }
   starts = c(TRUE, sorted_i[-1L] != sorted_i[-length(sorted_i)] |
                    sorted_j[-1L] != sorted_j[-length(sorted_j)])
   starts = which(starts)
@@ -490,10 +493,14 @@ sparse_aggregate_triplets = function(i, j, x) {
   groups = cumsum(c(TRUE, sorted_i[-1L] != sorted_i[-length(sorted_i)] |
                             sorted_j[-1L] != sorted_j[-length(sorted_j)]))
   aggregated = as.numeric(rowsum(sorted_x, groups, reorder = FALSE))
+  if (any(!is.finite(aggregated))) {
+    stop("Sparse triplet aggregation produced non-finite coefficients", call. = FALSE)
+  }
+  keep = aggregated != 0
   list(
-    i = as.integer(sorted_i[starts]),
-    j = as.integer(sorted_j[starts]),
-    x = aggregated
+    i = as.integer(sorted_i[starts][keep]),
+    j = as.integer(sorted_j[starts][keep]),
+    x = aggregated[keep]
   )
 }
 
@@ -548,7 +555,14 @@ sparse_emit_system_scalar = function(state, index, shocks) {
               value = if (guard_ok) sparse_eval_expr(
                 term$coefficient, state, sum_bindings, index
               ) else 0
-              if (length(value) != 1L || is.na(value)) value = 0
+              if (guard_ok && (length(value) != 1L ||
+                               !is.finite(value[[1L]]))) {
+                stop(sprintf(
+                  "Sparse coefficient for %s -> %s is not a finite scalar",
+                  equation$name, term$ref$name
+                ), call. = FALSE)
+              }
+              value = if (guard_ok) as.numeric(value[[1L]]) else 0
               ref_position = sparse_global_for_ref(
                 term$ref, state, sum_bindings, index
               )
@@ -579,6 +593,9 @@ sparse_emit_system_scalar = function(state, index, shocks) {
     raw_x = raw_x[seq_len(raw_count)]
   }
   triplets = sparse_aggregate_triplets(raw_i, raw_j, raw_x)
+  if (any(!is.finite(rhs))) {
+    stop("Sparse emission produced a non-finite right-hand side", call. = FALSE)
+  }
   key = sparse_pattern_key(index)
   cached = index$pattern_cache
   if (!is.null(cached) && identical(cached$key, key) &&
@@ -991,7 +1008,15 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
         }
         value[!guard_ok] = 0
       }
-      value[is.na(value)] = 0
+      invalid = guard_ok & !is.finite(value)
+      if (any(invalid)) {
+        position = which(invalid)[[1L]]
+        stop(sprintf(
+          "Sparse coefficient for %s -> %s is not finite at position %s",
+          equation$name, term$ref$name, position
+        ), call. = FALSE)
+      }
+      value[!guard_ok] = 0
       ref_position = sparse_vectorized_ref_positions(
         term$ref, bindings, state, index, n
       )
@@ -1031,6 +1056,9 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
     raw_x = raw_x[seq_len(raw_count)]
   }
   triplets = sparse_aggregate_triplets(raw_i, raw_j, raw_x)
+  if (any(!is.finite(rhs))) {
+    stop("Sparse emission produced a non-finite right-hand side", call. = FALSE)
+  }
   key = sparse_pattern_key(index)
   cached = index$pattern_cache
   if (!is.null(cached) && identical(cached$key, key) &&
@@ -1231,6 +1259,34 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
   }
   reduced_solution
 }
+sparse_true_residual = function(A, solution, rhs) {
+  if (!inherits(A, "sparseMatrix")) {
+    stop("Residual check received a non-sparse coefficient matrix", call. = FALSE)
+  }
+  solution = as.numeric(solution)
+  rhs = as.numeric(rhs)
+  if (length(solution) != ncol(A) || length(rhs) != nrow(A)) {
+    stop("Residual check received vectors with incompatible dimensions",
+         call. = FALSE)
+  }
+  if (any(!is.finite(solution)) || any(!is.finite(rhs))) {
+    stop("Residual check received non-finite values", call. = FALSE)
+  }
+  lhs = as.numeric(A %*% solution)
+  residual = lhs - rhs
+  residual_norm = if (length(residual)) {
+    sqrt(sum(residual * residual))
+  } else 0
+  rhs_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0
+  result = list(
+    infinity_norm = if (length(residual)) max(abs(residual)) else 0,
+    l2_norm = residual_norm,
+    relative_l2 = residual_norm / max(1, rhs_norm)
+  )
+  rm(lhs, residual)
+  result
+}
+
 
 sparse_reduce_system = function(A, rhs) {
   if (length(A@x) && any(!is.finite(A@x) | A@x == 0)) {
@@ -1614,6 +1670,72 @@ sparse_gc_bytes = function() {
   as.numeric(sum(info[, "used"])) * 8
 }
 
+sparse_restrict_index = function(index, equation_ids, state) {
+  active = index
+  active$equations = index$equations[equation_ids]
+  references = unique(unlist(lapply(active$equations, function(equation) {
+    vapply(equation$terms, function(term) term$ref$name, character(1))
+  }), use.names = FALSE))
+  references = union(references, index$closure_names)
+  variable_ids = which(vapply(index$variables, function(variable) {
+    variable$name %in% references
+  }, logical(1)))
+  active$variables = index$variables[variable_ids]
+  active$variable_by_name = setNames(
+    as.list(seq_along(active$variables)),
+    vapply(active$variables, function(variable) variable$name, character(1))
+  )
+
+  global_start = 1L
+  endo_start = 1L
+  for (id in seq_along(active$variables)) {
+    variable = active$variables[[id]]
+    variable$global_start = as.integer(global_start)
+    variable$global_end = as.integer(global_start + variable$n - 1L)
+    variable$exogenous = variable$name %in% index$closure_names
+    if (variable$exogenous) {
+      variable$endo_start = NA_integer_
+    } else {
+      variable$endo_start = as.integer(endo_start)
+      endo_start = endo_start + variable$n
+    }
+    active$variables[[id]] = variable
+    global_start = global_start + variable$n
+  }
+
+  active$variable_count = as.integer(global_start - 1L)
+  active$endogenous_count = as.integer(endo_start - 1L)
+  active$equation_ids = as.integer(equation_ids)
+  active$full_equation_count = index$equation_count
+  active$full_endogenous_count = index$endogenous_count
+  active$row_layout_ready = FALSE
+  active$pattern_cache = NULL
+  active$column_order = NULL
+  sparse_build_row_layout(NULL, active, state)
+}
+
+sparse_select_simulation_index = function(index, spec, state,
+                                          postsim = TRUE) {
+  if (isTRUE(postsim) || is.null(spec) ||
+      !length(spec$simulation_equation_candidates)) {
+    return(index)
+  }
+  if (!isTRUE(index$row_layout_ready)) {
+    index = sparse_build_row_layout(spec, index, state)
+  }
+  for (cut in spec$simulation_equation_candidates) {
+    candidate = sparse_restrict_index(
+      index, seq_len(as.integer(cut)), state
+    )
+    if (candidate$equation_count == candidate$endogenous_count &&
+        candidate$equation_count > 0L) {
+      candidate$simulation_boundary = as.integer(cut)
+      return(candidate)
+    }
+  }
+  index
+}
+
 sparse_estimate_memory = function(model, index, engine = "sparse",
                                   budget = NULL, postsim = TRUE,
                                   state = NULL) {
@@ -1669,7 +1791,8 @@ sparse_check_budget = function(estimate, budget) {
 }
 
 sparse_solve_one_step = function(state, model, index, shocks, backend,
-                                 reduction, measure = FALSE) {
+                                 reduction, measure = FALSE,
+                                 structured_partition = NULL) {
   if (isTRUE(measure)) {
     before_bytes = sparse_gc_bytes()
     matrix_start = proc.time()[[3L]]
@@ -1678,16 +1801,58 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
   index = emitted$index
-  model$sparseIndex = index
   coefficient_matrix = emitted$A
   if (isTRUE(measure)) {
     matrix_end = proc.time()[[3L]]
     matrix_bytes = sparse_gc_bytes()
     solve_start = proc.time()[[3L]]
   }
-  solution = solve_sparse_system(
-    coefficient_matrix, emitted$rhs, backend = backend, reduction = reduction
-  )
+  solver_diagnostics = NULL
+  if (identical(backend, "StructuredSchur")) {
+    if (is.null(structured_partition)) {
+      stop("StructuredSchur backend requires a model-specific partition",
+           call. = FALSE)
+    }
+    exact_result = sparse_exact_structured_solve(
+      coefficient_matrix, emitted$rhs, structured_partition,
+      lu_order = getOption("tabloToR.sparse.lu_order", 3L),
+      pivot_tolerance = getOption(
+        "tabloToR.sparse.elimination_pivot_tolerance", 1e-12
+      )
+    )
+    solution = exact_result$solution
+    solver_diagnostics = exact_result
+  } else {
+    solution = solve_sparse_system(
+      coefficient_matrix, emitted$rhs, backend = backend,
+      reduction = reduction
+    )
+  }
+  true_residual = if (
+    isTRUE(measure) ||
+      identical(backend, "StructuredSchur") ||
+      isTRUE(getOption("tabloToR.sparse.check_residual", FALSE))
+  ) sparse_true_residual(coefficient_matrix, solution, emitted$rhs) else NULL
+  if (identical(backend, "StructuredSchur")) {
+    residual_tolerance = getOption(
+      "tabloToR.sparse.structured_residual_tolerance", 1e-7
+    )
+    if (!is.numeric(residual_tolerance) || length(residual_tolerance) != 1L ||
+        !is.finite(residual_tolerance) || residual_tolerance < 0) {
+      stop(
+        "tabloToR.sparse.structured_residual_tolerance must be a non-negative finite scalar",
+        call. = FALSE
+      )
+    }
+    if (true_residual$relative_l2 > residual_tolerance) {
+      stop(sprintf(
+        paste(
+          "StructuredSchur residual %.3e exceeds tolerance %.3e;",
+          "the solution was not applied."
+        ), true_residual$relative_l2, residual_tolerance
+      ), call. = FALSE)
+    }
+  }
   if (length(column_order)) {
     original_solution = numeric(length(solution))
     original_solution[column_order] = solution
@@ -1722,6 +1887,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   list(
     solution = solution,
     nnz = emitted$nnz,
+    true_residual = true_residual,
+    solver_diagnostics = solver_diagnostics,
     column_permuted = length(column_order) > 0L,
     phase = phase,
     index = index
@@ -1745,7 +1912,9 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   }
   output = match.arg(output)
   reduction = match.arg(reduction)
-  backend = match.arg(backend, c("Matrix", "SuiteSparse", "SparseM"))
+  backend = match.arg(backend, c(
+    "Matrix", "SuiteSparse", "SparseM", "StructuredSchur"
+  ))
   index = model$sparseIndex
   if (is.null(index) || !length(index)) {
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
@@ -1761,13 +1930,30 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   if (!isTRUE(index$row_layout_ready)) {
     index = sparse_build_row_layout(model$sparseSpec, index, state)
   }
+  full_index = index
+  index = sparse_select_simulation_index(
+    index, model$sparseSpec, state, postsim = postsim
+  )
   if (index$equation_count != index$endogenous_count) {
     stop(sprintf(
       "Sparse system is not square: %s equations, %s endogenous variables.",
       index$equation_count, index$endogenous_count
     ), call. = FALSE)
   }
-  model$sparseIndex = index
+  structured_partition = NULL
+  if (identical(backend, "StructuredSchur")) {
+    if (!exists("sparse_gtap_elimination_partition", mode = "function")) {
+      stop("Structured sparse elimination helpers are unavailable",
+           call. = FALSE)
+    }
+    index$column_order = sparse_lhs_column_order(index, state)
+    if (is.null(index$column_order)) {
+      stop("StructuredSchur backend could not construct a column order",
+           call. = FALSE)
+    }
+    structured_partition = sparse_gtap_elimination_partition(index, state)
+  }
+  model$sparseIndex = full_index
   budget = memory_budget
   if (is.null(budget) || !length(budget)) budget = model$memoryBudget
   estimate = sparse_estimate_memory(
@@ -1792,6 +1978,8 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     labels = shocks$labels
   )
   max_nnz = 0
+  residual_history = list()
+  solver_diagnostics_history = list()
   for (iteration in seq_len(iter)) {
     outer_checkpoint = sparse_checkpoint_state(
       state, index, model$sparseSpec
@@ -1821,10 +2009,15 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
         )
         solved = sparse_solve_one_step(
           state, model, index, substep, backend, reduction,
-          measure = diagnostics
+          measure = diagnostics,
+          structured_partition = structured_partition
         )
         index = solved$index
-        model$sparseIndex = index
+        if (!is.null(solved$solver_diagnostics)) {
+          solver_diagnostics_history[[
+            length(solver_diagnostics_history) + 1L
+          ]] = solved$solver_diagnostics
+        }
         if (!is.null(solved$phase)) {
           for (metric in names(phase_metrics)) {
             if (grepl("_seconds$", metric)) {
@@ -1838,6 +2031,12 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
           }
         }
         max_nnz = max(max_nnz, solved$nnz)
+        if (!is.null(solved$true_residual)) {
+          residual_history[[length(residual_history) + 1L]] = list(
+            iteration = iteration, step = step_id, substep = current_step,
+            metrics = solved$true_residual
+          )
+        }
         step_result = sparse_add_solution(
           step_result, solved$solution, change_mask
         )
@@ -1889,6 +2088,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     model$data = list()
   }
   model$sparseState = state
+  model$sparseIndex = full_index
   model$solution = solution
   model$loadedEngine = "sparse"
   diagnostics_result = list(
@@ -1898,6 +2098,11 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     elapsed_seconds = proc.time()[[3L]] - start_time,
     estimated_memory = estimate,
     max_sparse_nonzeros = max_nnz,
+    true_residual_history = residual_history,
+    solver_backend = backend,
+    solver_diagnostics = if (length(solver_diagnostics_history)) {
+      solver_diagnostics_history[[length(solver_diagnostics_history)]]
+    } else NULL,
     phase_allocations = phase_metrics,
     phase_seconds = phase_metrics[c("matrix_seconds",
                                     "factor_solve_seconds", "update_seconds")],

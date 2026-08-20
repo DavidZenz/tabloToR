@@ -147,6 +147,20 @@ model$solveModel(engine = "sparse", backend = "SuiteSparse")
 
 The SuiteSparse ordering can be `cholmod`, `amd`, `metis`, `best`, or `natural`; it requires Rcpp and a system SuiteSparse installation. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
 
+For the unaggregated GTAP layout, the opt-in `StructuredSchur` backend performs exact elimination of the local production and bilateral blocks, then solves the remaining sparse system in block-triangular form:
+
+```r
+model$solveModel(
+  engine = "sparse",
+  backend = "StructuredSchur",
+  iter = 3,
+  steps = c(1, 3),
+  diagnostics = TRUE
+)
+```
+
+This backend requires Rcpp, keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use `Matrix`, `SuiteSparse`, or `SparseM`.
+
 For a separate-process GTAP 12a measurement, install the package and run:
 
 ```sh

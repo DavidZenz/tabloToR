@@ -72,6 +72,13 @@ GEModel = setRefClass(
     loadData = function(inputData, engine = c("legacy", "sparse")) {
       #browser()
       engine = match.arg(engine)
+      if (engine == "sparse" && length(sparseSpec$compile_errors)) {
+        errors = unique(as.character(sparseSpec$compile_errors))
+        stop(sprintf(
+          "Sparse TABLO compilation failed for %s equation(s): %s",
+          length(errors), paste(errors, collapse = "; ")
+        ), call. = FALSE)
+      }
       generator = if (engine == "sparse" &&
                       is.function(sparseSkeletonGenerator)) {
         sparseSkeletonGenerator
@@ -125,6 +132,9 @@ GEModel = setRefClass(
         if (!isTRUE(idx$row_layout_ready) && is.environment(sparseState)) {
           idx = sparse_build_row_layout(sparseSpec, idx, sparseState)
         }
+        idx = sparse_select_simulation_index(
+          idx, sparseSpec, sparseState, postsim = postsim
+        )
         return(sparse_estimate_memory(
           .self, idx, engine = engine, budget = memoryBudget,
           postsim = postsim, state = sparseState

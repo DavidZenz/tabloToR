@@ -281,6 +281,52 @@ test_that("SparseM remains a compatible sparse backend", {
 
   expect_equal(as.numeric(model$solution), c(8, 3), tolerance = 1e-7)
 })
+
+test_that("BTF solve preserves a sparse block-triangular solution", {
+  A <- Matrix::sparseMatrix(
+    i = c(1L, 1L, 2L, 2L, 3L, 3L, 4L, 4L),
+    j = c(1L, 2L, 2L, 3L, 3L, 4L, 4L, 4L),
+    x = c(2, 1, 3, 4, 5, 6, 7, 8),
+    dims = c(4L, 4L)
+  )
+  expected <- c(1, 2, 3, 4)
+
+  expect_equal(
+    sparse_btf_solve(A, as.numeric(A %*% expected)),
+    expected,
+    tolerance = 1e-12
+  )
+})
+
+test_that("structured elimination reconstructs eliminated variables", {
+  skip_if_not_installed("Rcpp")
+  A <- Matrix::sparseMatrix(
+    i = c(1L, 1L, 2L, 2L, 3L, 3L, 4L, 4L, 1L, 2L, 3L, 4L,
+           5L, 5L, 5L),
+    j = c(1L, 2L, 1L, 2L, 3L, 4L, 3L, 4L, 5L, 5L, 5L, 5L,
+           1L, 3L, 5L),
+    x = c(4, 1, 2, 3, 5, 1, 2, 4, 0.2, 0.3, 0.4, 0.1,
+           0.5, 0.2, 2),
+    dims = c(5L, 5L)
+  )
+  expected <- c(1, -2, 0.5, 3, 4)
+  partition <- list(
+    row_group = as.integer(c(0L, 0L, 1L, 1L, -1L)),
+    column_group = as.integer(c(0L, 0L, 1L, 1L, -1L)),
+    n_groups = 2L
+  )
+  result <- sparse_exact_structured_solve(
+    A, as.numeric(A %*% expected), partition
+  )
+
+  expect_equal(result$reduced_dimension, 1L)
+  expect_equal(result$solution, expected, tolerance = 1e-10)
+  expect_lt(
+    sparse_true_residual(A, result$solution, as.numeric(A %*% expected))$relative_l2,
+    1e-10
+  )
+})
+
 test_that("vectorized and scalar emitters agree", {
   model <- make_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))

@@ -253,6 +253,45 @@ sparse_terms_from_expr = function(expr,
   list()
 }
 
+sparse_infer_simulation_equation_candidates = function(equations) {
+  n = length(equations)
+  if (n < 3L) return(integer())
+  references = lapply(equations, function(equation) {
+    unique(vapply(equation$terms, function(term) term$ref$name,
+                  character(1)))
+  })
+  definitions = list()
+  for (equation_id in seq_along(equations)) {
+    lhs = unique(vapply(
+      equations[[equation_id]]$lhs_terms,
+      function(term) term$ref$name,
+      character(1)
+    ))
+    for (name in lhs) {
+      if (is.null(definitions[[name]])) {
+        definitions[[name]] = equation_id
+      }
+    }
+  }
+  candidates = integer()
+  prefix_references = character()
+  for (cut in seq_len(n - 1L)) {
+    prefix_references = union(prefix_references, references[[cut]])
+    later = vapply(prefix_references, function(name) {
+      definition = definitions[[name]]
+      !is.null(definition) && definition > cut
+    }, logical(1))
+    if (any(later)) next
+    suffix_references = unique(unlist(
+      references[seq.int(cut + 1L, n)], use.names = FALSE
+    ))
+    if (length(intersect(prefix_references, suffix_references))) {
+      candidates = c(candidates, cut)
+    }
+  }
+  as.integer(candidates)
+}
+
 sparse_compile_spec = function(statements) {
   variable_statements = Filter(function(s) s$class == "variable", statements)
   equation_statements = Filter(function(s) s$class == "equation", statements)
@@ -396,6 +435,8 @@ sparse_compile_spec = function(statements) {
     function(update) update$target$name, character(1)
   ))
   required_formula_names = sparse_required_formula_names(equations, updates)
+  simulation_equation_candidates =
+    sparse_infer_simulation_equation_candidates(equations)
   initial_updates = Filter(function(update) {
     update$class == "formula" &&
       isTRUE(update$initial) &&
@@ -422,6 +463,7 @@ sparse_compile_spec = function(statements) {
     post_updates = updates,
     formula_names = formula_names,
     required_formula_names = required_formula_names,
+    simulation_equation_candidates = simulation_equation_candidates,
     variable_names = variable_names,
     compile_errors = unique(compile_errors),
     statements = statements
