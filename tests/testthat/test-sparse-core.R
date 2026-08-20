@@ -69,6 +69,31 @@ test_that("compiler preserves conditional and summation structure", {
   expect_length(spec$compile_errors, 0L)
 })
 
+test_that("formula dependencies include every repeated target definition", {
+  equations = list(list(
+    terms = list(list(coefficient = quote(a)))
+  ))
+  updates = list(
+    list(
+      class = "formula", target = list(name = "a"),
+      expression = 0
+    ),
+    list(
+      class = "formula", target = list(name = "a"),
+      expression = quote(b)
+    ),
+    list(
+      class = "formula", target = list(name = "b"),
+      expression = 1
+    )
+  )
+
+  expect_setequal(
+    sparse_required_formula_names(equations, updates),
+    c("a", "b")
+  )
+})
+
 test_that("zero shocks stay implicit and nonzero shocks build a sparse RHS", {
   spec <- make_synthetic_spec()
   data <- make_synthetic_data()

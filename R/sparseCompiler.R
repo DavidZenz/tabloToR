@@ -106,9 +106,15 @@ sparse_required_formula_names = function(equations, updates) {
   formula_names = unique(vapply(
     formulas, function(update) update$target$name, character(1)
   ))
-  dependencies = setNames(lapply(formulas, function(update) {
-    intersect(sparse_expr_data_names(update$expression), formula_names)
-  }), vapply(formulas, function(update) update$target$name, character(1)))
+  formula_targets = vapply(
+    formulas, function(update) update$target$name, character(1)
+  )
+  dependencies = lapply(
+    split(seq_along(formulas), formula_targets),
+    function(ids) unique(unlist(lapply(formulas[ids], function(update) {
+      intersect(sparse_expr_data_names(update$expression), formula_names)
+    }), use.names = FALSE))
+  )
   needed = unique(unlist(lapply(equations, function(equation) {
     unlist(lapply(equation$terms, function(term) {
       sparse_expr_data_names(term$coefficient)
