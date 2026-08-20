@@ -221,6 +221,10 @@ sparse_gtap_elimination_partition = function(index, state) {
     stages = c(
       list(first = first),
       if (is.null(endowment)) list() else list(endowment = endowment)
+    ),
+    external = tryCatch(
+      sparse_external_block_partition(index, state),
+      error = function(error) NULL
     )
   )
 }
@@ -315,8 +319,10 @@ sparse_btf_solve = function(A, rhs, lu_order = 3L) {
 
 sparse_exact_structured_solve = function(A, rhs, partition,
                                          lu_order = 3L,
-                                         pivot_tolerance = 1e-12) {
+                                         pivot_tolerance = 1e-12,
+                                         reduced_solver = c("btf", "schur")) {
   compiled = sparse_elimination_cpp()
+  reduced_solver = match.arg(reduced_solver)
   rhs = as.numeric(rhs)
   if (length(rhs) != nrow(A) || nrow(A) != ncol(A)) {
     stop("Structured sparse solve received incompatible dimensions",
@@ -434,7 +440,46 @@ sparse_exact_structured_solve = function(A, rhs, partition,
     original_columns = original_columns[effective$column_group < 0L]
     rm(result)
   }
-  reduced_solution = sparse_btf_solve(current_A, current_rhs, lu_order)
+  reduced_diagnostics = list()
+  if (identical(reduced_solver, "schur")) {
+    external = partition$external
+    if (is.null(external)) {
+      stop("Structured Schur solver requires an external comm/reg partition",
+           call. = FALSE)
+    }
+    external_rows = external$row_group[original_rows]
+    external_columns = external$column_group[original_columns]
+    if (any(external_rows < 0L) || any(external_columns < 0L)) {
+      stop("Structured Schur solver found mixed groups after elimination",
+           call. = FALSE)
+    }
+    reduced_result = sparse_exact_schur_solve(
+      current_A, current_rhs, external_rows, external_columns,
+      external$commodity_count, external$region_count,
+      external$global_group,
+      lu_order = lu_order,
+      region_batch_size = getOption("tabloToR.sparse.schur_region_batch_size", 8L),
+      panel_size = getOption("tabloToR.sparse.schur_panel_size", 64L),
+      restart = getOption("tabloToR.sparse.schur_restart", 80L),
+      max_iterations = getOption("tabloToR.sparse.schur_max_iterations", 500L),
+      tolerance = getOption("tabloToR.sparse.schur_tolerance", 2e-7),
+      true_residual_frequency = getOption(
+        "tabloToR.sparse.schur_true_residual_frequency", 1L
+      )
+    )
+    if (!isTRUE(reduced_result$converged)) {
+      stop(sprintf(
+        "Structured Schur FGMRES did not converge: true residual %.3e",
+        reduced_result$diagnostics$true_relative_residual
+      ), call. = FALSE)
+    }
+    reduced_solution = reduced_result$solution
+    reduced_diagnostics = reduced_result$diagnostics
+    rm(reduced_result)
+    gc(verbose = FALSE)
+  } else {
+    reduced_solution = sparse_btf_solve(current_A, current_rhs, lu_order)
+  }
   solution = reduced_solution
   if (length(records)) for (stage_id in rev(seq_along(records))) {
     record = records[[stage_id]]
@@ -454,6 +499,8 @@ sparse_exact_structured_solve = function(A, rhs, partition,
     product_upper = product_upper,
     max_block = max_block,
     stage_count = length(records),
+    reduced_solver = reduced_solver,
+    reduced_diagnostics = reduced_diagnostics,
     stage_diagnostics = stage_diagnostics
   )
 }

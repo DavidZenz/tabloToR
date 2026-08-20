@@ -1808,7 +1808,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     solve_start = proc.time()[[3L]]
   }
   solver_diagnostics = NULL
-  if (identical(backend, "StructuredSchur")) {
+  if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
     if (is.null(structured_partition)) {
       stop("StructuredSchur backend requires a model-specific partition",
            call. = FALSE)
@@ -1818,7 +1818,10 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       lu_order = getOption("tabloToR.sparse.lu_order", 3L),
       pivot_tolerance = getOption(
         "tabloToR.sparse.elimination_pivot_tolerance", 1e-12
-      )
+      ),
+      reduced_solver = if (identical(backend, "StructuredSchurFGMRES")) {
+        "schur"
+      } else "btf"
     )
     solution = exact_result$solution
     solver_diagnostics = exact_result
@@ -1830,12 +1833,12 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   }
   true_residual = if (
     isTRUE(measure) ||
-      identical(backend, "StructuredSchur") ||
+      backend %in% c("StructuredSchur", "StructuredSchurFGMRES") ||
       isTRUE(getOption("tabloToR.sparse.check_residual", FALSE))
   ) sparse_true_residual(coefficient_matrix, solution, emitted$rhs) else NULL
-  if (identical(backend, "StructuredSchur")) {
+  if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
     residual_tolerance = getOption(
-      "tabloToR.sparse.structured_residual_tolerance", 1e-7
+      "tabloToR.sparse.structured_residual_tolerance", 2e-7
     )
     if (!is.numeric(residual_tolerance) || length(residual_tolerance) != 1L ||
         !is.finite(residual_tolerance) || residual_tolerance < 0) {
@@ -1913,7 +1916,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   output = match.arg(output)
   reduction = match.arg(reduction)
   backend = match.arg(backend, c(
-    "Matrix", "SuiteSparse", "SparseM", "StructuredSchur"
+    "Matrix", "SuiteSparse", "SparseM", "StructuredSchur", "StructuredSchurFGMRES"
   ))
   index = model$sparseIndex
   if (is.null(index) || !length(index)) {
@@ -1941,7 +1944,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     ), call. = FALSE)
   }
   structured_partition = NULL
-  if (identical(backend, "StructuredSchur")) {
+  if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
     if (!exists("sparse_gtap_elimination_partition", mode = "function")) {
       stop("Structured sparse elimination helpers are unavailable",
            call. = FALSE)

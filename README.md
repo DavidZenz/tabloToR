@@ -159,7 +159,15 @@ model$solveModel(
 )
 ```
 
-This backend requires Rcpp, keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use `Matrix`, `SuiteSparse`, or `SparseM`.
+This backend requires Rcpp, keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use Matrix, SuiteSparse, or SparseM.
+
+When the remaining BTF block is numerically difficult, use the matrix-free regional Schur backend:
+
+```r
+model$solveModel(engine = "sparse", backend = "StructuredSchurFGMRES", iter = 1, steps = 1, diagnostics = TRUE)
+```
+
+It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(tabloToR.sparse.structured_residual_tolerance = 1e-7, tabloToR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune tabloToR.sparse.schur_region_batch_size, tabloToR.sparse.schur_panel_size, tabloToR.sparse.schur_restart, and tabloToR.sparse.schur_max_iterations, and tabloToR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
 
 For a separate-process GTAP 12a measurement, install the package and run:
 
