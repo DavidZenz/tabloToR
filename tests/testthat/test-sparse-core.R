@@ -495,6 +495,24 @@ test_that("cross-set indexed references resolve by label", {
   expect_equal(emitted$rhs, c(0, 0, 5, 7, 0, 0), tolerance = 1e-12)
 })
 
+test_that("exact Schur rejects coupled local blocks", {
+  A = Matrix::sparseMatrix(
+    i = c(1L, 2L, 3L, 4L, 1L),
+    j = c(1L, 2L, 3L, 4L, 2L),
+    x = c(2, 2, 2, 2, 0.5),
+    dims = c(4L, 4L)
+  )
+  groups = as.integer(0:3)
+
+  expect_error(
+    sparse_exact_schur_validate_partition(
+      A, groups, groups,
+      local_count = 2L, region_count = 1L, global_group = 3L
+    ),
+    "local blocks 0 and 1 are coupled"
+  )
+})
+
 test_that("exact Schur FGMRES preserves a multi-region sparse system", {
   skip_if_not_installed("Matrix")
   set.seed(7)

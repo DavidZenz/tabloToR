@@ -138,6 +138,39 @@ sparse_exact_schur_validate_partition = function(A, row_group, column_group,
     stop("Exact Schur partition must contain non-empty square groups",
          call. = FALSE)
   }
+  validation_chunk_size = suppressWarnings(as.integer(getOption(
+    "tabloToR.sparse.schur_validation_chunk_size", 4096L
+  ))[1L])
+  if (is.na(validation_chunk_size) || validation_chunk_size < 1L) {
+    stop("tabloToR.sparse.schur_validation_chunk_size must be positive",
+         call. = FALSE)
+  }
+  for (first_column in seq.int(1L, n, by = validation_chunk_size)) {
+    last_column = min(n, first_column + validation_chunk_size - 1L)
+    first_entry = A@p[[first_column]] + 1L
+    last_entry = A@p[[last_column + 1L]]
+    if (first_entry > last_entry) next
+    entry_rows = A@i[seq.int(first_entry, last_entry)] + 1L
+    entry_columns = rep.int(
+      seq.int(first_column, last_column),
+      diff(A@p[first_column:(last_column + 1L)])
+    )
+    row_ids = row_group[entry_rows]
+    column_ids = column_group[entry_columns]
+    coupled = row_ids < local_count & column_ids < local_count &
+      row_ids != column_ids
+    if (any(coupled)) {
+      bad = which(coupled)[[1L]]
+      stop(sprintf(
+        paste(
+          "Exact Schur local blocks %s and %s are coupled",
+          "at matrix row %s, column %s"
+        ),
+        row_ids[[bad]], column_ids[[bad]],
+        entry_rows[[bad]], entry_columns[[bad]]
+      ), call. = FALSE)
+    }
+  }
   list(row_group = row_group, column_group = column_group,
        row_counts = row_counts)
 }
