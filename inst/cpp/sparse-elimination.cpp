@@ -312,7 +312,7 @@ Rcpp::List tabloToR_eliminate_blocks(SEXP matrix_sexp, Rcpp::NumericVector rhs,
     }
     if (!tablo_factor(factor, size, pivot, pivot_tolerance)) {
       ++singular_count;
-      if (singular_groups.size() < 128) singular_groups.push_back(group);
+      singular_groups.push_back(group);
       continue;
     }
     std::size_t lf = tablo_edge_begin(left, group);
