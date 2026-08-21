@@ -94,6 +94,49 @@ test_that("formula dependencies include every repeated target definition", {
   )
 })
 
+test_that("nested sums are vectorized across inner domains", {
+  values = array(
+    seq_len(24), dim = c(2, 3, 2, 2),
+    dimnames = list(
+      marg = c("m1", "m2"), comm = c("c1", "c2", "c3"),
+      reg = c("r1", "r2"), reg = c("r1", "r2")
+    )
+  )
+  state = sparse_make_state(list(vtmfsd = values))
+  index = list(sets = list(
+    marg = list(values = c("m1", "m2")),
+    comm = list(values = c("c1", "c2", "c3")),
+    reg = list(values = c("r1", "r2"))
+  ))
+  total = quote(sum(m, marg, sum(c, comm,
+    sum(s, reg, sum(d, reg, vtmfsd[m, c, s, d])))))
+  by_margin = quote(sum(c, comm,
+    sum(s, reg, sum(d, reg, vtmfsd[m, c, s, d]))))
+
+  expect_equal(
+    sparse_eval_expr_vectorized(total, state, list(), index, 1L),
+    sum(values)
+  )
+  expect_equal(
+    sparse_eval_expr_vectorized(
+      by_margin, state,
+      list(m = 1:2, ".set:m" = "marg"), index, 2L
+    ),
+    as.numeric(apply(values, 1L, sum))
+  )
+
+  data = state$data
+  data$vtuse = NA_real_
+  state$data = data
+  update = list(
+    target = list(name = "vtuse", indices = list()),
+    expression = total,
+    domains = list()
+  )
+  expect_true(sparse_apply_update_vectorized(update, state, index))
+  expect_equal(state$data$vtuse, sum(values))
+})
+
 test_that("zero shocks stay implicit and nonzero shocks build a sparse RHS", {
   spec <- make_synthetic_spec()
   data <- make_synthetic_data()

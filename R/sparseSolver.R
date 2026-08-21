@@ -833,19 +833,48 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
     if (is.null(set)) {
       stop(sprintf("Unknown sum set %s", set_name), call. = FALSE)
     }
-    sum_value = numeric(n)
+    set_size = length(set$values)
+    if (!set_size) return(numeric(n))
     index_name = as.character(expr[[2]])
-    for (position in seq_along(set$values)) {
-      next_bindings = bindings
-      next_bindings[[index_name]] = rep(position, n)
-      next_bindings[[paste0(".set:", index_name)]] = set_name
-      term_value = sparse_eval_expr_vectorized(
-        expr[[4]], state, next_bindings, index, n
-      )
-      sum_value = sum_value +
-        rep(as.numeric(term_value), length.out = n)
+    expanded_n = as.numeric(n) * set_size
+    if (!is.finite(expanded_n) || expanded_n > .Machine$integer.max) {
+      stop("Sparse vectorized sum exceeds R vector length limit",
+           call. = FALSE)
     }
-    return(sum_value)
+    vector_limit = getOption("tabloToR.sparse.sum_vectorized_limit", 1e6)
+    if (!is.numeric(vector_limit) || length(vector_limit) != 1L ||
+        !is.finite(vector_limit) || vector_limit < 1) {
+      stop("tabloToR.sparse.sum_vectorized_limit must be positive",
+           call. = FALSE)
+    }
+    if (expanded_n > vector_limit) {
+      sum_value = numeric(n)
+      for (position in seq_len(set_size)) {
+        next_bindings = bindings
+        next_bindings[[index_name]] = rep(position, n)
+        next_bindings[[paste0(".set:", index_name)]] = set_name
+        term_value = sparse_eval_expr_vectorized(
+          expr[[4]], state, next_bindings, index, n
+        )
+        sum_value = sum_value +
+          rep(as.numeric(term_value), length.out = n)
+      }
+      return(sum_value)
+    }
+    next_bindings = lapply(names(bindings), function(name) {
+      value = bindings[[name]]
+      if (startsWith(name, ".set:")) value else
+        rep(rep(value, length.out = n), times = set_size)
+    })
+    names(next_bindings) = names(bindings)
+    next_bindings[[index_name]] = rep(seq_len(set_size), each = n)
+    next_bindings[[paste0(".set:", index_name)]] = set_name
+    term_value = sparse_eval_expr_vectorized(
+      expr[[4]], state, next_bindings, index, expanded_n
+    )
+    term_value = rep(as.numeric(term_value), length.out = expanded_n)
+    dim(term_value) = c(n, set_size)
+    return(rowSums(term_value))
   }
 
   if (op == "ifelse") {
@@ -1526,12 +1555,12 @@ sparse_apply_update_vectorized = function(update, state, index) {
   if (is.null(array)) return(FALSE)
   dimensions = dim(array)
   target_indices = update$target$indices
-  if (is.null(dimensions) ||
-      length(dimensions) != length(target_indices)) return(FALSE)
   if (!length(target_indices)) {
     if (length(array) != 1L) return(FALSE)
     if (active[[1L]]) data[[update$target$name]] = value[[1L]]
   } else {
+    if (is.null(dimensions) ||
+        length(dimensions) != length(target_indices)) return(FALSE)
     array_dim_names = dimnames(array)
     positions = lapply(seq_along(target_indices), function(d) {
       item = target_indices[[d]]
