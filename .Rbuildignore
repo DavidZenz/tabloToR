@@ -2,3 +2,4 @@
 ^\.git$
 ^\.Rcheck$
 ^\.Rproj.user$
+^rcpp-solver-acceleration-plan\.md$
