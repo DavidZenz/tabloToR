@@ -581,6 +581,95 @@ test_that("exact Schur rejects coupled local blocks", {
   )
 })
 
+test_that("external Schur groups commodity-region positions by commodity", {
+  domains = list(
+    list(index = "c", set = "comm", predicate = NULL),
+    list(index = "r", set = "reg", predicate = NULL)
+  )
+  index = list(
+    sets = list(
+      comm = list(values = c("c1", "c2")),
+      reg = list(values = c("r1", "r2"))
+    ),
+    equations = list(list(
+      name = "e_x", domains = domains, n = 4L,
+      row_start = 1L, row_end = 4L
+    )),
+    variables = list(list(
+      name = "x", domains = domains, n = 4L,
+      endo_start = 1L, exogenous = FALSE
+    )),
+    equation_count = 4L,
+    endogenous_count = 4L,
+    column_order = 1:4
+  )
+
+  partition = sparse_external_block_partition(index, NULL)
+
+  expect_false(any(partition$row_group < 0L))
+  expect_false(any(partition$column_group < 0L))
+  expect_equal(sort(tabulate(partition$row_group + 1L)), c(2L, 2L))
+  expect_equal(sort(tabulate(partition$column_group + 1L)), c(2L, 2L))
+})
+
+test_that("external Schur promotes cross-commodity equations by region", {
+  domains = list(
+    list(index = "c", set = "comm", predicate = NULL),
+    list(index = "r", set = "reg", predicate = NULL)
+  )
+  ref = function(name, first) list(
+    name = name, indices = list(as.name(first), as.name("r"))
+  )
+  qpa_term = list(ref = ref("qpa", "c"), sums = list())
+  ppa_term = list(
+    ref = ref("ppa", "k"),
+    sums = list(list(index = "k", set = "comm"))
+  )
+  index = list(
+    sets = list(
+      comm = list(values = c("c1", "c2")),
+      reg = list(values = c("r1", "r2"))
+    ),
+    equations = list(
+      list(
+        name = "e_qpa", domains = domains, n = 4L,
+        row_start = 1L, row_end = 4L,
+        terms = list(qpa_term, ppa_term), lhs_terms = list(qpa_term)
+      ),
+      list(
+        name = "e_ppa", domains = domains, n = 4L,
+        row_start = 5L, row_end = 8L,
+        terms = list(), lhs_terms = list()
+      )
+    ),
+    variables = list(
+      list(
+        name = "qpa", sets = c("comm", "reg"), domains = domains,
+        n = 4L, endo_start = 1L, exogenous = FALSE
+      ),
+      list(
+        name = "ppa", sets = c("comm", "reg"), domains = domains,
+        n = 4L, endo_start = 5L, exogenous = FALSE
+      )
+    ),
+    variable_by_name = list(qpa = 1L, ppa = 2L),
+    equation_count = 8L,
+    endogenous_count = 8L,
+    column_order = 1:8
+  )
+
+  partition = sparse_external_block_partition(index, NULL)
+
+  expect_equal(partition$regional_equations, "e_qpa")
+  expect_equal(partition$regional_variables, "qpa")
+  expect_equal(partition$row_group[1:4], c(2L, 3L, 2L, 3L))
+  expect_equal(partition$column_group[1:4], c(2L, 2L, 3L, 3L))
+  expect_equal(tabulate(partition$row_group + 1L, nbins = 5L),
+               c(2L, 2L, 2L, 2L, 0L))
+  expect_equal(tabulate(partition$column_group + 1L, nbins = 5L),
+               c(2L, 2L, 2L, 2L, 0L))
+})
+
 test_that("exact Schur FGMRES preserves a multi-region sparse system", {
   skip_if_not_installed("Matrix")
   set.seed(7)

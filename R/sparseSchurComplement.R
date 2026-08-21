@@ -1,5 +1,68 @@
 # Matrix-free Schur complement solve for the structured sparse backend.
 
+sparse_promote_cross_commodity_families = function(
+    index, row_group, column_group, commodity_count) {
+  inverse = integer(index$endogenous_count)
+  inverse[index$column_order] = seq_along(index$column_order)
+  promoted_equations = character()
+  promoted_variables = character()
+  for (equation in index$equations) {
+    comm_domains = Filter(function(domain) identical(domain$set, "comm"),
+                          equation$domains)
+    reg_domains = Filter(function(domain) identical(domain$set, "reg"),
+                         equation$domains)
+    if (length(comm_domains) != 1L || length(reg_domains) != 1L) next
+    comm_index = tolower(comm_domains[[1L]]$index)
+    crosses = any(vapply(equation$terms, function(term) {
+      variable_id = index$variable_by_name[[term$ref$name]]
+      if (is.null(variable_id)) return(FALSE)
+      variable = index$variables[[variable_id]]
+      comm_positions = which(variable$sets == "comm")
+      if (!length(comm_positions)) return(FALSE)
+      any(vapply(comm_positions, function(position) {
+        if (position > length(term$ref$indices)) return(TRUE)
+        item = term$ref$indices[[position]]
+        if (!(is.name(item) ||
+              (is.character(item) && length(item) == 1L))) return(TRUE)
+        !identical(tolower(as.character(item)), comm_index)
+      }, logical(1)))
+    }, logical(1)))
+    if (!crosses) next
+    pivot = NULL
+    for (term in equation$lhs_terms) {
+      variable_id = index$variable_by_name[[term$ref$name]]
+      if (is.null(variable_id)) next
+      candidate = index$variables[[variable_id]]
+      if (!isTRUE(candidate$exogenous) &&
+          all(c("comm", "reg") %in% candidate$sets)) {
+        pivot = candidate
+        break
+      }
+    }
+    if (is.null(pivot)) next
+    rows = seq.int(equation$row_start, equation$row_end)
+    row_regions = sparse_block_value_sequence(
+      equation$domains, index, "reg", equation$n, variable = FALSE
+    )
+    positions = seq.int(pivot$endo_start, length.out = pivot$n)
+    columns = inverse[positions]
+    column_regions = sparse_block_value_sequence(
+      pivot$domains, index, "reg", pivot$n, variable = TRUE
+    )
+    if (any(row_regions < 1L) || any(column_regions < 1L)) next
+    row_group[rows] = commodity_count + row_regions - 1L
+    column_group[columns] = commodity_count + column_regions - 1L
+    promoted_equations = c(promoted_equations, equation$name)
+    promoted_variables = c(promoted_variables, pivot$name)
+  }
+  list(
+    row_group = row_group,
+    column_group = column_group,
+    regional_equations = unique(promoted_equations),
+    regional_variables = unique(promoted_variables)
+  )
+}
+
 sparse_external_block_partition = function(index, state) {
   if (is.null(index$column_order) ||
       length(index$column_order) != index$endogenous_count ||
@@ -24,9 +87,7 @@ sparse_external_block_partition = function(index, state) {
   code_group = vapply(layout$codes, function(code) {
     commodity = code %% stride
     region = code %/% stride
-    if (commodity > 0L && region > 0L) {
-      -1L
-    } else if (commodity > 0L) {
+    if (commodity > 0L) {
       as.integer(commodity - 1L)
     } else if (region > 0L) {
       as.integer(commodity_count + region - 1L)
@@ -36,13 +97,18 @@ sparse_external_block_partition = function(index, state) {
   }, integer(1))
   row_group = code_group[layout$row_group + 1L]
   column_group = code_group[layout$column_group + 1L]
+  promoted = sparse_promote_cross_commodity_families(
+    index, row_group, column_group, commodity_count
+  )
   list(
-    row_group = as.integer(row_group),
-    column_group = as.integer(column_group),
+    row_group = as.integer(promoted$row_group),
+    column_group = as.integer(promoted$column_group),
     n_groups = as.integer(commodity_count + region_count + 1L),
     commodity_count = as.integer(commodity_count),
     region_count = as.integer(region_count),
     global_group = as.integer(commodity_count + region_count),
+    regional_equations = promoted$regional_equations,
+    regional_variables = promoted$regional_variables,
     codes = layout$codes
   )
 }
