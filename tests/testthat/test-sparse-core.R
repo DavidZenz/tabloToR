@@ -50,6 +50,55 @@ make_synthetic_model <- function() {
   model
 }
 
+test_that("unshocked exogenous values evaluate as implicit zero", {
+  model <- make_synthetic_model()
+  data <- sparse_state_data(model$sparseState)
+  data$a[] <- NA_real_
+  data$a[[2L]] <- 5
+  state <- sparse_make_state(data)
+  bindings <- list(r = 1:2, ".set:r" = "reg")
+  unindexed_a <- as.call(list(as.name("["), as.name("a")))
+
+  expect_equal(
+    sparse_eval_expr_vectorized(
+      quote(a), state, bindings, model$sparseIndex, 2L
+    ),
+    c(0, 5)
+  )
+  expect_equal(
+    sparse_eval_expr_vectorized(
+      unindexed_a, state, bindings, model$sparseIndex, 2L
+    ),
+    c(0, 5)
+  )
+
+  expect_equal(
+    sparse_eval_expr_vectorized(
+      quote(a[r]), state, bindings, model$sparseIndex, 2L
+    ),
+    c(0, 5)
+  )
+  expect_equal(
+    sparse_eval_expr(
+      quote(a[r]), state, list(r = 1L, ".set:r" = "reg"),
+      model$sparseIndex
+    ),
+    0
+  )
+  expect_equal(
+    as.numeric(sparse_eval_expr(quote(a), state, list(), model$sparseIndex)),
+    c(0, 5)
+  )
+  expect_equal(
+    as.numeric(sparse_eval_expr(unindexed_a, state, list(), model$sparseIndex)),
+    c(0, 5)
+  )
+  expect_true(is.na(sparse_eval_expr(
+    quote(x[r]), state, list(r = 1L, ".set:r" = "reg"),
+    model$sparseIndex
+  )))
+})
+
 test_that("compiler preserves conditional and summation structure", {
   spec <- make_synthetic_spec()
 
@@ -262,6 +311,36 @@ test_that("GEModel exposes sparse closure, shocks, memory, and compact output", 
   expect_true(is.list(compact$compactOutput))
   expect_equal(as.numeric(compact$compactOutput$x), c(8, 3))
   expect_length(compact$data, 0L)
+})
+
+test_that("postsim keeps reporting equations outside the numerical solve", {
+  fixture <- tempfile(fileext = ".tab")
+  writeLines(c(
+    "variable (change) x;",
+    "variable y;",
+    "variable z;",
+    "variable a;",
+    "equation ex x = a;",
+    "equation ey y = x;",
+    "equation ez z = y;"
+  ), fixture)
+  on.exit(unlink(fixture), add = TRUE)
+
+  model <- GEModel$new()
+  model$loadTablo(fixture)
+  model$setClosure("a")
+  model$loadData(list(), engine = "sparse")
+  full <- sparse_rebuild_columns(model$sparseIndex, model$closure)
+  simulation <- sparse_select_simulation_index(
+    full, model$sparseSpec, model$sparseState, postsim = FALSE
+  )
+  with_postsim <- sparse_select_simulation_index(
+    full, model$sparseSpec, model$sparseState, postsim = TRUE
+  )
+
+  expect_lt(simulation$equation_count, full$equation_count)
+  expect_equal(with_postsim$equation_count, simulation$equation_count)
+  expect_equal(with_postsim$endogenous_count, simulation$endogenous_count)
 })
 
 test_that("closure changes rebuild endogenous columns and invalidate patterns", {

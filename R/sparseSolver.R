@@ -722,6 +722,7 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
     }
     data = if (!is.null(state)) sparse_state_data(state)[[tolower(name)]] else NULL
     if (is.null(data)) return(rep(name, n))
+    data = sparse_implicit_exogenous_zero(data, name, index)
     return(rep(as.numeric(data), length.out = n))
   }
   if (!is.language(expr)) return(rep(expr, length.out = n))
@@ -747,6 +748,7 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
     }
     dims = dim(data)
     if (is.null(dims) || !length(ref$indices)) {
+      data = sparse_implicit_exogenous_zero(data, ref$name, index)
       return(rep(as.numeric(data), length.out = n))
     }
     if (length(ref$indices) != length(dims)) {
@@ -779,7 +781,8 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
       linear = linear + (positions[[d]] - 1) * stride
       stride = stride * dims[[d]]
     }
-    return(as.numeric(data)[linear])
+    value = as.numeric(data)[linear]
+    return(sparse_implicit_exogenous_zero(value, ref$name, index))
   }
   if (op == "(" && length(expr) >= 2L) {
     return(sparse_eval_expr_vectorized(
@@ -1745,8 +1748,9 @@ sparse_restrict_index = function(index, equation_ids, state) {
 
 sparse_select_simulation_index = function(index, spec, state,
                                           postsim = TRUE) {
-  if (isTRUE(postsim) || is.null(spec) ||
-      !length(spec$simulation_equation_candidates)) {
+  # Post-simulation formulas are evaluated lazily after the numerical solve.
+  # They must not expand the solve to include reporting equations.
+  if (is.null(spec) || !length(spec$simulation_equation_candidates)) {
     return(index)
   }
   if (!isTRUE(index$row_layout_ready)) {

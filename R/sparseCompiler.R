@@ -737,13 +737,26 @@ sparse_ref_global_position = function(ref, bindings, index) {
   as.integer(variable$global_start + local - 1L)
 }
 
+sparse_implicit_exogenous_zero = function(value, name, index) {
+  variable_id = index$variable_by_name[[tolower(name)]]
+  if (is.null(variable_id) ||
+      !isTRUE(index$variables[[variable_id]]$exogenous) ||
+      !anyNA(value)) {
+    return(value)
+  }
+  value[is.na(value)] = 0
+  value
+}
+
 sparse_eval_expr = function(expr, state, bindings, index) {
   if (is.null(expr)) return(NA_real_)
   if (is.name(expr)) {
     name = as.character(expr)
     if (!is.null(bindings[[name]])) return(bindings[[name]])
     if (!is.null(state) && !is.null(sparse_state_data(state)[[tolower(name)]])) {
-      return(sparse_state_data(state)[[tolower(name)]])
+      return(sparse_implicit_exogenous_zero(
+        sparse_state_data(state)[[tolower(name)]], name, index
+      ))
     }
     return(name)
   }
@@ -777,9 +790,15 @@ sparse_eval_expr = function(expr, state, bindings, index) {
     if (is.null(array)) {
       stop(sprintf("Data array %s is missing", ref$name), call. = FALSE)
     }
-    if (!length(ref$indices)) return(array)
+    if (!length(ref$indices)) {
+      return(sparse_implicit_exogenous_zero(array, ref$name, index))
+    }
     dims = dim(array)
-    if (is.null(dims)) return(as.numeric(array))
+    if (is.null(dims)) {
+      return(sparse_implicit_exogenous_zero(
+        as.numeric(array), ref$name, index
+      ))
+    }
     positions = integer(length(ref$indices))
     dim_names = dimnames(array)
     for (d in seq_along(ref$indices)) {
@@ -828,7 +847,9 @@ sparse_eval_expr = function(expr, state, bindings, index) {
       linear = linear + (positions[[d]] - 1L) * stride
       stride = stride * dims[[d]]
     }
-    return(as.numeric(array[[linear]]))
+    return(sparse_implicit_exogenous_zero(
+      as.numeric(array[[linear]]), ref$name, index
+    ))
   }
 
   if (op == "setpos" && length(expr) >= 2L) {
