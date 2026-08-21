@@ -346,7 +346,6 @@ sparse_exact_schur_build = function(
   regional_factors = vector("list", region_count)
   region_global = vector("list", region_count)
   global_region = vector("list", region_count)
-  global_position = which(external_ids == global_group)
   global_position = seq.int(
     sum(vapply(external_rows_by_group[seq_len(region_count)], length, integer(1))) + 1L,
     length.out = length(external_rows_by_group[[region_count + 1L]])
