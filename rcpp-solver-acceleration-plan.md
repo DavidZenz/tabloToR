@@ -1,268 +1,186 @@
-# Technical Plan: Accelerating tabloToR Sparse Solver with Native C++ (Rcpp)
+# Technical Plan: Accelerating the Sparse Solver with Native C++
 
-This document outlines the architectural plan for accelerating the sparse CGE solver in `tabloToR` using native C++ extensions via **Rcpp**, **BLAS/LAPACK**, and **OpenMP**. It also provides a formal comparison between the pre-fork legacy codebase and the current sparse architecture.
+## 1. Objective and constraints
 
----
+Accelerate the validated StructuredSchurFGMRES engine without changing the GEModel API, sparse numerical method, closure semantics, Euler stepping, or default residual tolerance. The implementation must preserve these invariants:
 
-## 1. Pre-Fork vs. Current Architecture: Comparative Assessment
+- Commodity blocks remain sparse throughout factorization and panel solves.
+- No dense representation of the full coefficient or solution system is built.
+- Every solve is checked against the full-system relative residual limit of 2e-7 before its solution is applied.
+- engine = "legacy" and the current R implementation remain available as correctness references and fallbacks.
+- Native buffers and factors are released between solves unless explicitly retained as reusable structural metadata.
 
-### 1.1 Pre-Fork Architecture (Commit `7e063c6`)
-The original codebase was a conceptual prototype designed for small pedagogical models:
-
-* **String Parsing Execution**: Variable states and updates were evaluated via text deparsing and string evaluation:
-  ```r
-  eval(parse(text = sprintf("%s=%s;", names(solution), solution)))
-  ```
-  On models with $>10^4$ variables, this causes extreme memory overhead, string allocation thrashing, and interpreter bottlenecks.
-* **Unreduced Monolithic Solve**: The entire system was passed directly to `SparseM::solve(bigMatrix, exoVector)`. For GTAP-scale models ($10^6 - 10^7$ nonzeros), sparse direct LU factorization without block elimination leads to catastrophic fill-in and out-of-memory crashes.
-* **Lack of State Isolation & Closure Control**: Closures were not cleanly decoupled from model data; unshocked exogenous variables caused `NA` propagation throughout equations.
-* **Extrapolation Inaccuracies**: Substep compounding and extrapolation formulas were hardcoded without support for change vs. percentage-change variable masking.
-
-### 1.2 Current Architecture (Master Branch)
-The current architecture is a production-grade sparse CGE engine:
-
-* **Integer-Indexed Compilation**: Equations, formulas, and updates are compiled into integer indices ([`sparseCompiler.R`](R/sparseCompiler.R)) without string parsing in inner loops.
-* **Exact Multi-Stage Elimination**: Native C++ (`src/sparse-elimination.cpp`) exports `tabloToR_eliminate_blocks` and `tabloToR_reconstruct_blocks` to eliminate production, bilateral trade, and endowment blocks in seconds.
-* **Matrix-Free Regional Schur Complement**: Decomposes large multi-region models into commodity blocks (local), external regional systems, and a global arrowhead block ([`sparseSchurComplement.R`](R/sparseSchurComplement.R)).
-* **Multi-Backend Support**: Seamless switching between `Matrix`, `SuiteSparse` (KLU/UMFPACK), `SparseM`, `StructuredSchur`, and `StructuredSchurFGMRES`.
-* **Robust Test Coverage**: 90 unit and regression tests in [`test-sparse-core.R`](tests/testthat/test-sparse-core.R).
-
-> [!NOTE]
-> **Verdict**: The current version is significantly superior in correctness, memory efficiency, numerical stability, and scalability. The pre-fork legacy code cannot run models beyond small fixtures and should **not** be reverted to. All performance optimizations should build upon the current modular sparse architecture.
-
----
-
-## 2. Solver Profiling & Hotspot Analysis
-
-Measured single-step runtime for a **GTAP 12a** simulation from a completed solver run (`StructuredSchurFGMRES`, 1 Euler step, 26,781,398 equations, 80,306,305 nonzeros):
-
-| Phase | Measured Time | % of Step |
-| :--- | ---: | ---: |
-| Schur assembly: commodity LU + panel corrections | ~1,267 s | ~86% |
-| Sparse matrix emission (`sparse_emit_system_vectorized`) | 50.4 s | 3.4% |
-| State updates + formula evaluation | 45.5 s | 3.1% |
-| C++ block elimination + partition + BTF + reconstruction | ~60 s | 4.1% |
-| FGMRES Krylov iterations | **< 5 s** | **< 0.4%** |
-| **Total step** | **~1,469 s (~24.5 min)** | 100% |
-
-> The solver reports `factor_solve_seconds = 1312.7 s`, which covers both Schur assembly and the FGMRES solve. The FGMRES result RDS shows `reduced_iterations = 1` and `elapsed_seconds = 1115 s` for a similar run — the Krylov loop runs a **single iteration** before converging, meaning it contributes negligible time. The arrowhead preconditioner is numerically close to an exact solve of the reduced system.
-
-```mermaid
-pie title Measured Single-Step Solve Time (1,469 s total)
-    "Schur Assembly: LU factorization + 115,570 panel corrections (R)" : 86
-    "Sparse Matrix Emission (R)" : 3
-    "State Updates & Formulas (R)" : 3
-    "C++ Block Elimination + Partition + Reconstruction" : 4
-    "FGMRES Krylov (1 iteration)" : 1
-    "Other" : 3
-```
-
-### Primary Bottlenecks in R
-
-**System structure (GTAP 12a reduced system):**
-- 65 commodity blocks, each ~2,469 rows/cols (range 9–3,818), ~134,580 nnz per block (~2% sparse)
-- 163 regional blocks in the external Schur system
-- External Schur dimension: 113,783 rows/cols
-- Panel size: 64 columns per panel → **1,778 panels per commodity, 115,570 total panel iterations**
-- Each panel iteration: 1 sparse triangular solve (`Matrix::solve`) + 1 sparse×dense multiply + 3 dense correction accumulations
-
-The dominant cost (~11 ms per panel × 115,570 panels = 1,270 s) decomposes as:
-1. **R/C boundary crossing**: `Matrix::solve(factor, rhs_panel)` dispatches through R's S4 method system on every panel. `as.matrix()` coercions of sparse submatrix slices allocate fresh dense matrices 115,570 times per step.
-2. **GC pressure from intermediate allocations**: Each panel allocates a `2469×64` dense result, plus correction matrices for each region batch. These are immediately discarded, triggering frequent garbage collection cycles that stall the compute threads.
-3. **No batching across commodity blocks**: All 65 commodity factorizations run sequentially in R. They are fully independent — no shared writes between blocks — making them a natural OpenMP target.
-
-**FGMRES** is not a bottleneck: 1 Krylov iteration is sufficient because the arrowhead preconditioner (`sparse_exact_schur_apply_preconditioner`) is a near-exact block-factorization of the reduced system. The planned C++ FGMRES module still eliminates the R function-call round-trip per preconditioner application, which matters if future model configurations require more iterations.
-
-### Memory Profile
-
-| Measurement | Value |
-| :--- | ---: |
-| Peak RSS before solve | 3.1 GB |
-| Peak RSS after solve (1 step) | 16.5 GB |
-| Solver-tracked peak allocation | 12.1 GB |
-| Intermediate R allocation total (115,570 panels × ~1.3 MB each) | ~147 GB allocated + GC'd |
-
-The 13.4 GB RSS delta is dominated by the 163 dense regional Schur blocks and the 65 sparse LU factor objects stored as R S4 `sparseLU` structures in the R heap. The ~147 GB of total GC'd allocations (panel intermediates) do not stay resident simultaneously, but they load the GC continuously throughout assembly.
-
----
-
-## 3. Infrastructure Prerequisites
-
-The existing C++ foundation (`src/sparse-elimination.cpp`) links only against Rcpp. Before any new modules can use BLAS/LAPACK or OpenMP, two files must be created/updated:
-
-### 3.1 `src/Makevars`
-```makefile
-# Link against R's bundled BLAS and LAPACK (no additional packages required)
-PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
-
-# OpenMP (conditional: gracefully absent on macOS without libomp)
-PKG_CXXFLAGS = $(SHLIB_OPENMP_CXXFLAGS)
-PKG_LIBS    += $(SHLIB_OPENMP_CXXFLAGS)
-```
-
-### 3.2 `DESCRIPTION` update
-Add `RcppEigen` to `LinkingTo` only if Eigen solvers are used in FGMRES; BLAS/LAPACK do not require it. Minimum change:
-```
-Imports:
-    Matrix,
-    Rcpp,
-    SparseM,
-    methods
-LinkingTo:
-    Rcpp
-SystemRequirements: C++17
-```
-`LAPACK_LIBS` and `BLAS_LIBS` are resolved by `R CMD SHLIB` automatically via `$(LAPACK_LIBS)` — no extra `Imports` entry needed.
-
----
-
-## 4. Native C++ Acceleration Architecture
-
-```mermaid
-flowchart TD
-    subgraph R_Layer["R Layer (Orchestration & User API)"]
-        A[GEModel$solveModel] --> B[sparse_solve_one_step]
-        B --> C[sparse_exact_structured_solve]
-    end
-
-    subgraph Native_Layer["Native C++ Engine (src/)"]
-        C --> D["tabloToR_eliminate_blocks\n(Existing — sparse-elimination.cpp)"]
-        D --> E["tabloToR_schur_build\n(New — sparse-schur-build.cpp)\nLAPACK dgetrf · BLAS dgemm"]
-        E --> F["tabloToR_schur_fgmres\n(New — sparse-schur-fgmres.cpp)\nArnoldi · Givens · preconditioner"]
-        F --> H["tabloToR_reconstruct_blocks\n(Existing — sparse-elimination.cpp)"]
-    end
-
-    subgraph Hardware["Hardware Parallelism (Phase 3)"]
-        E -. "#pragma omp parallel for" .-> P1[Thread 1: Commodity Blocks 1..k]
-        E -. "#pragma omp parallel for" .-> P2[Thread 2: Commodity Blocks k+1..2k]
-        E -. "#pragma omp parallel for" .-> PN[Thread N: Commodity Blocks ...]
-    end
-```
-
-> The preconditioner (`sparse_exact_schur_apply_preconditioner`) is a callback invoked **inside** the FGMRES Krylov loop, not after it. In the native implementation it will be a C++ function pointer passed into `tabloToR_schur_fgmres`, eliminating the R function-call round-trip per iteration.
-
----
-
-## 5. Detailed Implementation Modules
-
-Ordered by expected performance impact (highest first).
-
-### Module 1: Native Schur Assembly — LU Factorization & Panel Corrections
-* **File**: `src/sparse-schur-build.cpp`
-* **Replaces**: `sparse_exact_schur_build` in `R/sparseSchurComplement.R`
-
-**Sub-task 1a — Commodity block LU** (currently line 315):
-```r
-Matrix::lu(Matrix::drop0(block), order = lu_order)    # R S4 dispatch
-```
-→ Replace with LAPACK `dgetrf` operating on a preallocated contiguous `double[]` array. Store the resulting LU factors and pivot array in a plain C++ struct. No R object allocation.
-
-**Sub-task 1b — Panel back-solves** (currently `sparse_exact_schur_solve_factor` → `Matrix::solve`):
-```r
-Matrix::solve(factor, rhs_panel)                       # R S4 dispatch per panel
-```
-→ Replace with LAPACK `dgetrs` called directly on the stored LU factors. `rhs_panel` is a dense matrix; `dgetrs` solves all panel columns in one call.
+Dense LAPACK LU is not suitable for the commodity blocks. A typical block is approximately 2469 x 2469 but only about 2% structurally dense. Densifying one such block requires roughly 46.5 MiB and about 10 billion factorization operations. Dense LAPACK is reserved for the genuinely dense regional and global Schur blocks.
 
-**Sub-task 1c — Panel correction accumulation** (currently lines 417–439):
-```r
-left[[local_id]][rows, ] %*% solution_panel[, hits]   # R matrix multiply
-```
-`left[[local_id]]` is a sparse CSC submatrix but is immediately sliced to `rows` and converted to dense. Replace the R `%*%` with a BLAS Level 3 `dgemm` call on the pre-extracted dense `L_c` and `R_c` blocks. The Schur update $S \mathrel{-}= L_c \cdot (A_c^{-1} R_c)$ is a fused `dgemm` with `alpha = -1`.
+## 2. Measured baseline
 
-**Interface to R**: `tabloToR_schur_build` receives the sparse `A` matrix (as CSC integers/doubles), group membership vectors, and control parameters; returns a list with the assembled Schur blocks as standard R matrices (so the existing solve/preconditioner dispatch logic can consume them without change).
+The completed GTAP 12a benchmark used 163 regions, 65 commodities, 26,781,398 equations, 80,306,307 maximum nonzeros, iter = 3, steps = c(1, 3), and postsim = TRUE.
 
----
+| Measurement | Result |
+| --- | ---: |
+| Full solve time | 18,608 s (5h 10m) |
+| Sparse matrix emission | 622 s total; 51.9 s/solve |
+| Factorization and structured solve | 17,027 s total; 1,419 s/solve |
+| State/formula updates | 520 s total; 43.3 s/solve |
+| Peak RSS | 29.6 GiB |
+| Dense fallback | No |
 
-### Module 2: Native Flexible GMRES & Preconditioner
-* **File**: `src/sparse-schur-fgmres.cpp`
-* **Replaces**: `sparse_schur_fgmres` in `R/sparseSchur.R` for the `sparseExactSchurSystem` path
+The factorization/Schur phase accounts for more than 90% of measured solve time. A representative reduced solve used 65 sparse commodity blocks, 163 regional blocks, an external dimension of 113,783, and a global block of size 9. FGMRES converged in one reduced iteration; therefore the Krylov loop is not currently a meaningful optimization target.
 
-**Key changes**:
-* Preallocate Arnoldi basis $V \in \mathbb{R}^{n \times (m+1)}$ and search directions $Z \in \mathbb{R}^{n \times m}$ as flat `double[]` arrays (column-major, BLAS-compatible). Currently `V = list()` and `Z = list()` are R lists grown element by element.
-* Modified Gram-Schmidt inner products via BLAS `ddot`; vector updates via BLAS `daxpy`. Currently R vectorized arithmetic but with per-column R dispatch.
-* Givens rotations and the upper Hessenberg $H$ in stack-allocated arrays.
-* The preconditioner (arrowhead one-sweep: solve `region_count` independent LU blocks, then a small global correction) implemented as a C++ function called from within the Krylov loop — no R round-trip per iteration.
-* True-residual recompute (`apply_operator`) still calls back into R (it applies the full Schur complement, which requires the R-side factor lists). This is acceptable: it fires every `true_residual_frequency` iterations, not every Arnoldi step.
+## 3. Current hotspot
 
----
+sparse_exact_schur_build() in R/sparseSchurComplement.R repeatedly:
 
-### Module 3: OpenMP Parallelism for Commodity Blocks
-* **File**: modification to `src/sparse-schur-build.cpp`
-* **Prerequisite**: Module 1 complete and `src/Makevars` with `SHLIB_OPENMP_CXXFLAGS`
+1. extracts a sparse right-hand panel and converts it to a dense matrix;
+2. dispatches Matrix::solve(sparseLU, panel) through R's S4 machinery;
+3. multiplies sparse left blocks by the dense solution panel; and
+4. allocates dense corrections that are immediately accumulated and discarded.
 
-The `local_count` commodity blocks are fully independent — no shared write between iterations of the loop over `id` in Sub-tasks 1a/1b. The panel correction accumulation (1c) writes to per-region output blocks; batch grouping (already in the R code via `region_batch_size`) maps cleanly to per-thread output buffers that are summed after the parallel section.
+With the default 64-column panel, the GTAP structure causes roughly 115,000 panel iterations per solve. Some panels are structurally zero but are only identified after sparse slicing and dense allocation. The first optimization must reduce and instrument this work rather than replacing a sparse algorithm with a dense one.
 
-```cpp
-#pragma omp parallel for schedule(dynamic)
-for (int id = 0; id < local_count; ++id) {
-    // dgetrf on commodity block id
-    // dgetrs for all panels touching block id
-    // dgemm accumulation into thread-local correction buffers
-}
-// single-threaded: reduce thread-local buffers into Schur blocks
-```
+## 4. Phase 0: instrumentation and no-code tuning
 
-**Note**: GTAP has O(57) commodity groups. With 8 cores, each thread handles ~7 independent factorizations, each of which is itself a `dgemm` over potentially hundreds of panel columns. Expected speedup is near-linear on commodity count up to the thread count.
+Add aggregate diagnostics to sparse_exact_schur_build():
 
----
+- local and regional factorization time;
+- panels inspected, zero panels skipped, and panels solved;
+- right-panel extraction/coercion time;
+- triangular-solve time;
+- sparse-dense multiplication and accumulation time;
+- columns solved and peak panel-buffer size; and
+- regional/global correction time.
 
-### Module 4: Native Triplet Assembly & State Updates
-* **File**: `src/sparse-matrix-emit.cpp`
-* **Replaces**: the R-side coefficient emission loop in `sparseCompiler.R` / `sparseSolver.R`
-* **Priority**: Lowest — emission is ~5% of step time and the existing code is already vectorized. Defer until Modules 1–3 are verified.
+Do not emit one log record per panel. Store counters and phase totals in lastDiagnostics and the benchmark CSV.
 
-Target functionality:
-* Multi-index domain stride calculations and bounds checking in C++.
-* In-place CSC triplet accumulation with direct output as `dgCMatrix` slots (`i`, `p`, `x`) — no intermediate R list allocation.
+Benchmark schur_panel_size = 64, 256, 512, 1024 using the same saved reduced system or one-step public API run. Record wall time, peak RSS, and full true residual. Select the largest panel that improves time without materially increasing peak memory. Repeat a smaller sweep of schur_region_batch_size only after panel behavior is understood.
 
----
+This phase establishes how much time is S4 dispatch, sparse slicing, numeric factor solving, and multiplication. C++ work starts only from these measured results.
 
-## 6. Phased Execution Roadmap & Expected Gains
+## 5. Phase 1: native sparse multi-RHS solve kernel
 
-Projections anchored to the measured baseline of **1,469 s per Euler step**. The assembly phase (`factor_solve_seconds = 1,313 s`) is 89.4% of total; the remaining 156 s (emission + updates + C++ elimination) is largely irreducible without further work.
+Implement a small, serial Rcpp kernel before porting the full builder:
 
-### Time projections
+    tabloToR_sparse_lu_solve(factor, rhs)
 
-| Phase | Milestone | Mechanism | Assembly speedup | **Projected step time** |
-| :--- | :--- | :--- | :--- | :--- |
-| **Phase 0** | `src/Makevars` + DESCRIPTION; verify BLAS linkage | Infrastructure | 1× (prerequisite) | 1,469 s (baseline) |
-| **Phase 1** | Module 1: native LU + batched panel solves, no GC | Eliminate R S4 dispatch + allocation overhead | ~1.3–1.5× | **~980–1,040 s (~17 min)** |
-| **Phase 2** | Module 2: native FGMRES + C++ preconditioner | Eliminate R round-trips per Krylov iter | ~1.0–1.1× additional | ~930–1,000 s (marginal gain at 1 iter) |
-| **Phase 3** | Module 3: OpenMP over 65 commodity blocks | Parallel LU + panel solves, 8 cores | ~7–8× on parallelizable work | **~280–360 s (~5 min)** |
-| **Phase 4** | Module 4: native triplet emission | Eliminate `sparse_aggregate_triplets` / `rowsum` R loops | 3–5× on emission | ~240–320 s (~4–5 min) |
+The kernel consumes Matrix's existing sparseLU representation:
 
-**Derivation of Phase 3 projection:**
-The 65 commodity blocks are fully independent (verified: no shared write between blocks in the panel correction loop). With 8 cores: $t_{\text{parallel}} = \frac{1313}{8} + 156 = 321$ s. Accounting for synchronization overhead and the serial preconditioner build (~30–60 s): ~280–360 s.
+- sparse triangular L and U dtCMatrix slots;
+- row and column permutations p and q; and
+- a dense, column-major multi-RHS panel.
 
-**Why Phase 2 has marginal gain at current GTAP configuration:**
-FGMRES converges in exactly 1 iteration (measured: `reduced_iterations = 1`). Each R-side Krylov step at 1 iteration costs < 5 s. If a future closure or shock configuration causes convergence to require 10–50 iterations, Phase 2 becomes critical (each iteration crosses the R/C boundary for preconditioner + operator apply). Phase 2 should be implemented as insurance, not for GTAP12a throughput.
+It performs sparse forward/back substitution directly over the CSC slots and returns the same shape as Matrix::solve(). This preserves Matrix's trusted sparse factorization and ordering while removing repeated S4 method dispatch. Permutation handling must be derived from the factor contract and verified by tests, not inferred from one matrix.
 
-### Memory projections
+Required kernel tests compare against Matrix::solve() for:
 
-| Scenario | Peak RSS (after solve) | Notes |
-| :--- | ---: | :--- |
-| Current (R baseline) | 16.5 GB | 65 R S4 `sparseLU` objects + panel GC pressure |
-| Phase 1 only (native assembly) | ~11–13 GB | UMFPACK factors stored as C++ structs; panel buffer pool replaces 115,570 R allocations |
-| Phase 1 + Phase 3 (OpenMP) | ~12–14 GB | Thread-local panel buffers add per-thread overhead (~100–200 MB/core) |
-| Phase 4 (native emission) | ~10–12 GB | Eliminates intermediate triplet aggregation lists in R heap |
+- one and many right-hand sides;
+- random nonsymmetric sparse matrices and all supported LU orderings;
+- nontrivial row and column permutations;
+- zero columns, ill-scaled but nonsingular systems, and nonfinite rejection; and
+- residual and maximum absolute solution error below 1e-10 on fixtures.
 
-**Derivation:**
-- Each R `sparseLU` S4 object wraps 6–8 R vectors (L, U indices, values, pivots). 65 objects × median block size 2,469 × ~3× fill-in factor × 8 bytes ≈ 2–4 GB in R heap, reducible to the same data in plain C++ arrays with no R object overhead.
-- The 115,570 panel allocations (each `2,469×64` doubles = 1.3 MB) are GC'd during assembly but stress the GC. Replacing with a per-commodity pre-allocated pool eliminates both the allocation cost and the GC stall cycles.
-- The dense Schur complement blocks (163 regional + global: 113,783² × density × 8 bytes) remain resident regardless — these are not affected by the C++ port.
+This drop-in kernel is a correctness and profiling milestone. It is not the final interface because one native call per panel would still leave excessive boundary crossings and allocations.
 
-> Phase ordering rationale: Phase 1 alone brings a meaningful single-thread gain. Phase 3 (OpenMP) is the largest lever — it can deliver a 5× wall-clock reduction assuming 8 available cores. Phase 2 is low-priority for GTAP throughput but important for correctness/robustness. Phase 4 is polish.
+## 6. Phase 2: fused serial Schur accumulation
 
----
+Implement a native batch kernel such as:
 
-## 7. Verification and Regression Strategy
+    tabloToR_schur_accumulate_batch(
+      factors, left_blocks, right_blocks, target_metadata,
+      panel_size, output_layout
+    )
 
-Every phase must pass all three gates before merging:
+For one regional batch, the kernel must:
 
-1. **Unit regression**: All 90 testthat tests in [`tests/testthat/test-sparse-core.R`](tests/testthat/test-sparse-core.R) must pass. These exercise the Schur solver, FGMRES convergence, BTF block triangular solve, and Euler extrapolation at fixture scale.
+1. read CSC right-block columns directly without creating sparse slices;
+2. detect structurally zero panels before allocating or clearing dense data;
+3. fill a reusable dense RHS buffer;
+4. solve it with the native sparse triangular kernel;
+5. multiply sparse left blocks by the dense panel without densifying the left block; and
+6. accumulate directly into preallocated regional/global correction buffers.
 
-2. **Synthetic Schur benchmark**: [`benchmarks/sparse-schur-prototype.R`](benchmarks/sparse-schur-prototype.R) contains a deterministic 6×6 system with known solution. Run `run_sparse_schur_synthetic_test()` — required: `solution_error < 1e-8` and `true_relative_residual < 1e-8`.
+One native call should process a complete batch, reducing approximately 115,000 R-level panel calls to about 21 batch calls. Buffer capacity is reused across commodity blocks and panels. The R layer continues to orchestrate scaling, partition validation, factor creation, residual checks, and fallback.
 
-3. **Residual gate**: For any GTAP-scale run, verify true relative $L_2$ residual $\|Ax - b\|_2 / \|b\|_2 \le 2\times 10^{-7}$ after the native Schur solve. The existing `true_residual_frequency` mechanism in `sparse_schur_fgmres` already computes this — the native implementation must preserve it.
+Cache structural metadata across Euler solves when dimensions and qualifiers are unchanged:
 
-4. **Numeric consistency**: Compare native C++ Schur solution against the baseline R `StructuredSchur` backend on [`benchmarks/benchmark_gtap12a.R`](benchmarks/benchmark_gtap12a.R). Max absolute difference in solution vector must be below $10^{-6}$ (floating-point equivalence, not just residual equivalence).
+- local row/column membership and external offsets;
+- active right columns and left-row incidence;
+- panel schedules and target mappings;
+- sparse-factor permutations or symbolic analysis where supported; and
+- reusable output and workspace capacities.
+
+Numeric factors must be refreshed when coefficients change. Structural caching must be invalidated by closure or set-dimension changes.
+
+## 7. Phase 3: bounded parallel execution
+
+Add OpenMP only after the serial native path is numerically equivalent and faster.
+
+Parallelize work by regional batch because batches own disjoint regional, region-global, and global-region outputs. Compute the shared global-global correction separately. Commodity factors and sparse coupling blocks are read-only inside the parallel region.
+
+Rules for the parallel implementation:
+
+- extract all R object slots and allocate buffers before entering OpenMP;
+- do not call the R API, allocate R objects, raise R errors, or check interrupts from worker threads;
+- give each worker only one bounded panel/batch workspace, never a complete private copy of the Schur output;
+- capture worker errors in native status objects and raise them on the main thread;
+- prevent nested OpenMP/BLAS oversubscription; and
+- expose a thread-count option with a serial default until validated.
+
+Benchmark 1, 2, 4, and 8 threads. Treat scaling as empirical; memory bandwidth, sparse triangular dependencies, and dense BLAS work make near-linear speedup unlikely. A 2-4x parallel improvement is a planning target, not a guarantee.
+
+## 8. Phase 4: dense regional factor kernels
+
+After native Schur accumulation is stable, use LAPACK dgetrf/dgetrs for the approximately 698 x 698 dense regional blocks and the small global block. These matrices are genuinely dense, so LAPACK is methodologically appropriate.
+
+Keep factor storage in RAII-managed native objects with deterministic cleanup. If external pointers are exposed to R, provide finalizers and define how cached factors are rebuilt after serialization. Preserve an R factorization fallback for unsupported platforms.
+
+## 9. Deferred work
+
+### Native FGMRES
+
+Defer until profiling shows materially more than one Krylov iteration or at least 10% of step time. Porting Arnoldi and the preconditioner now would add substantial complexity for negligible GTAP 12a benefit.
+
+### Native coefficient emission and updates
+
+Emission and updates currently consume about six percent of solve time. Revisit them only after Schur acceleration changes the profile. Any native emitter must aggregate duplicate triplets, preserve qualifiers, and create valid sorted CSC slots without attaching full labels.
+
+### Direct SuiteSparse integration
+
+Do not link against private Matrix-package symbols. A direct UMFPACK/KLU backend is optional only if configure-time detection, Windows/macOS behavior, cleanup, and a portable fallback are specified. RcppEigen is likewise adopted only after representative sparse-factor benchmarks demonstrate stability and speed.
+
+## 10. Build infrastructure
+
+Phase 1 needs only the existing Rcpp dependency. Add BLAS/LAPACK linkage when Phase 4 begins:
+
+    PKG_LIBS = $(LAPACK_LIBS) $(BLAS_LIBS) $(FLIBS)
+
+For optional OpenMP, use guarded SHLIB_OPENMP_CXXFLAGS in src/Makevars and provide an appropriate src/Makevars.win. Set CXX_STD = CXX17 only if the implementation actually requires C++17; SystemRequirements alone does not select the compiler standard.
+
+## 11. Verification gates
+
+Every phase must pass before merging:
+
+1. All 94 package tests and R CMD check.
+2. New sparse-LU multi-RHS tests against Matrix::solve().
+3. Block-by-block equality for regional, region-global, global-region, and global-global Schur outputs between R and C++.
+4. Synthetic structured-solver solution error and true relative residual below 1e-8; the fixture must be tracked in the repository.
+5. One-step GTAP A/B comparison before any full run:
+   - full relative residual at most 2e-7;
+   - maximum absolute native-vs-R solution difference at most 1e-6;
+   - no nonfinite solution or post-simulation values; and
+   - no dense fallback.
+6. Thread-count comparison showing equivalent results for 1, 2, 4, and 8 threads within the same tolerances.
+7. Only after those gates pass, repeat the full iter = 3, steps = c(1, 3), postsim = TRUE benchmark.
+
+Extend benchmark_gtap12a.R to record the maximum full-system residual, selected-output finiteness, panel counters, native thread count, and native/R backend identity. Benchmark artifacts must be sufficient to audit correctness without relying on console logs.
+
+## 12. Performance acceptance criteria
+
+Do not merge a phase based on projected gains. Require measured improvement on the same machine and input:
+
+- Phase 0 selects a panel configuration with no residual or memory regression.
+- Phase 1 must outperform Matrix::solve() on representative multi-RHS block kernels while matching its result.
+- Phase 2 must reduce one-step end-to-end time by at least 20% without raising peak RSS by more than 10%.
+- Phase 3 must demonstrate useful scaling at four threads and remain within the configured memory budget.
+- The final full run must remain below the current 29.6 GiB peak and improve total wall time materially while preserving all numerical gates.
+
+An aspirational outcome is 5-10 minutes per solve on an 8-core target machine, but implementation order and merge decisions are driven by measurements, not that estimate.
