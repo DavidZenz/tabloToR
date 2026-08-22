@@ -174,7 +174,7 @@ It eliminates commodity blocks exactly, preconditions the external system with c
 The C++ acceleration remains opt-in while the R implementation is the correctness reference. It preserves the exact matrix-free operator and uses native sparse triangular solves, fused Schur accumulation, and LAPACK only for dense regional and global factors:
 
 ```r
-options(tabloToR.sparse.schur_cpp_threads = 1L)
+options(tabloToR.sparse.schur_cpp_threads = 4L)
 model$solveModel(
   engine = "sparse",
   backend = "StructuredSchurFGMRESCpp",
@@ -184,7 +184,7 @@ model$solveModel(
 )
 ```
 
-The native backend performs a registered-symbol, ABI, Matrix-factor, and thread-capability check before constructing the coefficient matrix. An unavailable or incompatible native backend fails clearly and never substitutes the R solver. Request more than one thread only when diagnostics report `openmp_compiled = TRUE`.
+The native backend performs a registered-symbol, ABI, Matrix-factor, and thread-capability check before constructing the coefficient matrix. An unavailable or incompatible native backend fails clearly and never substitutes the R solver. The option defaults to `1L`; request more than one thread only when diagnostics report `openmp_compiled = TRUE`. On the GTAP 12a benchmark machine, panel size 64 and four threads retained most of the available parallel speedup; see [`benchmarks/GTAP12A_CPP_RESULTS.md`](benchmarks/GTAP12A_CPP_RESULTS.md).
 
 For reproducible A/B measurements, use `benchmarks/run_gtap12a_ab.R`. It launches fresh R processes, validates input/configuration signatures, compares solutions and residuals, and exits nonzero when a numerical, memory, or performance gate fails.
 
@@ -195,6 +195,9 @@ Rscript benchmarks/benchmark_gtap12a.R \
   --data-dir="/path/to/gtap12a" \
   --tablo="/path/to/gtapv7.tab" \
   --closure-file="/path/to/closure.rds" \
+  --backend=StructuredSchurFGMRESCpp \
+  --threads=4 \
+  --panel-size=64 \
   --steps="1,3"
 ```
 
