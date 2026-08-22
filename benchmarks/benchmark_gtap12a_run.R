@@ -58,7 +58,7 @@ find_input <- function(candidates, label) {
 sets_path <- find_input(c("sets.har", "gsdgset.har"), "GTAP sets")
 data_path <- find_input(c("basedata.har", "gsdgdat.har"), "GTAP data")
 parameter_path <- find_input(c("default.prm", "gsdgpar.har"), "GTAP parameters")
-pair_config <- list(
+model_config <- list(
   tablo = benchmark_hash_file(tablo_path),
   sets = benchmark_hash_file(sets_path),
   data = benchmark_hash_file(data_path),
@@ -72,19 +72,23 @@ pair_config <- list(
   matrix_version = as.character(utils::packageVersion("Matrix")),
   rcpp_version = as.character(utils::packageVersion("Rcpp")),
   iter = iter, steps = steps, postsim = postsim,
-  panel_size = panel_size, region_batch_size = batch_size,
-  memory_budget = memory_budget,
   platform = R.version$platform, cpu = benchmark_cpu(),
   ram = benchmark_physical_ram(), blas = benchmark_blas()
 )
+model_signature <- benchmark_signature(model_config)
+pair_config <- c(model_config, list(
+  panel_size = panel_size, region_batch_size = batch_size,
+  memory_budget = memory_budget
+))
 pair_signature <- benchmark_signature(pair_config)
 run_signature <- benchmark_signature(c(
   pair_config, list(backend = backend, threads = threads)
 ))
 metadata <- list(
-  schema_version = 2L, run_id = run_id, repetition = repetition,
+  schema_version = 3L, run_id = run_id, repetition = repetition,
   warmup = warmup, timestamp_utc = format(Sys.time(), tz = "UTC", usetz = TRUE),
   run_signature = run_signature, pair_signature = pair_signature,
+  model_signature = model_signature,
   git_commit = tryCatch(system2("git", c("rev-parse", "HEAD"), stdout = TRUE)[1L],
                         error = function(error) NA_character_),
   package_version = pair_config$package_version,
@@ -146,9 +150,10 @@ tryCatch({
   if (!is.null(solution_output)) {
     dir.create(dirname(solution_output), recursive = TRUE, showWarnings = FALSE)
     saveRDS(list(
-      schema_version = 1L, run_id = run_id,
+      schema_version = 2L, run_id = run_id,
       pair_signature = pair_signature, run_signature = run_signature,
-      backend = backend, solution = unname(model$solution),
+      model_signature = model_signature,
+      backend = backend, threads = threads, solution = unname(model$solution),
       selected_outputs = model$compactOutput
     ), solution_output, version = 3L)
   }

@@ -52,7 +52,7 @@ run_child <- function(backend, repetition, warmup, order) {
   )
   log <- file.path(output_dir, paste0(run_id, ".log"))
   status <- system2(file.path(R.home("bin"), "Rscript"),
-                    c("--vanilla", child_args), stdout = log, stderr = log)
+                    shQuote(c("--vanilla", child_args)), stdout = log, stderr = log)
   if (!identical(status, 0L)) {
     stop(sprintf("Benchmark child %s failed; see %s", run_id, log),
          call. = FALSE)
@@ -75,5 +75,5 @@ gate_args <- c(
   paste0("--maximum-difference=", benchmark_get_arg(args, "--maximum-difference", "1e-6"))
 )
 status <- system2(file.path(R.home("bin"), "Rscript"),
-                  c("--vanilla", gate_args))
+                  shQuote(c("--vanilla", gate_args)))
 if (!identical(status, 0L)) stop("A/B gate failed", call. = FALSE)
