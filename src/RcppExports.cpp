@@ -10,6 +10,39 @@ Rcpp::Rostream<true>&  Rcpp::Rcout = Rcpp::Rcpp_cout_get();
 Rcpp::Rostream<false>& Rcpp::Rcerr = Rcpp::Rcpp_cerr_get();
 #endif
 
+// tabloToR_dense_lu_factor
+SEXP tabloToR_dense_lu_factor(Rcpp::NumericMatrix matrix);
+RcppExport SEXP _tabloToR_tabloToR_dense_lu_factor(SEXP matrixSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type matrix(matrixSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_dense_lu_factor(matrix));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_dense_lu_solve
+SEXP tabloToR_dense_lu_solve(SEXP pointer_sexp, SEXP rhs_sexp);
+RcppExport SEXP _tabloToR_tabloToR_dense_lu_solve(SEXP pointer_sexpSEXP, SEXP rhs_sexpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type pointer_sexp(pointer_sexpSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type rhs_sexp(rhs_sexpSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_dense_lu_solve(pointer_sexp, rhs_sexp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_dense_lu_release
+void tabloToR_dense_lu_release(SEXP pointer_sexp);
+RcppExport SEXP _tabloToR_tabloToR_dense_lu_release(SEXP pointer_sexpSEXP) {
+BEGIN_RCPP
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type pointer_sexp(pointer_sexpSEXP);
+    tabloToR_dense_lu_release(pointer_sexp);
+    return R_NilValue;
+END_RCPP
+}
 // tabloToR_eliminate_blocks
 Rcpp::List tabloToR_eliminate_blocks(SEXP matrix_sexp, Rcpp::NumericVector rhs, Rcpp::IntegerVector row_group, Rcpp::IntegerVector column_group, int n_groups, double pivot_tolerance);
 RcppExport SEXP _tabloToR_tabloToR_eliminate_blocks(SEXP matrix_sexpSEXP, SEXP rhsSEXP, SEXP row_groupSEXP, SEXP column_groupSEXP, SEXP n_groupsSEXP, SEXP pivot_toleranceSEXP) {
@@ -43,10 +76,107 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// tabloToR_schur_cpp_capabilities
+Rcpp::List tabloToR_schur_cpp_capabilities();
+RcppExport SEXP _tabloToR_tabloToR_schur_cpp_capabilities() {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    rcpp_result_gen = Rcpp::wrap(tabloToR_schur_cpp_capabilities());
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_sparse_lu_solve
+SEXP tabloToR_sparse_lu_solve(SEXP factor_sexp, SEXP rhs_sexp);
+RcppExport SEXP _tabloToR_tabloToR_sparse_lu_solve(SEXP factor_sexpSEXP, SEXP rhs_sexpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type factor_sexp(factor_sexpSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type rhs_sexp(rhs_sexpSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_sparse_lu_solve(factor_sexp, rhs_sexp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_sparse_pattern_hash
+Rcpp::CharacterVector tabloToR_sparse_pattern_hash(SEXP matrix_sexp);
+RcppExport SEXP _tabloToR_tabloToR_sparse_pattern_hash(SEXP matrix_sexpSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< SEXP >::type matrix_sexp(matrix_sexpSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_sparse_pattern_hash(matrix_sexp));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_schur_accumulate_batch_parallel
+Rcpp::List tabloToR_schur_accumulate_batch_parallel(Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks, SEXP direct_external_sexp, Rcpp::List regional_positions_sexp, Rcpp::IntegerVector global_positions_sexp, Rcpp::IntegerVector batch_regions_sexp, int panel_size, int threads);
+RcppExport SEXP _tabloToR_tabloToR_schur_accumulate_batch_parallel(SEXP factorsSEXP, SEXP left_blocksSEXP, SEXP right_blocksSEXP, SEXP direct_external_sexpSEXP, SEXP regional_positions_sexpSEXP, SEXP global_positions_sexpSEXP, SEXP batch_regions_sexpSEXP, SEXP panel_sizeSEXP, SEXP threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type factors(factorsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type left_blocks(left_blocksSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type right_blocks(right_blocksSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type direct_external_sexp(direct_external_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type regional_positions_sexp(regional_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type global_positions_sexp(global_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type batch_regions_sexp(batch_regions_sexpSEXP);
+    Rcpp::traits::input_parameter< int >::type panel_size(panel_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_schur_accumulate_batch_parallel(factors, left_blocks, right_blocks, direct_external_sexp, regional_positions_sexp, global_positions_sexp, batch_regions_sexp, panel_size, threads));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_schur_accumulate_global
+Rcpp::List tabloToR_schur_accumulate_global(Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks, SEXP direct_external_sexp, Rcpp::List regional_positions_sexp, Rcpp::IntegerVector global_positions_sexp, int panel_size);
+RcppExport SEXP _tabloToR_tabloToR_schur_accumulate_global(SEXP factorsSEXP, SEXP left_blocksSEXP, SEXP right_blocksSEXP, SEXP direct_external_sexpSEXP, SEXP regional_positions_sexpSEXP, SEXP global_positions_sexpSEXP, SEXP panel_sizeSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type factors(factorsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type left_blocks(left_blocksSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type right_blocks(right_blocksSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type direct_external_sexp(direct_external_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type regional_positions_sexp(regional_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type global_positions_sexp(global_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< int >::type panel_size(panel_sizeSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_schur_accumulate_global(factors, left_blocks, right_blocks, direct_external_sexp, regional_positions_sexp, global_positions_sexp, panel_size));
+    return rcpp_result_gen;
+END_RCPP
+}
+// tabloToR_schur_accumulate_batch
+Rcpp::List tabloToR_schur_accumulate_batch(Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks, SEXP direct_external_sexp, Rcpp::List regional_positions_sexp, Rcpp::IntegerVector global_positions_sexp, Rcpp::IntegerVector batch_regions_sexp, int panel_size, int threads);
+RcppExport SEXP _tabloToR_tabloToR_schur_accumulate_batch(SEXP factorsSEXP, SEXP left_blocksSEXP, SEXP right_blocksSEXP, SEXP direct_external_sexpSEXP, SEXP regional_positions_sexpSEXP, SEXP global_positions_sexpSEXP, SEXP batch_regions_sexpSEXP, SEXP panel_sizeSEXP, SEXP threadsSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type factors(factorsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type left_blocks(left_blocksSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type right_blocks(right_blocksSEXP);
+    Rcpp::traits::input_parameter< SEXP >::type direct_external_sexp(direct_external_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type regional_positions_sexp(regional_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type global_positions_sexp(global_positions_sexpSEXP);
+    Rcpp::traits::input_parameter< Rcpp::IntegerVector >::type batch_regions_sexp(batch_regions_sexpSEXP);
+    Rcpp::traits::input_parameter< int >::type panel_size(panel_sizeSEXP);
+    Rcpp::traits::input_parameter< int >::type threads(threadsSEXP);
+    rcpp_result_gen = Rcpp::wrap(tabloToR_schur_accumulate_batch(factors, left_blocks, right_blocks, direct_external_sexp, regional_positions_sexp, global_positions_sexp, batch_regions_sexp, panel_size, threads));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_tabloToR_tabloToR_dense_lu_factor", (DL_FUNC) &_tabloToR_tabloToR_dense_lu_factor, 1},
+    {"_tabloToR_tabloToR_dense_lu_solve", (DL_FUNC) &_tabloToR_tabloToR_dense_lu_solve, 2},
+    {"_tabloToR_tabloToR_dense_lu_release", (DL_FUNC) &_tabloToR_tabloToR_dense_lu_release, 1},
     {"_tabloToR_tabloToR_eliminate_blocks", (DL_FUNC) &_tabloToR_tabloToR_eliminate_blocks, 6},
     {"_tabloToR_tabloToR_reconstruct_blocks", (DL_FUNC) &_tabloToR_tabloToR_reconstruct_blocks, 7},
+    {"_tabloToR_tabloToR_schur_cpp_capabilities", (DL_FUNC) &_tabloToR_tabloToR_schur_cpp_capabilities, 0},
+    {"_tabloToR_tabloToR_sparse_lu_solve", (DL_FUNC) &_tabloToR_tabloToR_sparse_lu_solve, 2},
+    {"_tabloToR_tabloToR_sparse_pattern_hash", (DL_FUNC) &_tabloToR_tabloToR_sparse_pattern_hash, 1},
+    {"_tabloToR_tabloToR_schur_accumulate_batch_parallel", (DL_FUNC) &_tabloToR_tabloToR_schur_accumulate_batch_parallel, 9},
+    {"_tabloToR_tabloToR_schur_accumulate_global", (DL_FUNC) &_tabloToR_tabloToR_schur_accumulate_global, 7},
+    {"_tabloToR_tabloToR_schur_accumulate_batch", (DL_FUNC) &_tabloToR_tabloToR_schur_accumulate_batch, 9},
     {NULL, NULL, 0}
 };
 
