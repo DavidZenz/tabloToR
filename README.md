@@ -169,6 +169,25 @@ model$solveModel(engine = "sparse", backend = "StructuredSchurFGMRES", iter = 1,
 
 It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(tabloToR.sparse.structured_residual_tolerance = 1e-7, tabloToR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune tabloToR.sparse.schur_region_batch_size, tabloToR.sparse.schur_panel_size, tabloToR.sparse.schur_restart, and tabloToR.sparse.schur_max_iterations, and tabloToR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
 
+## Experimental native structured backend
+
+The C++ acceleration remains opt-in while the R implementation is the correctness reference. It preserves the exact matrix-free operator and uses native sparse triangular solves, fused Schur accumulation, and LAPACK only for dense regional and global factors:
+
+```r
+options(tabloToR.sparse.schur_cpp_threads = 1L)
+model$solveModel(
+  engine = "sparse",
+  backend = "StructuredSchurFGMRESCpp",
+  iter = 3,
+  steps = c(1, 3),
+  diagnostics = TRUE
+)
+```
+
+The native backend performs a registered-symbol, ABI, Matrix-factor, and thread-capability check before constructing the coefficient matrix. An unavailable or incompatible native backend fails clearly and never substitutes the R solver. Request more than one thread only when diagnostics report `openmp_compiled = TRUE`.
+
+For reproducible A/B measurements, use `benchmarks/run_gtap12a_ab.R`. It launches fresh R processes, validates input/configuration signatures, compares solutions and residuals, and exits nonzero when a numerical, memory, or performance gate fails.
+
 For a separate-process GTAP 12a measurement, install the package and run:
 
 ```sh
