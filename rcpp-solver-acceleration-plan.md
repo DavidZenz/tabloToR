@@ -7,7 +7,7 @@ Accelerate the validated StructuredSchurFGMRES engine without changing the GEMod
 - Commodity blocks remain sparse throughout factorization and panel solves.
 - No dense representation of the full coefficient or solution system is built.
 - Every solve is checked against the full-system relative residual limit of 2e-7 before its solution is applied.
-- engine = "legacy" and the current R implementation remain available as correctness references and fallbacks.
+- engine = "legacy" remains available, and the current R implementation remains an explicitly selected correctness reference; an explicit native request never falls back.
 - Native buffers and factors are released between solves unless explicitly retained as reusable structural metadata.
 
 Dense LAPACK LU is not suitable for the commodity blocks. A typical block is approximately 2469 x 2469 but only about 2% structurally dense. Densifying one such block requires roughly 46.5 MiB and about 10 billion factorization operations. Dense LAPACK is reserved for the genuinely dense regional and global Schur blocks.
@@ -98,7 +98,7 @@ For one regional batch, the kernel must:
 5. multiply sparse left blocks by the dense panel without densifying the left block; and
 6. accumulate directly into preallocated regional/global correction buffers.
 
-One native call should process a complete batch, reducing approximately 115,000 R-level panel calls to about 21 batch calls. Buffer capacity is reused across commodity blocks and panels. The R layer continues to orchestrate scaling, partition validation, factor creation, residual checks, and fallback.
+One native call should process a complete batch, reducing approximately 115,000 R-level panel calls to about 21 batch calls. Buffer capacity is reused across commodity blocks and panels. The R layer continues to orchestrate scaling, partition validation, factor creation, and residual checks; native dispatch is fail-closed.
 
 Cache structural metadata across Euler solves when dimensions and qualifiers are unchanged:
 
@@ -131,7 +131,7 @@ Benchmark 1, 2, 4, and 8 threads. Treat scaling as empirical; memory bandwidth, 
 
 After native Schur accumulation is stable, use LAPACK dgetrf/dgetrs for the approximately 698 x 698 dense regional blocks and the small global block. These matrices are genuinely dense, so LAPACK is methodologically appropriate.
 
-Keep factor storage in RAII-managed native objects with deterministic cleanup. If external pointers are exposed to R, provide finalizers and define how cached factors are rebuilt after serialization. Preserve an R factorization fallback for unsupported platforms.
+Keep factor storage in RAII-managed native objects with deterministic cleanup. If external pointers are exposed to R, provide finalizers and define how cached factors are rebuilt after serialization. Unsupported native platforms fail during preflight; callers may explicitly select the R backend.
 
 ## 9. Deferred work
 
