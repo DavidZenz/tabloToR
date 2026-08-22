@@ -119,3 +119,15 @@ benchmark_metric_value <- function(frame, name) {
   if (!length(hit)) return(NA_real_)
   suppressWarnings(as.numeric(hit[[1L]]))
 }
+
+benchmark_hash_tree <- function(path) {
+  root <- normalizePath(path, mustWork = TRUE)
+  files <- sort(list.files(root, recursive = TRUE, full.names = TRUE,
+                           all.files = TRUE, no.. = TRUE))
+  if (!length(files)) return(NA_character_)
+  info <- file.info(files)
+  files <- files[!is.na(info[["isdir"]]) & !info[["isdir"]]]
+  relative <- substring(files, nchar(root) + 2L)
+  hashes <- unname(tools::md5sum(files))
+  benchmark_hash_object(as.list(stats::setNames(hashes, relative)))
+}

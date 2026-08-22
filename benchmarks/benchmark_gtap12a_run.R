@@ -68,6 +68,9 @@ model_config <- list(
   shocks_file = benchmark_hash_file(shocks_file),
   shocks = benchmark_hash_object(shocks),
   package_version = as.character(utils::packageVersion("tabloToR")),
+  installed_package_signature = benchmark_hash_tree(
+    system.file(package = "tabloToR")
+  ),
   r_version = R.version.string,
   matrix_version = as.character(utils::packageVersion("Matrix")),
   rcpp_version = as.character(utils::packageVersion("Rcpp")),
@@ -92,6 +95,7 @@ metadata <- list(
   git_commit = tryCatch(system2("git", c("rev-parse", "HEAD"), stdout = TRUE)[1L],
                         error = function(error) NA_character_),
   package_version = pair_config$package_version,
+  installed_package_signature = pair_config$installed_package_signature,
   r_version = R.version$major, matrix_version = pair_config$matrix_version,
   platform = R.version$platform, backend = backend, threads = threads,
   iter = iter, steps = paste(steps, collapse = ","), postsim = postsim,
