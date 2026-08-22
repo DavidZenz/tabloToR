@@ -1,5 +1,11 @@
 #!/usr/bin/env Rscript
 
+redirect_file = grep("^--file=", commandArgs(FALSE), value = TRUE)[[1L]]
+redirect_dir = dirname(normalizePath(sub("^--file=", "", redirect_file), mustWork = TRUE))
+source(file.path(redirect_dir, "benchmark_gtap12a_run.R"))
+quit(save = "no", status = 0L)
+
+
 get_arg <- function(args, name, default = NULL) {
   prefix <- paste0(name, "=")
   hit <- args[startsWith(args, prefix)]
