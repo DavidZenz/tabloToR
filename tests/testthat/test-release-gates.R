@@ -15,6 +15,14 @@ if (file.exists(releaseGateScript)) {
   sys.source(releaseGateScript, envir = releaseGateEnvironment)
 }
 
+if (!file.exists(releaseGateScript)) {
+  test_that = function(desc, code) {
+    testthat::test_that(desc, testthat::skip(
+      "release gate tooling is excluded from the built package"
+    ))
+  }
+}
+
 evaluateReleaseGate <- function(root) {
   if (!exists("release_gate_evaluate", envir = releaseGateEnvironment,
               inherits = FALSE)) {
@@ -227,7 +235,7 @@ test_that("the checked-in repository is positively recognized as blocked", {
   )
   expect_identical(
     unname(result$parse_status),
-    rep("pass", 8L)
+    rep("pass", 9L)
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
@@ -778,6 +786,7 @@ test_that("the built-in isolated self-test proves both result directions", {
 copyIntegratedReleaseEvidence = function(root) {
   sourceRoot = releaseGateProjectRoot()
   paths = c(
+    "DESCRIPTION",
     "docs/provenance/RIGHTS.md",
     "docs/provenance/UPSTREAM-REQUEST.md",
     "docs/provenance/UPSTREAM-RESPONSE.md",
@@ -828,6 +837,12 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   )
   writeLines(nameLines, namePath, useBytes = TRUE)
 
+  descriptionPath = file.path(root, "DESCRIPTION")
+  description = readLines(descriptionPath, warn = FALSE, encoding = "UTF-8")
+  description[grepl("^License:", description)] =
+    "License: Apache License (>= 2.0)"
+  writeLines(description, descriptionPath, useBytes = TRUE)
+
   attributionPath = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
   attribution = readLines(attributionPath, warn = FALSE, encoding = "UTF-8")
   attribution = attribution[!grepl(
@@ -851,6 +866,68 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
-  expect_identical(unname(result$parse_status), rep("pass", 8L))
+  expect_identical(unname(result$parse_status), rep("pass", 9L))
+})
+
+
+
+test_that("integrated name evidence fails on a missing source", {
+  root = tempfile("release-gate-integrated-name-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  path = file.path(root, "docs", "release", "NAME-CHECK.md")
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines = lines[!grepl("^Source-Row: github\\|", lines)]
+  writeLines(lines, path, useBytes = TRUE)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_identical(result$reason_codes, "NAME_SOURCE_MISSING")
+})
+
+test_that("integrated governance evidence requires the security route", {
+  root = tempfile("release-gate-integrated-governance-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  path = file.path(root, "GOVERNANCE.md")
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines[grepl("^Security-Route:", lines)] = "Security-Route: missing"
+  writeLines(lines, path, useBytes = TRUE)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_identical(
+    result$reason_codes, "GOVERNANCE_SECURITY_ROUTE_MISSING"
+  )
+})
+
+test_that("integrated repository evidence rejects URL drift", {
+  root = tempfile("release-gate-integrated-repository-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  path = file.path(root, "docs", "release", "REPOSITORY.md")
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines[grepl("^Canonical-URL:", lines)] =
+    "Canonical-URL: https://github.com/DavidZenz/wrong"
+  writeLines(lines, path, useBytes = TRUE)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_identical(result$reason_codes, "REPOSITORY_URL_MISMATCH")
+})
+
+test_that("integrated package metadata rejects canonical URL drift", {
+  root = tempfile("release-gate-integrated-description-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  path = file.path(root, "DESCRIPTION")
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines[grepl("^URL:", lines)] =
+    "URL: https://github.com/DavidZenz/wrong"
+  writeLines(lines, path, useBytes = TRUE)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_identical(result$reason_codes, "DESCRIPTION_URL_MISMATCH")
 })
 

@@ -9,7 +9,9 @@ Authors@R: c(
            comment = c("Attribution" = "Author of the reviewed public-domain/CC0 upstream tabloToR baseline"))
     )
 Author: David Zenz [aut, cre, cph], Maros Ivanic [aut]
-Maintainer: The package maintainer <yourself@somewhere.net>
+Maintainer: David Zenz <zenz@wiiw.ac.at>
+URL: https://github.com/DavidZenz/GEModelR
+BugReports: https://github.com/DavidZenz/GEModelR/issues
 Description: Interpret GEMPACK-style TABLO models in R.  The package keeps
     the original in-memory solver and adds an opt-in integer-indexed sparse
     execution engine for low-memory simulations.

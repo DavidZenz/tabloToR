@@ -25,6 +25,7 @@ Neither blocker authorizes an external repository or publication action.
 | Successor name | `NAME-CHECK.md` | Six approved public sources are available with no exact collision; release readiness additionally needs a fresh release-kind report | `NAME_SOURCE_MISSING`, `NAME_SOURCE_UNAVAILABLE`, `NAME_EXACT_COLLISION`, `NAME_REPORT_UNSIGNED`, or `NAME_REPORT_STALE` |
 | Governance identity | `GOVERNANCE.md` | Exact approved maintainer, contact, release authority, security route, reviewer, and date | `GOVERNANCE_IDENTITY_UNAPPROVED` or `GOVERNANCE_SECURITY_ROUTE_MISSING` |
 | Repository boundary | `REPOSITORY.md` | Exact owner/name/URL/issues pair, private-development boundary, and every external action remains not authorized | `REPOSITORY_URL_MISMATCH`, `REPOSITORY_ISSUES_MISMATCH`, or `REPOSITORY_BOUNDARY_INVALID` |
+| Package metadata | `DESCRIPTION`, governance/repository evidence | Package name stays `tabloToR`; approved maintainer, canonical URL, and issues match; unresolved License is allowed only with the dependency blocker | `DESCRIPTION_IDENTITY_MISMATCH`, `DESCRIPTION_URL_MISMATCH`, `DESCRIPTION_ISSUES_MISMATCH`, or a license reason |
 | Sensitive evidence | Release and provenance evidence trees | No credential, private-correspondence, proprietary-model, or giant-result indicator | `SENSITIVE_EVIDENCE_CLASS` |
 
 ## Superseded request checkpoint

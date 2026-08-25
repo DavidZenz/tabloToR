@@ -1062,6 +1062,11 @@ release_gate_evaluate = function(root = ".") {
     root, governance$values, governance$parse_status
   )
   if (!is.null(repository$error)) return(repository$error)
+  description = release_gate_validate_description(
+    root, governance$values, repository$values, attribution$blockers,
+    repository$parse_status
+  )
+  if (!is.null(description$error)) return(description$error)
 
   rightsBlockers = release_gate_marker_values(
     rightsLines, "Unresolved-Release-Blocker"
@@ -1072,7 +1077,7 @@ release_gate_evaluate = function(root = ".") {
       !identical(rightsBlockers, blockers)) {
     return(release_gate_result(
       reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
-      parse_status = repository$parse_status,
+      parse_status = description$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
@@ -1081,14 +1086,14 @@ release_gate_evaluate = function(root = ".") {
       repository_state = "blocked",
       release_ready = FALSE,
       reason_codes = blockers,
-      parse_status = repository$parse_status,
+      parse_status = description$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
   if (!release_gate_release_check_fresh(nameEvidence)) {
     return(release_gate_result(
       reason_codes = "NAME_REPORT_STALE",
-      parse_status = repository$parse_status,
+      parse_status = description$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
@@ -1096,9 +1101,70 @@ release_gate_evaluate = function(root = ".") {
     repository_state = "eligible",
     release_ready = TRUE,
     reason_codes = character(),
-    parse_status = repository$parse_status,
+    parse_status = description$parse_status,
     intentional_blockers = character()
   )
+}
+
+
+release_gate_validate_description = function(
+    root, governance, repository, blockers, parseStatus) {
+  path = file.path(root, "DESCRIPTION")
+  description = tryCatch(
+    read.dcf(path),
+    error = function(error) NULL
+  )
+  required = c(
+    "Package", "Authors@R", "Maintainer", "License", "URL", "BugReports"
+  )
+  if (is.null(description) ||
+      !all(required %in% colnames(description))) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_IDENTITY_MISMATCH", parseStatus, "description"
+    )))
+  }
+  value = function(field) unname(description[[1L, field]])
+  expectedMaintainer = paste0(
+    governance[["Maintainer"]], " <", governance[["Approved-Contact"]], ">"
+  )
+  authors = value("Authors@R")
+  identity = identical(value("Package"), "tabloToR") &&
+    identical(value("Maintainer"), expectedMaintainer) &&
+    grepl("person(\"David\", \"Zenz\"", authors, fixed = TRUE) &&
+    grepl("email = \"zenz@wiiw.ac.at\"", authors, fixed = TRUE) &&
+    grepl("role = c(\"aut\", \"cre\", \"cph\")", authors, fixed = TRUE)
+  if (!identity) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_IDENTITY_MISMATCH", parseStatus, "description"
+    )))
+  }
+  if (!identical(value("URL"), repository[["Canonical-URL"]])) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_URL_MISMATCH", parseStatus, "description"
+    )))
+  }
+  if (!identical(value("BugReports"), repository[["Issue-Tracker"]])) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_ISSUES_MISMATCH", parseStatus, "description"
+    )))
+  }
+  dependencyBlocked =
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING" %in% blockers
+  unresolvedLicense = identical(
+    value("License"), "What license is it under?"
+  )
+  if (dependencyBlocked && !unresolvedLicense) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_LICENSE_MISMATCH", parseStatus, "description"
+    )))
+  }
+  if (!dependencyBlocked && unresolvedLicense) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_LICENSE_UNRESOLVED", parseStatus, "description"
+    )))
+  }
+  parseStatus[["description"]] = "pass"
+  list(parse_status = parseStatus)
 }
 release_gate_write_self_fixture <- function(root, status,
                                             includeScope = FALSE,

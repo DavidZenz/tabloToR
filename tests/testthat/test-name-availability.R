@@ -15,6 +15,14 @@ if (file.exists(nameCheckScript)) {
   sys.source(nameCheckScript, envir = nameCheckEnvironment)
 }
 
+if (!file.exists(nameCheckScript)) {
+  test_that = function(desc, code) {
+    testthat::test_that(desc, testthat::skip(
+      "name checker tooling is excluded from the built package"
+    ))
+  }
+}
+
 nameCheckTool = function() {
   required = c(
     "name_check_validate_name", "name_check_exact_matches",

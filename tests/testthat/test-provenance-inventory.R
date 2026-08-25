@@ -9,6 +9,19 @@ provenance_script_path <- function() {
   normalizePath(hit[[1L]], mustWork = TRUE)
 }
 
+provenanceToolAvailable = any(file.exists(c(
+  file.path("tools", "provenance_inventory.R"),
+  file.path("..", "..", "tools", "provenance_inventory.R"),
+  file.path("..", "..", "..", "tools", "provenance_inventory.R")
+)))
+if (!provenanceToolAvailable) {
+  test_that = function(desc, code) {
+    testthat::test_that(desc, testthat::skip(
+      "provenance tooling is excluded from the built package"
+    ))
+  }
+}
+
 provenance_load_tool <- function() {
   environment <- new.env(parent = baseenv())
   sys.source(provenance_script_path(), envir = environment)

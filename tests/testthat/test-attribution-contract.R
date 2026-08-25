@@ -7,6 +7,18 @@ attributionProjectRoot = function() {
   normalizePath(hit[[1L]], mustWork = TRUE)
 }
 
+attributionEvidenceAvailable = any(file.exists(file.path(
+  c(".", "../..", "../../.."),
+  "docs", "provenance", "PROVENANCE.csv"
+)))
+if (!attributionEvidenceAvailable) {
+  test_that = function(desc, code) {
+    testthat::test_that(desc, testthat::skip(
+      "attribution evidence is excluded from the built package"
+    ))
+  }
+}
+
 attributionPath = function(...) {
   file.path(attributionProjectRoot(), ...)
 }
