@@ -463,6 +463,19 @@ test_that("clean-room fixtures must be explicitly redistributable", {
   )
 })
 
+test_that("the clean-room tree rejects sensitive fixture classes", {
+  root <- tempfile("release-gate-cleanroom-sensitive-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(root)
+  sentinel <- "do-not-disclose-cleanroom-fixture"
+  writeLines(sentinel, file.path(root, "specs", "cleanroom", "fixture.har"))
+
+  command <- runReleaseGate(c("--root", root, "--offline"))
+  expectReleaseGateFailure(command, "SENSITIVE_EVIDENCE_CLASS")
+  expect_false(any(grepl(sentinel, command$output, fixed = TRUE)))
+  expect_false(any(grepl("fixture.har", command$output, fixed = TRUE)))
+})
+
 test_that("offline readiness stays distinct from an intentional block", {
   root <- releaseGateProjectRoot()
   offline <- runReleaseGate(c("--root", root, "--offline"))

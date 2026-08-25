@@ -44,8 +44,160 @@ release_gate_single_markers <- function(lines, fields) {
   values
 }
 
+release_gate_cleanroom_failure <- function(reason, parsePass,
+                                           intentionalBlockers) {
+  release_gate_result(
+    repository_state = "blocked",
+    reason_codes = reason,
+    parse_status = c(parsePass, cleanroom = "fail"),
+    intentional_blockers = intentionalBlockers
+  )
+}
+
+release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
+                                            intentionalBlockers) {
+  fail <- function(reason) {
+    release_gate_cleanroom_failure(
+      reason, parsePass, intentionalBlockers
+    )
+  }
+  if (is.null(cleanroomLines)) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+  protocol <- release_gate_single_markers(
+    cleanroomLines,
+    c(
+      "Cleanroom-Protocol-Version", "Cleanroom-Coverage",
+      "Cleanroom-Review-Status"
+    )
+  )
+  if (any(vapply(protocol, length, integer(1)) != 1L)) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+  protocolValues <- vapply(protocol, `[[`, character(1), 1L)
+  if (!identical(protocolValues[["Cleanroom-Review-Status"]], "approved")) {
+    return(fail("CLEANROOM_REVIEW_INCOMPLETE"))
+  }
+  if (!identical(protocolValues[["Cleanroom-Protocol-Version"]], "1") ||
+      !identical(protocolValues[["Cleanroom-Coverage"]], "complete")) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+
+  inheritedKeys <- release_gate_marker_values(
+    cleanroomLines, "Inherited-Provenance-Key"
+  )
+  if (!length(inheritedKeys) || any(!nzchar(trimws(inheritedKeys))) ||
+      anyDuplicated(inheritedKeys)) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+  specificationDir <- file.path(root, "specs", "cleanroom")
+  specificationFiles <- if (dir.exists(specificationDir)) {
+    sort(list.files(
+      specificationDir, pattern = "\\.md$", full.names = TRUE
+    ))
+  } else {
+    character()
+  }
+  specificationFiles <- specificationFiles[
+    basename(specificationFiles) != "README.md"
+  ]
+  if (!length(specificationFiles)) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+
+  requiredFields <- c(
+    "component_id", "provenance_key", "inputs", "outputs", "errors",
+    "invariants", "compatibility_example", "specification_author",
+    "specification_attestation", "implementer", "implementer_eligibility",
+    "implementer_source_access", "implementer_attestation", "reviewer",
+    "reviewer_attestation", "behavior_test", "behavior_test_status",
+    "public_standard", "redistributable_fixture",
+    "provenance_classification"
+  )
+  components <- vector("list", length(specificationFiles))
+  for (index in seq_along(specificationFiles)) {
+    lines <- release_gate_read_lines(specificationFiles[[index]])
+    fields <- release_gate_single_markers(lines, requiredFields)
+    sourceAccess <- fields[["implementer_source_access"]]
+    eligibility <- fields[["implementer_eligibility"]]
+    if (length(sourceAccess) == 1L && nzchar(trimws(sourceAccess)) &&
+        !identical(sourceAccess, "none")) {
+      return(fail("CLEANROOM_IMPLEMENTER_INELIGIBLE"))
+    }
+    if (length(eligibility) == 1L && nzchar(trimws(eligibility)) &&
+        !identical(eligibility, "eligible")) {
+      return(fail("CLEANROOM_IMPLEMENTER_INELIGIBLE"))
+    }
+    if (any(vapply(fields, length, integer(1)) != 1L)) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    values <- vapply(fields, `[[`, character(1), 1L)
+    if (any(!nzchar(trimws(values)))) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    roles <- unname(values[c(
+      "specification_author", "implementer", "reviewer"
+    )])
+    evidenceComplete <- length(unique(roles)) == 3L &&
+      identical(
+        values[["specification_attestation"]],
+        "behavior-only-no-inherited-expression"
+      ) &&
+      identical(
+        values[["implementer_attestation"]],
+        "no-inherited-source-access"
+      ) &&
+      identical(
+        values[["reviewer_attestation"]],
+        "independent-review-complete"
+      ) &&
+      identical(values[["behavior_test_status"]], "pass") &&
+      startsWith(values[["public_standard"]], "public:") &&
+      startsWith(
+        values[["redistributable_fixture"]], "redistributable:"
+      ) &&
+      identical(
+        values[["provenance_classification"]], "new-independent"
+      )
+    if (!evidenceComplete) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    components[[index]] <- values
+  }
+
+  componentIds <- vapply(
+    components, `[[`, character(1), "component_id"
+  )
+  provenanceKeys <- vapply(
+    components, `[[`, character(1), "provenance_key"
+  )
+  coverageComplete <- !anyDuplicated(componentIds) &&
+    !anyDuplicated(provenanceKeys) &&
+    identical(sort(provenanceKeys), sort(inheritedKeys))
+  if (!coverageComplete) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+  if (length(intentionalBlockers)) {
+    return(release_gate_result(
+      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+      parse_status = c(parsePass, cleanroom = "pass"),
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  release_gate_result(
+    repository_state = "eligible",
+    release_ready = TRUE,
+    reason_codes = character(),
+    parse_status = c(parsePass, cleanroom = "pass"),
+    intentional_blockers = intentionalBlockers
+  )
+}
+
 release_gate_has_sensitive_evidence <- function(root) {
-  evidenceDirs <- file.path(root, "docs", c("provenance", "release"))
+  evidenceDirs <- c(
+    file.path(root, "docs", c("provenance", "release")),
+    file.path(root, "specs", "cleanroom")
+  )
   evidenceDirs <- evidenceDirs[dir.exists(evidenceDirs)]
   if (!length(evidenceDirs)) return(FALSE)
   files <- unlist(lapply(evidenceDirs, function(path) {
@@ -336,41 +488,8 @@ release_gate_evaluate <- function(root = ".") {
 
   cleanroomPath <- file.path(root, "docs", "provenance", "CLEANROOM.md")
   cleanroomLines <- release_gate_read_lines(cleanroomPath)
-  cleanroomPass <- FALSE
-  if (!is.null(cleanroomLines)) {
-    cleanroom <- release_gate_single_markers(
-      cleanroomLines,
-      c("Cleanroom-Coverage", "Cleanroom-Review-Status")
-    )
-    if (all(vapply(cleanroom, length, integer(1)) == 1L)) {
-      cleanroomValues <- vapply(cleanroom, `[[`, character(1), 1L)
-      cleanroomPass <- identical(
-        cleanroomValues[["Cleanroom-Coverage"]], "complete"
-      ) && identical(
-        cleanroomValues[["Cleanroom-Review-Status"]], "approved"
-      )
-    }
-  }
-  if (!cleanroomPass) {
-    return(release_gate_result(
-      reason_codes = "CLEANROOM_REVIEW_INCOMPLETE",
-      parse_status = c(parsePass, cleanroom = "fail"),
-      intentional_blockers = intentionalBlockers
-    ))
-  }
-  if (length(intentionalBlockers)) {
-    return(release_gate_result(
-      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
-      parse_status = c(parsePass, cleanroom = "pass"),
-      intentional_blockers = intentionalBlockers
-    ))
-  }
-  release_gate_result(
-    repository_state = "eligible",
-    release_ready = TRUE,
-    reason_codes = character(),
-    parse_status = c(parsePass, cleanroom = "pass"),
-    intentional_blockers = intentionalBlockers
+  release_gate_evaluate_cleanroom(
+    root, cleanroomLines, parsePass, intentionalBlockers
   )
 }
 
@@ -438,10 +557,35 @@ release_gate_write_self_fixture <- function(root, status,
     paste0("Intentional-Blockers: ", blockers)
   ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
   if (!is.null(cleanroomReview)) {
+    dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE)
     writeLines(c(
+      "Cleanroom-Protocol-Version: 1",
       "Cleanroom-Coverage: complete",
-      paste0("Cleanroom-Review-Status: ", cleanroomReview)
+      paste0("Cleanroom-Review-Status: ", cleanroomReview),
+      "Inherited-Provenance-Key: R/example.R::example"
     ), file.path(root, "docs", "provenance", "CLEANROOM.md"))
+    writeLines(c(
+      "component_id: example-component",
+      "provenance_key: R/example.R::example",
+      "inputs: numeric scalar x",
+      "outputs: numeric scalar y",
+      "errors: non-numeric input is rejected",
+      "invariants: output length equals input length",
+      "compatibility_example: x=1 produces y=1",
+      "specification_author: self-test-specification-author",
+      "specification_attestation: behavior-only-no-inherited-expression",
+      "implementer: self-test-independent-implementer",
+      "implementer_eligibility: eligible",
+      "implementer_source_access: none",
+      "implementer_attestation: no-inherited-source-access",
+      "reviewer: self-test-independent-reviewer",
+      "reviewer_attestation: independent-review-complete",
+      "behavior_test: self-test#observable-contract",
+      "behavior_test_status: pass",
+      "public_standard: public:documented-R-semantics",
+      "redistributable_fixture: redistributable:synthetic-example",
+      "provenance_classification: new-independent"
+    ), file.path(root, "specs", "cleanroom", "example-component.md"))
   }
   if (sensitive) {
     writeLines(

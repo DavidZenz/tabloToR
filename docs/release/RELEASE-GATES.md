@@ -18,7 +18,8 @@ unknown, contradictory, or partial evidence fails closed.
 | Request state | `RIGHTS.md` | Unposted, silent, or ambiguous requests remain blocked and never imply a grant | Yes | Required before transition | `REQUEST_NOT_POSTED` or `REQUEST_NOT_A_GRANT` |
 | Written scope | `RIGHTS.md` | A cleared grant covers the exact upstream commit and all inherited source | Yes | Required | `RIGHTS_SCOPE_INCOMPLETE` |
 | Written evidence | `RIGHTS.md` | A resolved public request, evidence hash, reviewer, and UTC review date bind the grant | Yes | Required | `RIGHTS_EVIDENCE_INCOMPLETE` |
-| Clean-room completion | Synthetic `docs/provenance/CLEANROOM.md` during this plan; canonical protocol in Plan 01-02 | Replacement coverage is complete and independently approved | Yes | Required | `CLEANROOM_REVIEW_INCOMPLETE` |
+| Clean-room eligibility | `CLEANROOM.md` and `specs/cleanroom/*.md` | Distinct roles, exact attestations, eligible inputs, and a source-unexposed implementer | Yes | Required | `CLEANROOM_IMPLEMENTER_INELIGIBLE` or `CLEANROOM_EVIDENCE_INCOMPLETE` |
+| Clean-room coverage | Inherited keys and component specifications | Every inherited key has exactly one passing `new-independent` record and approved review | Yes | Required | `CLEANROOM_EVIDENCE_INCOMPLETE` or `CLEANROOM_REVIEW_INCOMPLETE` |
 | Sensitive evidence boundary | Files under `docs/provenance/` and `docs/release/` | No credential, private-correspondence, proprietary-model, or giant-result indicator | Yes | N/A | `SENSITIVE_EVIDENCE_CLASS` |
 | Intentional block | Both files | The valid draft state is blocked by exactly `RIGHTS_BLOCKED,REQUEST_NOT_POSTED` | Yes | N/A | Any other reason makes the assertion fail |
 

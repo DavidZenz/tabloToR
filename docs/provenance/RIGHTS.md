@@ -34,7 +34,8 @@ clean-room path is activated; that state does not itself establish clearance.
 
 Public evidence may record public URLs, content hashes, scope, and review
 outcomes. Private correspondence, credentials, proprietary model inputs, and
-The request content hash is an MD5 change-detection binding, not proof of authority or permission.
-full or oversized solver results must stay outside the repository. Placeholder
+full or oversized solver results must stay outside the repository. The request
+content hash is an MD5 change-detection binding, not proof of authority or
+permission. Placeholder
 values in this blocked record document that no grant has been received; they
 must never be interpreted as permission.
