@@ -36,6 +36,16 @@ runReleaseGate <- function(args) {
   )
 }
 
+expectReleaseGateFailure <- function(command, reason) {
+  expect_identical(command$status, 1L)
+  expect_true(any(command$output == paste0("reason_codes=", reason)))
+  expect_false(any(grepl(
+    "mivanic|fixture-reviewer|upstream-fixture",
+    command$output,
+    ignore.case = TRUE
+  )))
+}
+
 writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
                                     releaseStatus = rightsStatus,
                                     includeStatus = TRUE,
@@ -105,6 +115,10 @@ test_that("missing or duplicate rights status has an exact parser reason", {
     expect_identical(result$repository_state, "invalid")
     expect_false(result$release_ready)
     expect_identical(result$reason_codes, "RIGHTS_STATUS_CARDINALITY")
+    expectReleaseGateFailure(
+      runReleaseGate(c("--root", root, "--offline")),
+      "RIGHTS_STATUS_CARDINALITY"
+    )
   }
 })
 
@@ -120,6 +134,10 @@ test_that("rights and release policy status must agree", {
     result$reason_codes,
     "RIGHTS_RELEASE_STATUS_MISMATCH"
   )
+  expectReleaseGateFailure(
+    runReleaseGate(c("--root", root, "--offline")),
+    "RIGHTS_RELEASE_STATUS_MISMATCH"
+  )
 })
 
 test_that("written clearance must cover the inherited commit and components", {
@@ -131,4 +149,8 @@ test_that("written clearance must cover the inherited commit and components", {
   expect_identical(result$repository_state, "invalid")
   expect_false(result$release_ready)
   expect_identical(result$reason_codes, "RIGHTS_SCOPE_INCOMPLETE")
+  expectReleaseGateFailure(
+    runReleaseGate(c("--root", root, "--offline")),
+    "RIGHTS_SCOPE_INCOMPLETE"
+  )
 })
