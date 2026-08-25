@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 1
 waived_count: 0
-fixed_count: 5
-total_count: 7
-last_updated: 2026-08-25T12:15:17.329Z
+fixed_count: 10
+total_count: 11
+last_updated: 2026-08-25T12:49:59.919Z
 ---
 
 # Broken Windows Ledger
@@ -19,9 +19,13 @@ last_updated: 2026-08-25T12:15:17.329Z
 | 2 | 01 | deviation | tools/provenance_inventory.R |  | Selected working system Git because R-resolved Linuxbrew Git requires unavailable GLIBC symbols. | fixed |  | 2026-08-25T10:58:19.859Z | 2026-08-25T10:58:52.351Z |
 | 3 | 01 | deviation | tools/provenance_inventory.R |  | Forced character CSV parsing so all-empty evidence columns remain exact empty strings. | fixed |  | 2026-08-25T10:58:20.038Z | 2026-08-25T10:58:52.554Z |
 | 4 | 01 | deviation | .planning/STATE.md |  | Repaired stale derived progress after state.update-progress skipped the unscoped in-progress phase. | fixed |  | 2026-08-25T10:58:20.235Z | 2026-08-25T10:58:52.724Z |
-| 5 | 01 | stub | DESCRIPTION | 16 | License field remains the pre-existing placeholder pending dependency compatibility audit and Plan 01-06. | open |  | 2026-08-25T12:10:54.212Z |  |
-| 6 | 01 | stub | DESCRIPTION | 12 | Maintainer field remains the pre-existing placeholder until Plan 01-06 applies the approved contact. | open |  | 2026-08-25T12:10:54.238Z |  |
+| 5 | 01 | stub | DESCRIPTION | 16 | License field remains the pre-existing placeholder pending dependency compatibility audit and Plan 01-06. | fixed |  | 2026-08-25T12:10:54.212Z | 2026-08-25T12:46:42.333Z |
+| 6 | 01 | stub | DESCRIPTION | 12 | Maintainer field remains the pre-existing placeholder until Plan 01-06 applies the approved contact. | fixed |  | 2026-08-25T12:10:54.238Z | 2026-08-25T12:46:46.935Z |
 | 7 | 01 | deviation | .planning/STATE.md |  | Repaired stale derived progress after state.update-progress skipped the unscoped in-progress phase following Plan 01-05. | fixed |  | 2026-08-25T12:15:13.616Z | 2026-08-25T12:15:17.329Z |
+| 8 | 01 | stub | DESCRIPTION | 18 | License field intentionally remains unresolved pending the LinkingTo, vendored, and native dependency compatibility audit. | open |  | 2026-08-25T12:46:47.055Z |  |
+| 9 | 01 | deviation | docs/provenance/RIGHTS.md |  | Replaced stale Plan 01-03/01-04 temporary markers with complete integrated evidence and the two reviewed blockers. | fixed |  | 2026-08-25T12:46:53.746Z | 2026-08-25T12:46:59.289Z |
+| 10 | 01 | deviation | tests/testthat/test-release-gates.R |  | Repository-only evidence tests skip when their tooling and evidence are intentionally excluded from a built source package. | fixed |  | 2026-08-25T12:46:53.861Z | 2026-08-25T12:46:59.414Z |
+| 11 | 01 | deviation | .planning/STATE.md |  | Repaired stale derived progress and blocker narrative after state.update-progress skipped the unscoped verifying phase. | fixed |  | 2026-08-25T12:49:50.252Z | 2026-08-25T12:49:59.919Z |
 
 ````json
 [
@@ -80,10 +84,10 @@ last_updated: 2026-08-25T12:15:17.329Z
     "file": "DESCRIPTION",
     "line": 16,
     "description": "License field remains the pre-existing placeholder pending dependency compatibility audit and Plan 01-06.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-25T12:10:54.212Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-25T12:46:42.333Z"
   },
   {
     "id": 6,
@@ -92,10 +96,10 @@ last_updated: 2026-08-25T12:15:17.329Z
     "file": "DESCRIPTION",
     "line": 12,
     "description": "Maintainer field remains the pre-existing placeholder until Plan 01-06 applies the approved contact.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-25T12:10:54.238Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-25T12:46:46.935Z"
   },
   {
     "id": 7,
@@ -108,6 +112,54 @@ last_updated: 2026-08-25T12:15:17.329Z
     "reason": "",
     "recorded_at": "2026-08-25T12:15:13.616Z",
     "resolved_at": "2026-08-25T12:15:17.329Z"
+  },
+  {
+    "id": 8,
+    "kind": "stub",
+    "phase": "01",
+    "file": "DESCRIPTION",
+    "line": 18,
+    "description": "License field intentionally remains unresolved pending the LinkingTo, vendored, and native dependency compatibility audit.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-25T12:46:47.055Z",
+    "resolved_at": null
+  },
+  {
+    "id": 9,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "docs/provenance/RIGHTS.md",
+    "line": null,
+    "description": "Replaced stale Plan 01-03/01-04 temporary markers with complete integrated evidence and the two reviewed blockers.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-25T12:46:53.746Z",
+    "resolved_at": "2026-08-25T12:46:59.289Z"
+  },
+  {
+    "id": 10,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "tests/testthat/test-release-gates.R",
+    "line": null,
+    "description": "Repository-only evidence tests skip when their tooling and evidence are intentionally excluded from a built source package.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-25T12:46:53.861Z",
+    "resolved_at": "2026-08-25T12:46:59.414Z"
+  },
+  {
+    "id": 11,
+    "kind": "deviation",
+    "phase": "01",
+    "file": ".planning/STATE.md",
+    "line": null,
+    "description": "Repaired stale derived progress and blocker narrative after state.update-progress skipped the unscoped verifying phase.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-25T12:49:50.252Z",
+    "resolved_at": "2026-08-25T12:49:59.919Z"
   }
 ]
 ````

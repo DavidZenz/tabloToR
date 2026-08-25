@@ -21,7 +21,7 @@ GEModelR reaches its first public release through seven auditable technical phas
 **Goal**: Establish an unambiguous legal and organizational basis for GEModelR and define what may be publicly released.
 **Depends on**: Nothing
 **Requirements**: PROV-01, PROV-02, PROV-03, PROV-04
-**Release gate**: Public distribution is blocked until PROV-01 and PROV-02 are satisfied; private compatibility work may continue.
+**Release gate**: Public distribution remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; private compatibility work may continue.
 **Success Criteria**:
 
   1. Maintainers can point to a written license/permission record covering inherited source modification and redistribution, or to an approved alternative implementation strategy.
@@ -29,7 +29,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. An authoritative check reports no current or historical CRAN/Bioconductor collision for GEModelR at the time of repository reservation.
   4. Canonical maintainer, repository, issue tracker, package license, citation, and attribution decisions are recorded.
 
-**Plans**: TBD
+**Plans**: 6 plans
 **Wave 1**
 
 - [x] 01-01-PLAN.md
@@ -46,7 +46,7 @@ GEModelR reaches its first public release through seven auditable technical phas
 
 **Wave 4** *(blocked on Wave 3 completion)*
 
-- [ ] 01-06-PLAN.md
+- [x] 01-06-PLAN.md
 
 ### Phase 2: Compatibility and Numerical Baseline
 
@@ -60,7 +60,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Cross-backend solution and true-residual gates pass at documented tolerances before model state is updated.
   4. Baseline artifacts identify package source, fixture/model signatures, platform, and dependency versions.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ### Phase 3: GEModelR Identity Migration
 
@@ -74,7 +74,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Pre/post-rename compatibility fixtures produce equivalent solutions, outputs, diagnostics, and serialization results.
   4. Users have exact installation and script migration instructions, including the fate of `tabloToR::` calls and old option names.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ### Phase 4: Public API and Solver Boundaries
 
@@ -88,7 +88,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Backend registration, capability checks, solve invocation, diagnostics, and cleanup follow one explicit internal interface.
   4. Legacy, Matrix, structured R, and native C++ implementations remain independently selectable correctness/performance references.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ### Phase 5: Portable Native Build and CI
 
@@ -102,7 +102,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Supported solve paths require no runtime compiler and no hard-coded Linux SuiteSparse include/library path.
   4. CI covers appropriate R release/oldrel/devel and Matrix compatibility variants while keeping long full-scale benchmarks external.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ### Phase 6: Documentation and Release Qualification
 
@@ -117,7 +117,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Signed full-scale benchmark summaries verify residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ### Phase 7: GitHub and R-universe Release
 
@@ -131,13 +131,13 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Release notes state compatibility, supported platforms/backends, known limits, benchmark evidence, and migration steps.
   4. Maintainers have a documented support, issue-triage, and release cadence for the first public validation period.
 
-**Plans**: TBD
+**Plans**: 6 plans
 
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Provenance and Release Boundary | 5/6 | In Progress|  |
+| 1. Provenance and Release Boundary | 6/6 | In Progress|  |
 | 2. Compatibility and Numerical Baseline | 0/TBD | Not started | - |
 | 3. GEModelR Identity Migration | 0/TBD | Not started | - |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
