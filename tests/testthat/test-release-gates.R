@@ -50,7 +50,10 @@ writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
                                     releaseStatus = rightsStatus,
                                     includeStatus = TRUE,
                                     duplicateStatus = FALSE,
-                                    includeScope = FALSE) {
+                                    includeScope = FALSE,
+                                    intentionalBlockers = if (
+                                      identical(rightsStatus, "blocked")
+                                    ) "RIGHTS_BLOCKED" else "NONE") {
   dir.create(file.path(root, "docs", "provenance"), recursive = TRUE)
   dir.create(file.path(root, "docs", "release"), recursive = TRUE)
   statusLines <- if (includeStatus) {
@@ -81,7 +84,7 @@ writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
   writeLines(c(
     "# Release Gate Fixture",
     paste0("Rights-Gate-Status: ", releaseStatus),
-    "Intentional-Blockers: RIGHTS_BLOCKED"
+    paste0("Intentional-Blockers: ", intentionalBlockers)
   ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
 }
 
@@ -153,4 +156,100 @@ test_that("written clearance must cover the inherited commit and components", {
     runReleaseGate(c("--root", root, "--offline")),
     "RIGHTS_SCOPE_INCOMPLETE"
   )
+})
+
+writeCleanroomFixture <- function(root, reviewStatus = "approved") {
+  writeReleaseGateFixture(root, rightsStatus = "clean-room-required")
+  writeLines(c(
+    "# Clean-room Fixture",
+    "Cleanroom-Coverage: complete",
+    paste0("Cleanroom-Review-Status: ", reviewStatus)
+  ), file.path(root, "docs", "provenance", "CLEANROOM.md"))
+}
+
+test_that("offline readiness stays distinct from an intentional block", {
+  root <- releaseGateProjectRoot()
+  offline <- runReleaseGate(c("--root", root, "--offline"))
+  expectReleaseGateFailure(offline, "RIGHTS_BLOCKED")
+
+  malformed <- tempfile("release-gate-unrelated-error-")
+  on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
+  writeReleaseGateFixture(malformed)
+  rightsPath <- file.path(malformed, "docs", "provenance", "RIGHTS.md")
+  write("Evidence-Hash: duplicate", rightsPath, append = TRUE)
+
+  asserted <- runReleaseGate(c("--root", malformed, "--assert-blocked"))
+  expectReleaseGateFailure(asserted, "RIGHTS_FIELD_CARDINALITY")
+})
+
+test_that("complete written grant evidence proves synthetic readiness", {
+  root <- tempfile("release-gate-cleared-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeReleaseGateFixture(
+    root,
+    rightsStatus = "cleared",
+    includeScope = TRUE
+  )
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+
+  command <- runReleaseGate(c("--root", root, "--offline"))
+  expect_identical(command$status, 0L)
+  expect_true(any(command$output == "repository_state=eligible"))
+  expect_true(any(command$output == "release_ready=true"))
+  expect_true(any(command$output == "reason_codes=NONE"))
+})
+
+test_that("complete reviewed clean-room evidence proves synthetic readiness", {
+  root <- tempfile("release-gate-cleanroom-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(root)
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+  expect_identical(
+    runReleaseGate(c("--root", root, "--offline"))$status,
+    0L
+  )
+
+  incomplete <- tempfile("release-gate-cleanroom-review-")
+  on.exit(unlink(incomplete, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(incomplete, reviewStatus = "pending")
+  expectReleaseGateFailure(
+    runReleaseGate(c("--root", incomplete, "--offline")),
+    "CLEANROOM_REVIEW_INCOMPLETE"
+  )
+})
+
+test_that("sensitive evidence classes fail without disclosing matches", {
+  indicators <- c(
+    "credential.txt", "private-correspondence.txt", "fixture.har",
+    "giant-result.rds"
+  )
+  for (indicator in indicators) {
+    root <- tempfile("release-gate-sensitive-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeReleaseGateFixture(root)
+    sentinel <- paste0("do-not-disclose-", basename(indicator))
+    writeLines(
+      sentinel,
+      file.path(root, "docs", "provenance", indicator)
+    )
+
+    command <- runReleaseGate(c("--root", root, "--offline"))
+    expectReleaseGateFailure(command, "SENSITIVE_EVIDENCE_CLASS")
+    expect_false(any(grepl(sentinel, command$output, fixed = TRUE)))
+    expect_false(any(grepl(indicator, command$output, fixed = TRUE)))
+  }
+})
+
+test_that("the built-in isolated self-test proves both result directions", {
+  command <- runReleaseGate("--self-test")
+  expect_identical(command$status, 0L)
+  expect_true(any(command$output == "self_test=pass"))
 })
