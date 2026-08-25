@@ -29,7 +29,7 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. An authoritative check reports no current or historical CRAN/Bioconductor collision for GEModelR at the time of repository reservation.
   4. Canonical maintainer, repository, issue tracker, package license, citation, and attribution decisions are recorded.
 
-**Plans**: 6 plans
+**Plans**: 11 plans
 **Wave 1**
 
 - [x] 01-01-PLAN.md
@@ -47,6 +47,23 @@ GEModelR reaches its first public release through seven auditable technical phas
 **Wave 4** *(blocked on Wave 3 completion)*
 
 - [x] 01-06-PLAN.md
+
+**Wave 5** *(gap closure; blocked on Wave 4 completion)*
+
+- [ ] 01-08-PLAN.md
+- [ ] 01-09-PLAN.md
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 01-07-PLAN.md
+
+**Wave 7** *(blocked on Wave 6 completion)*
+
+- [ ] 01-10-PLAN.md
+
+**Wave 8** *(blocked on Wave 7 completion)*
+
+- [ ] 01-11-PLAN.md
 
 ### Phase 2: Compatibility and Numerical Baseline
 
