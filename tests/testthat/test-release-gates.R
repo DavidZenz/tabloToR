@@ -285,14 +285,183 @@ test_that("written clearance must cover the inherited commit and components", {
   )
 })
 
-writeCleanroomFixture <- function(root, reviewStatus = "approved") {
+cleanroomSpecificationFields <- c(
+  "component_id", "provenance_key", "inputs", "outputs", "errors",
+  "invariants", "compatibility_example", "specification_author",
+  "specification_attestation", "implementer", "implementer_eligibility",
+  "implementer_source_access", "implementer_attestation", "reviewer",
+  "reviewer_attestation", "behavior_test", "behavior_test_status",
+  "public_standard", "redistributable_fixture",
+  "provenance_classification"
+)
+
+writeCleanroomComponentFixture <- function(
+    root,
+    provenanceKey = "R/example.R::example",
+    sourceAccess = "none",
+    omitField = NULL,
+    specificationAuthor = "fixture-specification-author",
+    implementer = "fixture-independent-implementer",
+    reviewer = "fixture-independent-reviewer",
+    redistributableFixture = "redistributable:synthetic-example") {
+  dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE)
+  values <- c(
+    component_id = "example-component",
+    provenance_key = provenanceKey,
+    inputs = "numeric scalar x",
+    outputs = "numeric scalar y",
+    errors = "non-numeric input is rejected",
+    invariants = "output length equals input length",
+    compatibility_example = "x=1 produces y=1",
+    specification_author = specificationAuthor,
+    specification_attestation = "behavior-only-no-inherited-expression",
+    implementer = implementer,
+    implementer_eligibility = "eligible",
+    implementer_source_access = sourceAccess,
+    implementer_attestation = "no-inherited-source-access",
+    reviewer = reviewer,
+    reviewer_attestation = "independent-review-complete",
+    behavior_test = "tests/testthat/test-cleanroom-example.R#observable-contract",
+    behavior_test_status = "pass",
+    public_standard = "public:documented-R-semantics",
+    redistributable_fixture = redistributableFixture,
+    provenance_classification = "new-independent"
+  )
+  if (!is.null(omitField)) values <- values[names(values) != omitField]
+  writeLines(
+    c("# Clean-room component fixture", paste0(names(values), ": ", values)),
+    file.path(root, "specs", "cleanroom", "example-component.md")
+  )
+}
+
+writeCleanroomFixture <- function(
+    root,
+    reviewStatus = "approved",
+    inheritedKeys = "R/example.R::example",
+    provenanceKey = inheritedKeys[[1L]],
+    sourceAccess = "none",
+    omitField = NULL,
+    specificationAuthor = "fixture-specification-author",
+    implementer = "fixture-independent-implementer",
+    reviewer = "fixture-independent-reviewer",
+    redistributableFixture = "redistributable:synthetic-example") {
   writeReleaseGateFixture(root, rightsStatus = "clean-room-required")
   writeLines(c(
     "# Clean-room Fixture",
+    "Cleanroom-Protocol-Version: 1",
     "Cleanroom-Coverage: complete",
-    paste0("Cleanroom-Review-Status: ", reviewStatus)
+    paste0("Cleanroom-Review-Status: ", reviewStatus),
+    paste0("Inherited-Provenance-Key: ", inheritedKeys)
   ), file.path(root, "docs", "provenance", "CLEANROOM.md"))
+  writeCleanroomComponentFixture(
+    root,
+    provenanceKey = provenanceKey,
+    sourceAccess = sourceAccess,
+    omitField = omitField,
+    specificationAuthor = specificationAuthor,
+    implementer = implementer,
+    reviewer = reviewer,
+    redistributableFixture = redistributableFixture
+  )
 }
+
+test_that("the clean-room protocol and template expose the complete contract", {
+  root <- releaseGateProjectRoot()
+  protocolPath <- file.path(root, "docs", "provenance", "CLEANROOM.md")
+  templatePath <- file.path(root, "specs", "cleanroom", "README.md")
+  expect_true(file.exists(protocolPath))
+  expect_true(file.exists(templatePath))
+
+  protocol <- readLines(protocolPath, warn = FALSE, encoding = "UTF-8")
+  template <- readLines(templatePath, warn = FALSE, encoding = "UTF-8")
+  expect_true(any(grepl("distinct", protocol, ignore.case = TRUE)))
+  expect_true(any(grepl("source-access", protocol, ignore.case = TRUE)))
+  expect_true(any(grepl("inherited source excerpts", template,
+                        ignore.case = TRUE)))
+  expect_true(any(grepl("proprietary fixtures", template,
+                        ignore.case = TRUE)))
+  for (field in cleanroomSpecificationFields) {
+    expect_true(any(grepl(
+      paste0("`", field, "`"), template, fixed = TRUE
+    )), info = field)
+  }
+})
+
+test_that("source-exposed clean-room implementers are ineligible", {
+  root <- tempfile("release-gate-cleanroom-source-exposed-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(root, sourceAccess = "inherited-source-exposed")
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "blocked")
+  expect_false(result$release_ready)
+  expect_identical(
+    result$reason_codes,
+    "CLEANROOM_IMPLEMENTER_INELIGIBLE"
+  )
+})
+
+test_that("clean-room role and evidence omissions fail exactly", {
+  for (field in c(
+    "behavior_test", "reviewer", "specification_attestation",
+    "implementer_attestation", "reviewer_attestation", "provenance_key"
+  )) {
+    root <- tempfile("release-gate-cleanroom-evidence-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeCleanroomFixture(root, omitField = field)
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(result$repository_state, "blocked", info = field)
+    expect_false(result$release_ready, info = field)
+    expect_identical(
+      result$reason_codes,
+      "CLEANROOM_EVIDENCE_INCOMPLETE",
+      info = field
+    )
+  }
+
+  duplicateRole <- tempfile("release-gate-cleanroom-roles-")
+  on.exit(unlink(duplicateRole, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(
+    duplicateRole,
+    implementer = "fixture-specification-author"
+  )
+  expect_identical(
+    evaluateReleaseGate(duplicateRole)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("clean-room coverage must cover every inherited provenance key", {
+  root <- tempfile("release-gate-cleanroom-coverage-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(
+    root,
+    inheritedKeys = c("R/example.R::example", "R/uncovered.R::uncovered")
+  )
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "blocked")
+  expect_false(result$release_ready)
+  expect_identical(
+    result$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("clean-room fixtures must be explicitly redistributable", {
+  root <- tempfile("release-gate-cleanroom-proprietary-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCleanroomFixture(root, redistributableFixture = "proprietary:private")
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "blocked")
+  expect_false(result$release_ready)
+  expect_identical(
+    result$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
 
 test_that("offline readiness stays distinct from an intentional block", {
   root <- releaseGateProjectRoot()
