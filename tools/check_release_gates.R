@@ -31,6 +31,11 @@ release_gate_read_lines <- function(path) {
   )
 }
 
+release_gate_file_hash <- function(path) {
+  if (!file.exists(path)) return(NA_character_)
+  unname(tools::md5sum(normalizePath(path, mustWork = TRUE))[[1L]])
+}
+
 release_gate_single_markers <- function(lines, fields) {
   values <- lapply(fields, function(field) {
     release_gate_marker_values(lines, field)
@@ -85,7 +90,8 @@ release_gate_evaluate <- function(root = ".") {
 
   requiredRights <- c(
     "Rights-Status", "Upstream-Repository", "Upstream-Commit",
-    "Request-Status", "Request-URL", "Evidence-Hash", "Reviewer",
+    "Request-Status", "Request-URL", "Request-Date-UTC",
+    "Request-Content-Hash", "Evidence-Hash", "Reviewer",
     "Review-Date-UTC"
   )
   rights <- release_gate_single_markers(rightsLines, requiredRights)
@@ -145,8 +151,113 @@ release_gate_evaluate <- function(root = ".") {
     ))
   }
 
+  requestPath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-REQUEST.md"
+  )
+  requestLines <- release_gate_read_lines(requestPath)
+  requestParseFail <- c(parsePass, request = "fail")
+  if (is.null(requestLines)) {
+    return(release_gate_result(
+      reason_codes = "REQUEST_SCOPE_INCOMPLETE",
+      parse_status = requestParseFail,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  requestMetadata <- release_gate_single_markers(
+    requestLines,
+    c("Request-Document-Version", "Upstream-Repository", "Upstream-Commit")
+  )
+  expectedAsks <- c(
+    "explicit-open-source-license",
+    "modification-and-public-redistribution",
+    "attributed-GEModelR-name"
+  )
+  requestAsks <- release_gate_marker_values(requestLines, "Request-Ask")
+  metadataComplete <- all(vapply(
+    requestMetadata, length, integer(1)
+  ) == 1L)
+  if (metadataComplete) {
+    requestMetadataValues <- vapply(
+      requestMetadata, `[[`, character(1), 1L
+    )
+    metadataComplete <- identical(
+      requestMetadataValues[["Request-Document-Version"]], "1"
+    ) && identical(
+      requestMetadataValues[["Upstream-Repository"]],
+      rightsValues[["Upstream-Repository"]]
+    ) && identical(
+      requestMetadataValues[["Upstream-Commit"]],
+      rightsValues[["Upstream-Commit"]]
+    )
+  }
+  scopeComplete <- metadataComplete &&
+    length(requestAsks) == length(expectedAsks) &&
+    identical(sort(requestAsks), sort(expectedAsks))
+  if (!scopeComplete) {
+    return(release_gate_result(
+      reason_codes = "REQUEST_SCOPE_INCOMPLETE",
+      parse_status = requestParseFail,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  actualRequestHash <- release_gate_file_hash(requestPath)
+  if (is.na(actualRequestHash) || !identical(
+    actualRequestHash, rightsValues[["Request-Content-Hash"]]
+  )) {
+    return(release_gate_result(
+      reason_codes = "REQUEST_HASH_MISMATCH",
+      parse_status = requestParseFail,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  requestStatus <- rightsValues[["Request-Status"]]
+  allowedRequestStatuses <- c(
+    "draft", "reviewed-unposted", "posted-pending",
+    "response-received-review-pending", "resolved"
+  )
+  if (!requestStatus %in% allowedRequestStatuses) {
+    return(release_gate_result(
+      reason_codes = "REQUEST_STATUS_INVALID",
+      parse_status = requestParseFail,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  unpostedRequest <- requestStatus %in% c(
+    "draft", "reviewed-unposted"
+  )
+  if (unpostedRequest) {
+    postingEvidenceComplete <- identical(
+      rightsValues[["Request-URL"]], "not-posted"
+    ) && identical(
+      rightsValues[["Request-Date-UTC"]], "not-posted"
+    )
+    requestBlocker <- "REQUEST_NOT_POSTED"
+  } else {
+    postingEvidenceComplete <- grepl(
+      "^https://", rightsValues[["Request-URL"]]
+    ) && grepl(
+      "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+      rightsValues[["Request-Date-UTC"]]
+    )
+    requestBlocker <- if (identical(requestStatus, "resolved")) {
+      character()
+    } else {
+      "REQUEST_NOT_A_GRANT"
+    }
+  }
+  if (!postingEvidenceComplete) {
+    return(release_gate_result(
+      reason_codes = "REQUEST_NOT_POSTED",
+      parse_status = requestParseFail,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  parsePass <- c(parsePass, request = "pass")
+
   if (identical(rightsStatus, "blocked")) {
-    if (!identical(intentionalBlockers, "RIGHTS_BLOCKED")) {
+    if (!length(requestBlocker)) requestBlocker <- "REQUEST_NOT_A_GRANT"
+    blockedReasons <- c("RIGHTS_BLOCKED", requestBlocker)
+    if (!identical(intentionalBlockers, blockedReasons)) {
       return(release_gate_result(
         reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
         parse_status = parsePass,
@@ -155,7 +266,15 @@ release_gate_evaluate <- function(root = ".") {
     }
     return(release_gate_result(
       repository_state = "blocked",
-      reason_codes = "RIGHTS_BLOCKED",
+      reason_codes = blockedReasons,
+      parse_status = parsePass,
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+
+  if (length(requestBlocker)) {
+    return(release_gate_result(
+      reason_codes = requestBlocker,
       parse_status = parsePass,
       intentional_blockers = intentionalBlockers
     ))
@@ -262,6 +381,29 @@ release_gate_write_self_fixture <- function(root, status,
                                             sensitive = FALSE) {
   dir.create(file.path(root, "docs", "provenance"), recursive = TRUE)
   dir.create(file.path(root, "docs", "release"), recursive = TRUE)
+  requestStatus <- if (identical(status, "blocked")) "draft" else "resolved"
+  requestUrl <- if (identical(requestStatus, "draft")) {
+    "not-posted"
+  } else {
+    "https://example.invalid/request"
+  }
+  requestDate <- if (identical(requestStatus, "draft")) {
+    "not-posted"
+  } else {
+    "2026-08-25T00:00:00Z"
+  }
+  requestPath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-REQUEST.md"
+  )
+  writeLines(c(
+    "Request-Document-Version: 1",
+    "Upstream-Repository: https://example.invalid/upstream",
+    "Upstream-Commit: self-test-commit",
+    "Request-Ask: explicit-open-source-license",
+    "Request-Ask: modification-and-public-redistribution",
+    "Request-Ask: attributed-GEModelR-name"
+  ), requestPath, useBytes = TRUE)
+  requestHash <- release_gate_file_hash(requestPath)
   statusLines <- rep(
     paste0("Rights-Status: ", status),
     if (duplicateStatus) 2L else 1L
@@ -270,8 +412,10 @@ release_gate_write_self_fixture <- function(root, status,
     statusLines,
     "Upstream-Repository: https://example.invalid/upstream",
     "Upstream-Commit: self-test-commit",
-    "Request-Status: resolved",
-    "Request-URL: https://example.invalid/request",
+    paste0("Request-Status: ", requestStatus),
+    paste0("Request-URL: ", requestUrl),
+    paste0("Request-Date-UTC: ", requestDate),
+    paste0("Request-Content-Hash: ", requestHash),
     "Evidence-Hash: 0123456789abcdef0123456789abcdef",
     "Reviewer: self-test-reviewer",
     "Review-Date-UTC: 2026-08-25"
@@ -284,7 +428,11 @@ release_gate_write_self_fixture <- function(root, status,
     )
   }
   writeLines(rightsLines, file.path(root, "docs", "provenance", "RIGHTS.md"))
-  blockers <- if (identical(status, "blocked")) "RIGHTS_BLOCKED" else "NONE"
+  blockers <- if (identical(status, "blocked")) {
+    "RIGHTS_BLOCKED,REQUEST_NOT_POSTED"
+  } else {
+    "NONE"
+  }
   writeLines(c(
     paste0("Rights-Gate-Status: ", status),
     paste0("Intentional-Blockers: ", blockers)
@@ -333,7 +481,7 @@ release_gate_self_test <- function() {
   release_gate_write_self_fixture(sensitive, "blocked", sensitive = TRUE)
   sensitiveResult <- release_gate_evaluate(sensitive)
 
-  identical(blockedResult$reason_codes, "RIGHTS_BLOCKED") &&
+  identical(blockedResult$reason_codes, c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")) &&
     identical(blockedResult$repository_state, "blocked") &&
     isTRUE(clearedResult$release_ready) &&
     identical(clearedResult$repository_state, "eligible") &&
@@ -419,9 +567,12 @@ release_gate_main <- function(args = commandArgs(trailingOnly = TRUE)) {
   if (isTRUE(options$assert_blocked)) {
     validBlocked <- identical(result$repository_state, "blocked") &&
       identical(result$release_ready, FALSE) &&
-      identical(result$reason_codes, "RIGHTS_BLOCKED") &&
-      identical(unname(result$parse_status), c("pass", "pass")) &&
-      identical(result$intentional_blockers, "RIGHTS_BLOCKED")
+      identical(result$reason_codes, result$intentional_blockers) &&
+      identical(
+        result$reason_codes,
+        c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")
+      ) &&
+      identical(unname(result$parse_status), c("pass", "pass", "pass"))
     return(if (validBlocked) 0L else 1L)
   }
   if (isTRUE(result$release_ready)) 0L else 1L

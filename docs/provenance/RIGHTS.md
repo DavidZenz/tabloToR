@@ -5,8 +5,10 @@
 Rights-Status: blocked
 Upstream-Repository: https://github.com/mivanic/tabloToR
 Upstream-Commit: 7e063c65a19713857ed13023f8b77dad45b15c90
-Request-Status: not-started
+Request-Status: draft
 Request-URL: not-posted
+Request-Date-UTC: not-posted
+Request-Content-Hash: bbe99ceabf51ce3ad6c6334d1362426a
 Evidence-Hash: not-available
 Reviewer: pending-rights-evidence
 Review-Date-UTC: not-reviewed
@@ -32,6 +34,7 @@ clean-room path is activated; that state does not itself establish clearance.
 
 Public evidence may record public URLs, content hashes, scope, and review
 outcomes. Private correspondence, credentials, proprietary model inputs, and
+The request content hash is an MD5 change-detection binding, not proof of authority or permission.
 full or oversized solver results must stay outside the repository. Placeholder
 values in this blocked record document that no grant has been received; they
 must never be interpreted as permission.
