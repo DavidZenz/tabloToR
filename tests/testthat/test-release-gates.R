@@ -46,16 +46,64 @@ expectReleaseGateFailure <- function(command, reason) {
   )))
 }
 
+releaseRequestAsks <- c(
+  "explicit-open-source-license",
+  "modification-and-public-redistribution",
+  "attributed-GEModelR-name"
+)
+
+releaseGateMarker <- function(lines, field) {
+  pattern <- paste0("^", field, ":[[:space:]]*(.*)$")
+  sub(pattern, "\\1", grep(pattern, lines, value = TRUE))
+}
+
+writeReleaseRequestFixture <- function(root, asks = releaseRequestAsks) {
+  path <- file.path(root, "docs", "provenance", "UPSTREAM-REQUEST.md")
+  writeLines(c(
+    "# Upstream rights request fixture",
+    "Request-Document-Version: 1",
+    "Upstream-Repository: https://github.com/mivanic/tabloToR",
+    "Upstream-Commit: upstream-fixture-commit",
+    paste0("Request-Ask: ", asks)
+  ), path, useBytes = TRUE)
+  unname(tools::md5sum(path)[[1L]])
+}
+
 writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
                                     releaseStatus = rightsStatus,
                                     includeStatus = TRUE,
                                     duplicateStatus = FALSE,
                                     includeScope = FALSE,
+                                    requestStatus = if (
+                                      identical(rightsStatus, "blocked")
+                                    ) "draft" else "resolved",
+                                    requestAsks = releaseRequestAsks,
+                                    requestHash = NULL,
+                                    requestUrl = if (
+                                      requestStatus %in% c(
+                                        "draft", "reviewed-unposted"
+                                      )
+                                    ) "not-posted" else
+                                      "https://example.invalid/public-request",
+                                    requestDate = if (
+                                      requestStatus %in% c(
+                                        "draft", "reviewed-unposted"
+                                      )
+                                    ) "not-posted" else
+                                      "2026-08-25T00:00:00Z",
                                     intentionalBlockers = if (
                                       identical(rightsStatus, "blocked")
-                                    ) "RIGHTS_BLOCKED" else "NONE") {
+                                    ) paste(c(
+                                      "RIGHTS_BLOCKED",
+                                      if (requestStatus %in% c(
+                                        "draft", "reviewed-unposted"
+                                      )) "REQUEST_NOT_POSTED" else
+                                        "REQUEST_NOT_A_GRANT"
+                                    ), collapse = ",") else "NONE") {
   dir.create(file.path(root, "docs", "provenance"), recursive = TRUE)
   dir.create(file.path(root, "docs", "release"), recursive = TRUE)
+  actualRequestHash <- writeReleaseRequestFixture(root, requestAsks)
+  if (is.null(requestHash)) requestHash <- actualRequestHash
   statusLines <- if (includeStatus) {
     rep(paste0("Rights-Status: ", rightsStatus),
         if (duplicateStatus) 2L else 1L)
@@ -67,8 +115,10 @@ writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
     statusLines,
     "Upstream-Repository: https://github.com/mivanic/tabloToR",
     "Upstream-Commit: upstream-fixture-commit",
-    "Request-Status: resolved",
-    "Request-URL: https://example.invalid/public-request",
+    paste0("Request-Status: ", requestStatus),
+    paste0("Request-URL: ", requestUrl),
+    paste0("Request-Date-UTC: ", requestDate),
+    paste0("Request-Content-Hash: ", requestHash),
     "Evidence-Hash: 0123456789abcdef0123456789abcdef",
     "Reviewer: fixture-reviewer",
     "Review-Date-UTC: 2026-08-25"
@@ -94,14 +144,91 @@ test_that("the checked-in repository is positively recognized as blocked", {
 
   expect_identical(result$repository_state, "blocked")
   expect_false(result$release_ready)
-  expect_identical(result$reason_codes, "RIGHTS_BLOCKED")
-  expect_identical(unname(result$parse_status), c("pass", "pass"))
+  expect_identical(
+    result$reason_codes,
+    c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")
+  )
+  expect_identical(
+    unname(result$parse_status),
+    c("pass", "pass", "pass")
+  )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
   expect_identical(command$status, 0L)
   expect_true(any(command$output == "repository_state=blocked"))
   expect_true(any(command$output == "release_ready=false"))
-  expect_true(any(command$output == "reason_codes=RIGHTS_BLOCKED"))
+  expect_true(any(command$output == paste0(
+    "reason_codes=RIGHTS_BLOCKED,REQUEST_NOT_POSTED"
+  )))
+})
+
+test_that("the exact D-01 request is complete and hash-bound", {
+  root <- releaseGateProjectRoot()
+  requestPath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-REQUEST.md"
+  )
+  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  expect_true(file.exists(requestPath))
+
+  requestLines <- readLines(requestPath, warn = FALSE, encoding = "UTF-8")
+  rightsLines <- readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  expect_setequal(
+    releaseGateMarker(requestLines, "Request-Ask"),
+    releaseRequestAsks
+  )
+  expect_identical(releaseGateMarker(rightsLines, "Request-Status"), "draft")
+  expect_identical(
+    releaseGateMarker(rightsLines, "Request-Content-Hash"),
+    unname(tools::md5sum(requestPath)[[1L]])
+  )
+})
+
+test_that("omitting any D-01 ask fails with the exact scope reason", {
+  for (ask in releaseRequestAsks) {
+    root <- tempfile("release-gate-request-scope-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeReleaseGateFixture(
+      root,
+      requestAsks = setdiff(releaseRequestAsks, ask)
+    )
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(result$repository_state, "invalid")
+    expect_false(result$release_ready)
+    expect_identical(result$reason_codes, "REQUEST_SCOPE_INCOMPLETE")
+  }
+})
+
+test_that("a changed request fails with the exact hash reason", {
+  root <- tempfile("release-gate-request-hash-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeReleaseGateFixture(
+    root,
+    requestHash = "00000000000000000000000000000000"
+  )
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_false(result$release_ready)
+  expect_identical(result$reason_codes, "REQUEST_HASH_MISMATCH")
+})
+
+test_that("silence and ambiguous responses are never grants", {
+  for (requestStatus in c(
+    "posted-pending", "response-received-review-pending"
+  )) {
+    root <- tempfile("release-gate-request-response-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeReleaseGateFixture(root, requestStatus = requestStatus)
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(result$repository_state, "blocked")
+    expect_false(result$release_ready)
+    expect_identical(
+      result$reason_codes,
+      c("RIGHTS_BLOCKED", "REQUEST_NOT_A_GRANT")
+    )
+  }
 })
 
 test_that("missing or duplicate rights status has an exact parser reason", {
@@ -170,8 +297,10 @@ writeCleanroomFixture <- function(root, reviewStatus = "approved") {
 test_that("offline readiness stays distinct from an intentional block", {
   root <- releaseGateProjectRoot()
   offline <- runReleaseGate(c("--root", root, "--offline"))
-  expectReleaseGateFailure(offline, "RIGHTS_BLOCKED")
-
+  expectReleaseGateFailure(
+    offline,
+    "RIGHTS_BLOCKED,REQUEST_NOT_POSTED"
+  )
   malformed <- tempfile("release-gate-unrelated-error-")
   on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
   writeReleaseGateFixture(malformed)
