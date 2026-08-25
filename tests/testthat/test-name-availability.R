@@ -19,7 +19,7 @@ nameCheckTool = function() {
   required = c(
     "name_check_validate_name", "name_check_exact_matches",
     "name_check_evaluate_fixture", "name_check_write_report",
-    "name_check_verify_report"
+    "name_check_verify_report", "name_check_verify_identity"
   )
   missing = required[!vapply(
     required, exists, logical(1), envir = nameCheckEnvironment,
@@ -231,6 +231,142 @@ test_that("check kinds are restricted to the three release transitions", {
       "GEModelR", nameCheckFixture(), check_kind = "informal"
     ),
     "NAME_CHECK_KIND_INVALID",
+    fixed = TRUE
+  )
+})
+
+nameCheckWriteIdentity = function(root, approved = FALSE,
+                                   owner = "approved-owner",
+                                   reviewer = "Release reviewer",
+                                   reviewDate = "2026-08-25T12:00:00Z") {
+  dir.create(
+    file.path(root, "docs", "release"), recursive = TRUE,
+    showWarnings = FALSE
+  )
+  pending = "awaiting-human-approval"
+  approval = if (approved) "approved" else "unapproved"
+  contact = if (approved) "maintainer@example.org" else pending
+  security = if (approved) "security@example.org" else pending
+  ownerValue = if (approved) owner else pending
+  canonical = if (approved) {
+    paste0("https://github.com/", owner, "/GEModelR")
+  } else {
+    pending
+  }
+  reviewerValue = if (approved) reviewer else pending
+  dateValue = if (approved) reviewDate else pending
+  governance = c(
+    "# Governance fixture", "",
+    "Maintainer: David Zenz",
+    paste0("Approved-Contact: ", contact),
+    "Release-Authority: David Zenz",
+    paste0("Security-Route: ", security),
+    paste0("Identity-Approval: ", approval),
+    paste0("Reviewer: ", reviewerValue),
+    paste0("Review-Date-UTC: ", dateValue)
+  )
+  repository = c(
+    "# Repository fixture", "",
+    paste0("Owner-Slug: ", ownerValue),
+    "Repository-Name: GEModelR",
+    paste0("Canonical-URL: ", canonical),
+    paste0(
+      "Issue-Tracker: ",
+      if (approved) paste0(canonical, "/issues") else pending
+    ),
+    "Visibility-Boundary: private-development",
+    paste0("Identity-Approval: ", approval),
+    paste0("Reviewer: ", reviewerValue),
+    paste0("Review-Date-UTC: ", dateValue),
+    "Reservation-Authorization: not-authorized",
+    "Visibility-Detachment-Authorization: not-authorized",
+    "Branch-Settings-Authorization: not-authorized",
+    "Release-Authorization: not-authorized"
+  )
+  governancePath = file.path(root, "GOVERNANCE.md")
+  repositoryPath = file.path(root, "docs", "release", "REPOSITORY.md")
+  writeLines(governance, governancePath, useBytes = TRUE)
+  writeLines(repository, repositoryPath, useBytes = TRUE)
+  c(governance = governancePath, repository = repositoryPath)
+}
+
+test_that("checked-in identity records are explicitly unapproved", {
+  tool = nameCheckTool()
+  root = nameCheckProjectRoot()
+  expect_true(tool$name_check_verify_identity(
+    file.path(root, "GOVERNANCE.md"),
+    file.path(root, "docs", "release", "REPOSITORY.md"),
+    expect = "unapproved"
+  ))
+})
+
+test_that("unapproved identity requires exact pending and authorization markers", {
+  tool = nameCheckTool()
+  root = tempfile("GEModelR-unapproved-identity-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  paths = nameCheckWriteIdentity(root)
+  expect_true(tool$name_check_verify_identity(
+    paths[["governance"]], paths[["repository"]], expect = "unapproved"
+  ))
+
+  lines = readLines(paths[["governance"]], warn = FALSE)
+  lines[lines == "Approved-Contact: awaiting-human-approval"] =
+    "Approved-Contact: inferred@example.org"
+  writeLines(lines, paths[["governance"]], useBytes = TRUE)
+  expect_error(
+    tool$name_check_verify_identity(
+      paths[["governance"]], paths[["repository"]], expect = "unapproved"
+    ),
+    "NAME_IDENTITY_UNAPPROVED_INVALID",
+    fixed = TRUE
+  )
+
+  paths = nameCheckWriteIdentity(root)
+  lines = readLines(paths[["repository"]], warn = FALSE)
+  lines[lines == "Branch-Settings-Authorization: not-authorized"] =
+    "Branch-Settings-Authorization: authorized"
+  writeLines(lines, paths[["repository"]], useBytes = TRUE)
+  expect_error(
+    tool$name_check_verify_identity(
+      paths[["governance"]], paths[["repository"]], expect = "unapproved"
+    ),
+    "NAME_IDENTITY_EXTERNAL_ACTION_AUTHORIZED",
+    fixed = TRUE
+  )
+})
+
+test_that("approved identity enforces derived URLs and signature parity", {
+  tool = nameCheckTool()
+  root = tempfile("GEModelR-approved-identity-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  paths = nameCheckWriteIdentity(root, approved = TRUE)
+  expect_true(tool$name_check_verify_identity(
+    paths[["governance"]], paths[["repository"]], expect = "approved"
+  ))
+
+  lines = readLines(paths[["repository"]], warn = FALSE)
+  lines[startsWith(lines, "Canonical-URL:")] =
+    "Canonical-URL: https://github.com/wrong/GEModelR"
+  writeLines(lines, paths[["repository"]], useBytes = TRUE)
+  expect_error(
+    tool$name_check_verify_identity(
+      paths[["governance"]], paths[["repository"]], expect = "approved"
+    ),
+    "NAME_IDENTITY_URL_MISMATCH",
+    fixed = TRUE
+  )
+
+  paths = nameCheckWriteIdentity(root, approved = TRUE)
+  lines = readLines(paths[["repository"]], warn = FALSE)
+  lines[startsWith(lines, "Reviewer:")] = "Reviewer: Different reviewer"
+  writeLines(lines, paths[["repository"]], useBytes = TRUE)
+  expect_error(
+    tool$name_check_verify_identity(
+      paths[["governance"]], paths[["repository"]], expect = "approved"
+    ),
+    "NAME_IDENTITY_SIGNATURE_MISMATCH",
     fixed = TRUE
   )
 })

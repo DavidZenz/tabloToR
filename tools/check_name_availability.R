@@ -403,6 +403,149 @@ name_check_verify_report = function(path, require_review = TRUE) {
   TRUE
 }
 
+name_check_identity_fields = function(record) {
+  if (identical(record, "governance")) {
+    return(c(
+      "Maintainer", "Approved-Contact", "Release-Authority",
+      "Security-Route", "Identity-Approval", "Reviewer",
+      "Review-Date-UTC"
+    ))
+  }
+  if (identical(record, "repository")) {
+    return(c(
+      "Owner-Slug", "Repository-Name", "Canonical-URL", "Issue-Tracker",
+      "Visibility-Boundary", "Identity-Approval", "Reviewer",
+      "Review-Date-UTC", "Reservation-Authorization",
+      "Visibility-Detachment-Authorization", "Branch-Settings-Authorization",
+      "Release-Authorization"
+    ))
+  }
+  name_check_fail("NAME_IDENTITY_RECORD_INVALID")
+}
+
+name_check_read_identity = function(path, record) {
+  suffix = toupper(record)
+  if (!file.exists(path)) {
+    name_check_fail(paste0("NAME_IDENTITY_", suffix, "_MISSING"))
+  }
+  lines = tryCatch(
+    readLines(path, warn = FALSE, encoding = "UTF-8"),
+    error = function(error) name_check_fail(paste0(
+      "NAME_IDENTITY_", suffix, "_MALFORMED"
+    ))
+  )
+  fields = name_check_identity_fields(record)
+  values = lapply(fields, function(field) name_check_marker(lines, field))
+  names(values) = fields
+  if (any(vapply(values, length, integer(1)) != 1L)) {
+    name_check_fail(paste0("NAME_IDENTITY_", suffix, "_MALFORMED"))
+  }
+  values = vapply(values, `[[`, character(1), 1L)
+  if (any(is.na(values)) || any(!nzchar(values)) ||
+      any(values != trimws(values))) {
+    name_check_fail(paste0("NAME_IDENTITY_", suffix, "_MALFORMED"))
+  }
+  values
+}
+
+name_check_valid_email = function(value) {
+  is.character(value) && length(value) == 1L && !is.na(value) &&
+    grepl(
+      "^[^[:space:]<>@]+@[^[:space:]<>@.]+([.][^[:space:]<>@.]+)+$",
+      value
+    )
+}
+
+name_check_valid_security_route = function(value) {
+  name_check_valid_email(value) ||
+    (startsWith(value, "mailto:") &&
+       name_check_valid_email(sub("^mailto:", "", value))) ||
+    grepl("^https://[^[:space:]]+$", value)
+}
+
+name_check_valid_github_owner = function(value) {
+  grepl("^[A-Za-z0-9]([A-Za-z0-9-]{0,37}[A-Za-z0-9])?$", value)
+}
+
+name_check_valid_review_date = function(value) {
+  grepl(
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2}(T[0-9]{2}:[0-9]{2}:[0-9]{2}Z)?$",
+    value
+  )
+}
+
+name_check_verify_identity = function(governance_path, repository_path,
+                                       expect = "unapproved") {
+  if (!is.character(expect) || length(expect) != 1L || is.na(expect) ||
+      !expect %in% c("unapproved", "approved")) {
+    name_check_fail("NAME_IDENTITY_EXPECT_INVALID")
+  }
+  governance = name_check_read_identity(governance_path, "governance")
+  repository = name_check_read_identity(repository_path, "repository")
+
+  if (!identical(governance[["Maintainer"]], "David Zenz") ||
+      !identical(governance[["Release-Authority"]], "David Zenz") ||
+      !identical(repository[["Repository-Name"]], "GEModelR") ||
+      !identical(repository[["Visibility-Boundary"]], "private-development")) {
+    name_check_fail("NAME_IDENTITY_LOCKED_VALUE_MISMATCH")
+  }
+
+  authorization_fields = c(
+    "Reservation-Authorization", "Visibility-Detachment-Authorization",
+    "Branch-Settings-Authorization", "Release-Authorization"
+  )
+  if (any(repository[authorization_fields] != "not-authorized")) {
+    name_check_fail("NAME_IDENTITY_EXTERNAL_ACTION_AUTHORIZED")
+  }
+
+  pending = "awaiting-human-approval"
+  if (identical(expect, "unapproved")) {
+    governance_pending = c(
+      "Approved-Contact", "Security-Route", "Reviewer", "Review-Date-UTC"
+    )
+    repository_pending = c(
+      "Owner-Slug", "Canonical-URL", "Issue-Tracker", "Reviewer",
+      "Review-Date-UTC"
+    )
+    if (!identical(governance[["Identity-Approval"]], "unapproved") ||
+        !identical(repository[["Identity-Approval"]], "unapproved") ||
+        any(governance[governance_pending] != pending) ||
+        any(repository[repository_pending] != pending)) {
+      name_check_fail("NAME_IDENTITY_UNAPPROVED_INVALID")
+    }
+    return(TRUE)
+  }
+
+  if (!identical(governance[["Identity-Approval"]], "approved") ||
+      !identical(repository[["Identity-Approval"]], "approved") ||
+      any(governance == pending) || any(repository == pending)) {
+    name_check_fail("NAME_IDENTITY_APPROVAL_INCOMPLETE")
+  }
+  if (!name_check_valid_email(governance[["Approved-Contact"]])) {
+    name_check_fail("NAME_IDENTITY_CONTACT_INVALID")
+  }
+  if (!name_check_valid_security_route(governance[["Security-Route"]])) {
+    name_check_fail("NAME_IDENTITY_SECURITY_ROUTE_INVALID")
+  }
+  owner = repository[["Owner-Slug"]]
+  if (!name_check_valid_github_owner(owner)) {
+    name_check_fail("NAME_IDENTITY_OWNER_SLUG_INVALID")
+  }
+  canonical = paste0("https://github.com/", owner, "/GEModelR")
+  if (!identical(repository[["Canonical-URL"]], canonical) ||
+      !identical(repository[["Issue-Tracker"]], paste0(canonical, "/issues"))) {
+    name_check_fail("NAME_IDENTITY_URL_MISMATCH")
+  }
+  if (!identical(governance[["Reviewer"]], repository[["Reviewer"]]) ||
+      !identical(
+        governance[["Review-Date-UTC"]], repository[["Review-Date-UTC"]]
+      ) || !nzchar(governance[["Reviewer"]]) ||
+      !name_check_valid_review_date(governance[["Review-Date-UTC"]])) {
+    name_check_fail("NAME_IDENTITY_SIGNATURE_MISMATCH")
+  }
+  TRUE
+}
+
 name_check_download = function(url, source_id, timeout_seconds = 30L,
                                 maximum_bytes = 100 * 1024^2) {
   path = tempfile(paste0("GEModelR-", source_id, "-"))
@@ -668,7 +811,20 @@ name_check_main = function(args = commandArgs(trailingOnly = TRUE)) {
     return(invisible(TRUE))
   }
   if ("--verify-identity" %in% args) {
-    name_check_fail("NAME_IDENTITY_VERIFIER_NOT_IMPLEMENTED")
+    index = which(args == "--verify-identity")
+    if (length(index) != 1L || index + 2L > length(args) ||
+        startsWith(args[[index + 1L]], "--") ||
+        startsWith(args[[index + 2L]], "--")) {
+      name_check_fail("NAME_IDENTITY_ARGUMENTS_INVALID")
+    }
+    expect = name_check_cli_value(
+      args, "--expect", required = TRUE
+    )
+    name_check_verify_identity(
+      args[[index + 1L]], args[[index + 2L]], expect = expect
+    )
+    message(paste0("identity_status=", expect))
+    return(invisible(TRUE))
   }
   name = name_check_cli_value(args, "--name", required = TRUE)
   output = name_check_cli_value(args, "--output", required = TRUE)
