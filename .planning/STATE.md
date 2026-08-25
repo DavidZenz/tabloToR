@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 1
 current_phase_name: provenance-and-release-boundary
 status: executing
-stopped_at: Completed 01-04-PLAN.md
-last_updated: "2026-08-25T11:48:04.239Z"
+stopped_at: Completed 01-05-PLAN.md
+last_updated: "2026-08-25T12:14:24.908Z"
 last_activity: 2026-08-25
-last_activity_desc: Completed Plan 01-04 signed name, governance, and repository identity evidence
-state_head: 3dfb751b538bedbe995fd4ea75e4accedc6b6d42
+last_activity_desc: Completed Plan 01-05 reviewed attribution propagation
+state_head: 773933aa464095ba5407a5b293f7479c74079a7c
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 6
-  completed_plans: 4
+  completed_plans: 5
 milestone_name: milestone
 ---
 
@@ -29,30 +29,30 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 ## Current Position
 
 Phase: 1 (provenance-and-release-boundary) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
-Last activity: 2026-08-25 — Completed Plan 01-04 signed name, governance, and repository identity evidence
+Last activity: 2026-08-25 — Completed Plan 01-05 reviewed attribution propagation
 
-Progress: [███████░░░] 67%
+Progress: [████████░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 4
-- Average duration: 67 min
-- Total execution time: 269 min
+- Total plans completed: 5
+- Average duration: 58 min
+- Total execution time: 289 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 4 | 269 min | 67 min |
+| 01 | 5 | 289 min | 58 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (17 min), 01-02 (176 min), 01-03 (23 min), 01-04 (53 min)
-- Trend: Signed name and repository identity evidence established
+- Last 5 plans: 01-01 (17 min), 01-02 (176 min), 01-03 (23 min), 01-04 (53 min), 01-05 (20 min)
+- Trend: Reviewed attribution propagated across all required destinations
 
 **Per-Plan Metrics:**
 
@@ -62,6 +62,7 @@ Progress: [███████░░░] 67%
 | Phase 01 P02 | 176 min | 3 tasks | 8 files |
 | Phase 01 P03 | 23 min | 1 tasks | 4 files |
 | Phase 01 P04 | 53 min | 3 tasks | 5 files |
+| Phase 01 P05 | 20 min | 2 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: Approve the initial GEModelR report as point-in-time exact-name collision evidence only, not trademark clearance or reservation.
 - [Phase 1]: Use David Zenz / DavidZenz with zenz@wiiw.ac.at and mailto:zenz@wiiw.ac.at as the exact approved v1 identity values.
 - [Phase 1]: Keep repository reservation, visibility or detachment, branch settings, and release or publication separately not-authorized.
+- [Phase 1]: Assign David Zenz aut/cre/cph and Maros Ivanic aut only from reviewed source and governance evidence.
+- [Phase 1]: Credit the upstream public-domain/CC0 baseline voluntarily while keeping mivanicERS unresolved.
+- [Phase 1]: Keep the package named tabloToR and defer final package licensing and standalone Maintainer metadata to Plan 01-06.
 
 ### Pending Todos
 
@@ -108,6 +112,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-25T11:48:04.227Z
-Stopped at: Completed 01-04-PLAN.md
+Last session: 2026-08-25T12:14:24.896Z
+Stopped at: Completed 01-05-PLAN.md
 Resume file: None
