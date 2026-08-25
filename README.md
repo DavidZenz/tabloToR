@@ -2,6 +2,38 @@
 
 A package that can interpret GEMPACK-style TABLO models in R and solve them
 
+## Provenance and redistribution status
+
+This package derives from the public
+[`mivanic/tabloToR`](https://github.com/mivanic/tabloToR) repository at audited
+commit
+[`7e063c65a19713857ed13023f8b77dad45b15c90`](https://github.com/mivanic/tabloToR/tree/7e063c65a19713857ed13023f8b77dad45b15c90).
+Maros Ivanic authored that upstream baseline and David Zenz authored the
+reviewed post-baseline sparse and native solver work. The upstream baseline has
+an accepted public-domain/CC0 basis; it is credited here even though CC0 does
+not require attribution.
+
+The current public redistribution remains blocked. The complete Phase 1 release
+is integrated and the dependency compatibility audit needed to finalize the
+package license remains pending. The package is still named `tabloToR`; this
+notice neither performs the GEModelR rename nor authorizes publication.
+
+The evidence-to-role mapping is in
+[`docs/provenance/ATTRIBUTION.md`](docs/provenance/ATTRIBUTION.md), the accepted
+rights basis and scope are in
+[`docs/provenance/RIGHTS.md`](docs/provenance/RIGHTS.md), and the reviewed source
+ledger is in
+[`docs/provenance/PROVENANCE.csv`](docs/provenance/PROVENANCE.csv).
+
+Reviewed attribution evidence keys:
+
+- `R/GEModel.R::GEModel$loadTablo`
+- `R/GEModel.R::GEModel$solveModel`
+- `R/processTablo.R::processTablo`
+- `R/sparseCompiler.R::sparse_compile_spec`
+- `R/sparseSolver.R::sparse_solve_model`
+- `src/sparse-schur.cpp::tabloToR_schur_accumulate_global`
+
 # To install, you can try the following: 
 
 ```R

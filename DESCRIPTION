@@ -2,7 +2,12 @@ Package: tabloToR
 Type: Package
 Title: TABLO models in R with legacy and sparse solvers
 Version: 0.1.0
-Author: Who wrote it
+Authors@R: c(
+    person("David", "Zenz", email = "zenz@wiiw.ac.at",
+           role = c("aut", "cre", "cph")),
+    person("Maros", "Ivanic", role = "aut",
+           comment = c("Attribution" = "Author of the reviewed public-domain/CC0 upstream tabloToR baseline"))
+    )
 Maintainer: The package maintainer <yourself@somewhere.net>
 Description: Interpret GEMPACK-style TABLO models in R.  The package keeps
     the original in-memory solver and adds an opt-in integer-indexed sparse
@@ -20,3 +25,12 @@ LinkingTo:
 Suggests:
     testthat
 Config/testthat/edition: 3
+Config/Attribution-People: David Zenz; Maros Ivanic
+Config/Attribution-Record: docs/provenance/ATTRIBUTION.md
+Config/Attribution-Evidence:
+    R/GEModel.R::GEModel$loadTablo;
+    R/GEModel.R::GEModel$solveModel;
+    R/processTablo.R::processTablo;
+    R/sparseCompiler.R::sparse_compile_spec;
+    R/sparseSolver.R::sparse_solve_model;
+    src/sparse-schur.cpp::tabloToR_schur_accumulate_global
