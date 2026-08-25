@@ -193,6 +193,181 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
   )
 }
 
+release_gate_public_domain_failure <- function(reason, parsePass,
+                                               intentionalBlockers) {
+  release_gate_result(
+    reason_codes = reason,
+    parse_status = c(parsePass, public_domain = "fail"),
+    intentional_blockers = intentionalBlockers
+  )
+}
+
+release_gate_evaluate_public_domain <- function(
+    root, rightsLines, rightsValues, parsePass, intentionalBlockers) {
+  fail <- function(reason) {
+    release_gate_public_domain_failure(
+      reason, parsePass, intentionalBlockers
+    )
+  }
+  requiredRightsEvidence <- c(
+    "Rights-Basis", "Covered-Upstream-Commit", "Covered-Components",
+    "Excluded-Components", "Provenance-Coverage-Status",
+    "Evidence-Document", "Response-URL", "Response-Date-UTC",
+    "Response-Author-GitHub", "Response-Author-Association",
+    "Response-Review-Status", "Successor-Name-Basis",
+    "Name-Availability-Status"
+  )
+  rightsEvidence <- release_gate_single_markers(
+    rightsLines, requiredRightsEvidence
+  )
+  if (any(vapply(rightsEvidence, length, integer(1)) != 1L)) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+  evidenceValues <- vapply(rightsEvidence, `[[`, character(1), 1L)
+  if (any(!nzchar(trimws(evidenceValues)))) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+  evidenceDocument <- evidenceValues[["Evidence-Document"]]
+  if (!identical(evidenceDocument, "docs/provenance/UPSTREAM-RESPONSE.md")) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+  evidencePath <- file.path(root, evidenceDocument)
+  evidenceLines <- release_gate_read_lines(evidencePath)
+  if (is.null(evidenceLines)) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+  if (!identical(
+    release_gate_file_hash(evidencePath), rightsValues[["Evidence-Hash"]]
+  )) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_HASH_MISMATCH"))
+  }
+
+  responseFields <- c(
+    "Response-Document-Version", "Upstream-Repository", "Upstream-Commit",
+    "Response-URL", "Response-Date-UTC", "Response-Author-GitHub",
+    "Response-Author-Association", "Response-Statement", "CC0-Reference",
+    "US-Government-Works-Reference"
+  )
+  response <- release_gate_single_markers(evidenceLines, responseFields)
+  if (any(vapply(response, length, integer(1)) != 1L)) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+  responseValues <- vapply(response, `[[`, character(1), 1L)
+  expectedStatement <- paste(
+    "It is in the public domain (CC0)--I created it as part of my duties",
+    "as an employee of the US federal government, and so I do not retain",
+    "any copyright."
+  )
+  metadataMatches <- identical(
+    responseValues[["Response-Document-Version"]], "1"
+  ) && identical(
+    responseValues[["Upstream-Repository"]],
+    rightsValues[["Upstream-Repository"]]
+  ) && identical(
+    responseValues[["Upstream-Commit"]],
+    rightsValues[["Upstream-Commit"]]
+  ) && identical(
+    responseValues[["Response-URL"]],
+    evidenceValues[["Response-URL"]]
+  ) && identical(
+    responseValues[["Response-Date-UTC"]],
+    evidenceValues[["Response-Date-UTC"]]
+  ) && identical(
+    responseValues[["Response-Author-GitHub"]],
+    evidenceValues[["Response-Author-GitHub"]]
+  ) && identical(
+    responseValues[["Response-Author-Association"]],
+    evidenceValues[["Response-Author-Association"]]
+  ) && identical(
+    responseValues[["Response-Statement"]], expectedStatement
+  ) && identical(
+    responseValues[["CC0-Reference"]],
+    "https://creativecommons.org/publicdomain/zero/1.0/"
+  ) && startsWith(
+    responseValues[["US-Government-Works-Reference"]],
+    "https://uscode.house.gov/"
+  )
+  if (!metadataMatches) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+
+  scopeComplete <- identical(
+    evidenceValues[["Rights-Basis"]], "public-domain-cc0"
+  ) && identical(
+    evidenceValues[["Covered-Upstream-Commit"]],
+    rightsValues[["Upstream-Commit"]]
+  ) && identical(
+    evidenceValues[["Covered-Components"]],
+    "upstream-authored-inherited-source"
+  ) && identical(
+    evidenceValues[["Excluded-Components"]],
+    "unrelated-third-party-components"
+  )
+  if (!scopeComplete) {
+    return(fail("RIGHTS_SCOPE_INCOMPLETE"))
+  }
+  reviewComplete <- identical(
+    rightsValues[["Rights-Status"]], "cleared"
+  ) && identical(
+    evidenceValues[["Response-Review-Status"]],
+    "accepted-public-domain-cc0"
+  ) && !grepl(
+    "^pending", rightsValues[["Reviewer"]], ignore.case = TRUE
+  ) && grepl(
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+    rightsValues[["Review-Date-UTC"]]
+  ) && identical(
+    evidenceValues[["Successor-Name-Basis"]], "independently-selected"
+  ) && identical(
+    evidenceValues[["Name-Availability-Status"]], "pending-plan-01-04"
+  )
+  if (!reviewComplete) {
+    return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
+  }
+
+  coverageStatus <- evidenceValues[["Provenance-Coverage-Status"]]
+  if (!identical(coverageStatus, "complete")) {
+    blocker <- "PROVENANCE_COVERAGE_INCOMPLETE"
+    if (!identical(intentionalBlockers, blocker)) {
+      return(release_gate_result(
+        reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+        parse_status = c(
+          parsePass, public_domain = "pass",
+          provenance_coverage = "incomplete"
+        ),
+        intentional_blockers = intentionalBlockers
+      ))
+    }
+    return(release_gate_result(
+      repository_state = "blocked",
+      reason_codes = blocker,
+      parse_status = c(
+        parsePass, public_domain = "pass",
+        provenance_coverage = "incomplete"
+      ),
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  if (length(intentionalBlockers)) {
+    return(release_gate_result(
+      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+      parse_status = c(
+        parsePass, public_domain = "pass", provenance_coverage = "pass"
+      ),
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  release_gate_result(
+    repository_state = "eligible",
+    release_ready = TRUE,
+    reason_codes = character(),
+    parse_status = c(
+      parsePass, public_domain = "pass", provenance_coverage = "pass"
+    ),
+    intentional_blockers = intentionalBlockers
+  )
+}
+
 release_gate_has_sensitive_evidence <- function(root) {
   evidenceDirs <- c(
     file.path(root, "docs", c("provenance", "release")),
@@ -303,6 +478,12 @@ release_gate_evaluate <- function(root = ".") {
     ))
   }
 
+  requestStatus <- rightsValues[["Request-Status"]]
+  if (identical(requestStatus, "superseded-by-public-response")) {
+    return(release_gate_evaluate_public_domain(
+      root, rightsLines, rightsValues, parsePass, intentionalBlockers
+    ))
+  }
   requestPath <- file.path(
     root, "docs", "provenance", "UPSTREAM-REQUEST.md"
   )
@@ -595,6 +776,67 @@ release_gate_write_self_fixture <- function(root, status,
   }
 }
 
+release_gate_write_self_public_domain_fixture <- function(
+    root, coverageStatus = "complete") {
+  release_gate_write_self_fixture(root, "cleared")
+  responsePath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-RESPONSE.md"
+  )
+  responseUrl <- "https://example.invalid/public-domain-response"
+  writeLines(c(
+    "Response-Document-Version: 1",
+    "Upstream-Repository: https://example.invalid/upstream",
+    "Upstream-Commit: self-test-commit",
+    paste0("Response-URL: ", responseUrl),
+    "Response-Date-UTC: 2026-08-25T00:00:00Z",
+    "Response-Author-GitHub: self-test-owner",
+    "Response-Author-Association: OWNER",
+    paste0(
+      "Response-Statement: ",
+      "It is in the public domain (CC0)--I created it as part of my duties ",
+      "as an employee of the US federal government, and so I do not retain ",
+      "any copyright."
+    ),
+    "CC0-Reference: https://creativecommons.org/publicdomain/zero/1.0/",
+    paste0(
+      "US-Government-Works-Reference: ",
+      "https://uscode.house.gov/view.xhtml?section105"
+    )
+  ), responsePath, useBytes = TRUE)
+  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  rightsLines <- release_gate_read_lines(rightsPath)
+  rightsLines[grepl("^Request-Status:", rightsLines)] <-
+    "Request-Status: superseded-by-public-response"
+  rightsLines[grepl("^Evidence-Hash:", rightsLines)] <- paste0(
+    "Evidence-Hash: ", release_gate_file_hash(responsePath)
+  )
+  rightsLines <- c(
+    rightsLines,
+    "Rights-Basis: public-domain-cc0",
+    "Covered-Upstream-Commit: self-test-commit",
+    "Covered-Components: upstream-authored-inherited-source",
+    "Excluded-Components: unrelated-third-party-components",
+    paste0("Provenance-Coverage-Status: ", coverageStatus),
+    "Evidence-Document: docs/provenance/UPSTREAM-RESPONSE.md",
+    paste0("Response-URL: ", responseUrl),
+    "Response-Date-UTC: 2026-08-25T00:00:00Z",
+    "Response-Author-GitHub: self-test-owner",
+    "Response-Author-Association: OWNER",
+    "Response-Review-Status: accepted-public-domain-cc0",
+    "Successor-Name-Basis: independently-selected",
+    "Name-Availability-Status: pending-plan-01-04"
+  )
+  writeLines(rightsLines, rightsPath)
+  blockers <- if (identical(coverageStatus, "complete")) {
+    "NONE"
+  } else {
+    "PROVENANCE_COVERAGE_INCOMPLETE"
+  }
+  writeLines(c(
+    "Rights-Gate-Status: cleared",
+    paste0("Intentional-Blockers: ", blockers)
+  ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
+}
 release_gate_self_test <- function() {
   root <- tempfile("release-gate-self-test-")
   dir.create(root)
@@ -609,6 +851,15 @@ release_gate_self_test <- function() {
   release_gate_write_self_fixture(cleared, "cleared", includeScope = TRUE)
   clearedResult <- release_gate_evaluate(cleared)
 
+  publicDomain <- fixture("public-domain")
+  release_gate_write_self_public_domain_fixture(publicDomain)
+  publicDomainResult <- release_gate_evaluate(publicDomain)
+
+  publicDomainPending <- fixture("public-domain-pending")
+  release_gate_write_self_public_domain_fixture(
+    publicDomainPending, "pending-audit"
+  )
+  publicDomainPendingResult <- release_gate_evaluate(publicDomainPending)
   cleanroom <- fixture("cleanroom")
   release_gate_write_self_fixture(
     cleanroom, "clean-room-required", cleanroomReview = "approved"
@@ -629,6 +880,12 @@ release_gate_self_test <- function() {
     identical(blockedResult$repository_state, "blocked") &&
     isTRUE(clearedResult$release_ready) &&
     identical(clearedResult$repository_state, "eligible") &&
+    isTRUE(publicDomainResult$release_ready) &&
+    identical(publicDomainResult$repository_state, "eligible") &&
+    identical(
+      publicDomainPendingResult$reason_codes,
+      "PROVENANCE_COVERAGE_INCOMPLETE"
+    ) &&
     isTRUE(cleanroomResult$release_ready) &&
     identical(cleanroomResult$repository_state, "eligible") &&
     identical(malformedResult$reason_codes, "RIGHTS_STATUS_CARDINALITY") &&
@@ -714,9 +971,12 @@ release_gate_main <- function(args = commandArgs(trailingOnly = TRUE)) {
       identical(result$reason_codes, result$intentional_blockers) &&
       identical(
         result$reason_codes,
-        c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")
+        "PROVENANCE_COVERAGE_INCOMPLETE"
       ) &&
-      identical(unname(result$parse_status), c("pass", "pass", "pass"))
+      identical(
+        unname(result$parse_status),
+        c("pass", "pass", "pass", "incomplete")
+      )
     return(if (validBlocked) 0L else 1L)
   }
   if (isTRUE(result$release_ready)) 0L else 1L

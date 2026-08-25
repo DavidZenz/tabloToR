@@ -138,6 +138,82 @@ writeReleaseGateFixture <- function(root, rightsStatus = "blocked",
   ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
 }
 
+writePublicDomainFixture <- function(
+    root,
+    coverageStatus = "complete",
+    coveredComponents = "upstream-authored-inherited-source",
+    excludedComponents = "unrelated-third-party-components",
+    tamperEvidence = FALSE) {
+  blockers <- if (identical(coverageStatus, "complete")) {
+    "NONE"
+  } else {
+    "PROVENANCE_COVERAGE_INCOMPLETE"
+  }
+  writeReleaseGateFixture(
+    root,
+    rightsStatus = "cleared",
+    requestStatus = "superseded-by-public-response",
+    requestUrl = "https://github.com/mivanic/tabloToR/issues/3",
+    requestDate = "2026-08-24T13:19:21Z",
+    intentionalBlockers = blockers
+  )
+  responsePath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-RESPONSE.md"
+  )
+  writeLines(c(
+    "Response-Document-Version: 1",
+    "Upstream-Repository: https://github.com/mivanic/tabloToR",
+    "Upstream-Commit: upstream-fixture-commit",
+    paste0(
+      "Response-URL: ",
+      "https://github.com/mivanic/tabloToR/issues/3#issuecomment-5398979852"
+    ),
+    "Response-Date-UTC: 2026-08-24T17:35:21Z",
+    "Response-Author-GitHub: mivanic",
+    "Response-Author-Association: OWNER",
+    paste0(
+      "Response-Statement: ",
+      "It is in the public domain (CC0)--I created it as part of my duties ",
+      "as an employee of the US federal government, and so I do not retain ",
+      "any copyright."
+    ),
+    "CC0-Reference: https://creativecommons.org/publicdomain/zero/1.0/",
+    paste0(
+      "US-Government-Works-Reference: ",
+      "https://uscode.house.gov/view.xhtml?section105"
+    )
+  ), responsePath, useBytes = TRUE)
+  evidenceHash <- unname(tools::md5sum(responsePath)[[1L]])
+  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  rightsLines <- readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  rightsLines[grepl("^Evidence-Hash:", rightsLines)] <- paste0(
+    "Evidence-Hash: ", evidenceHash
+  )
+  rightsLines <- c(
+    rightsLines,
+    "Rights-Basis: public-domain-cc0",
+    "Covered-Upstream-Commit: upstream-fixture-commit",
+    paste0("Covered-Components: ", coveredComponents),
+    paste0("Excluded-Components: ", excludedComponents),
+    paste0("Provenance-Coverage-Status: ", coverageStatus),
+    "Evidence-Document: docs/provenance/UPSTREAM-RESPONSE.md",
+    paste0(
+      "Response-URL: ",
+      "https://github.com/mivanic/tabloToR/issues/3#issuecomment-5398979852"
+    ),
+    "Response-Date-UTC: 2026-08-24T17:35:21Z",
+    "Response-Author-GitHub: mivanic",
+    "Response-Author-Association: OWNER",
+    "Response-Review-Status: accepted-public-domain-cc0",
+    "Successor-Name-Basis: independently-selected",
+    "Name-Availability-Status: pending-plan-01-04"
+  )
+  writeLines(rightsLines, rightsPath, useBytes = TRUE)
+  if (tamperEvidence) {
+    write("tampered", responsePath, append = TRUE)
+  }
+}
+
 test_that("the checked-in repository is positively recognized as blocked", {
   root <- releaseGateProjectRoot()
   result <- evaluateReleaseGate(root)
@@ -146,11 +222,11 @@ test_that("the checked-in repository is positively recognized as blocked", {
   expect_false(result$release_ready)
   expect_identical(
     result$reason_codes,
-    c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")
+    "PROVENANCE_COVERAGE_INCOMPLETE"
   )
   expect_identical(
     unname(result$parse_status),
-    c("pass", "pass", "pass")
+    c("pass", "pass", "pass", "incomplete")
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
@@ -158,11 +234,11 @@ test_that("the checked-in repository is positively recognized as blocked", {
   expect_true(any(command$output == "repository_state=blocked"))
   expect_true(any(command$output == "release_ready=false"))
   expect_true(any(command$output == paste0(
-    "reason_codes=RIGHTS_BLOCKED,REQUEST_NOT_POSTED"
+    "reason_codes=PROVENANCE_COVERAGE_INCOMPLETE"
   )))
 })
 
-test_that("the exact D-01 request is complete and hash-bound", {
+test_that("the superseded D-01 request is historical and hash-bound", {
   root <- releaseGateProjectRoot()
   requestPath <- file.path(
     root, "docs", "provenance", "UPSTREAM-REQUEST.md"
@@ -177,8 +253,12 @@ test_that("the exact D-01 request is complete and hash-bound", {
     releaseRequestAsks
   )
   expect_identical(
+    releaseGateMarker(requestLines, "Request-Artifact-Status"),
+    "superseded-do-not-post"
+  )
+  expect_identical(
     releaseGateMarker(rightsLines, "Request-Status"),
-    "reviewed-unposted"
+    "superseded-by-public-response"
   )
   expect_identical(
     releaseGateMarker(rightsLines, "Request-Content-Hash"),
@@ -186,27 +266,63 @@ test_that("the exact D-01 request is complete and hash-bound", {
   )
 })
 
-test_that("the narrower public response remains fail-closed evidence", {
+test_that("the public-domain response is accepted with limited scope", {
   root <- releaseGateProjectRoot()
   rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  responsePath <- file.path(
+    root, "docs", "provenance", "UPSTREAM-RESPONSE.md"
+  )
   rightsLines <- readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  responseLines <- readLines(responsePath, warn = FALSE, encoding = "UTF-8")
 
   expect_identical(
-    releaseGateMarker(rightsLines, "Prior-Public-Request-Scope"),
-    "explicit-open-source-license-only"
+    releaseGateMarker(rightsLines, "Rights-Basis"),
+    "public-domain-cc0"
   )
   expect_identical(
-    releaseGateMarker(rightsLines, "Response-URL"),
-    "https://github.com/mivanic/tabloToR/issues/3#issuecomment-5398979852"
+    releaseGateMarker(rightsLines, "Evidence-Hash"),
+    unname(tools::md5sum(responsePath)[[1L]])
   )
   expect_identical(
-    releaseGateMarker(rightsLines, "Response-Date-UTC"),
-    "2026-08-24T17:35:21Z"
+    releaseGateMarker(rightsLines, "Covered-Components"),
+    "upstream-authored-inherited-source"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Excluded-Components"),
+    "unrelated-third-party-components"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Provenance-Coverage-Status"),
+    "pending-plan-01-03"
   )
   expect_identical(
     releaseGateMarker(rightsLines, "Response-Review-Status"),
-    "scope-incomplete-review-pending"
+    "accepted-public-domain-cc0"
   )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Successor-Name-Basis"),
+    "independently-selected"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Name-Availability-Status"),
+    "pending-plan-01-04"
+  )
+  expect_identical(
+    releaseGateMarker(responseLines, "Response-Statement"),
+    paste(
+      "It is in the public domain (CC0)--I created it as part of my duties",
+      "as an employee of the US federal government, and so I do not retain",
+      "any copyright."
+    )
+  )
+  expect_identical(
+    releaseGateMarker(responseLines, "CC0-Reference"),
+    "https://creativecommons.org/publicdomain/zero/1.0/"
+  )
+  expect_true(startsWith(
+    releaseGateMarker(responseLines, "US-Government-Works-Reference"),
+    "https://uscode.house.gov/"
+  ))
 })
 
 test_that("omitting any D-01 ask fails with the exact scope reason", {
@@ -502,12 +618,78 @@ test_that("the clean-room tree rejects sensitive fixture classes", {
   expect_false(any(grepl("fixture.har", command$output, fixed = TRUE)))
 })
 
+test_that("complete public-domain evidence proves synthetic readiness", {
+  root <- tempfile("release-gate-public-domain-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writePublicDomainFixture(root)
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+  expect_identical(
+    unname(result$parse_status),
+    c("pass", "pass", "pass", "pass")
+  )
+})
+
+test_that("public-domain evidence remains blocked until provenance is complete", {
+  root <- tempfile("release-gate-public-domain-coverage-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writePublicDomainFixture(root, coverageStatus = "pending-audit")
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "blocked")
+  expect_false(result$release_ready)
+  expect_identical(
+    result$reason_codes,
+    "PROVENANCE_COVERAGE_INCOMPLETE"
+  )
+})
+
+test_that("changed public-domain evidence fails its hash binding", {
+  root <- tempfile("release-gate-public-domain-hash-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writePublicDomainFixture(root, tamperEvidence = TRUE)
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_false(result$release_ready)
+  expect_identical(
+    result$reason_codes,
+    "PUBLIC_DOMAIN_EVIDENCE_HASH_MISMATCH"
+  )
+})
+
+test_that("public-domain scope never covers unrelated third-party code", {
+  cases <- list(
+    covered = c("all-inherited-source", "unrelated-third-party-components"),
+    excluded = c("upstream-authored-inherited-source", "none")
+  )
+  for (name in names(cases)) {
+    root <- tempfile("release-gate-public-domain-scope-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    values <- cases[[name]]
+    writePublicDomainFixture(
+      root,
+      coveredComponents = values[[1L]],
+      excludedComponents = values[[2L]]
+    )
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(
+      result$reason_codes, "RIGHTS_SCOPE_INCOMPLETE", info = name
+    )
+    expect_false(result$release_ready, info = name)
+  }
+})
+
 test_that("offline readiness stays distinct from an intentional block", {
   root <- releaseGateProjectRoot()
   offline <- runReleaseGate(c("--root", root, "--offline"))
   expectReleaseGateFailure(
     offline,
-    "RIGHTS_BLOCKED,REQUEST_NOT_POSTED"
+    "PROVENANCE_COVERAGE_INCOMPLETE"
   )
   malformed <- tempfile("release-gate-unrelated-error-")
   on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
