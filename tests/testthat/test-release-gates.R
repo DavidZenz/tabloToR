@@ -176,10 +176,36 @@ test_that("the exact D-01 request is complete and hash-bound", {
     releaseGateMarker(requestLines, "Request-Ask"),
     releaseRequestAsks
   )
-  expect_identical(releaseGateMarker(rightsLines, "Request-Status"), "draft")
+  expect_identical(
+    releaseGateMarker(rightsLines, "Request-Status"),
+    "reviewed-unposted"
+  )
   expect_identical(
     releaseGateMarker(rightsLines, "Request-Content-Hash"),
     unname(tools::md5sum(requestPath)[[1L]])
+  )
+})
+
+test_that("the narrower public response remains fail-closed evidence", {
+  root <- releaseGateProjectRoot()
+  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  rightsLines <- readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+
+  expect_identical(
+    releaseGateMarker(rightsLines, "Prior-Public-Request-Scope"),
+    "explicit-open-source-license-only"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Response-URL"),
+    "https://github.com/mivanic/tabloToR/issues/3#issuecomment-5398979852"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Response-Date-UTC"),
+    "2026-08-24T17:35:21Z"
+  )
+  expect_identical(
+    releaseGateMarker(rightsLines, "Response-Review-Status"),
+    "scope-incomplete-review-pending"
   )
 })
 

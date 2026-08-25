@@ -21,7 +21,7 @@ unknown, contradictory, or partial evidence fails closed.
 | Clean-room eligibility | `CLEANROOM.md` and `specs/cleanroom/*.md` | Distinct roles, exact attestations, eligible inputs, and a source-unexposed implementer | Yes | Required | `CLEANROOM_IMPLEMENTER_INELIGIBLE` or `CLEANROOM_EVIDENCE_INCOMPLETE` |
 | Clean-room coverage | Inherited keys and component specifications | Every inherited key has exactly one passing `new-independent` record and approved review | Yes | Required | `CLEANROOM_EVIDENCE_INCOMPLETE` or `CLEANROOM_REVIEW_INCOMPLETE` |
 | Sensitive evidence boundary | Files under `docs/provenance/` and `docs/release/` | No credential, private-correspondence, proprietary-model, or giant-result indicator | Yes | N/A | `SENSITIVE_EVIDENCE_CLASS` |
-| Intentional block | Both files | The valid draft state is blocked by exactly `RIGHTS_BLOCKED,REQUEST_NOT_POSTED` | Yes | N/A | Any other reason makes the assertion fail |
+| Intentional block | Both files | The valid reviewed-unposted state is blocked by exactly `RIGHTS_BLOCKED,REQUEST_NOT_POSTED` | Yes | N/A | Any other reason makes the assertion fail |
 
 ## Command contracts
 
