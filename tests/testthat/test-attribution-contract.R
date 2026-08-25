@@ -264,6 +264,18 @@ test_that("DESCRIPTION applies only reviewed roles without renaming or licensing
   description = read.dcf(attributionPath("DESCRIPTION"))
   expect_identical(unname(description[[1L, "Package"]]), "tabloToR")
   expect_identical(
+    unname(description[[1L, "Maintainer"]]),
+    "David Zenz <zenz@wiiw.ac.at>"
+  )
+  expect_identical(
+    unname(description[[1L, "URL"]]),
+    "https://github.com/DavidZenz/GEModelR"
+  )
+  expect_identical(
+    unname(description[[1L, "BugReports"]]),
+    "https://github.com/DavidZenz/GEModelR/issues"
+  )
+  expect_identical(
     unname(description[[1L, "License"]]), "What license is it under?"
   )
   expect_true("Authors@R" %in% colnames(description))
