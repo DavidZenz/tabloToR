@@ -267,6 +267,10 @@ test_that("DESCRIPTION applies only reviewed roles without renaming or licensing
     unname(description[[1L, "License"]]), "What license is it under?"
   )
   expect_true("Authors@R" %in% colnames(description))
+  expect_identical(
+    unname(description[[1L, "Author"]]),
+    "David Zenz [aut, cre, cph], Maros Ivanic [aut]"
+  )
   authorEnvironment = list2env(
     list(person = utils::person), parent = baseenv()
   )
