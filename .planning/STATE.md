@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 1
 current_phase_name: provenance-and-release-boundary
 status: executing
-stopped_at: Completed 01-03-PLAN.md
-last_updated: "2026-08-25T10:56:47.840Z"
+stopped_at: Completed 01-04-PLAN.md
+last_updated: "2026-08-25T11:48:04.239Z"
 last_activity: 2026-08-25
-last_activity_desc: Completed Plan 01-03 provenance coverage and replacement-audit oracle
-state_head: 4ff84573983a4356adea89bdbf30fe16a176790e
+last_activity_desc: Completed Plan 01-04 signed name, governance, and repository identity evidence
+state_head: 3dfb751b538bedbe995fd4ea75e4accedc6b6d42
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 6
-  completed_plans: 3
+  completed_plans: 4
 milestone_name: milestone
 ---
 
@@ -29,30 +29,30 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 ## Current Position
 
 Phase: 1 (provenance-and-release-boundary) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
-Last activity: 2026-08-25 — Completed Plan 01-03 provenance coverage and replacement-audit oracle
+Last activity: 2026-08-25 — Completed Plan 01-04 signed name, governance, and repository identity evidence
 
-Progress: [█████░░░░░] 50%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 3
-- Average duration: 72 min
-- Total execution time: 216 min
+- Total plans completed: 4
+- Average duration: 67 min
+- Total execution time: 269 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 3 | 216 min | 72 min |
+| 01 | 4 | 269 min | 67 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (17 min), 01-02 (176 min), 01-03 (23 min)
-- Trend: Independent provenance coverage oracle established
+- Last 5 plans: 01-01 (17 min), 01-02 (176 min), 01-03 (23 min), 01-04 (53 min)
+- Trend: Signed name and repository identity evidence established
 
 **Per-Plan Metrics:**
 
@@ -61,6 +61,7 @@ Progress: [█████░░░░░] 50%
 | Phase 01 P01 | 17 min | 2 tasks | 4 files |
 | Phase 01 P02 | 176 min | 3 tasks | 8 files |
 | Phase 01 P03 | 23 min | 1 tasks | 4 files |
+| Phase 01 P04 | 53 min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: Classify the audited source tree as 27 inherited-identical, 13 inherited-modified, 208 new-independent, and 2 generated units.
 - [Phase 1]: Keep Apache-2.0 evidence explicitly provisional for post-baseline work pending dependency compatibility audit.
 - [Phase 1]: Treat Git history as audit evidence only; reviewed rights and ownership fields remain separate.
+- [Phase 1]: Approve the initial GEModelR report as point-in-time exact-name collision evidence only, not trademark clearance or reservation.
+- [Phase 1]: Use David Zenz / DavidZenz with zenz@wiiw.ac.at and mailto:zenz@wiiw.ac.at as the exact approved v1 identity values.
+- [Phase 1]: Keep repository reservation, visibility or detachment, branch settings, and release or publication separately not-authorized.
 
 ### Pending Todos
 
@@ -92,7 +96,7 @@ None yet.
 ### Blockers/Concerns
 
 - The release checker intentionally retains its temporary provenance-coverage blocker until Plan 01-06 integrates this reviewed ledger with the remaining Phase 1 evidence.
-- GEModelR package-name availability is provisionally plausible but must be checked authoritatively against current and historical CRAN/Bioconductor registries.
+- The initial GEModelR name report is signed, but fresh checks remain required immediately before repository reservation and release.
 
 ## Deferred Items
 
@@ -104,6 +108,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-25T10:56:47.828Z
-Stopped at: Completed 01-03-PLAN.md
+Last session: 2026-08-25T11:48:04.227Z
+Stopped at: Completed 01-04-PLAN.md
 Resume file: None
