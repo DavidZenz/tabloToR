@@ -3,19 +3,18 @@
 ## Identity record
 
 Maintainer: David Zenz
-Approved-Contact: awaiting-human-approval
+Approved-Contact: zenz@wiiw.ac.at
 Release-Authority: David Zenz
-Security-Route: awaiting-human-approval
-Identity-Approval: unapproved
-Reviewer: awaiting-human-approval
-Review-Date-UTC: awaiting-human-approval
+Security-Route: mailto:zenz@wiiw.ac.at
+Identity-Approval: approved
+Reviewer: David Zenz
+Review-Date-UTC: 2026-08-25
 
 These marker values are the canonical v1 governance identity record. The
 maintainer and release authority follow decisions D-10 and D-11. The contact,
-security route, reviewer, and review date are deliberately unpublished inputs
-until the blocking identity checkpoint records the maintainer's exact approval.
-Local Git metadata, remotes, commits, and operating-system account details are
-not approval evidence and must not be used to fill them.
+security route, reviewer, and review date were supplied and positively approved
+at the blocking identity checkpoint. Local Git metadata, remotes, commits, and
+operating-system account details were not used as approval evidence.
 
 ## Initial-release authority
 
@@ -66,9 +65,9 @@ a clone alone do not confer maintainership or release authority.
 
 Until another maintainer is explicitly assigned, David Zenz is responsible for
 receiving and triaging vulnerability reports, coordinating fixes and disclosure,
-and deciding whether a security release is required. The public reporting route
-remains intentionally unapproved in the marker block above. No public release
-may advertise or rely on a security route until that exact route is approved.
+and deciding whether a security release is required. The approved reporting
+route is `mailto:zenz@wiiw.ac.at`. Approval of this route does not authorize a
+public release or publication.
 
 Potential vulnerabilities must not be posted to a public issue tracker unless
 the approved security policy explicitly directs that. Changing the security
@@ -77,7 +76,8 @@ change and confirmation that the new route is controlled and monitored.
 
 ## Approval boundary
 
-`Identity-Approval: unapproved` is fail-closed. It becomes `approved` only when
-the maintainer positively approves the exact durable contact and security route
-and supplies the exact reviewer identity and UTC review date. The repository
-identity record must carry the same approval status and reviewer signature.
+`Identity-Approval: approved` records the maintainer's positive approval of the
+exact durable contact and security route together with the reviewer identity and
+UTC review date. The repository identity record carries the same approval status
+and reviewer signature. External repository and release actions remain governed
+by their separate `not-authorized` markers.

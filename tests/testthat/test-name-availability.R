@@ -290,14 +290,45 @@ nameCheckWriteIdentity = function(root, approved = FALSE,
   c(governance = governancePath, repository = repositoryPath)
 }
 
-test_that("checked-in identity records are explicitly unapproved", {
+test_that("checked-in identity records match exact human-approved values", {
   tool = nameCheckTool()
   root = nameCheckProjectRoot()
+  governance = readLines(file.path(root, "GOVERNANCE.md"), warn = FALSE)
+  repository = readLines(
+    file.path(root, "docs", "release", "REPOSITORY.md"), warn = FALSE
+  )
+  report = readLines(
+    file.path(root, "docs", "release", "NAME-CHECK.md"), warn = FALSE
+  )
   expect_true(tool$name_check_verify_identity(
     file.path(root, "GOVERNANCE.md"),
     file.path(root, "docs", "release", "REPOSITORY.md"),
-    expect = "unapproved"
+    expect = "approved"
   ))
+  expect_true(all(c(
+    "Approved-Contact: zenz@wiiw.ac.at",
+    "Security-Route: mailto:zenz@wiiw.ac.at",
+    "Identity-Approval: approved",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-25"
+  ) %in% governance))
+  expect_true(all(c(
+    "Owner-Slug: DavidZenz",
+    "Canonical-URL: https://github.com/DavidZenz/GEModelR",
+    "Issue-Tracker: https://github.com/DavidZenz/GEModelR/issues",
+    "Identity-Approval: approved",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-25",
+    "Reservation-Authorization: not-authorized",
+    "Visibility-Detachment-Authorization: not-authorized",
+    "Branch-Settings-Authorization: not-authorized",
+    "Release-Authorization: not-authorized"
+  ) %in% repository))
+  expect_true(all(c(
+    "Initial-Name-Report: approved",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-25"
+  ) %in% report))
 })
 
 test_that("unapproved identity requires exact pending and authorization markers", {

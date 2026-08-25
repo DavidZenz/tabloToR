@@ -2,32 +2,29 @@
 
 ## Canonical identity record
 
-Owner-Slug: awaiting-human-approval
+Owner-Slug: DavidZenz
 Repository-Name: GEModelR
-Canonical-URL: awaiting-human-approval
-Issue-Tracker: awaiting-human-approval
+Canonical-URL: https://github.com/DavidZenz/GEModelR
+Issue-Tracker: https://github.com/DavidZenz/GEModelR/issues
 Visibility-Boundary: private-development
-Identity-Approval: unapproved
-Reviewer: awaiting-human-approval
-Review-Date-UTC: awaiting-human-approval
+Identity-Approval: approved
+Reviewer: David Zenz
+Review-Date-UTC: 2026-08-25
 Reservation-Authorization: not-authorized
 Visibility-Detachment-Authorization: not-authorized
 Branch-Settings-Authorization: not-authorized
 Release-Authorization: not-authorized
 
-The v1 canonical repository belongs on David Zenz's personal GitHub account,
-but the account owner slug is not inferred from local Git configuration,
-remotes, credentials, operating-system names, or commit history. After the slug
-is approved, the only admissible URL pair is derived without redirects or
-aliases:
+The v1 canonical repository belongs on David Zenz's personal GitHub account.
+The owner slug was positively approved as `DavidZenz`, rather than inferred
+from local Git configuration, remotes, credentials, operating-system names, or
+commit history. The approved URL pair is derived without redirects or aliases:
 
-- canonical repository: `https://github.com/<approved-owner-slug>/GEModelR`
-- issue tracker: `https://github.com/<approved-owner-slug>/GEModelR/issues`
+- canonical repository: `https://github.com/DavidZenz/GEModelR`
+- issue tracker: `https://github.com/DavidZenz/GEModelR/issues`
 
-The exact slug and both exact HTTPS URLs remain pending until the blocking
-identity checkpoint. `Identity-Approval`, `Reviewer`, and `Review-Date-UTC` must
-then match `GOVERNANCE.md`. No marker in this document authorizes an external
-action.
+`Identity-Approval`, `Reviewer`, and `Review-Date-UTC` match `GOVERNANCE.md`.
+No marker in this document authorizes an external action.
 
 ## Private-development boundary
 

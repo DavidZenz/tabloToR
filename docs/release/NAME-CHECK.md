@@ -6,8 +6,9 @@ Name: GEModelR
 Check-Kind: initial
 Checked-At-UTC: 2026-08-25T11:19:08Z
 Overall-Result: NAME_AVAILABLE_NO_EXACT_COLLISION
-Reviewer: awaiting-human-approval
-Review-Date-UTC: awaiting-human-approval
+Initial-Name-Report: approved
+Reviewer: David Zenz
+Review-Date-UTC: 2026-08-25
 
 The check uses ASCII case-folded exact matching. Substrings and Unicode
 lookalikes are not exact package or repository-name collisions.
