@@ -27,7 +27,9 @@ nameCheckTool = function() {
   required = c(
     "name_check_validate_name", "name_check_exact_matches",
     "name_check_evaluate_fixture", "name_check_write_report",
-    "name_check_verify_report", "name_check_verify_identity"
+    "name_check_verify_report", "name_check_verify_identity",
+    "name_check_parse_count", "name_check_validate_page_set",
+    "name_check_collect_pages"
   )
   missing = required[!vapply(
     required, exists, logical(1), envir = nameCheckEnvironment,
@@ -61,10 +63,12 @@ nameCheckPayloads = function(name = "AnotherPackage") {
     )),
     `r-universe` = charToRaw(paste0(
       '{"results":[{"Package":"', name,
-      '"}],"total":1,"limit":100}'
+      '"}],"query":{"_nocasepkg":"gemodelr"},',
+      '"skip":0,"limit":100,"total":1}'
     )),
     github = charToRaw(paste0(
-      '{"total_count":1,"items":[{"full_name":"owner/',
+      '{"total_count":1,"incomplete_results":false,',
+      '"items":[{"full_name":"owner/',
       name, '"}]}'
     ))
   )
@@ -165,7 +169,10 @@ test_that("R-universe zero-result responses are valid evidence", {
   tool = nameCheckTool()
   payloads = nameCheckPayloads()
   payloads[["r-universe"]] = charToRaw(
-    "{\"results\":[],\"query\":{\"_nocasepkg\":\"gemodelr\"},\"limit\":100}"
+    paste0(
+      "{\"results\":[],\"query\":{\"_nocasepkg\":\"gemodelr\"},",
+      "\"skip\":0,\"limit\":100,\"total\":0}"
+    )
   )
   result = tool$name_check_evaluate_fixture(
     "GEModelR", nameCheckFixture(payloads)
@@ -213,7 +220,7 @@ test_that("a case-insensitive exact collision fails with the exact reason", {
   tool = nameCheckTool()
   payloads = nameCheckPayloads()
   payloads[["github"]] = charToRaw(paste0(
-    '{"total_count":2,"items":[',
+    '{"total_count":2,"incomplete_results":false,"items":[',
     '{"full_name":"owner/gemodelr"},',
     '{"full_name":"owner/GEModelRtools"}]}'
   ))
@@ -239,6 +246,230 @@ test_that("check kinds are restricted to the three release transitions", {
       "GEModelR", nameCheckFixture(), check_kind = "informal"
     ),
     "NAME_CHECK_KIND_INVALID",
+    fixed = TRUE
+  )
+})
+
+nameCheckPage = function(sourceId, page, raw, query = NULL,
+                          role = "results") {
+  if (is.null(query)) {
+    query = if (identical(sourceId, "github")) {
+      paste0(
+        "https://api.github.com/search/repositories?q=GEModelR%20in%3Aname",
+        "&per_page=2&page=", page
+      )
+    } else {
+      paste0(
+        "https://r-universe.dev/api/search?q=package%3AGEModelR",
+        "&limit=2&skip=", (page - 1L) * 2L
+      )
+    }
+  }
+  list(
+    page = as.integer(page), query = query, available = TRUE,
+    raw = charToRaw(raw), role = role
+  )
+}
+
+test_that("declared and returned bounded-search counts must agree", {
+  tool = nameCheckTool()
+  payloads = nameCheckPayloads()
+  payloads[["github"]] = charToRaw(paste0(
+    '{"total_count":101,"incomplete_results":false,"items":[',
+    '{"full_name":"owner/AnotherPackage"}]}'
+  ))
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+
+  payloads = nameCheckPayloads()
+  payloads[["r-universe"]] = charToRaw(paste0(
+    '{"results":[{"Package":"AnotherPackage"}],',
+    '"skip":0,"limit":100,"total":2}'
+  ))
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_INCOMPLETE_R_UNIVERSE",
+    fixed = TRUE
+  )
+})
+
+test_that("GitHub page sets are unique contiguous stable and exhaustive", {
+  tool = nameCheckTool()
+  pages = list(
+    nameCheckPage(
+      "github", 1L,
+      paste0(
+        '{"total_count":3,"incomplete_results":false,"items":[',
+        '{"full_name":"owner/First"},',
+        '{"full_name":"owner/gemodelr"}]}'
+      )
+    ),
+    nameCheckPage(
+      "github", 2L,
+      paste0(
+        '{"total_count":3,"incomplete_results":false,"items":[',
+        '{"full_name":"owner/GEModelR"}]}'
+      )
+    )
+  )
+  validated = tool$name_check_validate_page_set("github", pages)
+  expect_identical(
+    validated$candidates,
+    c("First", "gemodelr", "GEModelR")
+  )
+  expect_identical(validated$details$page, c(1L, 2L))
+  expect_identical(validated$details$declared_count, c(3L, 3L))
+  expect_identical(validated$details$returned_count, c(2L, 1L))
+
+  duplicate = pages
+  duplicate[[2L]]$page = 1L
+  expect_error(
+    tool$name_check_validate_page_set("github", duplicate),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+
+  missing = pages
+  missing[[2L]]$page = 3L
+  missing[[2L]]$query = sub("page=2", "page=3", missing[[2L]]$query)
+  expect_error(
+    tool$name_check_validate_page_set("github", missing),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+
+  changing = pages
+  changing[[2L]]$raw = charToRaw(paste0(
+    '{"total_count":4,"incomplete_results":false,"items":[',
+    '{"full_name":"owner/GEModelR"}]}'
+  ))
+  expect_error(
+    tool$name_check_validate_page_set("github", changing),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+})
+
+test_that("bounded searches reject overflow truncation and empty mismatches", {
+  tool = nameCheckTool()
+  overflow = list(nameCheckPage(
+    "github", 1L,
+    '{"total_count":1001,"incomplete_results":false,"items":[]}'
+  ))
+  expect_error(
+    tool$name_check_validate_page_set("github", overflow),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+
+  truncated = list(nameCheckPage(
+    "github", 1L,
+    paste0(
+      '{"total_count":1,"incomplete_results":true,"items":[',
+      '{"full_name":"owner/AnotherPackage"}]}'
+    )
+  ))
+  expect_error(
+    tool$name_check_validate_page_set("github", truncated),
+    "NAME_SOURCE_INCOMPLETE_GITHUB",
+    fixed = TRUE
+  )
+
+  nonzeroEmpty = list(nameCheckPage(
+    "r-universe", 1L,
+    '{"results":[],"skip":0,"limit":2,"total":1}'
+  ))
+  expect_error(
+    tool$name_check_validate_page_set("r-universe", nonzeroEmpty),
+    "NAME_SOURCE_INCOMPLETE_R_UNIVERSE",
+    fixed = TRUE
+  )
+
+  missingCount = list(nameCheckPage(
+    "github", 1L,
+    '{"incomplete_results":false,"items":[]}'
+  ))
+  expect_error(
+    tool$name_check_validate_page_set("github", missingCount),
+    "NAME_SOURCE_MALFORMED_GITHUB",
+    fixed = TRUE
+  )
+
+  zeroGithub = list(nameCheckPage(
+    "github", 1L,
+    '{"total_count":0,"incomplete_results":false,"items":[]}'
+  ))
+  zeroRuniverse = list(nameCheckPage(
+    "r-universe", 1L,
+    '{"results":[],"skip":0,"limit":2,"total":0}'
+  ))
+  expect_identical(
+    tool$name_check_validate_page_set("github", zeroGithub)$candidates,
+    character()
+  )
+  expect_identical(
+    tool$name_check_validate_page_set(
+      "r-universe", zeroRuniverse
+    )$candidates,
+    character()
+  )
+})
+
+test_that("indexed payloads and encodings fail closed", {
+  tool = nameCheckTool()
+  payloads = nameCheckPayloads()
+  payloads[["cran-archive"]] = charToRaw("<html><body></body></html>")
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_MALFORMED_CRAN_ARCHIVE",
+    fixed = TRUE
+  )
+
+  payloads = nameCheckPayloads()
+  payloads[["cran-current"]] = charToRaw(
+    "Version: 1.0.0\nRepository: CRAN\n"
+  )
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_MALFORMED_CRAN_CURRENT",
+    fixed = TRUE
+  )
+
+  payloads = nameCheckPayloads()
+  payloads[["cran-current"]] = as.raw(c(
+    charToRaw("Package: GEModelR"), 255L, charToRaw("\nVersion: 1\n")
+  ))
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_MALFORMED_CRAN_CURRENT",
+    fixed = TRUE
+  )
+
+  payloads = nameCheckPayloads()
+  payloads[["cran-current"]] = charToRaw(
+    "Package: GЕModelR\nVersion: 1\n"
+  )
+  expect_error(
+    tool$name_check_evaluate_fixture("GEModelR", nameCheckFixture(payloads)),
+    "NAME_SOURCE_MALFORMED_CRAN_CURRENT",
+    fixed = TRUE
+  )
+})
+
+test_that("ASCII equal candidates preserve source order", {
+  tool = nameCheckTool()
+  expect_identical(
+    tool$name_check_exact_matches(
+      "GEModelR", c("gemodelr", "Other", "GEMODELR", "GEModelR")
+    ),
+    c("gemodelr", "GEMODELR", "GEModelR")
+  )
+  expect_error(
+    tool$name_check_exact_matches("GEModelR", c("GЕModelR")),
+    "NAME_CANDIDATES_INVALID",
     fixed = TRUE
   )
 })
