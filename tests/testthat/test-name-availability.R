@@ -1,27 +1,27 @@
-nameCheckProjectRoot <- function() {
-  candidates <- c(".", "../..", "../../..")
-  hit <- candidates[file.exists(file.path(
+nameCheckProjectRoot = function() {
+  candidates = c(".", "../..", "../../..")
+  hit = candidates[file.exists(file.path(
     candidates, "tools", "check_name_availability.R"
   ))]
   if (length(hit)) return(normalizePath(hit[[1L]], mustWork = TRUE))
   normalizePath(".", mustWork = TRUE)
 }
 
-nameCheckScript <- file.path(
+nameCheckScript = file.path(
   nameCheckProjectRoot(), "tools", "check_name_availability.R"
 )
-nameCheckEnvironment <- new.env(parent = globalenv())
+nameCheckEnvironment = new.env(parent = globalenv())
 if (file.exists(nameCheckScript)) {
   sys.source(nameCheckScript, envir = nameCheckEnvironment)
 }
 
-nameCheckTool <- function() {
-  required <- c(
+nameCheckTool = function() {
+  required = c(
     "name_check_validate_name", "name_check_exact_matches",
     "name_check_evaluate_fixture", "name_check_write_report",
     "name_check_verify_report"
   )
-  missing <- required[!vapply(
+  missing = required[!vapply(
     required, exists, logical(1), envir = nameCheckEnvironment,
     inherits = FALSE
   )]
@@ -31,12 +31,12 @@ nameCheckTool <- function() {
   nameCheckEnvironment
 }
 
-nameCheckSourceIds <- c(
+nameCheckSourceIds = c(
   "cran-current", "cran-archive", "bioconductor-current",
   "bioconductor-history", "r-universe", "github"
 )
 
-nameCheckPayloads <- function(name = "AnotherPackage") {
+nameCheckPayloads = function(name = "AnotherPackage") {
   list(
     `cran-current` = charToRaw(paste0(
       "Package: ", name, "\nVersion: 1.0.0\n"
@@ -62,12 +62,12 @@ nameCheckPayloads <- function(name = "AnotherPackage") {
   )
 }
 
-nameCheckFixture <- function(payloads = nameCheckPayloads(),
+nameCheckFixture = function(payloads = nameCheckPayloads(),
                              available = stats::setNames(
                                rep(TRUE, length(nameCheckSourceIds)),
                                nameCheckSourceIds
                              )) {
-  queries <- stats::setNames(
+  queries = stats::setNames(
     paste0("https://fixture.invalid/", nameCheckSourceIds),
     nameCheckSourceIds
   )
@@ -82,8 +82,8 @@ nameCheckFixture <- function(payloads = nameCheckPayloads(),
 }
 
 test_that("package-name syntax fails closed with one exact reason", {
-  tool <- nameCheckTool()
-  invalid <- list(NULL, "", "G", "GEModelR.", "GE-ModelR", "GЕModelR")
+  tool = nameCheckTool()
+  invalid = list(NULL, "", "G", "GEModelR.", "GE-ModelR", "GЕModelR")
   for (value in invalid) {
     expect_error(
       tool$name_check_validate_name(value),
@@ -96,8 +96,8 @@ test_that("package-name syntax fails closed with one exact reason", {
 })
 
 test_that("ASCII case folding detects exact names only", {
-  tool <- nameCheckTool()
-  candidates <- c(
+  tool = nameCheckTool()
+  candidates = c(
     "GEModelR", "gemodelr", "GEMODELR", "GEModelRtools",
     "myGEModelR", "GЕModelR"
   )
@@ -108,20 +108,20 @@ test_that("ASCII case folding detects exact names only", {
 })
 
 test_that("required-source failures have stable source-specific reasons", {
-  tool <- nameCheckTool()
+  tool = nameCheckTool()
 
-  missing <- nameCheckFixture()
-  missing <- missing[-1L]
+  missing = nameCheckFixture()
+  missing = missing[-1L]
   expect_error(
     tool$name_check_evaluate_fixture("GEModelR", missing),
     "NAME_SOURCE_MISSING_CRAN_CURRENT",
     fixed = TRUE
   )
 
-  available <- stats::setNames(
+  available = stats::setNames(
     rep(TRUE, length(nameCheckSourceIds)), nameCheckSourceIds
   )
-  available[["cran-archive"]] <- FALSE
+  available[["cran-archive"]] = FALSE
   expect_error(
     tool$name_check_evaluate_fixture(
       "GEModelR", nameCheckFixture(available = available)
@@ -130,8 +130,8 @@ test_that("required-source failures have stable source-specific reasons", {
     fixed = TRUE
   )
 
-  malformedPayloads <- nameCheckPayloads()
-  malformedPayloads[["bioconductor-current"]] <- charToRaw(
+  malformedPayloads = nameCheckPayloads()
+  malformedPayloads[["bioconductor-current"]] = charToRaw(
     "not a PACKAGES index"
   )
   expect_error(
@@ -142,8 +142,8 @@ test_that("required-source failures have stable source-specific reasons", {
     fixed = TRUE
   )
 
-  unhashablePayloads <- nameCheckPayloads()
-  unhashablePayloads[["bioconductor-history"]] <- environment()
+  unhashablePayloads = nameCheckPayloads()
+  unhashablePayloads[["bioconductor-history"]] = environment()
   expect_error(
     tool$name_check_evaluate_fixture(
       "GEModelR", nameCheckFixture(unhashablePayloads)
@@ -153,10 +153,25 @@ test_that("required-source failures have stable source-specific reasons", {
   )
 })
 
+test_that("R-universe zero-result responses are valid evidence", {
+  tool = nameCheckTool()
+  payloads = nameCheckPayloads()
+  payloads[["r-universe"]] = charToRaw(
+    "{\"results\":[],\"query\":{\"_nocasepkg\":\"gemodelr\"},\"limit\":100}"
+  )
+  result = tool$name_check_evaluate_fixture(
+    "GEModelR", nameCheckFixture(payloads)
+  )
+  expect_identical(
+    result$sources$exact_matches[result$sources$source_id == "r-universe"],
+    "NONE"
+  )
+})
+
 test_that("a clean six-source fixture is ordered, hashed, and reportable", {
-  tool <- nameCheckTool()
-  checkedAt <- "2026-08-25T11:00:00Z"
-  result <- tool$name_check_evaluate_fixture(
+  tool = nameCheckTool()
+  checkedAt = "2026-08-25T11:00:00Z"
+  result = tool$name_check_evaluate_fixture(
     "GEModelR", nameCheckFixture(), check_kind = "initial",
     checked_at = checkedAt
   )
@@ -169,11 +184,11 @@ test_that("a clean six-source fixture is ordered, hashed, and reportable", {
   expect_true(all(result$sources$exact_matches == "NONE"))
   expect_true(all(grepl("^[0-9a-f]{32}$", result$sources$raw_md5)))
 
-  report <- tempfile("GEModelR-name-check-", fileext = ".md")
+  report = tempfile("GEModelR-name-check-", fileext = ".md")
   on.exit(unlink(report), add = TRUE)
   tool$name_check_write_report(result, report)
   expect_true(tool$name_check_verify_report(report, require_review = FALSE))
-  lines <- readLines(report, warn = FALSE, encoding = "UTF-8")
+  lines = readLines(report, warn = FALSE, encoding = "UTF-8")
   expect_true(any(lines == "Name: GEModelR"))
   expect_true(any(lines == "Check-Kind: initial"))
   expect_true(any(lines == paste0("Checked-At-UTC: ", checkedAt)))
@@ -187,9 +202,9 @@ test_that("a clean six-source fixture is ordered, hashed, and reportable", {
 })
 
 test_that("a case-insensitive exact collision fails with the exact reason", {
-  tool <- nameCheckTool()
-  payloads <- nameCheckPayloads()
-  payloads[["github"]] <- charToRaw(paste0(
+  tool = nameCheckTool()
+  payloads = nameCheckPayloads()
+  payloads[["github"]] = charToRaw(paste0(
     '{"total_count":2,"items":[',
     '{"full_name":"owner/gemodelr"},',
     '{"full_name":"owner/GEModelRtools"}]}'
@@ -204,9 +219,9 @@ test_that("a case-insensitive exact collision fails with the exact reason", {
 })
 
 test_that("check kinds are restricted to the three release transitions", {
-  tool <- nameCheckTool()
+  tool = nameCheckTool()
   for (kind in c("initial", "reservation", "release")) {
-    result <- tool$name_check_evaluate_fixture(
+    result = tool$name_check_evaluate_fixture(
       "GEModelR", nameCheckFixture(), check_kind = kind
     )
     expect_identical(result$check_kind, kind)
