@@ -319,7 +319,7 @@ release_gate_evaluate_public_domain <- function(
   ) && identical(
     evidenceValues[["Successor-Name-Basis"]], "independently-selected"
   ) && identical(
-    evidenceValues[["Name-Availability-Status"]], "pending-plan-01-04"
+    evidenceValues[["Name-Availability-Status"]], "approved-initial-report"
   )
   if (!reviewComplete) {
     return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
@@ -344,15 +344,6 @@ release_gate_evaluate_public_domain <- function(
       parse_status = c(
         parsePass, public_domain = "pass",
         provenance_coverage = "incomplete"
-      ),
-      intentional_blockers = intentionalBlockers
-    ))
-  }
-  if (length(intentionalBlockers)) {
-    return(release_gate_result(
-      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
-      parse_status = c(
-        parsePass, public_domain = "pass", provenance_coverage = "pass"
       ),
       intentional_blockers = intentionalBlockers
     ))
@@ -674,6 +665,441 @@ release_gate_evaluate <- function(root = ".") {
   )
 }
 
+
+
+release_gate_evaluate_rights = release_gate_evaluate
+
+release_gate_markdown_table = function(lines, heading) {
+  start = which(trimws(lines) == heading)
+  if (length(start) != 1L) return(NULL)
+  following = seq.int(start + 1L, length(lines))
+  nextHeading = following[grepl("^##[[:space:]]", lines[following])]
+  end = if (length(nextHeading)) nextHeading[[1L]] - 1L else length(lines)
+  tableLines = lines[seq.int(start + 1L, end)]
+  tableLines = tableLines[grepl("^\\|", trimws(tableLines))]
+  if (length(tableLines) < 2L) return(NULL)
+  cells = lapply(tableLines, function(line) {
+    trimws(strsplit(sub("\\|$", "", sub("^\\|", "", trimws(line))),
+                    "\\|")[[1L]])
+  })
+  header = cells[[1L]]
+  body = cells[-c(1L, 2L)]
+  if (!length(body)) {
+    result = as.data.frame(setNames(
+      replicate(length(header), character(), simplify = FALSE),
+      header
+    ), stringsAsFactors = FALSE)
+    return(result)
+  }
+  if (any(lengths(body) != length(header))) return(NULL)
+  result = as.data.frame(do.call(rbind, body), stringsAsFactors = FALSE)
+  names(result) = header
+  result
+}
+
+release_gate_integrated_failure = function(reason, parseStatus, stream) {
+  parseStatus[[stream]] = "fail"
+  release_gate_result(reason_codes = reason, parse_status = parseStatus)
+}
+
+release_gate_validate_provenance = function(root, parseStatus) {
+  expectedPath = file.path(root, "docs", "provenance", "EXPECTED-KEYS.csv")
+  inventoryPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  if (!file.exists(expectedPath) || !file.exists(inventoryPath)) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_EVIDENCE_MISSING", parseStatus, "provenance"
+    )))
+  }
+  expectedRows = tryCatch(read.csv(expectedPath, stringsAsFactors = FALSE), error = function(error) NULL)
+  expected = if (is.null(expectedRows) || !identical(names(expectedRows), c("path", "symbol"))) character() else paste(expectedRows$path, expectedRows$symbol, sep = "::")
+  if (!length(expected) || anyDuplicated(expected)) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_KEY_MISMATCH", parseStatus, "provenance"
+    )))
+  }
+  inventory = tryCatch(
+    read.csv(inventoryPath, stringsAsFactors = FALSE, check.names = FALSE),
+    error = function(error) NULL
+  )
+  columns = c(
+    "path", "symbol", "language", "classification",
+    "upstream_repository", "upstream_commit", "upstream_path",
+    "first_local_commit", "expression_hash", "contributors",
+    "copyright_holder", "license_basis", "evidence", "reviewer",
+    "review_date", "status", "notes"
+  )
+  if (is.null(inventory) || !identical(names(inventory), columns)) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_COLUMNS_MISSING", parseStatus, "provenance"
+    )))
+  }
+  artifactKeys = paste(inventory$path, inventory$symbol, sep = "::")
+  if (anyDuplicated(artifactKeys)) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_DUPLICATE_KEY", parseStatus, "provenance"
+    )))
+  }
+  if (!identical(sort(artifactKeys), sort(expected))) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_KEY_MISMATCH", parseStatus, "provenance"
+    )))
+  }
+  blocking = !grepl("^reviewed", inventory$status) |
+    !inventory$classification %in% c(
+      "inherited-identical", "inherited-modified", "new-independent",
+      "generated"
+    ) |
+    !nzchar(inventory$license_basis) |
+    !nzchar(inventory$reviewer) |
+    !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", inventory$review_date)
+  if (any(blocking)) {
+    return(list(error = release_gate_integrated_failure(
+      "PROVENANCE_ROW_BLOCKING", parseStatus, "provenance"
+    )))
+  }
+  parseStatus[["provenance"]] = "pass"
+  list(
+    parse_status = parseStatus,
+    inventory = inventory,
+    inventory_path = inventoryPath,
+    artifact_keys = artifactKeys
+  )
+}
+
+
+release_gate_validate_attribution = function(
+    root, rightsValues, provenance, parseStatus) {
+  path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
+  lines = release_gate_read_lines(path)
+  if (is.null(lines)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
+    )))
+  }
+  fields = c(
+    "Attribution-Schema-Version", "Inventory-Path", "Inventory-Row-Count",
+    "Inventory-Snapshot-MD5", "Upstream-Repository", "Upstream-Commit",
+    "Reviewer", "Review-Date"
+  )
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
+    )))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  metadataMatches = identical(
+    values[["Attribution-Schema-Version"]], "1"
+  ) && identical(
+    values[["Inventory-Path"]], "docs/provenance/PROVENANCE.csv"
+  ) && identical(
+    suppressWarnings(as.integer(values[["Inventory-Row-Count"]])),
+    nrow(provenance$inventory)
+  ) && identical(
+    values[["Inventory-Snapshot-MD5"]],
+    unname(tools::md5sum(provenance$inventory_path)[[1L]])
+  ) && identical(
+    values[["Upstream-Repository"]],
+    rightsValues[["Upstream-Repository"]]
+  ) && identical(
+    values[["Upstream-Commit"]], rightsValues[["Upstream-Commit"]]
+  ) && identical(values[["Reviewer"]], "David Zenz") &&
+    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", values[["Review-Date"]])
+  if (!metadataMatches) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_DESTINATION_MISMATCH", parseStatus, "attribution"
+    )))
+  }
+  roles = release_gate_markdown_table(lines, "## Reviewed role assignments")
+  blockers = release_gate_markdown_table(lines, "## Blocking facts")
+  roleColumns = c(
+    "person/entity", "role", "evidence_keys", "rights_basis", "destination",
+    "reviewer", "review_date", "status"
+  )
+  blockerColumns = c(
+    "fact", "evidence_key", "destination", "reason", "reviewer",
+    "review_date", "status"
+  )
+  if (is.null(roles) || is.null(blockers) ||
+      !identical(names(roles), roleColumns) ||
+      !identical(names(blockers), blockerColumns) ||
+      any(roles$status != "reviewed") ||
+      !all(c("David Zenz", "Maros Ivanic") %in% roles[["person/entity"]])) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_ROLE_UNREVIEWED", parseStatus, "attribution"
+    )))
+  }
+  evidenceKeys = unique(trimws(unlist(strsplit(
+    roles$evidence_keys, ";", fixed = TRUE
+  ))))
+  if (!all(evidenceKeys %in% provenance$artifact_keys)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
+    )))
+  }
+  blockingRows = blockers$status == "blocking"
+  blockingReasons = blockers$reason[blockingRows]
+  if (any(!nzchar(blockingReasons)) || anyDuplicated(blockingReasons)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_BLOCKER_INVALID", parseStatus, "attribution"
+    )))
+  }
+  parseStatus[["attribution"]] = "pass"
+  list(parse_status = parseStatus, blockers = blockingReasons)
+}
+
+
+release_gate_validate_name = function(root, parseStatus) {
+  path = file.path(root, "docs", "release", "NAME-CHECK.md")
+  lines = release_gate_read_lines(path)
+  if (is.null(lines)) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_SOURCE_MISSING", parseStatus, "name"
+    )))
+  }
+  fields = c(
+    "Name", "Check-Kind", "Checked-At-UTC", "Overall-Result",
+    "Initial-Name-Report", "Reviewer", "Review-Date-UTC"
+  )
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_REPORT_UNSIGNED", parseStatus, "name"
+    )))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  sourceRows = release_gate_marker_values(lines, "Source-Row")
+  expectedSources = c(
+    "cran-current", "cran-archive", "bioconductor-current",
+    "bioconductor-history", "r-universe", "github"
+  )
+  sourceNames = sub("\\|.*$", "", sourceRows)
+  if (length(sourceRows) != length(expectedSources) ||
+      !identical(sort(sourceNames), sort(expectedSources))) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_SOURCE_MISSING", parseStatus, "name"
+    )))
+  }
+  if (any(!grepl("\\|available=yes\\|", sourceRows))) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_SOURCE_UNAVAILABLE", parseStatus, "name"
+    )))
+  }
+  if (any(!grepl("\\|matches=NONE\\|result=pass\\|", sourceRows)) ||
+      !identical(values[["Overall-Result"]],
+                 "NAME_AVAILABLE_NO_EXACT_COLLISION")) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_EXACT_COLLISION", parseStatus, "name"
+    )))
+  }
+  approved = identical(values[["Name"]], "GEModelR") &&
+    values[["Check-Kind"]] %in% c("initial", "reservation", "release") &&
+    identical(values[["Initial-Name-Report"]], "approved") &&
+    identical(values[["Reviewer"]], "David Zenz") &&
+    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          values[["Review-Date-UTC"]])
+  if (!approved) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_REPORT_UNSIGNED", parseStatus, "name"
+    )))
+  }
+  parseStatus[["name"]] = "pass"
+  list(
+    parse_status = parseStatus,
+    check_kind = values[["Check-Kind"]],
+    checked_at = values[["Checked-At-UTC"]]
+  )
+}
+
+release_gate_validate_governance = function(root, parseStatus) {
+  path = file.path(root, "GOVERNANCE.md")
+  lines = release_gate_read_lines(path)
+  fields = c(
+    "Maintainer", "Approved-Contact", "Release-Authority",
+    "Security-Route", "Identity-Approval", "Reviewer", "Review-Date-UTC"
+  )
+  if (is.null(lines)) {
+    return(list(error = release_gate_integrated_failure(
+      "GOVERNANCE_IDENTITY_UNAPPROVED", parseStatus, "governance"
+    )))
+  }
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(list(error = release_gate_integrated_failure(
+      "GOVERNANCE_IDENTITY_UNAPPROVED", parseStatus, "governance"
+    )))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  identity = identical(values[["Maintainer"]], "David Zenz") &&
+    identical(values[["Approved-Contact"]], "zenz@wiiw.ac.at") &&
+    identical(values[["Release-Authority"]], "David Zenz") &&
+    identical(values[["Identity-Approval"]], "approved") &&
+    identical(values[["Reviewer"]], "David Zenz") &&
+    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          values[["Review-Date-UTC"]])
+  if (!identity) {
+    return(list(error = release_gate_integrated_failure(
+      "GOVERNANCE_IDENTITY_UNAPPROVED", parseStatus, "governance"
+    )))
+  }
+  if (!identical(
+    values[["Security-Route"]], "mailto:zenz@wiiw.ac.at"
+  )) {
+    return(list(error = release_gate_integrated_failure(
+      "GOVERNANCE_SECURITY_ROUTE_MISSING", parseStatus, "governance"
+    )))
+  }
+  parseStatus[["governance"]] = "pass"
+  list(parse_status = parseStatus, values = values)
+}
+
+
+release_gate_validate_repository = function(
+    root, governance, parseStatus) {
+  path = file.path(root, "docs", "release", "REPOSITORY.md")
+  lines = release_gate_read_lines(path)
+  fields = c(
+    "Owner-Slug", "Repository-Name", "Canonical-URL", "Issue-Tracker",
+    "Visibility-Boundary", "Identity-Approval", "Reviewer",
+    "Review-Date-UTC", "Reservation-Authorization",
+    "Visibility-Detachment-Authorization", "Branch-Settings-Authorization",
+    "Release-Authorization"
+  )
+  if (is.null(lines)) {
+    return(list(error = release_gate_integrated_failure(
+      "REPOSITORY_URL_MISMATCH", parseStatus, "repository"
+    )))
+  }
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(list(error = release_gate_integrated_failure(
+      "REPOSITORY_URL_MISMATCH", parseStatus, "repository"
+    )))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  if (!identical(values[["Owner-Slug"]], "DavidZenz") ||
+      !identical(values[["Repository-Name"]], "GEModelR") ||
+      !identical(
+        values[["Canonical-URL"]], "https://github.com/DavidZenz/GEModelR"
+      )) {
+    return(list(error = release_gate_integrated_failure(
+      "REPOSITORY_URL_MISMATCH", parseStatus, "repository"
+    )))
+  }
+  if (!identical(
+    values[["Issue-Tracker"]],
+    "https://github.com/DavidZenz/GEModelR/issues"
+  )) {
+    return(list(error = release_gate_integrated_failure(
+      "REPOSITORY_ISSUES_MISMATCH", parseStatus, "repository"
+    )))
+  }
+  boundaryFields = c(
+    "Reservation-Authorization", "Visibility-Detachment-Authorization",
+    "Branch-Settings-Authorization", "Release-Authorization"
+  )
+  boundary = identical(
+    values[["Visibility-Boundary"]], "private-development"
+  ) && identical(values[["Identity-Approval"]], "approved") &&
+    identical(values[["Reviewer"]], governance[["Reviewer"]]) &&
+    identical(
+      values[["Review-Date-UTC"]], governance[["Review-Date-UTC"]]
+    ) && all(values[boundaryFields] == "not-authorized")
+  if (!boundary) {
+    return(list(error = release_gate_integrated_failure(
+      "REPOSITORY_BOUNDARY_INVALID", parseStatus, "repository"
+    )))
+  }
+  parseStatus[["repository"]] = "pass"
+  list(parse_status = parseStatus, values = values)
+}
+
+release_gate_release_check_fresh = function(nameEvidence) {
+  if (!identical(nameEvidence$check_kind, "release")) return(FALSE)
+  checked = as.POSIXct(
+    nameEvidence$checked_at, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+  )
+  age = difftime(Sys.time(), checked, units = "hours")
+  !is.na(checked) && age <= 24 && age >= 0
+}
+
+
+release_gate_evaluate = function(root = ".") {
+  root = normalizePath(root, mustWork = TRUE)
+  base = release_gate_evaluate_rights(root)
+  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
+  rightsLines = release_gate_read_lines(rightsPath)
+  integratedVersion = if (is.null(rightsLines)) character() else
+    release_gate_marker_values(rightsLines, "Integrated-Evidence-Version")
+  if (!identical(integratedVersion, "1")) return(base)
+  if (!identical(base$repository_state, "eligible")) return(base)
+
+  requiredRights = c(
+    "Rights-Status", "Upstream-Repository", "Upstream-Commit",
+    "Request-Status", "Request-URL", "Request-Date-UTC",
+    "Request-Content-Hash", "Evidence-Hash", "Reviewer",
+    "Review-Date-UTC"
+  )
+  rights = release_gate_single_markers(rightsLines, requiredRights)
+  rightsValues = vapply(rights, `[[`, character(1), 1L)
+  parseStatus = base$parse_status[
+    names(base$parse_status) != "provenance_coverage"
+  ]
+
+  provenance = release_gate_validate_provenance(root, parseStatus)
+  if (!is.null(provenance$error)) return(provenance$error)
+  attribution = release_gate_validate_attribution(
+    root, rightsValues, provenance, provenance$parse_status
+  )
+  if (!is.null(attribution$error)) return(attribution$error)
+  nameEvidence = release_gate_validate_name(root, attribution$parse_status)
+  if (!is.null(nameEvidence$error)) return(nameEvidence$error)
+  governance = release_gate_validate_governance(
+    root, nameEvidence$parse_status
+  )
+  if (!is.null(governance$error)) return(governance$error)
+  repository = release_gate_validate_repository(
+    root, governance$values, governance$parse_status
+  )
+  if (!is.null(repository$error)) return(repository$error)
+
+  rightsBlockers = release_gate_marker_values(
+    rightsLines, "Unresolved-Release-Blocker"
+  )
+  rightsBlockers = rightsBlockers[rightsBlockers != "NONE"]
+  blockers = attribution$blockers
+  if (!identical(base$intentional_blockers, blockers) ||
+      !identical(rightsBlockers, blockers)) {
+    return(release_gate_result(
+      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+      parse_status = repository$parse_status,
+      intentional_blockers = base$intentional_blockers
+    ))
+  }
+  if (length(blockers)) {
+    return(release_gate_result(
+      repository_state = "blocked",
+      release_ready = FALSE,
+      reason_codes = blockers,
+      parse_status = repository$parse_status,
+      intentional_blockers = base$intentional_blockers
+    ))
+  }
+  if (!release_gate_release_check_fresh(nameEvidence)) {
+    return(release_gate_result(
+      reason_codes = "NAME_REPORT_STALE",
+      parse_status = repository$parse_status,
+      intentional_blockers = base$intentional_blockers
+    ))
+  }
+  release_gate_result(
+    repository_state = "eligible",
+    release_ready = TRUE,
+    reason_codes = character(),
+    parse_status = repository$parse_status,
+    intentional_blockers = character()
+  )
+}
 release_gate_write_self_fixture <- function(root, status,
                                             includeScope = FALSE,
                                             cleanroomReview = NULL,
@@ -824,7 +1250,7 @@ release_gate_write_self_public_domain_fixture <- function(
     "Response-Author-Association: OWNER",
     "Response-Review-Status: accepted-public-domain-cc0",
     "Successor-Name-Basis: independently-selected",
-    "Name-Availability-Status: pending-plan-01-04"
+    "Name-Availability-Status: approved-initial-report"
   )
   writeLines(rightsLines, rightsPath)
   blockers <- if (identical(coverageStatus, "complete")) {
@@ -969,14 +1395,8 @@ release_gate_main <- function(args = commandArgs(trailingOnly = TRUE)) {
     validBlocked <- identical(result$repository_state, "blocked") &&
       identical(result$release_ready, FALSE) &&
       identical(result$reason_codes, result$intentional_blockers) &&
-      identical(
-        result$reason_codes,
-        "PROVENANCE_COVERAGE_INCOMPLETE"
-      ) &&
-      identical(
-        unname(result$parse_status),
-        c("pass", "pass", "pass", "incomplete")
-      )
+      length(result$reason_codes) > 0L &&
+      all(unname(result$parse_status) == "pass")
     return(if (validBlocked) 0L else 1L)
   }
   if (isTRUE(result$release_ready)) 0L else 1L

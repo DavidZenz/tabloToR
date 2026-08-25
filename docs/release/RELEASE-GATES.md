@@ -3,57 +3,55 @@
 ## Canonical release boundary
 
 Rights-Gate-Status: cleared
-Intentional-Blockers: PROVENANCE_COVERAGE_INCOMPLETE
+Intentional-Blockers: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED
 
-The executable source of truth is `tools/check_release_gates.R`. The audited
-upstream baseline has an accepted public-domain/CC0 basis, but repository
-release readiness remains blocked until the provenance inventory proves a
-rights basis for every distributable component. Missing, duplicate, unknown,
-contradictory, or partial evidence fails closed.
+The executable source of truth is `tools/check_release_gates.R`. It evaluates
+rights, accepted public-domain evidence, complete symbol-level provenance,
+reviewed attribution, point-in-time name evidence, approved governance, and the
+canonical repository boundary as one fail-closed decision.
 
-| Gate | Evidence | Passing predicate | Offline | Review | Blocking result |
-| --- | --- | --- | --- | --- | --- |
-| Rights status | `docs/provenance/RIGHTS.md` | Exactly one allowed status with every canonical identity field | Yes | Required for clearance | `RIGHTS_STATUS_CARDINALITY` or an evidence-specific reason |
-| Policy parity | This file and `RIGHTS.md` | `Rights-Gate-Status` equals `Rights-Status` | Yes | N/A | `RIGHTS_RELEASE_STATUS_MISMATCH` |
-| Public-domain response integrity | `UPSTREAM-RESPONSE.md` and `RIGHTS.md` | Exact repository, commit, public URL, response metadata, statement, and whole-document hash agree | Yes | Required | `PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE` or `PUBLIC_DOMAIN_EVIDENCE_HASH_MISMATCH` |
-| Public-domain response scope | `RIGHTS.md` | Coverage is limited to upstream-authored inherited source at the audited commit and explicitly excludes unrelated third-party components | Yes | Required | `RIGHTS_SCOPE_INCOMPLETE` |
-| Provenance coverage | `RIGHTS.md`, then the Plan 01-03 inventory | Every distributable component has a reviewed rights basis; pending, missing, unknown, or contradictory coverage fails | Yes | Required | `PROVENANCE_COVERAGE_INCOMPLETE` |
-| Written grant alternative | `RIGHTS.md` | A resolved public request, exact inherited scope, evidence hash, reviewer, and UTC review date bind a grant | Yes | Required | `RIGHTS_SCOPE_INCOMPLETE` or `RIGHTS_EVIDENCE_INCOMPLETE` |
-| Clean-room eligibility | `CLEANROOM.md` and `specs/cleanroom/*.md` | Distinct roles, exact attestations, eligible inputs, and a source-unexposed implementer | Yes | Required | `CLEANROOM_IMPLEMENTER_INELIGIBLE` or `CLEANROOM_EVIDENCE_INCOMPLETE` |
-| Clean-room coverage | Inherited keys and component specifications | Every inherited key has exactly one passing `new-independent` record and approved review | Yes | Required | `CLEANROOM_EVIDENCE_INCOMPLETE` or `CLEANROOM_REVIEW_INCOMPLETE` |
-| Successor identity boundary | `RIGHTS.md` | GEModelR is independently selected; authoritative availability/governance remains a separate Plan 01-04 gate | Yes | Plan 01-04 | A rights response never substitutes for the name gate |
-| Sensitive evidence boundary | Files under `docs/provenance/` and `docs/release/` | No credential, private-correspondence, proprietary-model, or giant-result indicator | Yes | N/A | `SENSITIVE_EVIDENCE_CLASS` |
-| Intentional block | Both status files | Accepted scoped public-domain evidence is blocked only by `PROVENANCE_COVERAGE_INCOMPLETE` | Yes | N/A | Any other reason makes the assertion fail |
+The checked-in repository is intentionally blocked by exactly two reviewed
+facts. The package license remains unresolved until the LinkingTo, vendored, and
+native dependency compatibility audit is complete. A Git identity alias remains
+unresolved and cannot be silently merged into a public attribution identity.
+Neither blocker authorizes an external repository or publication action.
+
+| Gate | Evidence | Passing predicate | Blocking result |
+| --- | --- | --- | --- |
+| Rights and policy parity | `RIGHTS.md`, this file | Cleared scoped basis, exact upstream identity, complete provenance marker, and identical intentional blockers | `RIGHTS_RELEASE_STATUS_MISMATCH` or `INTENTIONAL_BLOCKERS_MISMATCH` |
+| Public-domain response | `UPSTREAM-RESPONSE.md`, `RIGHTS.md` | Exact URL, owner association, statement, scope, and whole-document hash | `PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE` or `PUBLIC_DOMAIN_EVIDENCE_HASH_MISMATCH` |
+| Provenance inventory | `EXPECTED-KEYS.csv`, `PROVENANCE.csv` | Exact 17-column schema, one reviewed row per expected symbol, no missing or duplicate keys | `PROVENANCE_COLUMNS_MISSING`, `PROVENANCE_KEY_MISMATCH`, `PROVENANCE_DUPLICATE_KEY`, or `PROVENANCE_ROW_BLOCKING` |
+| Attribution contract | `ATTRIBUTION.md`, provenance inventory | Snapshot hash and row count match, roles are reviewed, evidence keys exist, and blocking facts are explicit | `ATTRIBUTION_EVIDENCE_MISSING`, `ATTRIBUTION_ROLE_UNREVIEWED`, or `ATTRIBUTION_DESTINATION_MISMATCH` |
+| Successor name | `NAME-CHECK.md` | Six approved public sources are available with no exact collision; release readiness additionally needs a fresh release-kind report | `NAME_SOURCE_MISSING`, `NAME_SOURCE_UNAVAILABLE`, `NAME_EXACT_COLLISION`, `NAME_REPORT_UNSIGNED`, or `NAME_REPORT_STALE` |
+| Governance identity | `GOVERNANCE.md` | Exact approved maintainer, contact, release authority, security route, reviewer, and date | `GOVERNANCE_IDENTITY_UNAPPROVED` or `GOVERNANCE_SECURITY_ROUTE_MISSING` |
+| Repository boundary | `REPOSITORY.md` | Exact owner/name/URL/issues pair, private-development boundary, and every external action remains not authorized | `REPOSITORY_URL_MISMATCH`, `REPOSITORY_ISSUES_MISMATCH`, or `REPOSITORY_BOUNDARY_INVALID` |
+| Sensitive evidence | Release and provenance evidence trees | No credential, private-correspondence, proprietary-model, or giant-result indicator | `SENSITIVE_EVIDENCE_CLASS` |
 
 ## Superseded request checkpoint
 
 `docs/provenance/UPSTREAM-REQUEST.md` is retained as hash-bound historical
 planning evidence and is marked `superseded-do-not-post`. It is not a release
-predicate and no second upstream request is required or authorized. Silence and
-ambiguous-response fixtures remain fail-closed tests for request-based evidence
-paths, but they do not override the accepted public response.
+predicate and no second upstream request is required or authorized. The accepted
+public response is scoped to the audited upstream-authored baseline.
 
 ## Command contracts
 
-- `Rscript --vanilla tools/check_release_gates.R --offline` evaluates release
-  readiness. It exits nonzero for this repository while provenance coverage is
-  pending.
-- `Rscript --vanilla tools/check_release_gates.R --assert-blocked` asserts the
-  complete intentional state: public-domain evidence passes, release readiness
-  is false, and the sole current blocker is
-  `PROVENANCE_COVERAGE_INCOMPLETE`.
+- `Rscript --vanilla tools/check_release_gates.R --offline` evaluates the full
+  local evidence graph and exits nonzero while any blocker remains.
+- `Rscript --vanilla tools/check_release_gates.R --assert-blocked` exits zero
+  only when the repository is blocked, every evidence parser passes, and the
+  reason codes exactly equal the intentional blocker list.
 - `Rscript --vanilla tools/check_release_gates.R --root PATH ...` evaluates an
-  isolated evidence root. Synthetic eligible evidence must never replace the
-  checked-in scoped record.
-- `Rscript --vanilla tools/check_release_gates.R --self-test` creates only
-  temporary blocked, eligible public-domain, eligible written-grant, eligible
-  clean-room, malformed, and sensitive roots. It exits zero only when every
-  exact result is observed.
+  isolated evidence root. A synthetic root can prove that all predicates are
+  reachable without changing the checked-in release state.
+- `Rscript --vanilla tools/check_release_gates.R --self-test` checks the legacy
+  rights alternatives and malformed/sensitive fixtures without network access.
 
-Synthetic clearance is test evidence only. A temporary eligible fixture cannot
-establish component coverage for the real repository, satisfy Plan 01-04, add a
-package license, authorize publication, or establish rights in unrelated
-third-party components.
+A fresh release-kind name report is required before a blocker-free root can be
+release-ready. Even a technically ready result does not create, reserve, change,
+or publish a repository: every such action requires its separate human
+authorization.
 
-Diagnostics report field names and stable reason codes only. Evidence contents
-are not printed.
+Diagnostics report stable field names and reason codes only. Evidence contents,
+credentials, private correspondence, and proprietary model data are never
+printed.

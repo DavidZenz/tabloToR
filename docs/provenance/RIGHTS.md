@@ -9,7 +9,7 @@ Upstream-Commit: 7e063c65a19713857ed13023f8b77dad45b15c90
 Covered-Upstream-Commit: 7e063c65a19713857ed13023f8b77dad45b15c90
 Covered-Components: upstream-authored-inherited-source
 Excluded-Components: unrelated-third-party-components
-Provenance-Coverage-Status: pending-plan-01-03
+Provenance-Coverage-Status: complete
 Request-Status: superseded-by-public-response
 Request-URL: https://github.com/mivanic/tabloToR/issues/3
 Request-Date-UTC: 2026-08-24T13:19:21Z
@@ -27,7 +27,10 @@ Response-Author-GitHub: mivanic
 Response-Author-Association: OWNER
 Response-Review-Status: accepted-public-domain-cc0
 Successor-Name-Basis: independently-selected
-Name-Availability-Status: pending-plan-01-04
+Name-Availability-Status: approved-initial-report
+Integrated-Evidence-Version: 1
+Unresolved-Release-Blocker: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING
+Unresolved-Release-Blocker: ATTRIBUTION_IDENTITY_UNRESOLVED
 
 The upstream commit is the inherited baseline immediately before the local
 sparse-solver development history. The maintainer accepts the linked public
@@ -50,17 +53,17 @@ intended. The response resolves the rights question for the scoped upstream
 baseline without a second posting. The unposted D-01 draft is retained only as
 historical, hash-bound planning evidence and is explicitly marked do-not-post.
 
-The accepted scope excludes unrelated third-party components. Plan 01-03 must
-prove complete function/file provenance and a valid rights basis for every
-distributable component before release readiness can pass. Unknown, missing,
-or contradictory coverage fails closed.
+The accepted scope excludes unrelated third-party components. The reviewed
+symbol-level provenance inventory now proves complete coverage for the audited
+repository. Missing, duplicate, unknown, or contradictory inventory evidence
+still fails closed through the integrated release checker.
 
 ## Result
 
 Private development may continue. Public source, binaries, package archives,
-release tags, documentation sites, and R-universe publication remain blocked
-until the Plan 01-03 provenance coverage gate is complete and all later Phase 1
-gates pass. No additional upstream request is required or authorized.
+release tags, documentation sites, and R-universe publication remain blocked by
+the dependency compatibility audit and unresolved Git identity alias recorded
+in ATTRIBUTION.md. No additional upstream request is required or authorized.
 
 `cleared` records the accepted basis only for the scoped upstream-authored
 baseline; it is not equivalent to repository release readiness. Any unrelated
@@ -70,8 +73,8 @@ uncovered inherited expression and does not itself establish clearance.
 
 `GEModelR` is the successor package's independently selected identity, not a
 continuation of the upstream package name and not dependent on upstream
-copyright permission. Its authoritative name-availability and governance gate
-remains pending under Plan 01-04.
+copyright permission. Its approved point-in-time name report, governance identity, and canonical
+repository boundary are checked directly by the integrated release checker.
 
 ## Evidence and privacy boundary
 

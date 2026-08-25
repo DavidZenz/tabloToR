@@ -206,7 +206,7 @@ writePublicDomainFixture <- function(
     "Response-Author-Association: OWNER",
     "Response-Review-Status: accepted-public-domain-cc0",
     "Successor-Name-Basis: independently-selected",
-    "Name-Availability-Status: pending-plan-01-04"
+    "Name-Availability-Status: approved-initial-report"
   )
   writeLines(rightsLines, rightsPath, useBytes = TRUE)
   if (tamperEvidence) {
@@ -690,7 +690,7 @@ test_that("offline readiness stays distinct from an intentional block", {
   offline <- runReleaseGate(c("--root", root, "--offline"))
   expectReleaseGateFailure(
     offline,
-    "PROVENANCE_COVERAGE_INCOMPLETE"
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
   )
   malformed <- tempfile("release-gate-unrelated-error-")
   on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
@@ -781,11 +781,11 @@ copyIntegratedReleaseEvidence = function(root) {
     "docs/provenance/RIGHTS.md",
     "docs/provenance/UPSTREAM-REQUEST.md",
     "docs/provenance/UPSTREAM-RESPONSE.md",
-    "docs/provenance/EXPECTED-KEYS.txt",
+    "docs/provenance/EXPECTED-KEYS.csv",
     "docs/provenance/PROVENANCE.csv",
     "docs/provenance/ATTRIBUTION.md",
     "docs/release/NAME-CHECK.md",
-    "docs/release/GOVERNANCE.md",
+    "GOVERNANCE.md",
     "docs/release/REPOSITORY.md",
     "docs/release/RELEASE-GATES.md"
   )
@@ -819,6 +819,14 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   root = tempfile("release-gate-integrated-ready-")
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   copyIntegratedReleaseEvidence(root)
+
+  namePath = file.path(root, "docs", "release", "NAME-CHECK.md")
+  nameLines = readLines(namePath, warn = FALSE, encoding = "UTF-8")
+  nameLines[grepl("^Check-Kind:", nameLines)] = "Check-Kind: release"
+  nameLines[grepl("^Checked-At-UTC:", nameLines)] = paste0(
+    "Checked-At-UTC: ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  )
+  writeLines(nameLines, namePath, useBytes = TRUE)
 
   attributionPath = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
   attribution = readLines(attributionPath, warn = FALSE, encoding = "UTF-8")
