@@ -37,7 +37,7 @@ GEModelR reaches its first public release through seven auditable technical phas
 **Wave 2** *(blocked on Wave 1 completion)*
 
 - [x] 01-02-PLAN.md
-- [ ] 01-03-PLAN.md
+- [x] 01-03-PLAN.md
 - [ ] 01-04-PLAN.md
 
 **Wave 3** *(blocked on Wave 2 completion)*
@@ -137,7 +137,7 @@ GEModelR reaches its first public release through seven auditable technical phas
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Provenance and Release Boundary | 2/6 | In Progress|  |
+| 1. Provenance and Release Boundary | 3/6 | In Progress|  |
 | 2. Compatibility and Numerical Baseline | 0/TBD | Not started | - |
 | 3. GEModelR Identity Migration | 0/TBD | Not started | - |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
