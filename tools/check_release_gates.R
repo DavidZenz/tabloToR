@@ -39,8 +39,43 @@ release_gate_single_markers <- function(lines, fields) {
   values
 }
 
+release_gate_has_sensitive_evidence <- function(root) {
+  evidenceDirs <- file.path(root, "docs", c("provenance", "release"))
+  evidenceDirs <- evidenceDirs[dir.exists(evidenceDirs)]
+  if (!length(evidenceDirs)) return(FALSE)
+  files <- unlist(lapply(evidenceDirs, function(path) {
+    list.files(
+      path, recursive = TRUE, full.names = TRUE,
+      all.files = TRUE, no.. = TRUE
+    )
+  }), use.names = FALSE)
+  if (!length(files)) return(FALSE)
+  info <- file.info(files)
+  files <- files[!is.na(info[["isdir"]]) & !info[["isdir"]]]
+  info <- info[files, , drop = FALSE]
+  namesLower <- tolower(basename(files))
+  nameIndicator <- grepl(
+    "credential|private[-_]?correspondence|proprietary|giant[-_]?result",
+    namesLower
+  ) | grepl("\\.(har|tab|rds|rdata)$", namesLower)
+  sizeIndicator <- !is.na(info[["size"]]) & info[["size"]] > 5 * 1024^2
+  classIndicator <- vapply(files, function(path) {
+    lines <- release_gate_read_lines(path)
+    if (is.null(lines)) return(FALSE)
+    any(grepl(
+      "^Evidence-Class:[[:space:]]*(credential|private-correspondence|proprietary-model|giant-result)[[:space:]]*$",
+      lines,
+      ignore.case = TRUE
+    ))
+  }, logical(1))
+  any(nameIndicator | sizeIndicator | classIndicator)
+}
+
 release_gate_evaluate <- function(root = ".") {
   root <- normalizePath(root, mustWork = TRUE)
+  if (release_gate_has_sensitive_evidence(root)) {
+    return(release_gate_result(reason_codes = "SENSITIVE_EVIDENCE_CLASS"))
+  }
   rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
   releasePath <- file.path(root, "docs", "release", "RELEASE-GATES.md")
   rightsLines <- release_gate_read_lines(rightsPath)
@@ -96,6 +131,10 @@ release_gate_evaluate <- function(root = ".") {
     releaseValues[["Intentional-Blockers"]], ",", fixed = TRUE
   )[[1L]])
   intentionalBlockers <- intentionalBlockers[nzchar(intentionalBlockers)]
+  if (length(intentionalBlockers) == 1L &&
+      identical(toupper(intentionalBlockers), "NONE")) {
+    intentionalBlockers <- character()
+  }
   parsePass <- c(rights = "pass", release_gates = "pass")
 
   if (!identical(releaseValues[["Rights-Gate-Status"]], rightsStatus)) {
@@ -142,6 +181,31 @@ release_gate_evaluate <- function(root = ".") {
         intentional_blockers = intentionalBlockers
       ))
     }
+    clearanceComplete <- identical(
+      rightsValues[["Request-Status"]], "resolved"
+    ) && grepl("^https://", rightsValues[["Request-URL"]]) &&
+      grepl("^[0-9a-f]{32,64}$", rightsValues[["Evidence-Hash"]]) &&
+      identical(
+        grepl("^pending", rightsValues[["Reviewer"]], ignore.case = TRUE),
+        FALSE
+      ) && grepl(
+        "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+        rightsValues[["Review-Date-UTC"]]
+      )
+    if (!clearanceComplete) {
+      return(release_gate_result(
+        reason_codes = "RIGHTS_EVIDENCE_INCOMPLETE",
+        parse_status = parsePass,
+        intentional_blockers = intentionalBlockers
+      ))
+    }
+    if (length(intentionalBlockers)) {
+      return(release_gate_result(
+        reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+        parse_status = parsePass,
+        intentional_blockers = intentionalBlockers
+      ))
+    }
     return(release_gate_result(
       repository_state = "eligible",
       release_ready = TRUE,
@@ -151,11 +215,132 @@ release_gate_evaluate <- function(root = ".") {
     ))
   }
 
+  cleanroomPath <- file.path(root, "docs", "provenance", "CLEANROOM.md")
+  cleanroomLines <- release_gate_read_lines(cleanroomPath)
+  cleanroomPass <- FALSE
+  if (!is.null(cleanroomLines)) {
+    cleanroom <- release_gate_single_markers(
+      cleanroomLines,
+      c("Cleanroom-Coverage", "Cleanroom-Review-Status")
+    )
+    if (all(vapply(cleanroom, length, integer(1)) == 1L)) {
+      cleanroomValues <- vapply(cleanroom, `[[`, character(1), 1L)
+      cleanroomPass <- identical(
+        cleanroomValues[["Cleanroom-Coverage"]], "complete"
+      ) && identical(
+        cleanroomValues[["Cleanroom-Review-Status"]], "approved"
+      )
+    }
+  }
+  if (!cleanroomPass) {
+    return(release_gate_result(
+      reason_codes = "CLEANROOM_REVIEW_INCOMPLETE",
+      parse_status = c(parsePass, cleanroom = "fail"),
+      intentional_blockers = intentionalBlockers
+    ))
+  }
+  if (length(intentionalBlockers)) {
+    return(release_gate_result(
+      reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
+      parse_status = c(parsePass, cleanroom = "pass"),
+      intentional_blockers = intentionalBlockers
+    ))
+  }
   release_gate_result(
-    reason_codes = "CLEANROOM_REVIEW_INCOMPLETE",
-    parse_status = parsePass,
+    repository_state = "eligible",
+    release_ready = TRUE,
+    reason_codes = character(),
+    parse_status = c(parsePass, cleanroom = "pass"),
     intentional_blockers = intentionalBlockers
   )
+}
+
+release_gate_write_self_fixture <- function(root, status,
+                                            includeScope = FALSE,
+                                            cleanroomReview = NULL,
+                                            duplicateStatus = FALSE,
+                                            sensitive = FALSE) {
+  dir.create(file.path(root, "docs", "provenance"), recursive = TRUE)
+  dir.create(file.path(root, "docs", "release"), recursive = TRUE)
+  statusLines <- rep(
+    paste0("Rights-Status: ", status),
+    if (duplicateStatus) 2L else 1L
+  )
+  rightsLines <- c(
+    statusLines,
+    "Upstream-Repository: https://example.invalid/upstream",
+    "Upstream-Commit: self-test-commit",
+    "Request-Status: resolved",
+    "Request-URL: https://example.invalid/request",
+    "Evidence-Hash: 0123456789abcdef0123456789abcdef",
+    "Reviewer: self-test-reviewer",
+    "Review-Date-UTC: 2026-08-25"
+  )
+  if (includeScope) {
+    rightsLines <- c(
+      rightsLines,
+      "Covered-Upstream-Commit: self-test-commit",
+      "Covered-Components: inherited-source"
+    )
+  }
+  writeLines(rightsLines, file.path(root, "docs", "provenance", "RIGHTS.md"))
+  blockers <- if (identical(status, "blocked")) "RIGHTS_BLOCKED" else "NONE"
+  writeLines(c(
+    paste0("Rights-Gate-Status: ", status),
+    paste0("Intentional-Blockers: ", blockers)
+  ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
+  if (!is.null(cleanroomReview)) {
+    writeLines(c(
+      "Cleanroom-Coverage: complete",
+      paste0("Cleanroom-Review-Status: ", cleanroomReview)
+    ), file.path(root, "docs", "provenance", "CLEANROOM.md"))
+  }
+  if (sensitive) {
+    writeLines(
+      "self-test-sensitive-value",
+      file.path(root, "docs", "provenance", "credential.txt")
+    )
+  }
+}
+
+release_gate_self_test <- function() {
+  root <- tempfile("release-gate-self-test-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  fixture <- function(name) file.path(root, name)
+
+  blocked <- fixture("blocked")
+  release_gate_write_self_fixture(blocked, "blocked")
+  blockedResult <- release_gate_evaluate(blocked)
+
+  cleared <- fixture("cleared")
+  release_gate_write_self_fixture(cleared, "cleared", includeScope = TRUE)
+  clearedResult <- release_gate_evaluate(cleared)
+
+  cleanroom <- fixture("cleanroom")
+  release_gate_write_self_fixture(
+    cleanroom, "clean-room-required", cleanroomReview = "approved"
+  )
+  cleanroomResult <- release_gate_evaluate(cleanroom)
+
+  malformed <- fixture("malformed")
+  release_gate_write_self_fixture(
+    malformed, "blocked", duplicateStatus = TRUE
+  )
+  malformedResult <- release_gate_evaluate(malformed)
+
+  sensitive <- fixture("sensitive")
+  release_gate_write_self_fixture(sensitive, "blocked", sensitive = TRUE)
+  sensitiveResult <- release_gate_evaluate(sensitive)
+
+  identical(blockedResult$reason_codes, "RIGHTS_BLOCKED") &&
+    identical(blockedResult$repository_state, "blocked") &&
+    isTRUE(clearedResult$release_ready) &&
+    identical(clearedResult$repository_state, "eligible") &&
+    isTRUE(cleanroomResult$release_ready) &&
+    identical(cleanroomResult$repository_state, "eligible") &&
+    identical(malformedResult$reason_codes, "RIGHTS_STATUS_CARDINALITY") &&
+    identical(sensitiveResult$reason_codes, "SENSITIVE_EVIDENCE_CLASS")
 }
 
 release_gate_parse_args <- function(args) {
@@ -217,10 +402,12 @@ release_gate_main <- function(args = commandArgs(trailingOnly = TRUE)) {
     return(2L)
   }
   if (isTRUE(options$self_test)) {
-    cat("repository_state=invalid\n")
-    cat("release_ready=false\n")
-    cat("reason_codes=SELF_TEST_NOT_IMPLEMENTED\n")
-    return(1L)
+    passed <- tryCatch(
+      isTRUE(release_gate_self_test()),
+      error = function(error) FALSE
+    )
+    cat(paste0("self_test=", if (passed) "pass" else "fail", "\n"))
+    return(if (passed) 0L else 1L)
   }
   result <- tryCatch(
     release_gate_evaluate(options$root),
