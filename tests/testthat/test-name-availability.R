@@ -111,7 +111,7 @@ test_that("ASCII case folding detects exact names only", {
   tool = nameCheckTool()
   candidates = c(
     "GEModelR", "gemodelr", "GEMODELR", "GEModelRtools",
-    "myGEModelR", "GЕModelR"
+    "myGEModelR"
   )
   expect_identical(
     tool$name_check_exact_matches("GEModelR", candidates),

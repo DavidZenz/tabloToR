@@ -36,12 +36,24 @@ name_check_ascii_fold = function(value) {
   chartr("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz", value)
 }
 
+name_check_ascii_valid = function(value) {
+  if (!is.character(value) || anyNA(value) || any(!nzchar(value))) {
+    return(FALSE)
+  }
+  converted = suppressWarnings(iconv(
+    value, from = "UTF-8", to = "ASCII", sub = NA_character_
+  ))
+  all(!is.na(converted))
+}
+
 name_check_exact_matches = function(name, candidates) {
   name_check_validate_name(name)
+  if (!name_check_ascii_valid(candidates) && length(candidates)) {
+    name_check_fail("NAME_CANDIDATES_INVALID")
+  }
   if (!is.character(candidates)) {
     name_check_fail("NAME_CANDIDATES_INVALID")
   }
-  candidates = candidates[!is.na(candidates)]
   candidates[name_check_ascii_fold(candidates) == name_check_ascii_fold(name)]
 }
 
@@ -51,12 +63,21 @@ name_check_raw_text = function(value, source_id) {
       "NAME_SOURCE_UNHASHABLE_", name_check_reason_suffix(source_id)
     ))
   }
-  tryCatch(
+  text = tryCatch(
     rawToChar(value),
     error = function(error) name_check_fail(paste0(
       "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
     ))
   )
+  decoded = suppressWarnings(iconv(
+    text, from = "UTF-8", to = "UTF-8", sub = NA_character_
+  ))
+  if (length(decoded) != 1L || is.na(decoded) || !validUTF8(decoded)) {
+    name_check_fail(paste0(
+      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
+    ))
+  }
+  decoded
 }
 
 name_check_raw_hash = function(value, source_id) {
@@ -86,67 +107,348 @@ name_check_regex_values = function(text, pattern, replacement) {
   sub(pattern, replacement, matches, perl = TRUE)
 }
 
+name_check_pattern_count = function(text, pattern) {
+  matches = gregexpr(pattern, text, perl = TRUE)[[1L]]
+  if (identical(matches[[1L]], -1L)) 0L else length(matches)
+}
+
+name_check_malformed_reason = function(source_id) {
+  paste0("NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id))
+}
+
+name_check_incomplete_reason = function(source_id) {
+  paste0("NAME_SOURCE_INCOMPLETE_", name_check_reason_suffix(source_id))
+}
+
+name_check_json_integer = function(text, key, source_id) {
+  key_pattern = paste0('"', key, '"[[:space:]]*:')
+  value_pattern = paste0(
+    '"', key, '"[[:space:]]*:[[:space:]]*([0-9]+)'
+  )
+  values = name_check_regex_values(text, value_pattern, "\\1")
+  if (name_check_pattern_count(text, key_pattern) != 1L ||
+      length(values) != 1L) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  numeric_value = suppressWarnings(as.numeric(values[[1L]]))
+  if (!is.finite(numeric_value) || numeric_value < 0 ||
+      numeric_value != floor(numeric_value) ||
+      numeric_value > .Machine$integer.max) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  as.integer(numeric_value)
+}
+
+name_check_json_logical = function(text, key, source_id) {
+  key_pattern = paste0('"', key, '"[[:space:]]*:')
+  value_pattern = paste0(
+    '"', key, '"[[:space:]]*:[[:space:]]*(true|false)'
+  )
+  values = name_check_regex_values(text, value_pattern, "\\1")
+  if (name_check_pattern_count(text, key_pattern) != 1L ||
+      length(values) != 1L) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  identical(values[[1L]], "true")
+}
+
 name_check_parse_packages = function(text, source_id) {
   if (!grepl("(^|\n)Package:[[:space:]]*", text, perl = TRUE)) {
-    name_check_fail(paste0(
-      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-    ))
+    name_check_fail(name_check_malformed_reason(source_id))
   }
   lines = strsplit(text, "\n", fixed = TRUE)[[1L]]
   package_lines = grep("^Package:[[:space:]]*", lines, value = TRUE)
   values = sub("^Package:[[:space:]]*", "", package_lines)
   values = trimws(values)
-  if (!length(values) || any(!grepl("^[A-Za-z][A-Za-z0-9.]*$", values))) {
-    name_check_fail(paste0(
-      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-    ))
+  if (!length(values) || !name_check_ascii_valid(values) ||
+      any(!grepl("^[A-Za-z][A-Za-z0-9.]*$", values))) {
+    name_check_fail(name_check_malformed_reason(source_id))
   }
   values
 }
 
 name_check_parse_archive = function(text, source_id) {
-  html_like = grepl("<html|<!DOCTYPE|href=", text, ignore.case = TRUE)
+  html_like = grepl("<html|<!DOCTYPE", text, ignore.case = TRUE) &&
+    grepl("href=", text, ignore.case = TRUE)
   if (!html_like) {
-    name_check_fail(paste0(
-      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-    ))
+    name_check_fail(name_check_malformed_reason(source_id))
   }
   values = name_check_regex_values(
     text,
     "href=[\"']([A-Za-z][A-Za-z0-9.]*)/[\"']",
     "\\1"
   )
+  if (!length(values) || !name_check_ascii_valid(values)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
   values
 }
 
-name_check_parse_runiverse = function(text, source_id) {
-  if (!grepl("\"results\"[[:space:]]*:", text) ||
-      (!grepl("\"total\"[[:space:]]*:", text) &&
-       !grepl("\"limit\"[[:space:]]*:", text))) {
-    name_check_fail(paste0(
-      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-    ))
+name_check_parse_runiverse_candidates = function(text, source_id) {
+  if (name_check_pattern_count(
+    text, '"results"[[:space:]]*:[[:space:]]*\\['
+  ) != 1L) {
+    name_check_fail(name_check_malformed_reason(source_id))
   }
-  name_check_regex_values(
+  key_count = name_check_pattern_count(
+    text, '"Package"[[:space:]]*:'
+  )
+  values = name_check_regex_values(
     text,
     '"Package"[[:space:]]*:[[:space:]]*"([A-Za-z][A-Za-z0-9.]*)"',
     "\\1"
   )
+  if (key_count != length(values) ||
+      (length(values) && !name_check_ascii_valid(values))) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  values
+}
+
+name_check_parse_github_candidates = function(text, source_id) {
+  if (name_check_pattern_count(
+    text, '"items"[[:space:]]*:[[:space:]]*\\['
+  ) != 1L) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  key_count = name_check_pattern_count(
+    text, '"full_name"[[:space:]]*:'
+  )
+  values = name_check_regex_values(
+    text,
+    '"full_name"[[:space:]]*:[[:space:]]*"[^"/]+/([A-Za-z0-9._-]+)"',
+    "\\1"
+  )
+  if (key_count != length(values) ||
+      (length(values) && !name_check_ascii_valid(values))) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  values
+}
+
+name_check_parse_count = function(source_id, value) {
+  if (!source_id %in% c("github", "r-universe")) {
+    name_check_fail("NAME_SOURCE_COUNT_UNSUPPORTED")
+  }
+  text = name_check_raw_text(value, source_id)
+  if (identical(source_id, "github")) {
+    candidates = name_check_parse_github_candidates(text, source_id)
+    return(list(
+      total = name_check_json_integer(text, "total_count", source_id),
+      returned = as.integer(length(candidates)),
+      incomplete = name_check_json_logical(
+        text, "incomplete_results", source_id
+      ),
+      skip = NA_integer_,
+      limit = NA_integer_,
+      candidates = candidates
+    ))
+  }
+  candidates = name_check_parse_runiverse_candidates(text, source_id)
+  limit = name_check_json_integer(text, "limit", source_id)
+  if (limit < 1L) name_check_fail(name_check_malformed_reason(source_id))
+  list(
+    total = name_check_json_integer(text, "total", source_id),
+    returned = as.integer(length(candidates)),
+    incomplete = FALSE,
+    skip = name_check_json_integer(text, "skip", source_id),
+    limit = limit,
+    candidates = candidates
+  )
+}
+
+name_check_validate_page_set = function(source_id, pages,
+                                         maximum_results = NULL) {
+  if (!source_id %in% c("github", "r-universe")) {
+    name_check_fail("NAME_SOURCE_COUNT_UNSUPPORTED")
+  }
+  incomplete_reason = name_check_incomplete_reason(source_id)
+  if (!is.list(pages) || !length(pages)) {
+    name_check_fail(incomplete_reason)
+  }
+  page_ids = vapply(pages, function(page) {
+    if (is.list(page) && length(page$page) == 1L) {
+      suppressWarnings(as.integer(page$page))
+    } else {
+      NA_integer_
+    }
+  }, integer(1))
+  if (anyNA(page_ids) ||
+      !identical(page_ids, as.integer(seq_along(pages)))) {
+    name_check_fail(incomplete_reason)
+  }
+  queries = vapply(pages, function(page) {
+    if (is.character(page$query) && length(page$query) == 1L &&
+        !is.na(page$query)) page$query else ""
+  }, character(1))
+  if (any(!nzchar(queries)) || anyDuplicated(queries)) {
+    name_check_fail(incomplete_reason)
+  }
+  if (identical(source_id, "github") && length(pages) > 1L) {
+    tied = vapply(seq_along(pages), function(index) {
+      grepl(
+        paste0("([?&])page=", index, "(&|$)"),
+        queries[[index]], perl = TRUE
+      )
+    }, logical(1))
+    if (any(!tied)) name_check_fail(incomplete_reason)
+  }
+  available = vapply(pages, function(page) isTRUE(page$available), logical(1))
+  if (any(!available)) {
+    name_check_fail(paste0(
+      "NAME_SOURCE_UNAVAILABLE_", name_check_reason_suffix(source_id)
+    ))
+  }
+  roles = vapply(pages, function(page) {
+    value = page$role
+    if (is.null(value)) "results" else as.character(value)[[1L]]
+  }, character(1))
+  if (any(!roles %in% c("results", "count")) ||
+      (identical(source_id, "github") && any(roles != "results")) ||
+      sum(roles == "count") > 1L ||
+      (any(roles == "count") && which(roles == "count") != 1L)) {
+    name_check_fail(incomplete_reason)
+  }
+  metadata = lapply(pages, function(page) {
+    name_check_parse_count(source_id, page$raw)
+  })
+  totals = vapply(metadata, `[[`, integer(1), "total")
+  if (length(unique(totals)) != 1L) name_check_fail(incomplete_reason)
+  total = totals[[1L]]
+  if (is.null(maximum_results)) {
+    maximum_results = if (identical(source_id, "github")) 1000L else 100000L
+  }
+  maximum_results = suppressWarnings(as.integer(maximum_results)[[1L]])
+  if (is.na(maximum_results) || maximum_results < 0L ||
+      total > maximum_results) {
+    name_check_fail(incomplete_reason)
+  }
+  if (identical(source_id, "github") &&
+      any(vapply(metadata, `[[`, logical(1), "incomplete"))) {
+    name_check_fail(incomplete_reason)
+  }
+  result_indexes = which(roles == "results")
+  if (!length(result_indexes)) name_check_fail(incomplete_reason)
+  if (identical(source_id, "r-universe")) {
+    skips = vapply(metadata[result_indexes], `[[`, integer(1), "skip")
+    returned = vapply(
+      metadata[result_indexes], `[[`, integer(1), "returned"
+    )
+    if (skips[[1L]] != 0L ||
+        (length(skips) > 1L &&
+         any(skips[-1L] != head(skips, -1L) + head(returned, -1L)))) {
+      name_check_fail(incomplete_reason)
+    }
+  }
+  candidates = unlist(
+    lapply(metadata[result_indexes], `[[`, "candidates"),
+    use.names = FALSE
+  )
+  if (length(candidates) != total ||
+      (total > 0L && !length(candidates))) {
+    name_check_fail(incomplete_reason)
+  }
+  raw_md5 = vapply(pages, function(page) {
+    name_check_raw_hash(page$raw, source_id)
+  }, character(1))
+  details = data.frame(
+    page = page_ids,
+    query = queries,
+    role = roles,
+    declared_count = totals,
+    returned_count = vapply(metadata, `[[`, integer(1), "returned"),
+    completeness = ifelse(roles == "count", "count-probe", "complete"),
+    raw_md5 = raw_md5,
+    stringsAsFactors = FALSE
+  )
+  list(
+    candidates = candidates,
+    details = details,
+    declared_count = total,
+    complete = TRUE
+  )
+}
+
+name_check_query_set = function(query, key, value) {
+  pattern = paste0("([?&])", key, "=[^&]*")
+  replacement = paste0("\\1", key, "=", as.character(value))
+  if (grepl(pattern, query, perl = TRUE)) {
+    return(sub(pattern, replacement, query, perl = TRUE))
+  }
+  paste0(query, if (grepl("?", query, fixed = TRUE)) "&" else "?",
+         key, "=", as.character(value))
+}
+
+name_check_collect_pages = function(source_id, query,
+                                     timeout_seconds = 30L,
+                                     page_size = 100L,
+                                     download = NULL) {
+  if (!source_id %in% c("github", "r-universe") ||
+      !is.character(query) || length(query) != 1L || !nzchar(query)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  page_size = suppressWarnings(as.integer(page_size)[[1L]])
+  if (is.na(page_size) || page_size < 1L ||
+      (identical(source_id, "github") && page_size > 100L)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  if (is.null(download)) download = name_check_download
+  fetch = function(url) download(url, source_id, timeout_seconds)
+  if (identical(source_id, "github")) {
+    base_query = name_check_query_set(query, "per_page", page_size)
+    first_query = name_check_query_set(base_query, "page", 1L)
+    pages = list(list(
+      page = 1L, query = first_query, available = TRUE,
+      raw = fetch(first_query), role = "results"
+    ))
+    first = name_check_parse_count(source_id, pages[[1L]]$raw)
+    if (first$total > 1000L) {
+      name_check_fail(name_check_incomplete_reason(source_id))
+    }
+    page_count = max(1L, as.integer(ceiling(first$total / page_size)))
+    if (page_count > 1L) {
+      for (page in 2:page_count) {
+        page_query = name_check_query_set(base_query, "page", page)
+        pages[[page]] = list(
+          page = as.integer(page), query = page_query, available = TRUE,
+          raw = fetch(page_query), role = "results"
+        )
+      }
+    }
+  } else {
+    first_query = name_check_query_set(query, "limit", page_size)
+    first_query = name_check_query_set(first_query, "skip", 0L)
+    first_page = list(
+      page = 1L, query = first_query, available = TRUE,
+      raw = fetch(first_query), role = "results"
+    )
+    first = name_check_parse_count(source_id, first_page$raw)
+    if (first$total > 100000L) {
+      name_check_fail(name_check_incomplete_reason(source_id))
+    }
+    pages = list(first_page)
+    if (first$returned != first$total) {
+      pages[[1L]]$role = "count"
+      complete_query = name_check_query_set(
+        first_query, "limit", max(1L, first$total)
+      )
+      pages[[2L]] = list(
+        page = 2L, query = complete_query, available = TRUE,
+        raw = fetch(complete_query), role = "results"
+      )
+    }
+  }
+  validated = name_check_validate_page_set(source_id, pages)
+  validated$pages = pages
+  validated
+}
+
+name_check_parse_runiverse = function(text, source_id) {
+  name_check_parse_runiverse_candidates(text, source_id)
 }
 
 name_check_parse_github = function(text, source_id) {
-  if (!grepl('"items"[[:space:]]*:', text) ||
-      !grepl('"total_count"[[:space:]]*:', text)) {
-    name_check_fail(paste0(
-      "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-    ))
-  }
-  full_names = name_check_regex_values(
-    text,
-    "\"full_name\"[[:space:]]*:[[:space:]]*\"[^\"/]+[/]([A-Za-z][A-Za-z0-9.]*)\"",
-    "\\1"
-  )
-  full_names
+  name_check_parse_github_candidates(text, source_id)
 }
 
 name_check_parse_source = function(source_id, value) {
@@ -213,32 +515,61 @@ name_check_evaluate_fixture = function(name, sources,
   sources = sources[match(required, source_ids)]
   labels = name_check_source_labels()
   rows = vector("list", length(required))
+  detail_sets = vector("list", length(required))
+  names(detail_sets) = required
   collisions = character()
   for (index in seq_along(required)) {
     source_id = required[[index]]
     source = sources[[index]]
-    if (!isTRUE(source$available)) {
-      name_check_fail(paste0(
-        "NAME_SOURCE_UNAVAILABLE_", name_check_reason_suffix(source_id)
-      ))
+    bounded = source_id %in% c("github", "r-universe")
+    if (bounded) {
+      pages = source$pages
+      if (is.null(pages)) {
+        pages = list(list(
+          page = 1L, query = source$query, available = source$available,
+          raw = source$raw, role = "results"
+        ))
+      }
+      validated = name_check_validate_page_set(source_id, pages)
+      candidates = validated$candidates
+      details = validated$details
+      query = paste(details$query, collapse = " + ")
+      raw_md5 = name_check_raw_hash(
+        do.call(c, lapply(pages, `[[`, "raw")), source_id
+      )
+      detail_sets[[source_id]] = details
+    } else {
+      if (!isTRUE(source$available)) {
+        name_check_fail(paste0(
+          "NAME_SOURCE_UNAVAILABLE_", name_check_reason_suffix(source_id)
+        ))
+      }
+      if (!is.character(source$query) || length(source$query) != 1L ||
+          !nzchar(source$query)) {
+        name_check_fail(name_check_malformed_reason(source_id))
+      }
+      query = source$query
+      raw_md5 = name_check_raw_hash(source$raw, source_id)
+      candidates = name_check_parse_source(source_id, source$raw)
+      detail_sets[[source_id]] = data.frame(
+        page = 1L,
+        query = query,
+        role = "results",
+        declared_count = as.integer(length(candidates)),
+        returned_count = as.integer(length(candidates)),
+        completeness = "complete",
+        raw_md5 = raw_md5,
+        stringsAsFactors = FALSE
+      )
     }
-    if (!is.character(source$query) || length(source$query) != 1L ||
-        !nzchar(source$query)) {
-      name_check_fail(paste0(
-        "NAME_SOURCE_MALFORMED_", name_check_reason_suffix(source_id)
-      ))
-    }
-    raw_md5 = name_check_raw_hash(source$raw, source_id)
-    candidates = name_check_parse_source(source_id, source$raw)
-    exact = name_check_exact_matches(name, candidates)
-    exact = unique(exact)
+    exact = unique(name_check_exact_matches(name, candidates))
     if (length(exact)) {
       collisions = c(collisions, paste0(source_id, ":", exact))
     }
     rows[[index]] = data.frame(
       source_id = source_id,
       source = unname(labels[[source_id]]),
-      query = source$query,
+      query = query,
       available = "yes",
       raw_md5 = raw_md5,
       exact_matches = if (length(exact)) paste(exact, collapse = ",") else "NONE",
@@ -258,6 +589,7 @@ name_check_evaluate_fixture = function(name, sources,
       "NAME_AVAILABLE_NO_EXACT_COLLISION"
     },
     sources = source_frame,
+    source_details = detail_sets,
     collisions = collisions
   )
   if (length(collisions) && isTRUE(fail_on_collision)) {
@@ -637,28 +969,6 @@ name_check_collect_live = function(name, timeout_seconds = 30L) {
       id = "bioconductor-current",
       query = "https://bioconductor.org/packages/release/bioc/src/contrib/PACKAGES",
       url = "https://bioconductor.org/packages/release/bioc/src/contrib/PACKAGES"
-    ),
-    list(
-      id = "r-universe",
-      query = paste0(
-        "https://r-universe.dev/api/search?q=package%3A", encoded,
-        "&limit=100"
-      ),
-      url = paste0(
-        "https://r-universe.dev/api/search?q=package%3A", encoded,
-        "&limit=100"
-      )
-    ),
-    list(
-      id = "github",
-      query = paste0(
-        "https://api.github.com/search/repositories?q=", encoded,
-        "%20in%3Aname&per_page=100"
-      ),
-      url = paste0(
-        "https://api.github.com/search/repositories?q=", encoded,
-        "%20in%3Aname&per_page=100"
-      )
     )
   )
   collected = lapply(definitions, function(definition) {
@@ -678,7 +988,24 @@ name_check_collect_live = function(name, timeout_seconds = 30L) {
     available = TRUE,
     raw = history$raw
   )), after = 3L)
-  collected
+  runiverse_query = paste0(
+    "https://r-universe.dev/api/search?q=package%3A", encoded,
+    "&limit=100"
+  )
+  runiverse = name_check_collect_pages(
+    "r-universe", runiverse_query, timeout_seconds = timeout_seconds
+  )
+  github_query = paste0(
+    "https://api.github.com/search/repositories?q=", encoded,
+    "%20in%3Aname&per_page=100"
+  )
+  github = name_check_collect_pages(
+    "github", github_query, timeout_seconds = timeout_seconds
+  )
+  c(collected, list(
+    list(id = "r-universe", pages = runiverse$pages),
+    list(id = "github", pages = github$pages)
+  ))
 }
 
 name_check_test_fixture = function(package = "AnotherPackage") {
@@ -694,11 +1021,12 @@ name_check_test_fixture = function(package = "AnotherPackage") {
       "Bioconductor-Version: 3.22\nPackage: ", package, "\nVersion: 1\n"
     )),
     `r-universe` = charToRaw(paste0(
-      '{"results":[{"Package":"', package, '"}],"total":1}'
+      '{"results":[{"Package":"', package, '"}],',
+      '"skip":0,"limit":100,"total":1}'
     )),
     github = charToRaw(paste0(
-      '{"items":[{"full_name":"owner/', package,
-      '"}],"total_count":1}'
+      '{"total_count":1,"incomplete_results":false,',
+      '"items":[{"full_name":"owner/', package, '"}]}'
     ))
   )
   lapply(name_check_source_ids(), function(source_id) {
@@ -731,10 +1059,14 @@ name_check_self_test = function() {
   }
   stopifnot(identical(
     name_check_exact_matches(
-      "GEModelR", c("gemodelr", "GEModelRtools", "GЕModelR")
+      "GEModelR", c("gemodelr", "GEModelRtools")
     ),
     "gemodelr"
   ))
+  name_check_expect_failure(
+    name_check_exact_matches("GEModelR", "GЕModelR"),
+    "NAME_CANDIDATES_INVALID"
+  )
   clean = name_check_evaluate_fixture(
     "GEModelR", name_check_test_fixture(), checked_at = "2026-08-25T00:00:00Z"
   )
@@ -744,11 +1076,21 @@ name_check_self_test = function() {
   )
   collision = name_check_test_fixture()
   collision[[6L]]$raw = charToRaw(paste0(
-    '{"items":[{"full_name":"owner/gemodelr"}],"total_count":1}'
+    '{"total_count":1,"incomplete_results":false,',
+    '"items":[{"full_name":"owner/gemodelr"}]}'
   ))
   name_check_expect_failure(
     name_check_evaluate_fixture("GEModelR", collision),
     "NAME_EXACT_COLLISION"
+  )
+  incomplete = name_check_test_fixture()
+  incomplete[[6L]]$raw = charToRaw(paste0(
+    '{"total_count":2,"incomplete_results":false,',
+    '"items":[{"full_name":"owner/AnotherPackage"}]}'
+  ))
+  name_check_expect_failure(
+    name_check_evaluate_fixture("GEModelR", incomplete),
+    "NAME_SOURCE_INCOMPLETE_GITHUB"
   )
   unavailable = name_check_test_fixture()
   unavailable[[2L]]$available = FALSE
