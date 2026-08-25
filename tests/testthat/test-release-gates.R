@@ -222,11 +222,12 @@ test_that("the checked-in repository is positively recognized as blocked", {
   expect_false(result$release_ready)
   expect_identical(
     result$reason_codes,
-    "PROVENANCE_COVERAGE_INCOMPLETE"
+    c("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+      "ATTRIBUTION_IDENTITY_UNRESOLVED")
   )
   expect_identical(
     unname(result$parse_status),
-    c("pass", "pass", "pass", "incomplete")
+    rep("pass", 8L)
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
@@ -234,7 +235,7 @@ test_that("the checked-in repository is positively recognized as blocked", {
   expect_true(any(command$output == "repository_state=blocked"))
   expect_true(any(command$output == "release_ready=false"))
   expect_true(any(command$output == paste0(
-    "reason_codes=PROVENANCE_COVERAGE_INCOMPLETE"
+    "reason_codes=DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
   )))
 })
 
@@ -293,7 +294,7 @@ test_that("the public-domain response is accepted with limited scope", {
   )
   expect_identical(
     releaseGateMarker(rightsLines, "Provenance-Coverage-Status"),
-    "pending-plan-01-03"
+    "complete"
   )
   expect_identical(
     releaseGateMarker(rightsLines, "Response-Review-Status"),
@@ -305,7 +306,7 @@ test_that("the public-domain response is accepted with limited scope", {
   )
   expect_identical(
     releaseGateMarker(rightsLines, "Name-Availability-Status"),
-    "pending-plan-01-04"
+    "approved-initial-report"
   )
   expect_identical(
     releaseGateMarker(responseLines, "Response-Statement"),
@@ -772,3 +773,76 @@ test_that("the built-in isolated self-test proves both result directions", {
   expect_identical(command$status, 0L)
   expect_true(any(command$output == "self_test=pass"))
 })
+
+
+copyIntegratedReleaseEvidence = function(root) {
+  sourceRoot = releaseGateProjectRoot()
+  paths = c(
+    "docs/provenance/RIGHTS.md",
+    "docs/provenance/UPSTREAM-REQUEST.md",
+    "docs/provenance/UPSTREAM-RESPONSE.md",
+    "docs/provenance/EXPECTED-KEYS.txt",
+    "docs/provenance/PROVENANCE.csv",
+    "docs/provenance/ATTRIBUTION.md",
+    "docs/release/NAME-CHECK.md",
+    "docs/release/GOVERNANCE.md",
+    "docs/release/REPOSITORY.md",
+    "docs/release/RELEASE-GATES.md"
+  )
+  for (relativePath in paths) {
+    destination = file.path(root, relativePath)
+    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
+    file.copy(file.path(sourceRoot, relativePath), destination, overwrite = TRUE)
+  }
+}
+
+test_that("integrated provenance coverage fails closed on a missing key", {
+  root = tempfile("release-gate-integrated-provenance-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+
+  provenancePath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  provenance = read.csv(
+    provenancePath,
+    stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  write.csv(provenance[-1L, ], provenancePath, row.names = FALSE, na = "")
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "invalid")
+  expect_false(result$release_ready)
+  expect_identical(result$reason_codes, "PROVENANCE_KEY_MISMATCH")
+})
+
+test_that("integrated release evidence can prove a synthetic ready state", {
+  root = tempfile("release-gate-integrated-ready-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+
+  attributionPath = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
+  attribution = readLines(attributionPath, warn = FALSE, encoding = "UTF-8")
+  attribution = attribution[!grepl(
+    "PACKAGE_LICENSE_UNFINALIZED|GIT_IDENTITY_ALIAS_UNRESOLVED",
+    attribution
+  )]
+  writeLines(attribution, attributionPath, useBytes = TRUE)
+
+  releasePath = file.path(root, "docs", "release", "RELEASE-GATES.md")
+  release = readLines(releasePath, warn = FALSE, encoding = "UTF-8")
+  release[grepl("^Intentional-Blockers:", release)] =
+    "Intentional-Blockers: NONE"
+  writeLines(release, releasePath, useBytes = TRUE)
+
+  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
+  rights = readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  rights = rights[!grepl("^Unresolved-Release-Blocker:", rights)]
+  writeLines(rights, rightsPath, useBytes = TRUE)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+  expect_identical(unname(result$parse_status), rep("pass", 8L))
+})
+
