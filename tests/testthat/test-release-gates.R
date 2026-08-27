@@ -1215,6 +1215,20 @@ test_that("integrated provenance coverage fails closed on a missing key", {
   expect_identical(result$reason_codes, "PROVENANCE_KEY_MISMATCH")
 })
 
+test_that("a complete integrated fixture owns its release evidence graph", {
+  root = tempfile("release-gate-complete-graph-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+
+  expect_true(exists("writeCompleteIntegratedFixture", mode = "function"))
+  writeCompleteIntegratedFixture(root)
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+  expect_identical(unname(result$parse_status), rep("pass", 12L))
+})
+
 test_that("integrated release evidence can prove a synthetic ready state", {
   root = tempfile("release-gate-integrated-ready-")
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
