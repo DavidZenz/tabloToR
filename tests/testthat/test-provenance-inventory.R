@@ -122,7 +122,7 @@ provenance_parse_hash_review <- function(path) {
       stop("HASH_REVIEW_RECORD_SCHEMA_INVALID", call. = FALSE)
     }
     values <- sub("^[^=]*=", "", pieces)
-    stats::setNames(as.list(values), fields)
+    stats::setNames(values, fields)
   })
   rows <- if (length(records)) {
     as.data.frame(do.call(rbind, records), stringsAsFactors = FALSE)
@@ -556,7 +556,7 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   expect_identical(sum(ledger$language == "C/C++"), 55L)
   expect_identical(length(changed_keys), 54L)
   expect_identical(proposal$rows$key, sort(changed_keys))
-  expect_false(anyDuplicated(proposal$rows$key))
+  expect_false(anyDuplicated(proposal$rows$key) > 0L)
 
   ledger_id <- match(proposal$rows$key, ledger_keys)
   proposal_fresh_id <- match(proposal$rows$key, provenance_keys(fresh))
