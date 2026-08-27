@@ -134,13 +134,13 @@ provenance_parse_hash_review <- function(path) {
   names <- c(
     "Native-Hash-Schema-Version", "Previous-Schema", "Changed-Row-Count",
     "Stable-Key-Count", "Native-Row-Count", "Canonical-Provenance-MD5",
-    "Canonical-Attribution-MD5", "Reviewer", "Review-Date-UTC"
+    "Canonical-Attribution-MD5", "Reviewer", "Review-Date-UTC", "Status"
   )
   list(
     headers = stats::setNames(vapply(names, header, character(1)), c(
       "schema", "previous_schema", "changed_rows", "stable_keys",
       "native_rows", "provenance_md5", "attribution_md5", "reviewer",
-      "review_date"
+      "review_date", "status"
     )),
     rows = rows
   )
@@ -529,7 +529,7 @@ test_that("review fields reject arbitrary states impossible dates and mismatches
   )
 })
 
-test_that("unsigned native hash proposal exactly matches fresh changed rows", {
+test_that("accepted native hash migration matches canonical fresh rows", {
   tool <- provenance_load_tool()
   root <- dirname(dirname(provenance_script_path()))
   expected <- tool$provenance_read_csv(
@@ -542,10 +542,6 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   )
   fresh <- tool$provenance_collect_sources(root, include_git = TRUE)
   ledger_keys <- provenance_keys(ledger)
-  fresh_id <- match(ledger_keys, provenance_keys(fresh))
-  changed <- ledger$language == "C/C++" &
-    ledger$expression_hash != fresh$expression_hash[fresh_id]
-  changed_keys <- ledger_keys[changed]
   proposal <- provenance_parse_hash_review(file.path(
     root, "docs", "provenance", "HASH-REVIEW.md"
   ))
@@ -554,8 +550,8 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   expect_identical(nrow(ledger), 250L)
   expect_identical(nrow(fresh), 250L)
   expect_identical(sum(ledger$language == "C/C++"), 55L)
-  expect_identical(length(changed_keys), 54L)
-  expect_identical(proposal$rows$key, sort(changed_keys))
+  expect_identical(nrow(proposal$rows), 54L)
+  expect_identical(proposal$rows$key, sort(proposal$rows$key))
   expect_false(anyDuplicated(proposal$rows$key) > 0L)
 
   ledger_id <- match(proposal$rows$key, ledger_keys)
@@ -563,11 +559,13 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   expect_false(anyNA(ledger_id))
   expect_false(anyNA(proposal_fresh_id))
   expect_identical(
-    proposal$rows$old_hash, ledger$expression_hash[ledger_id]
-  )
-  expect_identical(
     proposal$rows$proposed_hash, fresh$expression_hash[proposal_fresh_id]
   )
+  expect_identical(
+    proposal$rows$proposed_hash, ledger$expression_hash[ledger_id]
+  )
+  expect_true(all(proposal$rows$old_hash !=
+                  ledger$expression_hash[ledger_id]))
   expect_identical(
     proposal$rows$current_source_identity,
     provenance_keys(fresh)[proposal_fresh_id]
@@ -600,7 +598,9 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   expect_identical(
     proposal$rows$proposed_status, ledger$status[ledger_id]
   )
-  expect_true(all(proposal$rows$disposition == "pending"))
+  expect_identical(ledger$reviewer[ledger_id], rep("David Zenz", 54L))
+  expect_identical(ledger$review_date[ledger_id], rep("2026-08-27", 54L))
+  expect_true(all(proposal$rows$disposition == "accepted"))
 
   expect_identical(proposal$headers[["schema"]], "2")
   expect_identical(proposal$headers[["previous_schema"]],
@@ -608,19 +608,21 @@ test_that("unsigned native hash proposal exactly matches fresh changed rows", {
   expect_identical(proposal$headers[["changed_rows"]], "54")
   expect_identical(proposal$headers[["stable_keys"]], "250")
   expect_identical(proposal$headers[["native_rows"]], "55")
-  expect_identical(proposal$headers[["reviewer"]],
-                   "awaiting-human-approval")
-  expect_identical(proposal$headers[["review_date"]],
-                   "awaiting-human-approval")
+  expect_identical(proposal$headers[["reviewer"]], "David Zenz")
+  expect_identical(proposal$headers[["review_date"]], "2026-08-27")
+  expect_identical(proposal$headers[["status"]], "accepted")
 
   provenance_path <- file.path(root, "docs", "provenance", "PROVENANCE.csv")
   attribution_path <- file.path(root, "docs", "provenance", "ATTRIBUTION.md")
   expect_identical(unname(tools::md5sum(provenance_path)[[1L]]),
-                   "90940fa1b5bdc223b6829255f5e87e71")
-  expect_identical(unname(tools::md5sum(attribution_path)[[1L]]),
-                   "b0812a83fc6022ab54972c65392df309")
+                   "5f845308997b398cdf404eb1a555ff8f")
   expect_identical(proposal$headers[["provenance_md5"]],
                    "90940fa1b5bdc223b6829255f5e87e71")
   expect_identical(proposal$headers[["attribution_md5"]],
                    "b0812a83fc6022ab54972c65392df309")
+  attribution_lines <- readLines(attribution_path, warn = FALSE)
+  expect_true(any(attribution_lines == paste0(
+    "Inventory-Snapshot-MD5: ",
+    unname(tools::md5sum(provenance_path)[[1L]])
+  )))
 })
