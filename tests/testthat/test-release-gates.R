@@ -456,21 +456,114 @@ cleanroomSpecificationFields <- c(
   "invariants", "compatibility_example", "specification_author",
   "specification_attestation", "implementer", "implementer_eligibility",
   "implementer_source_access", "implementer_attestation", "reviewer",
-  "reviewer_attestation", "behavior_test", "behavior_test_status",
-  "public_standard", "redistributable_fixture",
+  "reviewer_attestation", "replacement_source", "replacement_source_md5",
+  "behavior_test", "behavior_test_md5", "public_standard_evidence",
+  "public_standard_evidence_md5", "redistributable_fixture", "fixture_md5",
+  "independent_result", "independent_result_md5",
   "provenance_classification"
 )
 
-writeCleanroomComponentFixture <- function(
+cleanroomFixturePaths <- function(root) {
+  relative <- c(
+    replacement_source = "cleanroom/replacement/example.R",
+    behavior_test = "cleanroom/tests/example-behavior.R",
+    public_standard_evidence = "cleanroom/standards/example.md",
+    redistributable_fixture = "cleanroom/fixtures/example.dcf",
+    independent_result = "cleanroom/results/example-result.dcf"
+  )
+  list(relative = relative, absolute = file.path(root, relative))
+}
+
+writeCleanroomComponentRecord <- function(root, values) {
+  dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE,
+             showWarnings = FALSE)
+  writeLines(
+    c("# Clean-room component fixture", paste0(names(values), ": ", values)),
+    file.path(root, "specs", "cleanroom", "example-component.md"),
+    useBytes = TRUE
+  )
+  invisible(values)
+}
+
+rewriteCleanroomComponentField <- function(root, field, value) {
+  path <- file.path(root, "specs", "cleanroom", "example-component.md")
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  pattern <- paste0("^", field, ":")
+  lines[grepl(pattern, lines)] <- paste0(field, ": ", value)
+  writeLines(lines, path, useBytes = TRUE)
+}
+
+writeCompleteCleanroomFixture <- function(
     root,
-    provenanceKey = "R/example.R::example",
+    reviewStatus = "approved",
+    inheritedKeys = "R/example.R::example",
+    provenanceKey = inheritedKeys[[1L]],
     sourceAccess = "none",
     omitField = NULL,
     specificationAuthor = "fixture-specification-author",
     implementer = "fixture-independent-implementer",
     reviewer = "fixture-independent-reviewer",
-    redistributableFixture = "redistributable:synthetic-example") {
-  dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE)
+    resultProducer = "fixture-independent-result-producer") {
+  writeReleaseGateFixture(root, rightsStatus = "clean-room-required")
+  writeLines(c(
+    "# Clean-room Fixture",
+    "Cleanroom-Protocol-Version: 2",
+    "Cleanroom-Coverage: complete",
+    paste0("Cleanroom-Review-Status: ", reviewStatus),
+    paste0("Inherited-Provenance-Key: ", inheritedKeys)
+  ), file.path(root, "docs", "provenance", "CLEANROOM.md"),
+  useBytes = TRUE)
+
+  paths <- cleanroomFixturePaths(root)
+  invisible(lapply(dirname(paths$absolute), dir.create, recursive = TRUE,
+                   showWarnings = FALSE))
+  writeLines(c(
+    "cleanroom_replacement = function(value) {",
+    "  value * 2",
+    "}"
+  ), paths$absolute[["replacement_source"]], useBytes = TRUE)
+  writeLines(c(
+    "args = commandArgs(trailingOnly = TRUE)",
+    "if (!identical(args[c(1L, 3L)], c(\"--source\", \"--fixture\"))) {",
+    "  stop(\"fixed clean-room arguments required\", call. = FALSE)",
+    "}",
+    "environment = new.env(parent = baseenv())",
+    "sys.source(args[[2L]], envir = environment)",
+    "fixture = read.dcf(args[[4L]])",
+    "actual = environment$cleanroom_replacement(as.numeric(fixture[1L, \"Input\"]))",
+    "if (!identical(actual, as.numeric(fixture[1L, \"Expected\"]))) {",
+    "  stop(\"observable behavior mismatch\", call. = FALSE)",
+    "}"
+  ), paths$absolute[["behavior_test"]], useBytes = TRUE)
+  writeLines(c("Input: 2", "Expected: 4", "License: CC0-1.0"),
+             paths$absolute[["redistributable_fixture"]], useBytes = TRUE)
+  writeLines(c(
+    "# Public arithmetic behavior evidence",
+    "",
+    "Multiplication by two maps 2 to 4. This fixture contains no inherited expression."
+  ), paths$absolute[["public_standard_evidence"]], useBytes = TRUE)
+
+  hashes <- unname(tools::md5sum(paths$absolute[c(
+    "replacement_source", "behavior_test", "public_standard_evidence",
+    "redistributable_fixture"
+  )]))
+  names(hashes) <- c(
+    "replacement_source_md5", "behavior_test_md5",
+    "public_standard_evidence_md5", "fixture_md5"
+  )
+  write.dcf(matrix(c(
+    "example-component", provenanceKey,
+    hashes[["replacement_source_md5"]], hashes[["behavior_test_md5"]],
+    hashes[["fixture_md5"]], hashes[["public_standard_evidence_md5"]],
+    "rscript-cleanroom-v1", "0", resultProducer,
+    "2026-08-27T00:00:00Z", reviewer, "2026-08-27", "pass"
+  ), nrow = 1L, dimnames = list(NULL, c(
+    "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
+    "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",
+    "Test-Command-ID", "Exit-Status", "Result-Producer",
+    "Produced-At-UTC", "Reviewer", "Review-Date", "Result-Status"
+  ))), paths$absolute[["independent_result"]])
+
   values <- c(
     component_id = "example-component",
     provenance_key = provenanceKey,
@@ -478,7 +571,7 @@ writeCleanroomComponentFixture <- function(
     outputs = "numeric scalar y",
     errors = "non-numeric input is rejected",
     invariants = "output length equals input length",
-    compatibility_example = "x=1 produces y=1",
+    compatibility_example = "x=2 produces y=4",
     specification_author = specificationAuthor,
     specification_attestation = "behavior-only-no-inherited-expression",
     implementer = implementer,
@@ -487,17 +580,23 @@ writeCleanroomComponentFixture <- function(
     implementer_attestation = "no-inherited-source-access",
     reviewer = reviewer,
     reviewer_attestation = "independent-review-complete",
-    behavior_test = "tests/testthat/test-cleanroom-example.R#observable-contract",
-    behavior_test_status = "pass",
-    public_standard = "public:documented-R-semantics",
-    redistributable_fixture = redistributableFixture,
+    replacement_source = paths$relative[["replacement_source"]],
+    replacement_source_md5 = hashes[["replacement_source_md5"]],
+    behavior_test = paths$relative[["behavior_test"]],
+    behavior_test_md5 = hashes[["behavior_test_md5"]],
+    public_standard_evidence = paths$relative[["public_standard_evidence"]],
+    public_standard_evidence_md5 = hashes[["public_standard_evidence_md5"]],
+    redistributable_fixture = paths$relative[["redistributable_fixture"]],
+    fixture_md5 = hashes[["fixture_md5"]],
+    independent_result = paths$relative[["independent_result"]],
+    independent_result_md5 = unname(tools::md5sum(
+      paths$absolute[["independent_result"]]
+    )[[1L]]),
     provenance_classification = "new-independent"
   )
   if (!is.null(omitField)) values <- values[names(values) != omitField]
-  writeLines(
-    c("# Clean-room component fixture", paste0(names(values), ": ", values)),
-    file.path(root, "specs", "cleanroom", "example-component.md")
-  )
+  writeCleanroomComponentRecord(root, values)
+  invisible(list(paths = paths, values = values, hashes = hashes))
 }
 
 writeCleanroomFixture <- function(
@@ -510,25 +609,25 @@ writeCleanroomFixture <- function(
     specificationAuthor = "fixture-specification-author",
     implementer = "fixture-independent-implementer",
     reviewer = "fixture-independent-reviewer",
-    redistributableFixture = "redistributable:synthetic-example") {
-  writeReleaseGateFixture(root, rightsStatus = "clean-room-required")
-  writeLines(c(
-    "# Clean-room Fixture",
-    "Cleanroom-Protocol-Version: 1",
-    "Cleanroom-Coverage: complete",
-    paste0("Cleanroom-Review-Status: ", reviewStatus),
-    paste0("Inherited-Provenance-Key: ", inheritedKeys)
-  ), file.path(root, "docs", "provenance", "CLEANROOM.md"))
-  writeCleanroomComponentFixture(
+    redistributableFixture = NULL) {
+  fixture <- writeCompleteCleanroomFixture(
     root,
+    reviewStatus = reviewStatus,
+    inheritedKeys = inheritedKeys,
     provenanceKey = provenanceKey,
     sourceAccess = sourceAccess,
     omitField = omitField,
     specificationAuthor = specificationAuthor,
     implementer = implementer,
-    reviewer = reviewer,
-    redistributableFixture = redistributableFixture
+    reviewer = reviewer
   )
+  if (!is.null(redistributableFixture) &&
+      !startsWith(redistributableFixture, "cleanroom/")) {
+    rewriteCleanroomComponentField(
+      root, "redistributable_fixture", redistributableFixture
+    )
+  }
+  invisible(fixture)
 }
 
 test_that("the clean-room protocol and template expose the complete contract", {
@@ -569,8 +668,10 @@ test_that("source-exposed clean-room implementers are ineligible", {
 
 test_that("clean-room role and evidence omissions fail exactly", {
   for (field in c(
-    "behavior_test", "reviewer", "specification_attestation",
-    "implementer_attestation", "reviewer_attestation", "provenance_key"
+    "replacement_source", "behavior_test", "redistributable_fixture",
+    "public_standard_evidence", "independent_result", "reviewer",
+    "specification_attestation", "implementer_attestation",
+    "reviewer_attestation", "provenance_key"
   )) {
     root <- tempfile("release-gate-cleanroom-evidence-")
     on.exit(unlink(root, recursive = TRUE), add = TRUE)
@@ -615,7 +716,7 @@ test_that("clean-room coverage must cover every inherited provenance key", {
   )
 })
 
-test_that("clean-room fixtures must be explicitly redistributable", {
+test_that("clean-room fixtures must reference real redistributable evidence", {
   root <- tempfile("release-gate-cleanroom-proprietary-")
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeCleanroomFixture(root, redistributableFixture = "proprietary:private")
@@ -625,6 +726,139 @@ test_that("clean-room fixtures must be explicitly redistributable", {
   expect_false(result$release_ready)
   expect_identical(
     result$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("clean-room evidence resolves five real non-empty hash-bound files", {
+  root <- tempfile("release-gate-cleanroom-complete-files-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(root)
+
+  expect_true(all(file.exists(fixture$paths$absolute)))
+  expect_true(all(file.info(fixture$paths$absolute)$size > 0L))
+  result <- evaluateRightsGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+})
+
+test_that("clean-room evidence rejects missing empty and drifted artifacts", {
+  artifacts <- names(cleanroomFixturePaths("unused")$relative)
+  for (condition in c("missing", "empty", "drifted")) {
+    for (artifact in artifacts) {
+      root <- tempfile("release-gate-cleanroom-artifact-")
+      on.exit(unlink(root, recursive = TRUE), add = TRUE)
+      fixture <- writeCompleteCleanroomFixture(root)
+      path <- fixture$paths$absolute[[artifact]]
+      if (identical(condition, "missing")) unlink(path)
+      if (identical(condition, "empty")) writeLines(character(), path)
+      if (identical(condition, "drifted")) write("x", path, append = TRUE)
+
+      result <- evaluateRightsGate(root)
+      expect_identical(
+        result$reason_codes, "CLEANROOM_EVIDENCE_INCOMPLETE",
+        info = paste(condition, artifact)
+      )
+      expect_false(result$release_ready, info = paste(condition, artifact))
+    }
+  }
+})
+
+test_that("clean-room evidence paths stay beneath the evaluated root", {
+  cases <- c(
+    absolute = normalizePath(tempdir(), winslash = "/", mustWork = TRUE),
+    traversal = "../outside-cleanroom-source.R",
+    directory = "cleanroom/replacement"
+  )
+  for (name in names(cases)) {
+    root <- tempfile("release-gate-cleanroom-path-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeCompleteCleanroomFixture(root)
+    rewriteCleanroomComponentField(root, "replacement_source", cases[[name]])
+    result <- evaluateRightsGate(root)
+    expect_identical(
+      result$reason_codes, "CLEANROOM_EVIDENCE_INCOMPLETE", info = name
+    )
+    expect_false(result$release_ready, info = name)
+  }
+
+  root <- tempfile("release-gate-cleanroom-symlink-")
+  outside <- tempfile("release-gate-cleanroom-outside-")
+  on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+  writeLines("outside", outside, useBytes = TRUE)
+  writeCompleteCleanroomFixture(root)
+  link <- file.path(root, "cleanroom", "replacement", "escaped.R")
+  expect_true(file.symlink(outside, link))
+  rewriteCleanroomComponentField(
+    root, "replacement_source", "cleanroom/replacement/escaped.R"
+  )
+  rewriteCleanroomComponentField(
+    root, "replacement_source_md5", unname(tools::md5sum(outside)[[1L]])
+  )
+  result <- evaluateRightsGate(root)
+  expect_identical(result$reason_codes, "CLEANROOM_EVIDENCE_INCOMPLETE")
+  expect_false(result$release_ready)
+})
+
+test_that("clean-room evidence rejects malformed hashes and artifact reuse", {
+  malformed <- tempfile("release-gate-cleanroom-malformed-hash-")
+  on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
+  writeCompleteCleanroomFixture(malformed)
+  rewriteCleanroomComponentField(
+    malformed, "replacement_source_md5", "ABCDEF"
+  )
+  expect_identical(
+    evaluateRightsGate(malformed)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+
+  duplicate <- tempfile("release-gate-cleanroom-duplicate-artifact-")
+  on.exit(unlink(duplicate, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(duplicate)
+  rewriteCleanroomComponentField(
+    duplicate, "public_standard_evidence",
+    fixture$values[["replacement_source"]]
+  )
+  rewriteCleanroomComponentField(
+    duplicate, "public_standard_evidence_md5",
+    fixture$values[["replacement_source_md5"]]
+  )
+  expect_identical(
+    evaluateRightsGate(duplicate)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("clean-room component and inherited coverage cannot be empty or duplicate", {
+  noComponents <- tempfile("release-gate-cleanroom-no-components-")
+  on.exit(unlink(noComponents, recursive = TRUE), add = TRUE)
+  writeCompleteCleanroomFixture(noComponents)
+  unlink(file.path(
+    noComponents, "specs", "cleanroom", "example-component.md"
+  ))
+  expect_identical(
+    evaluateRightsGate(noComponents)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+
+  noKeys <- tempfile("release-gate-cleanroom-no-keys-")
+  on.exit(unlink(noKeys, recursive = TRUE), add = TRUE)
+  writeCompleteCleanroomFixture(noKeys)
+  path <- file.path(noKeys, "docs", "provenance", "CLEANROOM.md")
+  lines <- readLines(path, warn = FALSE, encoding = "UTF-8")
+  writeLines(lines[!grepl("^Inherited-Provenance-Key:", lines)], path)
+  expect_identical(
+    evaluateRightsGate(noKeys)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+
+  duplicateKey <- tempfile("release-gate-cleanroom-duplicate-key-")
+  on.exit(unlink(duplicateKey, recursive = TRUE), add = TRUE)
+  writeCompleteCleanroomFixture(duplicateKey)
+  path <- file.path(duplicateKey, "docs", "provenance", "CLEANROOM.md")
+  write("Inherited-Provenance-Key: R/example.R::example", path, append = TRUE)
+  expect_identical(
+    evaluateRightsGate(duplicateKey)$reason_codes,
     "CLEANROOM_EVIDENCE_INCOMPLETE"
   )
 })
