@@ -767,6 +767,98 @@ release_gate_validate_provenance = function(root, parseStatus) {
 }
 
 
+release_gate_load_tool = function(path, symbol_names) {
+  if (!file.exists(path)) {
+    stop("PROVENANCE_TOOL_MISSING", call. = FALSE)
+  }
+  environment = new.env(parent = baseenv())
+  loaded = tryCatch(
+    {
+      sys.source(path, envir = environment)
+      TRUE
+    },
+    error = function(error) FALSE
+  )
+  if (!loaded ||
+      any(!vapply(symbol_names, exists, logical(1),
+                  envir = environment, inherits = FALSE))) {
+    stop("PROVENANCE_TOOL_LOAD_FAILED", call. = FALSE)
+  }
+  result = lapply(symbol_names, get, envir = environment, inherits = FALSE)
+  names(result) = symbol_names
+  result
+}
+
+release_gate_provenance_reason = function(error) {
+  code = strsplit(conditionMessage(error), "[[:space:]]+")[[1L]][[1L]]
+  mapped = c(
+    PROVENANCE_SOURCE_EMPTY = "PROVENANCE_SOURCE_MISSING",
+    PROVENANCE_R_PARSE_FAILED = "PROVENANCE_SOURCE_EXTRACTION_FAILED",
+    PROVENANCE_GIT_UNAVAILABLE = "PROVENANCE_GIT_EVIDENCE_MISSING",
+    PROVENANCE_FILE_MISSING = "PROVENANCE_EVIDENCE_MISSING"
+  )
+  if (code %in% names(mapped)) return(unname(mapped[[code]]))
+  allowed = c(
+    "PROVENANCE_TOOL_MISSING", "PROVENANCE_TOOL_LOAD_FAILED",
+    "PROVENANCE_EVIDENCE_MISSING", "PROVENANCE_CSV_INVALID",
+    "PROVENANCE_COLUMNS_MISSING", "PROVENANCE_DUPLICATE_KEY",
+    "PROVENANCE_KEY_MISMATCH", "PROVENANCE_ROW_BLOCKING"
+  )
+  if (code %in% allowed) code else "PROVENANCE_SOURCE_VALIDATION_FAILED"
+}
+
+release_gate_validate_current_source = function(root, parseStatus) {
+  fail = function(reason) {
+    list(error = release_gate_integrated_failure(
+      reason, parseStatus, "provenance"
+    ))
+  }
+  toolPath = file.path(root, "tools", "provenance_inventory.R")
+  symbols = c(
+    "provenance_columns", "provenance_collect_sources",
+    "provenance_read_csv", "provenance_validate_ledger",
+    "provenance_key_frame"
+  )
+  tool = tryCatch(
+    release_gate_load_tool(toolPath, symbols),
+    error = function(error) error
+  )
+  if (inherits(tool, "error")) {
+    return(fail(release_gate_provenance_reason(tool)))
+  }
+
+  expectedPath = file.path(root, "docs", "provenance", "EXPECTED-KEYS.csv")
+  ledgerPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  validated = tryCatch(
+    {
+      expected = tool$provenance_read_csv(
+        expectedPath, c("path", "symbol")
+      )
+      ledger = tool$provenance_read_csv(
+        ledgerPath, tool$provenance_columns
+      )
+      inventory = tool$provenance_collect_sources(
+        root, include_git = TRUE
+      )
+      tool$provenance_validate_ledger(ledger, expected, inventory)
+      list(expected = expected, ledger = ledger, inventory = inventory)
+    },
+    error = function(error) error
+  )
+  if (inherits(validated, "error")) {
+    return(fail(release_gate_provenance_reason(validated)))
+  }
+
+  parseStatus[["provenance"]] = "pass"
+  list(
+    parse_status = parseStatus,
+    inventory = validated$ledger,
+    current_inventory = validated$inventory,
+    inventory_path = ledgerPath,
+    artifact_keys = tool$provenance_key_frame(validated$ledger)
+  )
+}
+
 release_gate_validate_attribution = function(
     root, rightsValues, provenance, parseStatus) {
   path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
@@ -851,56 +943,45 @@ release_gate_validate_attribution = function(
 
 release_gate_validate_name = function(root, parseStatus) {
   path = file.path(root, "docs", "release", "NAME-CHECK.md")
-  lines = release_gate_read_lines(path)
-  if (is.null(lines)) {
+  toolPath = file.path(root, "tools", "check_name_availability.R")
+  tool = tryCatch(
+    release_gate_load_tool(toolPath, "name_check_verify_report"),
+    error = function(error) error
+  )
+  if (inherits(tool, "error")) {
     return(list(error = release_gate_integrated_failure(
-      "NAME_SOURCE_MISSING", parseStatus, "name"
+      "NAME_TOOL_LOAD_FAILED", parseStatus, "name"
     )))
   }
+  verified = tryCatch(
+    {
+      tool$name_check_verify_report(path, require_review = TRUE)
+      TRUE
+    },
+    error = function(error) FALSE
+  )
+  if (!verified) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_REPORT_INVALID", parseStatus, "name"
+    )))
+  }
+
+  lines = release_gate_read_lines(path)
   fields = c(
     "Name", "Check-Kind", "Checked-At-UTC", "Overall-Result",
-    "Initial-Name-Report", "Reviewer", "Review-Date-UTC"
+    "Reviewer", "Review-Date-UTC"
   )
   markers = release_gate_single_markers(lines, fields)
-  if (any(vapply(markers, length, integer(1)) != 1L)) {
-    return(list(error = release_gate_integrated_failure(
-      "NAME_REPORT_UNSIGNED", parseStatus, "name"
-    )))
-  }
   values = vapply(markers, `[[`, character(1), 1L)
-  sourceRows = release_gate_marker_values(lines, "Source-Row")
-  expectedSources = c(
-    "cran-current", "cran-archive", "bioconductor-current",
-    "bioconductor-history", "r-universe", "github"
-  )
-  sourceNames = sub("\\|.*$", "", sourceRows)
-  if (length(sourceRows) != length(expectedSources) ||
-      !identical(sort(sourceNames), sort(expectedSources))) {
-    return(list(error = release_gate_integrated_failure(
-      "NAME_SOURCE_MISSING", parseStatus, "name"
-    )))
-  }
-  if (any(!grepl("\\|available=yes\\|", sourceRows))) {
-    return(list(error = release_gate_integrated_failure(
-      "NAME_SOURCE_UNAVAILABLE", parseStatus, "name"
-    )))
-  }
-  if (any(!grepl("\\|matches=NONE\\|result=pass\\|", sourceRows)) ||
-      !identical(values[["Overall-Result"]],
-                 "NAME_AVAILABLE_NO_EXACT_COLLISION")) {
-    return(list(error = release_gate_integrated_failure(
-      "NAME_EXACT_COLLISION", parseStatus, "name"
-    )))
-  }
   approved = identical(values[["Name"]], "GEModelR") &&
     values[["Check-Kind"]] %in% c("initial", "reservation", "release") &&
-    identical(values[["Initial-Name-Report"]], "approved") &&
-    identical(values[["Reviewer"]], "David Zenz") &&
-    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
-          values[["Review-Date-UTC"]])
+    identical(
+      values[["Overall-Result"]], "NAME_AVAILABLE_NO_EXACT_COLLISION"
+    ) &&
+    identical(values[["Reviewer"]], "David Zenz")
   if (!approved) {
     return(list(error = release_gate_integrated_failure(
-      "NAME_REPORT_UNSIGNED", parseStatus, "name"
+      "NAME_REPORT_INVALID", parseStatus, "name"
     )))
   }
   parseStatus[["name"]] = "pass"
@@ -1026,12 +1107,18 @@ release_gate_release_check_fresh = function(nameEvidence) {
 
 release_gate_evaluate = function(root = ".") {
   root = normalizePath(root, mustWork = TRUE)
-  base = release_gate_evaluate_rights(root)
   rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
   rightsLines = release_gate_read_lines(rightsPath)
   integratedVersion = if (is.null(rightsLines)) character() else
     release_gate_marker_values(rightsLines, "Integrated-Evidence-Version")
-  if (!identical(integratedVersion, "1")) return(base)
+  if (length(integratedVersion) != 1L ||
+      !identical(integratedVersion[[1L]], "1")) {
+    return(release_gate_result(
+      reason_codes = "INTEGRATED_EVIDENCE_VERSION_INVALID",
+      parse_status = c(integrated = "fail")
+    ))
+  }
+  base = release_gate_evaluate_rights(root)
   if (!identical(base$repository_state, "eligible")) return(base)
 
   requiredRights = c(
@@ -1042,11 +1129,12 @@ release_gate_evaluate = function(root = ".") {
   )
   rights = release_gate_single_markers(rightsLines, requiredRights)
   rightsValues = vapply(rights, `[[`, character(1), 1L)
-  parseStatus = base$parse_status[
-    names(base$parse_status) != "provenance_coverage"
-  ]
+  parseStatus = c(
+    base$parse_status[names(base$parse_status) != "provenance_coverage"],
+    integrated = "pass"
+  )
 
-  provenance = release_gate_validate_provenance(root, parseStatus)
+  provenance = release_gate_validate_current_source(root, parseStatus)
   if (!is.null(provenance$error)) return(provenance$error)
   attribution = release_gate_validate_attribution(
     root, rightsValues, provenance, provenance$parse_status
@@ -1337,36 +1425,36 @@ release_gate_self_test <- function() {
 
   blocked <- fixture("blocked")
   release_gate_write_self_fixture(blocked, "blocked")
-  blockedResult <- release_gate_evaluate(blocked)
+  blockedResult <- release_gate_evaluate_rights(blocked)
 
   cleared <- fixture("cleared")
   release_gate_write_self_fixture(cleared, "cleared", includeScope = TRUE)
-  clearedResult <- release_gate_evaluate(cleared)
+  clearedResult <- release_gate_evaluate_rights(cleared)
 
   publicDomain <- fixture("public-domain")
   release_gate_write_self_public_domain_fixture(publicDomain)
-  publicDomainResult <- release_gate_evaluate(publicDomain)
+  publicDomainResult <- release_gate_evaluate_rights(publicDomain)
 
   publicDomainPending <- fixture("public-domain-pending")
   release_gate_write_self_public_domain_fixture(
     publicDomainPending, "pending-audit"
   )
-  publicDomainPendingResult <- release_gate_evaluate(publicDomainPending)
+  publicDomainPendingResult <- release_gate_evaluate_rights(publicDomainPending)
   cleanroom <- fixture("cleanroom")
   release_gate_write_self_fixture(
     cleanroom, "clean-room-required", cleanroomReview = "approved"
   )
-  cleanroomResult <- release_gate_evaluate(cleanroom)
+  cleanroomResult <- release_gate_evaluate_rights(cleanroom)
 
   malformed <- fixture("malformed")
   release_gate_write_self_fixture(
     malformed, "blocked", duplicateStatus = TRUE
   )
-  malformedResult <- release_gate_evaluate(malformed)
+  malformedResult <- release_gate_evaluate_rights(malformed)
 
   sensitive <- fixture("sensitive")
   release_gate_write_self_fixture(sensitive, "blocked", sensitive = TRUE)
-  sensitiveResult <- release_gate_evaluate(sensitive)
+  sensitiveResult <- release_gate_evaluate_rights(sensitive)
 
   identical(blockedResult$reason_codes, c("RIGHTS_BLOCKED", "REQUEST_NOT_POSTED")) &&
     identical(blockedResult$repository_state, "blocked") &&

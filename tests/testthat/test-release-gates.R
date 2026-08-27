@@ -31,6 +31,21 @@ evaluateReleaseGate <- function(root) {
   releaseGateEnvironment$release_gate_evaluate(root)
 }
 
+evaluateRightsGate <- function(root) {
+  releaseGateEnvironment$release_gate_evaluate_rights(root)
+}
+
+runRightsGate <- function(root) {
+  result <- evaluateRightsGate(root)
+  output <- capture.output(
+    releaseGateEnvironment$release_gate_print_result(result)
+  )
+  list(
+    status = if (isTRUE(result$release_ready)) 0L else 1L,
+    output = output
+  )
+}
+
 runReleaseGate <- function(args) {
   output <- suppressWarnings(system2(
     file.path(R.home("bin"), "Rscript"),
@@ -235,7 +250,7 @@ test_that("the checked-in repository is positively recognized as blocked", {
   )
   expect_identical(
     unname(result$parse_status),
-    rep("pass", 9L)
+    rep("pass", 10L)
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
@@ -343,7 +358,7 @@ test_that("omitting any D-01 ask fails with the exact scope reason", {
       requestAsks = setdiff(releaseRequestAsks, ask)
     )
 
-    result <- evaluateReleaseGate(root)
+    result <- evaluateRightsGate(root)
     expect_identical(result$repository_state, "invalid")
     expect_false(result$release_ready)
     expect_identical(result$reason_codes, "REQUEST_SCOPE_INCOMPLETE")
@@ -358,7 +373,7 @@ test_that("a changed request fails with the exact hash reason", {
     requestHash = "00000000000000000000000000000000"
   )
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "invalid")
   expect_false(result$release_ready)
   expect_identical(result$reason_codes, "REQUEST_HASH_MISMATCH")
@@ -372,7 +387,7 @@ test_that("silence and ambiguous responses are never grants", {
     on.exit(unlink(root, recursive = TRUE), add = TRUE)
     writeReleaseGateFixture(root, requestStatus = requestStatus)
 
-    result <- evaluateReleaseGate(root)
+    result <- evaluateRightsGate(root)
     expect_identical(result$repository_state, "blocked")
     expect_false(result$release_ready)
     expect_identical(
@@ -392,12 +407,12 @@ test_that("missing or duplicate rights status has an exact parser reason", {
       duplicateStatus = duplicate
     )
 
-    result <- evaluateReleaseGate(root)
+    result <- evaluateRightsGate(root)
     expect_identical(result$repository_state, "invalid")
     expect_false(result$release_ready)
     expect_identical(result$reason_codes, "RIGHTS_STATUS_CARDINALITY")
     expectReleaseGateFailure(
-      runReleaseGate(c("--root", root, "--offline")),
+      runRightsGate(root),
       "RIGHTS_STATUS_CARDINALITY"
     )
   }
@@ -408,7 +423,7 @@ test_that("rights and release policy status must agree", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeReleaseGateFixture(root, releaseStatus = "cleared")
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "invalid")
   expect_false(result$release_ready)
   expect_identical(
@@ -416,7 +431,7 @@ test_that("rights and release policy status must agree", {
     "RIGHTS_RELEASE_STATUS_MISMATCH"
   )
   expectReleaseGateFailure(
-    runReleaseGate(c("--root", root, "--offline")),
+    runRightsGate(root),
     "RIGHTS_RELEASE_STATUS_MISMATCH"
   )
 })
@@ -426,12 +441,12 @@ test_that("written clearance must cover the inherited commit and components", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeReleaseGateFixture(root, rightsStatus = "cleared")
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "invalid")
   expect_false(result$release_ready)
   expect_identical(result$reason_codes, "RIGHTS_SCOPE_INCOMPLETE")
   expectReleaseGateFailure(
-    runReleaseGate(c("--root", root, "--offline")),
+    runRightsGate(root),
     "RIGHTS_SCOPE_INCOMPLETE"
   )
 })
@@ -543,7 +558,7 @@ test_that("source-exposed clean-room implementers are ineligible", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeCleanroomFixture(root, sourceAccess = "inherited-source-exposed")
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "blocked")
   expect_false(result$release_ready)
   expect_identical(
@@ -561,7 +576,7 @@ test_that("clean-room role and evidence omissions fail exactly", {
     on.exit(unlink(root, recursive = TRUE), add = TRUE)
     writeCleanroomFixture(root, omitField = field)
 
-    result <- evaluateReleaseGate(root)
+    result <- evaluateRightsGate(root)
     expect_identical(result$repository_state, "blocked", info = field)
     expect_false(result$release_ready, info = field)
     expect_identical(
@@ -578,7 +593,7 @@ test_that("clean-room role and evidence omissions fail exactly", {
     implementer = "fixture-specification-author"
   )
   expect_identical(
-    evaluateReleaseGate(duplicateRole)$reason_codes,
+    evaluateRightsGate(duplicateRole)$reason_codes,
     "CLEANROOM_EVIDENCE_INCOMPLETE"
   )
 })
@@ -591,7 +606,7 @@ test_that("clean-room coverage must cover every inherited provenance key", {
     inheritedKeys = c("R/example.R::example", "R/uncovered.R::uncovered")
   )
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "blocked")
   expect_false(result$release_ready)
   expect_identical(
@@ -605,7 +620,7 @@ test_that("clean-room fixtures must be explicitly redistributable", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeCleanroomFixture(root, redistributableFixture = "proprietary:private")
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "blocked")
   expect_false(result$release_ready)
   expect_identical(
@@ -621,7 +636,7 @@ test_that("the clean-room tree rejects sensitive fixture classes", {
   sentinel <- "do-not-disclose-cleanroom-fixture"
   writeLines(sentinel, file.path(root, "specs", "cleanroom", "fixture.har"))
 
-  command <- runReleaseGate(c("--root", root, "--offline"))
+  command <- runRightsGate(root)
   expectReleaseGateFailure(command, "SENSITIVE_EVIDENCE_CLASS")
   expect_false(any(grepl(sentinel, command$output, fixed = TRUE)))
   expect_false(any(grepl("fixture.har", command$output, fixed = TRUE)))
@@ -632,7 +647,7 @@ test_that("complete public-domain evidence proves synthetic readiness", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writePublicDomainFixture(root)
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
@@ -647,7 +662,7 @@ test_that("public-domain evidence remains blocked until provenance is complete",
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writePublicDomainFixture(root, coverageStatus = "pending-audit")
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "blocked")
   expect_false(result$release_ready)
   expect_identical(
@@ -661,7 +676,7 @@ test_that("changed public-domain evidence fails its hash binding", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writePublicDomainFixture(root, tamperEvidence = TRUE)
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "invalid")
   expect_false(result$release_ready)
   expect_identical(
@@ -685,7 +700,7 @@ test_that("public-domain scope never covers unrelated third-party code", {
       excludedComponents = values[[2L]]
     )
 
-    result <- evaluateReleaseGate(root)
+    result <- evaluateRightsGate(root)
     expect_identical(
       result$reason_codes, "RIGHTS_SCOPE_INCOMPLETE", info = name
     )
@@ -706,7 +721,7 @@ test_that("offline readiness stays distinct from an intentional block", {
   rightsPath <- file.path(malformed, "docs", "provenance", "RIGHTS.md")
   write("Evidence-Hash: duplicate", rightsPath, append = TRUE)
 
-  asserted <- runReleaseGate(c("--root", malformed, "--assert-blocked"))
+  asserted <- runRightsGate(malformed)
   expectReleaseGateFailure(asserted, "RIGHTS_FIELD_CARDINALITY")
 })
 
@@ -719,12 +734,12 @@ test_that("complete written grant evidence proves synthetic readiness", {
     includeScope = TRUE
   )
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
 
-  command <- runReleaseGate(c("--root", root, "--offline"))
+  command <- runRightsGate(root)
   expect_identical(command$status, 0L)
   expect_true(any(command$output == "repository_state=eligible"))
   expect_true(any(command$output == "release_ready=true"))
@@ -736,12 +751,12 @@ test_that("complete reviewed clean-room evidence proves synthetic readiness", {
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
   writeCleanroomFixture(root)
 
-  result <- evaluateReleaseGate(root)
+  result <- evaluateRightsGate(root)
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
   expect_identical(
-    runReleaseGate(c("--root", root, "--offline"))$status,
+    runRightsGate(root)$status,
     0L
   )
 
@@ -749,7 +764,7 @@ test_that("complete reviewed clean-room evidence proves synthetic readiness", {
   on.exit(unlink(incomplete, recursive = TRUE), add = TRUE)
   writeCleanroomFixture(incomplete, reviewStatus = "pending")
   expectReleaseGateFailure(
-    runReleaseGate(c("--root", incomplete, "--offline")),
+    runRightsGate(incomplete),
     "CLEANROOM_REVIEW_INCOMPLETE"
   )
 })
@@ -769,7 +784,7 @@ test_that("sensitive evidence classes fail without disclosing matches", {
       file.path(root, "docs", "provenance", indicator)
     )
 
-    command <- runReleaseGate(c("--root", root, "--offline"))
+    command <- runRightsGate(root)
     expectReleaseGateFailure(command, "SENSITIVE_EVIDENCE_CLASS")
     expect_false(any(grepl(sentinel, command$output, fixed = TRUE)))
     expect_false(any(grepl(indicator, command$output, fixed = TRUE)))
@@ -794,6 +809,7 @@ copyIntegratedReleaseEvidence = function(root) {
     "docs/provenance/PROVENANCE.csv",
     "docs/provenance/ATTRIBUTION.md",
     "docs/release/NAME-CHECK.md",
+    "tools/check_name_availability.R",
     "GOVERNANCE.md",
     "docs/release/REPOSITORY.md",
     "docs/release/RELEASE-GATES.md"
@@ -1142,7 +1158,7 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
-  expect_identical(unname(result$parse_status), rep("pass", 9L))
+  expect_identical(unname(result$parse_status), rep("pass", 10L))
 })
 
 
@@ -1158,7 +1174,7 @@ test_that("integrated name evidence fails on a missing source", {
 
   result = evaluateReleaseGate(root)
   expect_identical(result$repository_state, "invalid")
-  expect_identical(result$reason_codes, "NAME_SOURCE_MISSING")
+  expect_identical(result$reason_codes, "NAME_REPORT_INVALID")
 })
 
 test_that("integrated governance evidence requires the security route", {
