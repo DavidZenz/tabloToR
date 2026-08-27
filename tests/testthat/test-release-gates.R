@@ -802,6 +802,10 @@ copyIntegratedReleaseEvidence = function(root) {
   sourceRoot = releaseGateProjectRoot()
   paths = c(
     "DESCRIPTION",
+    "README.md",
+    "inst/CITATION",
+    "CONTRIBUTORS.md",
+    "NEWS.md",
     "docs/provenance/RIGHTS.md",
     "docs/provenance/UPSTREAM-REQUEST.md",
     "docs/provenance/UPSTREAM-RESPONSE.md",
@@ -819,7 +823,100 @@ copyIntegratedReleaseEvidence = function(root) {
     dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
     file.copy(file.path(sourceRoot, relativePath), destination, overwrite = TRUE)
   }
+  writePendingLicenseDecisionFixture(root)
   writeIntegratedSourceEvidence(root)
+}
+
+writePendingLicenseDecisionFixture = function(root) {
+  path = file.path(root, "docs", "provenance", "LICENSE-DECISION.md")
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  writeLines(c(
+    "# Package license decision",
+    "",
+    "License-Decision-Version: 1",
+    "Decision-Status: pending",
+    "Description-License: What license is it under?",
+    "Dependency-Audit-Artifact: pending",
+    "Dependency-Audit-MD5: pending",
+    "Reviewer: pending",
+    "Review-Date-UTC: pending"
+  ), path, useBytes = TRUE)
+  invisible(path)
+}
+
+writeReviewedLicenseDecisionFixture = function(
+    root, license = "Apache License (>= 2.0)",
+    auditRelative = "docs/provenance/DEPENDENCY-AUDIT.md",
+    auditHash = NULL, createAudit = TRUE,
+    reviewer = "Fixture Reviewer",
+    reviewDate = "2026-08-27T00:00:00Z") {
+  auditPath = file.path(root, auditRelative)
+  if (isTRUE(createAudit)) {
+    dir.create(dirname(auditPath), recursive = TRUE, showWarnings = FALSE)
+    writeLines(c(
+      "# Dependency compatibility audit",
+      "",
+      "Result: compatible"
+    ), auditPath, useBytes = TRUE)
+  }
+  if (is.null(auditHash)) {
+    auditHash = if (file.exists(auditPath)) {
+      unname(tools::md5sum(auditPath)[[1L]])
+    } else {
+      "00000000000000000000000000000000"
+    }
+  }
+  path = file.path(root, "docs", "provenance", "LICENSE-DECISION.md")
+  writeLines(c(
+    "# Package license decision",
+    "",
+    "License-Decision-Version: 1",
+    "Decision-Status: reviewed",
+    paste0("Description-License: ", license),
+    paste0("Dependency-Audit-Artifact: ", auditRelative),
+    paste0("Dependency-Audit-MD5: ", auditHash),
+    paste0("Reviewer: ", reviewer),
+    paste0("Review-Date-UTC: ", reviewDate)
+  ), path, useBytes = TRUE)
+  descriptionPath = file.path(root, "DESCRIPTION")
+  description = readLines(
+    descriptionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  description[grepl("^License:", description)] = paste0(
+    "License: ", license
+  )
+  writeLines(description, descriptionPath, useBytes = TRUE)
+  invisible(path)
+}
+
+removeIntegratedBlocker = function(root, blocker) {
+  attributionPath = file.path(
+    root, "docs", "provenance", "ATTRIBUTION.md"
+  )
+  attribution = readLines(
+    attributionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  attribution = attribution[!grepl(blocker, attribution, fixed = TRUE)]
+  writeLines(attribution, attributionPath, useBytes = TRUE)
+
+  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
+  rights = readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  rights = rights[!grepl(
+    paste0("^Unresolved-Release-Blocker: ", blocker), rights
+  )]
+  writeLines(rights, rightsPath, useBytes = TRUE)
+
+  releasePath = file.path(root, "docs", "release", "RELEASE-GATES.md")
+  release = readLines(releasePath, warn = FALSE, encoding = "UTF-8")
+  marker = releaseGateMarker(release, "Intentional-Blockers")
+  values = trimws(strsplit(marker, ",", fixed = TRUE)[[1L]])
+  values = values[values != blocker]
+  release[grepl("^Intentional-Blockers:", release)] = paste0(
+    "Intentional-Blockers: ",
+    if (length(values)) paste(values, collapse = ",") else "NONE"
+  )
+  writeLines(release, releasePath, useBytes = TRUE)
+  invisible(TRUE)
 }
 
 initializeIntegratedFixtureGit = function(root) {
@@ -1223,3 +1320,252 @@ test_that("integrated package metadata rejects canonical URL drift", {
   expect_identical(result$reason_codes, "DESCRIPTION_URL_MISMATCH")
 })
 
+
+test_that("all six attribution destinations are mandatory", {
+  destinations = c(
+    "DESCRIPTION", "README.md", "inst/CITATION", "CONTRIBUTORS.md",
+    "docs/provenance/PROVENANCE.csv", "NEWS.md"
+  )
+  for (destination in destinations) {
+    root = tempfile("release-gate-attribution-missing-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    unlink(file.path(root, destination))
+
+    result = evaluateReleaseGate(root)
+    expect_identical(
+      result$reason_codes, "ATTRIBUTION_DESTINATION_MISSING",
+      info = destination
+    )
+    expect_false(result$release_ready, info = destination)
+  }
+})
+
+test_that("all six attribution destinations retain exact reviewed evidence", {
+  mutations = list(
+    DESCRIPTION = function(root) {
+      path = file.path(root, "DESCRIPTION")
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      lines = sub(
+        "R/GEModel.R::GEModel\\$loadTablo",
+        "R/missing.R::missing", lines
+      )
+      writeLines(lines, path, useBytes = TRUE)
+    },
+    README = function(root) {
+      path = file.path(root, "README.md")
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      lines = lines[!grepl(
+        "R/GEModel.R::GEModel\\$loadTablo", lines
+      )]
+      writeLines(lines, path, useBytes = TRUE)
+    },
+    CITATION = function(root) {
+      path = file.path(root, "inst", "CITATION")
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      lines = lines[!grepl(
+        "R/GEModel.R::GEModel\\$loadTablo", lines
+      )]
+      writeLines(lines, path, useBytes = TRUE)
+    },
+    CONTRIBUTORS = function(root) {
+      path = file.path(root, "CONTRIBUTORS.md")
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      lines = lines[!grepl(
+        "^Evidence-Key: R/GEModel.R::GEModel\\$loadTablo", lines
+      )]
+      writeLines(lines, path, useBytes = TRUE)
+    },
+    PROVENANCE = function(root) {
+      path = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+      ledger = read.csv(
+        path, stringsAsFactors = FALSE, check.names = FALSE,
+        colClasses = "character", na.strings = NULL
+      )
+      key = paste(ledger$path, ledger$symbol, sep = "::")
+      ledger$contributors[key == "R/GEModel.R::GEModel$loadTablo"] =
+        "Unreviewed Person"
+      rewriteIntegratedLedger(root, ledger)
+    },
+    NEWS = function(root) {
+      path = file.path(root, "NEWS.md")
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      lines = lines[!grepl(
+        "^Evidence-Key: R/GEModel.R::GEModel\\$loadTablo", lines
+      )]
+      writeLines(lines, path, useBytes = TRUE)
+    }
+  )
+  for (destination in names(mutations)) {
+    root = tempfile("release-gate-attribution-drift-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    mutations[[destination]](root)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(
+      result$reason_codes, "ATTRIBUTION_DESTINATION_MISMATCH",
+      info = destination
+    )
+    expect_false(result$release_ready, info = destination)
+  }
+})
+
+test_that("unreviewed attribution roles and blocker keys fail closed", {
+  roleRoot = tempfile("release-gate-attribution-role-")
+  on.exit(unlink(roleRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(roleRoot)
+  path = file.path(roleRoot, "docs", "provenance", "ATTRIBUTION.md")
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines = sub("| aut |", "| fnd |", lines, fixed = TRUE)
+  writeLines(lines, path, useBytes = TRUE)
+  roleResult = evaluateReleaseGate(roleRoot)
+  expect_identical(
+    roleResult$reason_codes, "ATTRIBUTION_ROLE_UNREVIEWED"
+  )
+
+  blockerRoot = tempfile("release-gate-attribution-blocker-")
+  on.exit(unlink(blockerRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(blockerRoot)
+  path = file.path(
+    blockerRoot, "docs", "provenance", "ATTRIBUTION.md"
+  )
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  blockerRow = grepl("^\\| PACKAGE_LICENSE_UNFINALIZED", lines)
+  lines[blockerRow] = sub(
+    "R/sparseSolver.R::sparse_solve_model",
+    "R/missing.R::missing", lines[blockerRow], fixed = TRUE
+  )
+  writeLines(lines, path, useBytes = TRUE)
+  blockerResult = evaluateReleaseGate(blockerRoot)
+  expect_identical(
+    blockerResult$reason_codes, "ATTRIBUTION_EVIDENCE_MISSING"
+  )
+})
+
+test_that("strict name report metadata is enforced on blocked roots", {
+  mutations = list(
+    timestamp = function(lines) sub(
+      "^Checked-At-UTC:.*$", "Checked-At-UTC: invalid", lines
+    ),
+    raw_md5 = function(lines) sub(
+      "raw-md5=[0-9a-f]{32}", "raw-md5=invalid", lines
+    ),
+    version = function(lines) sub(
+      "^Name-Evidence-Version:.*$", "Name-Evidence-Version: 2", lines
+    ),
+    source_detail = function(lines) {
+      hit = which(grepl("^Source-Detail:", lines))[[1L]]
+      lines[-hit]
+    },
+    query_identity = function(lines) sub(
+      "query=https://", "query=http://", lines
+    ),
+    signature = function(lines) sub(
+      "^Reviewer:.*$", "Reviewer: awaiting-human-approval", lines
+    ),
+    completeness = function(lines) sub(
+      "completeness=complete", "completeness=unknown", lines
+    )
+  )
+  for (name in names(mutations)) {
+    root = tempfile("release-gate-name-strict-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    path = file.path(root, "docs", "release", "NAME-CHECK.md")
+    lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+    writeLines(mutations[[name]](lines), path, useBytes = TRUE)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(result$reason_codes, "NAME_REPORT_INVALID", info = name)
+    expect_false(result$release_ready, info = name)
+  }
+})
+
+test_that("pending license evidence requires the dependency blocker", {
+  root = tempfile("release-gate-license-pending-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  removeIntegratedBlocker(root, "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING")
+
+  result = evaluateReleaseGate(root)
+  expect_identical(result$reason_codes, "LICENSE_DECISION_PENDING")
+  expect_false(result$release_ready)
+})
+
+test_that("reviewed license evidence is exact, hash-bound, and R-valid", {
+  validRoot = tempfile("release-gate-license-reviewed-")
+  on.exit(unlink(validRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(validRoot)
+  removeIntegratedBlocker(
+    validRoot, "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"
+  )
+  writeReviewedLicenseDecisionFixture(validRoot)
+  valid = evaluateReleaseGate(validRoot)
+  expect_identical(valid$repository_state, "blocked")
+  expect_identical(valid$reason_codes, "ATTRIBUTION_IDENTITY_UNRESOLVED")
+  expect_identical(valid$parse_status[["license"]], "pass")
+
+  cases = list(
+    missing_decision = list(
+      reason = "LICENSE_DECISION_MISSING",
+      mutate = function(root) unlink(file.path(
+        root, "docs", "provenance", "LICENSE-DECISION.md"
+      ))
+    ),
+    missing_audit = list(
+      reason = "LICENSE_DEPENDENCY_AUDIT_MISSING",
+      mutate = function(root) unlink(file.path(
+        root, "docs", "provenance", "DEPENDENCY-AUDIT.md"
+      ))
+    ),
+    hash_mismatch = list(
+      reason = "LICENSE_DEPENDENCY_AUDIT_HASH_MISMATCH",
+      mutate = function(root) {
+        path = file.path(
+          root, "docs", "provenance", "LICENSE-DECISION.md"
+        )
+        lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+        lines[grepl("^Dependency-Audit-MD5:", lines)] =
+          "Dependency-Audit-MD5: 00000000000000000000000000000000"
+        writeLines(lines, path, useBytes = TRUE)
+      }
+    ),
+    description_mismatch = list(
+      reason = "DESCRIPTION_LICENSE_MISMATCH",
+      mutate = function(root) {
+        path = file.path(root, "DESCRIPTION")
+        lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+        lines[grepl("^License:", lines)] = "License: GPL-3"
+        writeLines(lines, path, useBytes = TRUE)
+      }
+    ),
+    invalid_expression = list(
+      reason = "LICENSE_EXPRESSION_INVALID",
+      mutate = function(root) writeReviewedLicenseDecisionFixture(
+        root, license = "definitely-not-a-valid-license"
+      )
+    ),
+    unreviewed = list(
+      reason = "LICENSE_DECISION_UNREVIEWED",
+      mutate = function(root) writeReviewedLicenseDecisionFixture(
+        root, reviewer = "pending", reviewDate = "pending"
+      )
+    )
+  )
+  for (name in names(cases)) {
+    root = tempfile("release-gate-license-invalid-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    removeIntegratedBlocker(
+      root, "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"
+    )
+    writeReviewedLicenseDecisionFixture(root)
+    cases[[name]]$mutate(root)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(result$reason_codes, cases[[name]]$reason, info = name)
+    expect_false(result$release_ready, info = name)
+    expect_identical(result$parse_status[["license"]], "fail", info = name)
+  }
+})
