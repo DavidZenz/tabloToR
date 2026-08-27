@@ -802,20 +802,17 @@ test_that("checked-in identity records match exact human-approved values", {
   ) %in% repository))
   expect_true(all(c(
     "Name-Evidence-Version: 1",
-    "Reviewer: awaiting-human-approval",
-    "Review-Date-UTC: awaiting-human-approval"
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-27T07:22:11Z"
   ) %in% report))
   expect_true(tool$name_check_verify_report(
     file.path(root, "docs", "release", "NAME-CHECK.md"),
     require_review = FALSE
   ))
-  expect_error(
-    tool$name_check_verify_report(
-      file.path(root, "docs", "release", "NAME-CHECK.md"),
-      require_review = TRUE
-    ),
-    "NAME_REPORT_REVIEW_UNAPPROVED", fixed = TRUE
-  )
+  expect_true(tool$name_check_verify_report(
+    file.path(root, "docs", "release", "NAME-CHECK.md"),
+    require_review = TRUE
+  ))
 })
 
 test_that("unapproved identity requires exact pending and authorization markers", {
