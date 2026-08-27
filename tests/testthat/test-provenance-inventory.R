@@ -241,6 +241,10 @@ test_that("native normalization ignores comments line endings and safe layout", 
   expect_match(normalized, literal, fixed = TRUE)
   expect_match(normalized, "deny/*literal*/", fixed = TRUE)
   expect_match(normalized, "return value", fixed = TRUE)
+  separated <- tool$provenance_normalize_native(
+    "const char *value = L \"wide\";"
+  )
+  expect_match(separated, "L \"wide\"", fixed = TRUE)
 })
 
 test_that("structural discovery stays independent from native hash semantics", {
@@ -354,7 +358,10 @@ test_that("check mode validates without rewriting the independent oracle", {
   ledger[["evidence"]] <- "fixture review"
   ledger[["reviewer"]] <- "Fixture Reviewer"
   ledger[["review_date"]] <- "2026-08-25"
-  ledger[["status"]] <- "reviewed-provisional"
+  ledger[["status"]] <- ifelse(
+    ledger[["classification"]] == "generated",
+    "reviewed-generated", "reviewed-provisional"
+  )
   directory <- file.path(root, "docs", "provenance")
   dir.create(directory, recursive = TRUE)
   expected_path <- file.path(directory, "EXPECTED-KEYS.csv")

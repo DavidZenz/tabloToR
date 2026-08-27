@@ -233,6 +233,109 @@ provenance_mask_native <- function(text) {
   paste(lines, collapse = "\n")
 }
 
+provenance_native_needs_separator <- function(left, right) {
+  if (!nzchar(left) || !nzchar(right) || left == "\n") return(FALSE)
+  word <- function(value) grepl("^[A-Za-z0-9_$]$", value)
+  operator <- function(value) grepl("^[!%&*+./:<=>?^|-]$", value)
+  quote <- function(value) value %in% c("\"", "'")
+  (word(left) && word(right)) ||
+    (word(left) && quote(right)) ||
+    (quote(left) && word(right)) ||
+    (operator(left) && operator(right)) ||
+    (left == "." && grepl("^[0-9]$", right)) ||
+    (grepl("^[0-9]$", left) && right == ".")
+}
+
+provenance_normalize_native <- function(text) {
+  text <- paste(as.character(text), collapse = "\n")
+  text <- gsub("\r\n?", "\n", text)
+  characters <- strsplit(text, "", fixed = TRUE)[[1L]]
+  if (!length(characters)) return("")
+  output <- character()
+  state <- "code"
+  escaped <- FALSE
+  pending_space <- FALSE
+  line_start <- TRUE
+  preprocessor <- FALSE
+  append_character <- function(value) {
+    output[[length(output) + 1L]] <<- value
+  }
+  end_line <- function() {
+    if (preprocessor &&
+        (!length(output) || output[[length(output)]] != "\n")) {
+      append_character("\n")
+    } else if (!preprocessor) {
+      pending_space <<- TRUE
+    }
+    line_start <<- TRUE
+    preprocessor <<- FALSE
+  }
+
+  id <- 1L
+  while (id <= length(characters)) {
+    current <- characters[[id]]
+    following <- if (id < length(characters)) characters[[id + 1L]] else ""
+    if (state == "line-comment") {
+      if (current == "\n") {
+        state <- "code"
+        end_line()
+      }
+    } else if (state == "block-comment") {
+      if (current == "*" && following == "/") {
+        state <- "code"
+        pending_space <- TRUE
+        id <- id + 1L
+      } else if (current == "\n") {
+        end_line()
+      }
+    } else if (state %in% c("string", "character")) {
+      was_escaped <- escaped
+      append_character(current)
+      quote <- if (state == "string") "\"" else "'"
+      if (!was_escaped && current == quote) state <- "code"
+      escaped <- current == "\\" && !was_escaped
+      line_start <- FALSE
+    } else if (current == "/" && following == "/") {
+      state <- "line-comment"
+      pending_space <- TRUE
+      id <- id + 1L
+    } else if (current == "/" && following == "*") {
+      state <- "block-comment"
+      pending_space <- TRUE
+      id <- id + 1L
+    } else if (current %in% c(" ", "\t", "\f", "\v")) {
+      pending_space <- TRUE
+    } else if (current == "\n") {
+      end_line()
+    } else {
+      if (line_start && current == "#") {
+        if (length(output) && output[[length(output)]] != "\n") {
+          append_character("\n")
+        }
+        preprocessor <- TRUE
+      }
+      if (pending_space && length(output)) {
+        left <- output[[length(output)]]
+        if (provenance_native_needs_separator(left, current)) {
+          append_character(" ")
+        }
+      }
+      pending_space <- FALSE
+      append_character(current)
+      line_start <- FALSE
+      if (current == "\"") {
+        state <- "string"
+        escaped <- FALSE
+      } else if (current == "'") {
+        state <- "character"
+        escaped <- FALSE
+      }
+    }
+    id <- id + 1L
+  }
+  sub("\n+$", "", paste(output, collapse = ""))
+}
+
 provenance_native_signature <- function(header) {
   header <- trimws(header)
   if (!nzchar(header) || !grepl("\\)", header)) return(NULL)
@@ -307,7 +410,7 @@ provenance_native_rows <- function(path, relative) {
           expression <- paste(
             original_characters[seq.int(active$start, id)], collapse = ""
           )
-          normalized <- gsub("[[:space:]]+", "", provenance_mask_native(expression))
+          normalized <- provenance_normalize_native(expression)
           rows[[length(rows) + 1L]] <- data.frame(
             path = relative,
             symbol = active$name,
@@ -565,6 +668,57 @@ provenance_build_ledger <- function(inventory, existing = NULL) {
   ledger
 }
 
+provenance_validate_review_fields <- function(ledger) {
+  required_columns <- c(
+    "classification", "upstream_repository", "upstream_commit",
+    "upstream_path", "contributors", "copyright_holder", "license_basis",
+    "evidence", "reviewer", "review_date", "status"
+  )
+  if (!all(required_columns %in% names(ledger))) {
+    provenance_abort("PROVENANCE_COLUMNS_MISSING")
+  }
+  status_by_classification <- c(
+    "inherited-identical" = "reviewed-cleared",
+    "inherited-modified" = "reviewed-mixed-provisional",
+    "new-independent" = "reviewed-provisional",
+    "generated" = "reviewed-generated",
+    "third-party" = "reviewed-third-party"
+  )
+  known_classification <- ledger$classification %in%
+    names(status_by_classification)
+  compatible_status <- rep(FALSE, nrow(ledger))
+  compatible_status[known_classification] <-
+    ledger$status[known_classification] == unname(status_by_classification[
+      ledger$classification[known_classification]
+    ])
+  parsed_date <- suppressWarnings(as.Date(
+    ledger$review_date, format = "%Y-%m-%d"
+  ))
+  round_trip_date <- rep("", nrow(ledger))
+  valid_date <- !is.na(parsed_date)
+  round_trip_date[valid_date] <- format(parsed_date[valid_date], "%Y-%m-%d")
+  required_review <- c(
+    "contributors", "copyright_holder", "license_basis", "evidence",
+    "reviewer", "review_date", "status"
+  )
+  complete_review <- !Reduce(`|`, lapply(required_review, function(column) {
+    is.na(ledger[[column]]) | !nzchar(ledger[[column]])
+  }))
+  third_party <- ledger$classification == "third-party"
+  complete_third_party <- !third_party | (
+    nzchar(ledger$upstream_repository) &
+      nzchar(ledger$upstream_commit) &
+      nzchar(ledger$upstream_path)
+  )
+  blocking <- !known_classification | !compatible_status | !complete_review |
+    !valid_date | round_trip_date != ledger$review_date | !complete_third_party
+  blocking[is.na(blocking)] <- TRUE
+  if (any(blocking)) {
+    provenance_abort("PROVENANCE_ROW_BLOCKING", sprintf("rows=%d", sum(blocking)))
+  }
+  TRUE
+}
+
 provenance_validate_ledger <- function(ledger, expected, inventory) {
   if (!identical(names(ledger), provenance_columns)) {
     provenance_abort("PROVENANCE_COLUMNS_MISSING")
@@ -577,6 +731,7 @@ provenance_validate_ledger <- function(ledger, expected, inventory) {
       any(ledger$expression_hash != inventory$expression_hash[inventory_id])) {
     provenance_abort("PROVENANCE_KEY_MISMATCH", "expression-hash")
   }
+  provenance_validate_review_fields(ledger)
   allowed <- c(
     "inherited-identical", "inherited-modified", "new-independent",
     "generated", "third-party", "unknown"
