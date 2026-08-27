@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 01
 current_phase_name: Provenance and Release Boundary
 status: executing
-stopped_at: Completed 01-07-PLAN.md
-last_updated: "2026-08-27T10:21:17.059Z"
+stopped_at: Completed 01-10-PLAN.md
+last_updated: "2026-08-27T10:58:17.982Z"
 last_activity: 2026-08-27
-last_activity_desc: Completed Plan 01-07 integrated release gate
-state_head: e754decc459f98eebd706f3f32086205c8d2cced
+last_activity_desc: Completed Plan 01-10 enforceable clean-room evidence
+state_head: 3eb9964f59413d5036c117a406a0d8bfa225f5fe
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 11
-  completed_plans: 9
+  completed_plans: 10
 milestone_name: milestone
 ---
 
@@ -29,30 +29,30 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 ## Current Position
 
 Phase: 01 (Provenance and Release Boundary) — READY TO EXECUTE
-Plan: 10 of 11
+Plan: 11 of 11
 Status: Ready to execute
-Last activity: 2026-08-27 — Completed Plan 01-07 integrated release gate
+Last activity: 2026-08-27 — Completed Plan 01-10 enforceable clean-room evidence
 
-Progress: [████████░░] 82%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 9
-- Average duration: 316 min (checkpoint wait included)
-- Total execution time: 2846 min (checkpoint wait included)
+- Total plans completed: 10
+- Average duration: 288 min (checkpoint wait included)
+- Total execution time: 2878 min (checkpoint wait included)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 9 | 2846 min | 316 min |
+| 01 | 10 | 2878 min | 288 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-05 (20 min), 01-06 (25 min), 01-08 (40h including checkpoint wait), 01-09 (91 min), 01-07 (41 min)
-- Trend: Integrated release gate now validates source-derived provenance, attribution, and license evidence
+- Last 5 plans: 01-06 (25 min), 01-08 (40h including checkpoint wait), 01-09 (91 min), 01-07 (41 min), 01-10 (32 min)
+- Trend: Clean-room release evidence is now root-confined, runnable, independently bound, and integrated with provenance
 
 **Per-Plan Metrics:**
 
@@ -67,6 +67,7 @@ Progress: [████████░░] 82%
 | Phase 01 P08 | 40h including checkpoint wait | 3 tasks | 3 files |
 | Phase 01 P09 | 1h31m | 3 tasks | 5 files |
 | Phase 01 P07 | 41min | 3 tasks | 4 files |
+| Phase 01-provenance-and-release-boundary P10 | 32min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,10 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 01]: Attribution is release-complete only when all six public destinations preserve reviewed people, roles, and evidence keys.
 - [Phase 01]: Reviewed license readiness requires a safe under-root hash-bound dependency audit and an exact R-valid DESCRIPTION license expression.
 - [Phase 01]: Synthetic source-derived evidence proves the positive path while production retains exactly DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED.
+- [Phase 01]: Cleanroom protocol v2 requires five distinct, non-empty, under-root artifacts with exact lowercase MD5 bindings.
+- [Phase 01]: Runnable clean-room evidence uses the fixed rscript-cleanroom-v1 command contract and an exact one-row DCF result schema.
+- [Phase 01]: Clean-room coverage clears inherited expression only when every declared key maps to a new-independent provenance row in the integrated graph.
+- [Phase 01]: Canonical rights and provenance evidence remain unchanged, preserving both intentional release blockers.
 
 ### Pending Todos
 
@@ -129,6 +134,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-27T10:21:17.044Z
-Stopped at: Completed 01-07-PLAN.md
+Last session: 2026-08-27T10:58:17.966Z
+Stopped at: Completed 01-10-PLAN.md
 Resume file: None

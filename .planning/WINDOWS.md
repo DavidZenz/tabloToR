@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 2
 waived_count: 0
-fixed_count: 13
-total_count: 15
-last_updated: 2026-08-27T10:22:33.916Z
+fixed_count: 15
+total_count: 17
+last_updated: 2026-08-27T10:59:49.477Z
 ---
 
 # Broken Windows Ledger
@@ -30,6 +30,8 @@ last_updated: 2026-08-27T10:22:33.916Z
 | 13 | 01 | deviation | .planning/STATE.md |  | Reconciled stale Plan 2 and 55% narrative after unscoped state.update-progress skipped seven-summary phase state. | fixed |  | 2026-08-27T07:29:01.669Z | 2026-08-27T07:29:05.522Z |
 | 14 | 01 | stub | docs/provenance/LICENSE-DECISION.md | 7 | Pending package-license value is intentional until DEPENDENCY_COMPATIBILITY_AUDIT_PENDING is resolved by a reviewed hash-bound audit. | open |  | 2026-08-27T10:19:30.085Z |  |
 | 15 | 01 | deviation | .planning/STATE.md |  | Reconciled stale 73% progress and seven-plan velocity after state.update-progress skipped the unscoped in-progress phase following Plan 01-07. | fixed |  | 2026-08-27T10:21:37.195Z | 2026-08-27T10:22:33.916Z |
+| 16 | 01 | deviation | tests/testthat/test-release-gates.R | 999 | Corrected malformed-result fixture rehashing to bind the rewritten DCF artifact directly. | fixed |  | 2026-08-27T10:59:25.170Z | 2026-08-27T10:59:49.267Z |
+| 17 | 01 | deviation | .planning/STATE.md |  | Reconciled human-readable progress after the SDK skipped derived fields for an unscoped phase. | fixed |  | 2026-08-27T10:59:25.379Z | 2026-08-27T10:59:49.477Z |
 
 ````json
 [
@@ -212,6 +214,30 @@ last_updated: 2026-08-27T10:22:33.916Z
     "reason": "",
     "recorded_at": "2026-08-27T10:21:37.195Z",
     "resolved_at": "2026-08-27T10:22:33.916Z"
+  },
+  {
+    "id": 16,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "tests/testthat/test-release-gates.R",
+    "line": 999,
+    "description": "Corrected malformed-result fixture rehashing to bind the rewritten DCF artifact directly.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-27T10:59:25.170Z",
+    "resolved_at": "2026-08-27T10:59:49.267Z"
+  },
+  {
+    "id": 17,
+    "kind": "deviation",
+    "phase": "01",
+    "file": ".planning/STATE.md",
+    "line": null,
+    "description": "Reconciled human-readable progress after the SDK skipped derived fields for an unscoped phase.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-27T10:59:25.379Z",
+    "resolved_at": "2026-08-27T10:59:49.477Z"
   }
 ]
 ````
