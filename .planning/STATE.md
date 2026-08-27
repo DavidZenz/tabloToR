@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 01
 current_phase_name: Provenance and Release Boundary
 status: executing
-stopped_at: Completed 01-08-PLAN.md
-last_updated: "2026-08-27T07:27:57.039Z"
+stopped_at: Completed 01-09-PLAN.md
+last_updated: "2026-08-27T09:10:13.905Z"
 last_activity: 2026-08-27
 last_activity_desc: Completed Plan 01-08 exhaustive name evidence
-state_head: eaf623563368cf97aa90527e0dc057c8a6b0e6d6
+state_head: 4483b8ab36e50fd99c7089610882e3f14ad1cd38
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 11
-  completed_plans: 7
+  completed_plans: 8
 milestone_name: milestone
 ---
 
@@ -29,11 +29,11 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 ## Current Position
 
 Phase: 01 (Provenance and Release Boundary) — READY TO EXECUTE
-Plan: 8 of 11
+Plan: 9 of 11
 Status: Ready to execute
 Last activity: 2026-08-27 — Completed Plan 01-08 exhaustive name evidence
 
-Progress: [██████░░░░] 64%
+Progress: [███████░░░] 73%
 
 ## Performance Metrics
 
@@ -65,6 +65,7 @@ Progress: [██████░░░░] 64%
 | Phase 01 P05 | 20 min | 2 tasks | 7 files |
 | Phase 01 P06 | 25m | 2 tasks | 8 files |
 | Phase 01 P08 | 40h including checkpoint wait | 3 tasks | 3 files |
+| Phase 01 P09 | 1h31m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -100,6 +101,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: Technical release readiness never authorizes repository creation, settings changes, or publication.
 - [Phase 01]: Accepted the regenerated exhaustive report with the exact response accept; reviewer=David Zenz.
 - [Phase 01]: Approval is point-in-time exact-name collision evidence only and grants no trademark, reservation, repository-mutation, or publication authorization.
+- [Phase 01]: Accepted the complete 54-row native hash migration with the exact response accept; reviewer=David Zenz.
+- [Phase 01]: Preserved D-06: stable keys, hashes, and Git history identify review scope but do not assign authorship, ownership, contributor, or license roles.
 
 ### Pending Todos
 
@@ -121,6 +124,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-27T07:27:57.024Z
-Stopped at: Completed 01-08-PLAN.md
+Last session: 2026-08-27T09:10:13.863Z
+Stopped at: Completed 01-09-PLAN.md
 Resume file: None
