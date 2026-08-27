@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 01
 current_phase_name: Provenance and Release Boundary
 status: executing
-stopped_at: Completed 01-06-PLAN.md
-last_updated: "2026-08-25T15:18:02.720Z"
-last_activity: 2026-08-25
-last_activity_desc: Completed Plan 01-06 integrated release boundary
-state_head: a691e717070e489c56a30fc3b80531a7e40f903e
+stopped_at: Completed 01-08-PLAN.md
+last_updated: "2026-08-27T07:27:57.039Z"
+last_activity: 2026-08-27
+last_activity_desc: Completed Plan 01-08 exhaustive name evidence
+state_head: eaf623563368cf97aa90527e0dc057c8a6b0e6d6
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 11
-  completed_plans: 6
+  completed_plans: 7
 milestone_name: milestone
 ---
 
@@ -24,35 +24,35 @@ milestone_name: milestone
 See: `.planning/PROJECT.md` (updated 2026-08-22)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 1 — provenance-and-release-boundary
+**Current focus:** Phase 01 — Provenance and Release Boundary
 
 ## Current Position
 
 Phase: 01 (Provenance and Release Boundary) — READY TO EXECUTE
-Plan: 6 of 11
+Plan: 8 of 11
 Status: Ready to execute
-Last activity: 2026-08-25 — Completed Plan 01-06 integrated release boundary
+Last activity: 2026-08-27 — Completed Plan 01-08 exhaustive name evidence
 
-Progress: [█████░░░░░] 55%
+Progress: [██████░░░░] 64%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 6
-- Average duration: 52 min
-- Total execution time: 314 min
+- Total plans completed: 7
+- Average duration: 388 min (checkpoint wait included)
+- Total execution time: 2714 min (checkpoint wait included)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 6 | 314 min | 52 min |
+| 01 | 7 | 2714 min | 388 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-02 (176 min), 01-03 (23 min), 01-04 (53 min), 01-05 (20 min), 01-06 (25 min)
-- Trend: Integrated release boundary completed with exact evidence-driven blockers
+- Last 5 plans: 01-03 (23 min), 01-04 (53 min), 01-05 (20 min), 01-06 (25 min), 01-08 (40h including checkpoint wait)
+- Trend: Exhaustive signed name evidence completed with fail-closed source coverage
 
 **Per-Plan Metrics:**
 
@@ -64,6 +64,7 @@ Progress: [█████░░░░░] 55%
 | Phase 01 P04 | 53 min | 3 tasks | 5 files |
 | Phase 01 P05 | 20 min | 2 tasks | 7 files |
 | Phase 01 P06 | 25m | 2 tasks | 8 files |
+| Phase 01 P08 | 40h including checkpoint wait | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: A blocker-free release decision requires a fresh release-kind six-source name report.
 - [Phase 1]: The unresolved DESCRIPTION License is valid only while the dependency compatibility blocker is present.
 - [Phase 1]: Technical release readiness never authorizes repository creation, settings changes, or publication.
+- [Phase 01]: Accepted the regenerated exhaustive report with the exact response accept; reviewer=David Zenz.
+- [Phase 01]: Approval is point-in-time exact-name collision evidence only and grants no trademark, reservation, repository-mutation, or publication authorization.
 
 ### Pending Todos
 
@@ -118,6 +121,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-25T12:48:59.700Z
-Stopped at: Completed 01-06-PLAN.md
+Last session: 2026-08-27T07:27:57.024Z
+Stopped at: Completed 01-08-PLAN.md
 Resume file: None

@@ -2,9 +2,9 @@
 schema_version: 1
 open_count: 1
 waived_count: 0
-fixed_count: 10
-total_count: 11
-last_updated: 2026-08-25T12:49:59.919Z
+fixed_count: 12
+total_count: 13
+last_updated: 2026-08-27T07:29:05.522Z
 ---
 
 # Broken Windows Ledger
@@ -26,6 +26,8 @@ last_updated: 2026-08-25T12:49:59.919Z
 | 9 | 01 | deviation | docs/provenance/RIGHTS.md |  | Replaced stale Plan 01-03/01-04 temporary markers with complete integrated evidence and the two reviewed blockers. | fixed |  | 2026-08-25T12:46:53.746Z | 2026-08-25T12:46:59.289Z |
 | 10 | 01 | deviation | tests/testthat/test-release-gates.R |  | Repository-only evidence tests skip when their tooling and evidence are intentionally excluded from a built source package. | fixed |  | 2026-08-25T12:46:53.861Z | 2026-08-25T12:46:59.414Z |
 | 11 | 01 | deviation | .planning/STATE.md |  | Repaired stale derived progress and blocker narrative after state.update-progress skipped the unscoped verifying phase. | fixed |  | 2026-08-25T12:49:50.252Z | 2026-08-25T12:49:59.919Z |
+| 12 | 01 | deviation | tests/testthat/test-name-availability.R | 803 | Checked-in report regression required unsigned markers after explicit Task 3 approval; updated to exact signed reviewer/date and strict verification. | fixed |  | 2026-08-27T07:27:05.647Z | 2026-08-27T07:27:29.666Z |
+| 13 | 01 | deviation | .planning/STATE.md |  | Reconciled stale Plan 2 and 55% narrative after unscoped state.update-progress skipped seven-summary phase state. | fixed |  | 2026-08-27T07:29:01.669Z | 2026-08-27T07:29:05.522Z |
 
 ````json
 [
@@ -160,6 +162,30 @@ last_updated: 2026-08-25T12:49:59.919Z
     "reason": "",
     "recorded_at": "2026-08-25T12:49:50.252Z",
     "resolved_at": "2026-08-25T12:49:59.919Z"
+  },
+  {
+    "id": 12,
+    "kind": "deviation",
+    "phase": "01",
+    "file": "tests/testthat/test-name-availability.R",
+    "line": 803,
+    "description": "Checked-in report regression required unsigned markers after explicit Task 3 approval; updated to exact signed reviewer/date and strict verification.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-27T07:27:05.647Z",
+    "resolved_at": "2026-08-27T07:27:29.666Z"
+  },
+  {
+    "id": 13,
+    "kind": "deviation",
+    "phase": "01",
+    "file": ".planning/STATE.md",
+    "line": null,
+    "description": "Reconciled stale Plan 2 and 55% narrative after unscoped state.update-progress skipped seven-summary phase state.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-27T07:29:01.669Z",
+    "resolved_at": "2026-08-27T07:29:05.522Z"
   }
 ]
 ````
