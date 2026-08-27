@@ -803,7 +803,283 @@ copyIntegratedReleaseEvidence = function(root) {
     dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
     file.copy(file.path(sourceRoot, relativePath), destination, overwrite = TRUE)
   }
+  writeIntegratedSourceEvidence(root)
 }
+
+initializeIntegratedFixtureGit = function(root) {
+  gitCandidates = unique(c("/usr/bin/git", unname(Sys.which("git"))))
+  gitCandidates = gitCandidates[nzchar(gitCandidates) & file.exists(gitCandidates)]
+  git = if (length(gitCandidates)) gitCandidates[[1L]] else ""
+  if (!nzchar(git)) stop("git is required for release-gate fixtures")
+  run = function(arguments) {
+    status = suppressWarnings(system2(
+      git, c("-C", shQuote(root), arguments),
+      stdout = FALSE, stderr = FALSE
+    ))
+    if (!identical(as.integer(status), 0L)) {
+      stop("could not initialize release-gate fixture Git evidence")
+    }
+  }
+  run(c("init", "--quiet"))
+  run(c("config", "user.name", "Fixture Author"))
+  run(c("config", "user.email", "fixture@example.invalid"))
+  run(c("add", "."))
+  run(c("commit", "--quiet", "-m", shQuote("fixture evidence")))
+}
+
+loadProvenanceFixtureTool = function(path) {
+  environment = new.env(parent = baseenv())
+  sys.source(path, envir = environment)
+  environment
+}
+
+writeIntegratedSourceEvidence = function(root) {
+  sourceRoot = releaseGateProjectRoot()
+  sourceLines = list(
+    "R/sparseCompiler.R" = c(
+      "sparse_compile_spec = function(value) {",
+      "  value",
+      "}"
+    ),
+    "R/sparseSolver.R" = c(
+      "sparse_solve_model = function(value) {",
+      "  value",
+      "}"
+    ),
+    "R/GEModel.R" = c(
+      "GEModel = setRefClass(\"GEModel\", methods = list(",
+      "  loadTablo = function(value) value,",
+      "  solveModel = function(value) value",
+      "))"
+    ),
+    "R/processTablo.R" = c(
+      "processTablo = function(value) {",
+      "  value",
+      "}"
+    ),
+    "src/sparse-schur.cpp" = c(
+      "int tabloToR_schur_accumulate_global(int value) {",
+      "  return value;",
+      "}"
+    )
+  )
+  for (relativePath in names(sourceLines)) {
+    path = file.path(root, relativePath)
+    dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+    writeLines(sourceLines[[relativePath]], path, useBytes = TRUE)
+  }
+  toolPath = file.path(root, "tools", "provenance_inventory.R")
+  dir.create(dirname(toolPath), recursive = TRUE, showWarnings = FALSE)
+  file.copy(
+    file.path(sourceRoot, "tools", "provenance_inventory.R"),
+    toolPath,
+    overwrite = TRUE
+  )
+  initializeIntegratedFixtureGit(root)
+
+  tool = loadProvenanceFixtureTool(toolPath)
+  inventory = tool$provenance_collect_sources(root, include_git = TRUE)
+  expected = inventory[c("path", "symbol")]
+  ledger = tool$provenance_build_ledger(inventory)
+  ledger$classification = "new-independent"
+  ledger$copyright_holder = "Fixture Author"
+  ledger$license_basis = "fixture-original-code-license"
+  ledger$evidence = "synthetic reviewed fixture"
+  ledger$reviewer = "Fixture Reviewer"
+  ledger$review_date = "2026-08-25"
+  ledger$status = "reviewed-provisional"
+
+  inheritedKeys = c(
+    "R/GEModel.R::GEModel$loadTablo",
+    "R/GEModel.R::GEModel$solveModel",
+    "R/processTablo.R::processTablo"
+  )
+  keys = paste(ledger$path, ledger$symbol, sep = "::")
+  inherited = keys %in% inheritedKeys
+  ledger$classification[inherited] = "inherited-identical"
+  ledger$upstream_repository[inherited] =
+    "https://github.com/mivanic/tabloToR"
+  ledger$upstream_commit[inherited] =
+    "7e063c65a19713857ed13023f8b77dad45b15c90"
+  ledger$upstream_path[inherited] = ledger$path[inherited]
+  ledger$copyright_holder[inherited] = "Maros Ivanic"
+  ledger$license_basis[inherited] = "public-domain-cc0"
+  ledger$status[inherited] = "reviewed-cleared"
+
+  expectedPath = file.path(
+    root, "docs", "provenance", "EXPECTED-KEYS.csv"
+  )
+  ledgerPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  write.csv(expected, expectedPath, row.names = FALSE, na = "")
+  write.csv(ledger, ledgerPath, row.names = FALSE, na = "")
+
+  attributionPath = file.path(
+    root, "docs", "provenance", "ATTRIBUTION.md"
+  )
+  attribution = readLines(
+    attributionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  attribution[grepl("^Inventory-Row-Count:", attribution)] = paste0(
+    "Inventory-Row-Count: ", nrow(ledger)
+  )
+  attribution[grepl("^Inventory-Snapshot-MD5:", attribution)] = paste0(
+    "Inventory-Snapshot-MD5: ",
+    unname(tools::md5sum(ledgerPath)[[1L]])
+  )
+  writeLines(attribution, attributionPath, useBytes = TRUE)
+  invisible(list(inventory = inventory, expected = expected, ledger = ledger))
+}
+
+rewriteIntegratedLedger = function(root, ledger) {
+  path = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  write.csv(ledger, path, row.names = FALSE, na = "")
+  attributionPath = file.path(
+    root, "docs", "provenance", "ATTRIBUTION.md"
+  )
+  attribution = readLines(
+    attributionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  attribution[grepl("^Inventory-Row-Count:", attribution)] = paste0(
+    "Inventory-Row-Count: ", nrow(ledger)
+  )
+  attribution[grepl("^Inventory-Snapshot-MD5:", attribution)] = paste0(
+    "Inventory-Snapshot-MD5: ", unname(tools::md5sum(path)[[1L]])
+  )
+  writeLines(attribution, attributionPath, useBytes = TRUE)
+}
+
+test_that("integrated evidence version is mandatory and exact", {
+  cases = list(
+    missing = character(),
+    duplicated = c(
+      "Integrated-Evidence-Version: 1",
+      "Integrated-Evidence-Version: 1"
+    ),
+    empty = "Integrated-Evidence-Version: ",
+    unsupported = "Integrated-Evidence-Version: 2"
+  )
+  for (name in names(cases)) {
+    root = tempfile("release-gate-integrated-version-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    path = file.path(root, "docs", "provenance", "RIGHTS.md")
+    lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+    lines = lines[!grepl("^Integrated-Evidence-Version:", lines)]
+    writeLines(c(lines, cases[[name]]), path, useBytes = TRUE)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(
+      result$reason_codes,
+      "INTEGRATED_EVIDENCE_VERSION_INVALID",
+      info = name
+    )
+    expect_false(result$release_ready, info = name)
+    expect_identical(result$parse_status[["integrated"]], "fail", info = name)
+  }
+})
+
+test_that("integrated provenance is bound to current source and Git evidence", {
+  cases = list(
+    source_missing = list(
+      reason = "PROVENANCE_SOURCE_MISSING",
+      mutate = function(root) unlink(file.path(root, c("R", "src")),
+                                    recursive = TRUE)
+    ),
+    tool_missing = list(
+      reason = "PROVENANCE_TOOL_MISSING",
+      mutate = function(root) unlink(file.path(
+        root, "tools", "provenance_inventory.R"
+      ))
+    ),
+    tool_invalid = list(
+      reason = "PROVENANCE_TOOL_LOAD_FAILED",
+      mutate = function(root) writeLines("broken =", file.path(
+        root, "tools", "provenance_inventory.R"
+      ))
+    ),
+    git_missing = list(
+      reason = "PROVENANCE_GIT_EVIDENCE_MISSING",
+      mutate = function(root) unlink(file.path(root, ".git"), recursive = TRUE)
+    ),
+    source_added = list(
+      reason = "PROVENANCE_KEY_MISMATCH",
+      mutate = function(root) writeLines(
+        "addedDefinition = function() TRUE",
+        file.path(root, "R", "addedDefinition.R")
+      )
+    ),
+    source_deleted = list(
+      reason = "PROVENANCE_KEY_MISMATCH",
+      mutate = function(root) unlink(file.path(root, "R", "processTablo.R"))
+    ),
+    source_rekeyed = list(
+      reason = "PROVENANCE_KEY_MISMATCH",
+      mutate = function(root) writeLines(
+        "renamedProcessTablo = function(value) value",
+        file.path(root, "R", "processTablo.R")
+      )
+    ),
+    source_hash_changed = list(
+      reason = "PROVENANCE_KEY_MISMATCH",
+      mutate = function(root) writeLines(c(
+        "processTablo = function(value) {",
+        "  value + 1",
+        "}"
+      ), file.path(root, "R", "processTablo.R"))
+    ),
+    source_invalid = list(
+      reason = "PROVENANCE_SOURCE_EXTRACTION_FAILED",
+      mutate = function(root) writeLines(
+        "processTablo = function(",
+        file.path(root, "R", "processTablo.R")
+      )
+    )
+  )
+  for (name in names(cases)) {
+    root = tempfile("release-gate-integrated-source-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    cases[[name]]$mutate(root)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(result$reason_codes, cases[[name]]$reason, info = name)
+    expect_false(result$release_ready, info = name)
+    expect_identical(result$parse_status[["provenance"]], "fail", info = name)
+  }
+})
+
+test_that("shared provenance validation accepts only complete third-party evidence", {
+  root = tempfile("release-gate-integrated-third-party-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  path = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  ledger = read.csv(
+    path, stringsAsFactors = FALSE, check.names = FALSE,
+    colClasses = "character", na.strings = NULL
+  )
+  ledger$classification[[1L]] = "third-party"
+  ledger$upstream_repository[[1L]] = "https://example.invalid/vendor"
+  ledger$upstream_commit[[1L]] = "vendor-1"
+  ledger$upstream_path[[1L]] = ledger$path[[1L]]
+  ledger$copyright_holder[[1L]] = "Fixture Vendor"
+  ledger$license_basis[[1L]] = "fixture-vendor-license"
+  ledger$status[[1L]] = "reviewed-third-party"
+  rewriteIntegratedLedger(root, ledger)
+
+  validator = releaseGateEnvironment$release_gate_validate_current_source
+  complete = validator(root, c(integrated = "pass"))
+  expect_null(complete$error)
+  expect_identical(complete$parse_status[["provenance"]], "pass")
+
+  ledger$license_basis[[1L]] = ""
+  rewriteIntegratedLedger(root, ledger)
+  incomplete = validator(root, c(integrated = "pass"))
+  expect_identical(
+    incomplete$error$reason_codes,
+    "PROVENANCE_ROW_BLOCKING"
+  )
+  expect_identical(incomplete$error$parse_status[["provenance"]], "fail")
+})
 
 test_that("integrated provenance coverage fails closed on a missing key", {
   root = tempfile("release-gate-integrated-provenance-")
