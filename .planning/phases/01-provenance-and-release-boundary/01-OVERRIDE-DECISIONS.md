@@ -1,11 +1,11 @@
 # Phase 1 Historical Override Decisions
 
 Override-Decision-Record-Version: 1
-Rights-Blocked-Marker-Override: pending
-Request-Posting-Override: pending
-D-03-Concurrency-Override: pending
-Accepted-By: pending
-Decided-At-UTC: pending
+Rights-Blocked-Marker-Override: accept
+Request-Posting-Override: accept
+D-03-Concurrency-Override: accept
+Accepted-By: David Zenz
+Decided-At-UTC: 2026-08-27T12:00:39Z
 
 ## Decision boundary
 

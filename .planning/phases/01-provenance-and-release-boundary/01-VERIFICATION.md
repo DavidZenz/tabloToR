@@ -4,7 +4,20 @@ verified: 2026-08-25T13:13:40Z
 status: gaps_found
 score: 13/22 must-haves verified
 behavior_unverified: 0
-overrides_applied: 0
+overrides_applied: 3
+overrides:
+  - must_have: "The checked-in repository is valid only as the Plan 01-01 blocked private-development state."
+    reason: "Reviewed public-domain/CC0 response evidence supersedes the initial blocked-rights marker for the scoped upstream-authored inherited baseline while separate canonical blockers keep release fail-closed."
+    accepted_by: "David Zenz"
+    accepted_at: "2026-08-27T12:00:39Z"
+  - must_have: "Posting the reviewed request is the only completion path unless an accepted override changes the contract."
+    reason: "The existing reviewed public response satisfies the rights intent, and posting the retained historical draft would be redundant and conflict with its superseded-do-not-post status."
+    accepted_by: "David Zenz"
+    accepted_at: "2026-08-27T12:00:39Z"
+  - must_have: "Rights/clean-room work and provenance audit ran concurrently in Wave 2 per D-03."
+    reason: "The immutable chronology was sequential, but both evidence streams completed and Plans 01-07 through 01-10 revalidated their integrated links while preserving the canonical release blockers."
+    accepted_by: "David Zenz"
+    accepted_at: "2026-08-27T12:00:39Z"
 decision_coverage:
   automated_honored: 17
   total: 17
