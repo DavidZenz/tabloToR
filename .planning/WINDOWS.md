@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 3
+open_count: 2
 waived_count: 0
-fixed_count: 16
+fixed_count: 17
 total_count: 19
-last_updated: 2026-08-27T12:11:28.869Z
+last_updated: 2026-08-27T14:04:25.806Z
 ---
 
 # Broken Windows Ledger
@@ -32,7 +32,7 @@ last_updated: 2026-08-27T12:11:28.869Z
 | 15 | 01 | deviation | .planning/STATE.md |  | Reconciled stale 73% progress and seven-plan velocity after state.update-progress skipped the unscoped in-progress phase following Plan 01-07. | fixed |  | 2026-08-27T10:21:37.195Z | 2026-08-27T10:22:33.916Z |
 | 16 | 01 | deviation | tests/testthat/test-release-gates.R | 999 | Corrected malformed-result fixture rehashing to bind the rewritten DCF artifact directly. | fixed |  | 2026-08-27T10:59:25.170Z | 2026-08-27T10:59:49.267Z |
 | 17 | 01 | deviation | .planning/STATE.md |  | Reconciled human-readable progress after the SDK skipped derived fields for an unscoped phase. | fixed |  | 2026-08-27T10:59:25.379Z | 2026-08-27T10:59:49.477Z |
-| 18 | 01 | unmet-truth | .planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md |  | Final rtk R CMD check . fails because Linuxbrew binutils require GLIBC symbols unavailable on the Debian 10 host; Plan 01-11 remains halted. | open |  | 2026-08-27T12:09:32.553Z |  |
+| 18 | 01 | unmet-truth | .planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md |  | Final rtk R CMD check . fails because Linuxbrew binutils require GLIBC symbols unavailable on the Debian 10 host; Plan 01-11 remains halted. | fixed |  | 2026-08-27T12:09:32.553Z | 2026-08-27T14:04:25.806Z |
 | 19 | 01 | deviation | .planning/STATE.md |  | Reconciled halted Plan 01-11 metadata after roadmap.update-plan-progress marked it executed and raised completed plans to 11. | fixed |  | 2026-08-27T12:11:08.874Z | 2026-08-27T12:11:28.869Z |
 
 ````json
@@ -248,10 +248,10 @@ last_updated: 2026-08-27T12:11:28.869Z
     "file": ".planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md",
     "line": null,
     "description": "Final rtk R CMD check . fails because Linuxbrew binutils require GLIBC symbols unavailable on the Debian 10 host; Plan 01-11 remains halted.",
-    "status": "open",
+    "status": "fixed",
     "reason": "",
     "recorded_at": "2026-08-27T12:09:32.553Z",
-    "resolved_at": null
+    "resolved_at": "2026-08-27T14:04:25.806Z"
   },
   {
     "id": 19,

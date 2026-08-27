@@ -14,13 +14,13 @@ requires:
 provides:
   - explicit maintainer outcomes for three historical deviations
   - exact one-to-one canonical verification overrides
-  - unsuppressed final package-check environment failure evidence
+  - successful unchanged final package integrity verification
 affects: [phase-01-verification, release-qualification, toolchain-portability]
 
 actuals:
-  tokens: 2084
-  tasks: 1
-  commits: 2
+  tokens: 6628
+  tasks: 2
+  commits: 4
 
 tech-stack:
   added: []
@@ -40,7 +40,7 @@ key-decisions:
   - "David Zenz accepted the superseded Plan 01-01 blocked-rights marker deviation."
   - "David Zenz accepted the superseded Plan 01-02 request-posting deviation."
   - "David Zenz accepted the historical D-03 sequential-execution deviation."
-  - "The Linuxbrew assembler and Debian 10 GLIBC mismatch remains a blocking package-check failure."
+  - "The repaired host toolchain satisfies the unchanged package-check gate; its 5 warnings and 4 notes remain future package-quality work rather than release clearance."
 
 patterns-established:
   - "Override scope: one exact target, one specific reason, one supplied identity, and one UTC timestamp per accepted deviation."
@@ -77,25 +77,24 @@ coverage:
     verification:
       - kind: integration
         ref: "rtk R CMD check ."
-        status: fail
-    human_judgment: true
-    rationale: "The required command failed at native compilation because Linuxbrew binutils require unavailable host GLIBC symbols."
+        status: pass
+    human_judgment: false
 
-duration: 1h
+duration: 2h 55m including checkpoint and environment repair
 completed: 2026-08-27
-status: halted
+status: complete
 ---
 
 # Phase 01 Plan 11: Historical Override Decisions Summary
 
-**Three explicit David Zenz decisions now map one-to-one to exact historical verification overrides, while the unsuppressed package integrity gate keeps Plan 01-11 and Phase 01 gap execution halted.**
+**Three explicit David Zenz decisions map one-to-one to exact historical verification overrides, and the repaired host toolchain now passes the unchanged package integrity gate.**
 
 ## Performance
 
-- **Duration:** 1h including the blocking-human continuation
+- **Duration:** 2h 55m including the blocking-human checkpoint and external environment repair
 - **Started:** 2026-08-27T11:07:02Z
-- **Halted:** 2026-08-27T12:07:18Z
-- **Tasks complete:** 1 of 2
+- **Completed:** 2026-08-27T14:02:00Z
+- **Tasks complete:** 2 of 2
 - **Files modified:** 3
 
 ## Accomplishments
@@ -103,20 +102,20 @@ status: halted
 - Recorded `rights=accept`, `request=accept`, and `d03=accept` exactly with `Accepted-By: David Zenz` and one ISO UTC timestamp.
 - Added exactly three canonical overrides using the exact target must-have text, specific rationale, supplied identity, and response timestamp.
 - Preserved `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED` as the exact canonical release blockers.
-- Re-ran the complete focused Phase 1 validation set and kept the failed final package check blocking.
+- Passed the exact unchanged final command `rtk R CMD check .`, including native compilation/install, tests, and PDF manual generation.
 
 ## Task Commits
 
 1. **Task 1: Present exact pending override record** - `9efdf9d`
 2. **Task 2 decision artifacts: Record accepted historical overrides** - `af5ddd3`
 
-Task 2 is not marked complete because its required `rtk R CMD check .` acceptance gate exited nonzero.
+Task 2 is complete because its decision/override assertion and required unchanged `rtk R CMD check .` acceptance gate both exited zero.
 
 ## Files Created/Modified
 
 - `.planning/phases/01-provenance-and-release-boundary/01-OVERRIDE-DECISIONS.md` - Complete three-choice decision tuple with identity and UTC time.
 - `.planning/phases/01-provenance-and-release-boundary/01-VERIFICATION.md` - Three exact accepted historical-deviation overrides; status and score remain unchanged pending re-verification.
-- `.planning/phases/01-provenance-and-release-boundary/01-11-SUMMARY.md` - Halted execution record and verification evidence.
+- `.planning/phases/01-provenance-and-release-boundary/01-11-SUMMARY.md` - Complete execution record and final verification evidence.
 
 ## Decisions Made
 
@@ -133,9 +132,9 @@ Task 2 is not marked complete because its required `rtk R CMD check .` acceptanc
 
 - **Found during:** Halted summary state update
 - **Issue:** The roadmap updater recognized `status: halted` but still marked Plan 01-11 executed and raised completed plans to 11.
-- **Fix:** Restored STATE and ROADMAP to 10/11, left Plan 01-11 unchecked, and recorded the final package check as the active blocker.
+- **Fix:** Restored STATE and ROADMAP to 10/11 while the gate was blocked, then advanced both to 11/11 only after the unchanged check passed.
 - **Files modified:** `.planning/STATE.md`, `.planning/ROADMAP.md`
-- **Verification:** STATE and ROADMAP both report 10/11 with Plan 01-11 blocked at the final package check.
+- **Verification:** STATE and ROADMAP report 11/11 after the final package command exited zero; neither canonical release blocker was removed.
 
 **Total deviations:** 1 auto-fixed blocking metadata issue. No implementation, override, or release-boundary scope changed.
 
@@ -152,7 +151,7 @@ Task 2 is not marked complete because its required `rtk R CMD check .` acceptanc
 - Release self-test: **pass**.
 - Canonical blocked assertion: **pass** with exactly `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED`.
 - `git diff --check`: **pass**.
-- `rtk R CMD check .`: **failed** during native compilation. Linuxbrew `as` requires GLIBC 2.33, 2.34, and 2.38 symbols unavailable on Debian 10. The command ended with 1 ERROR, 2 WARNINGs, and 2 NOTEs. This result is blocking and was not suppressed or converted into package success.
+- `rtk R CMD check .`: **pass (exit 0)**. Native compilation/install, package tests, compiled-code checks, and the PDF manual passed. R reported 5 WARNINGs and 4 NOTEs for pre-existing source-package hygiene, portable-name, check-directory, documentation, license/LazyData, and installed-size concerns; these remain later package-quality work and do not imply release readiness.
 
 ## Known Stubs
 
@@ -163,6 +162,7 @@ No new stubs were introduced. The unchanged verification body references the pre
 - The direct patch helper could not create an unprivileged namespace; exact repository-scoped rewrites were applied through RTK and verified by Git diff plus plan assertions.
 - A combined nested-RTK verification wrapper hit the same namespace restriction before running any checker; every checker was then run individually through RTK.
 - The generated `..Rcheck` directory was moved intact to `/tmp/tabloToR-01-11-Rcheck-20260827T120039Z`; the pre-existing `tabloToR.Rcheck` directory was untouched.
+- The first final package check failed because R selected Linuxbrew binutils that require newer GLIBC symbols, and a later attempt lacked `pdflatex`. Outside-repository environment repair exposed `/usr/bin/as` and the existing TinyTeX 2026 installation; the exact command then passed unchanged.
 
 ## Authentication Gates
 
@@ -170,18 +170,17 @@ None.
 
 ## User Setup Required
 
-A compatible build environment is required before Plan 01-11 can complete. The final command must be rerun unchanged and exit zero; no additional maintainer decision is authorized or needed.
+None. The host build environment was repaired outside the repository; no additional approval or repository configuration is required for this plan.
 
 ## Next Phase Readiness
 
-- Historical override decisions are fully recorded and ready for phase re-verification once the package integrity gate passes.
-- Plan 01-11 remains halted at Task 2, so Phase 01 gap execution is not complete.
+- Historical override decisions are fully recorded and the package integrity gate passes; Plan 01-11 and Phase 01 gap execution are complete.
 - Public release remains intentionally blocked by the dependency compatibility audit and unresolved attribution identity regardless of the package-check environment.
 
 ---
 *Phase: 01-provenance-and-release-boundary*
-*Halted: 2026-08-27*
+*Completed: 2026-08-27*
 
 ## Self-Check: PASSED
 
-All three claimed files exist and both Plan 01-11 task commits resolve in Git history.
+All three claimed files exist, both Plan 01-11 task commits resolve in Git history, the decision/override assertion passes, and the exact package command exits zero.
