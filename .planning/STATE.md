@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 01
 current_phase_name: Provenance and Release Boundary
 status: executing
-stopped_at: Completed 01-10-PLAN.md
-last_updated: "2026-08-27T10:58:17.982Z"
+stopped_at: Halted 01-11-PLAN.md at final package check
+last_updated: "2026-08-27T12:10:15.760Z"
 last_activity: 2026-08-27
-last_activity_desc: Completed Plan 01-10 enforceable clean-room evidence
-state_head: 3eb9964f59413d5036c117a406a0d8bfa225f5fe
+last_activity_desc: Recorded Plan 01-11 overrides; final package check blocked
+state_head: af5ddd31a334be59059734b9e06dbb3684cbb006
 progress:
   total_phases: 7
   completed_phases: 0
@@ -28,10 +28,10 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 
 ## Current Position
 
-Phase: 01 (Provenance and Release Boundary) — READY TO EXECUTE
+Phase: 01 (Provenance and Release Boundary) — BLOCKED
 Plan: 11 of 11
-Status: Ready to execute
-Last activity: 2026-08-27 — Completed Plan 01-10 enforceable clean-room evidence
+Status: Blocked at Plan 01-11 final package check
+Last activity: 2026-08-27 — Recorded Plan 01-11 overrides; final package check blocked
 
 Progress: [█████████░] 91%
 
@@ -113,6 +113,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 01]: Runnable clean-room evidence uses the fixed rscript-cleanroom-v1 command contract and an exact one-row DCF result schema.
 - [Phase 01]: Clean-room coverage clears inherited expression only when every declared key maps to a new-independent provenance row in the integrated graph.
 - [Phase 01]: Canonical rights and provenance evidence remain unchanged, preserving both intentional release blockers.
+- [Phase 01]: Accepted the superseded Plan 01-01 blocked-rights marker deviation; accepted_by=David Zenz.
+- [Phase 01]: Accepted the superseded Plan 01-02 request-posting deviation; accepted_by=David Zenz.
+- [Phase 01]: Accepted the historical D-03 sequential-execution deviation; accepted_by=David Zenz.
 
 ### Pending Todos
 
@@ -123,6 +126,7 @@ None yet.
 - Release remains intentionally blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING until the package dependency audit establishes a final compatible License.
 - Release remains intentionally blocked by ATTRIBUTION_IDENTITY_UNRESOLVED until the Git alias receives a reviewed attribution disposition.
 - The initial GEModelR name report is approved, but a fresh release-kind check remains required immediately before release.
+- Plan 01-11 final rtk R CMD check . is blocked: Linuxbrew binutils require GLIBC 2.33/2.34/2.38 symbols unavailable on Debian 10; Phase 01 gap execution remains incomplete.
 
 ## Deferred Items
 
@@ -134,6 +138,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-27T10:58:17.966Z
-Stopped at: Completed 01-10-PLAN.md
-Resume file: None
+Last session: 2026-08-27T12:10:15.698Z
+Stopped at: Halted 01-11-PLAN.md at final package check
+Resume file: .planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md
