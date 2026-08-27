@@ -44,6 +44,55 @@ release_gate_single_markers <- function(lines, fields) {
   values
 }
 
+release_gate_resolve_evidence_path <- function(root, relative_path) {
+  if (!is.character(relative_path) || length(relative_path) != 1L ||
+      is.na(relative_path) || !nzchar(trimws(relative_path)) ||
+      grepl("[\r\n]", relative_path)) {
+    return(NULL)
+  }
+  normalizedRelative <- gsub("\\\\", "/", relative_path)
+  components <- strsplit(normalizedRelative, "/", fixed = TRUE)[[1L]]
+  if (startsWith(normalizedRelative, "/") ||
+      grepl("^[A-Za-z]:", normalizedRelative) ||
+      any(components %in% c("", ".", ".."))) {
+    return(NULL)
+  }
+  rootPath <- tryCatch(
+    normalizePath(root, winslash = "/", mustWork = TRUE),
+    error = function(error) NULL
+  )
+  candidate <- do.call(file.path, as.list(c(rootPath, components)))
+  if (is.null(rootPath) || !file.exists(candidate) || dir.exists(candidate) ||
+      !isTRUE(file_test("-f", candidate))) {
+    return(NULL)
+  }
+  info <- file.info(candidate)
+  if (is.na(info[["size"]][[1L]]) || info[["size"]][[1L]] <= 0L) {
+    return(NULL)
+  }
+  resolved <- tryCatch(
+    normalizePath(candidate, winslash = "/", mustWork = TRUE),
+    error = function(error) NULL
+  )
+  if (is.null(resolved) || !startsWith(resolved, paste0(rootPath, "/"))) {
+    return(NULL)
+  }
+  resolved
+}
+
+release_gate_verify_evidence_file <- function(
+    root, relative_path, expected_md5) {
+  if (!is.character(expected_md5) || length(expected_md5) != 1L ||
+      is.na(expected_md5) || !grepl("^[0-9a-f]{32}$", expected_md5)) {
+    return(NULL)
+  }
+  path <- release_gate_resolve_evidence_path(root, relative_path)
+  if (is.null(path)) return(NULL)
+  actual <- unname(tools::md5sum(path)[[1L]])
+  if (!identical(actual, expected_md5)) return(NULL)
+  path
+}
+
 release_gate_cleanroom_failure <- function(reason, parsePass,
                                            intentionalBlockers) {
   release_gate_result(
@@ -78,7 +127,7 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
   if (!identical(protocolValues[["Cleanroom-Review-Status"]], "approved")) {
     return(fail("CLEANROOM_REVIEW_INCOMPLETE"))
   }
-  if (!identical(protocolValues[["Cleanroom-Protocol-Version"]], "1") ||
+  if (!identical(protocolValues[["Cleanroom-Protocol-Version"]], "2") ||
       !identical(protocolValues[["Cleanroom-Coverage"]], "complete")) {
     return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
   }
@@ -110,9 +159,18 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
     "invariants", "compatibility_example", "specification_author",
     "specification_attestation", "implementer", "implementer_eligibility",
     "implementer_source_access", "implementer_attestation", "reviewer",
-    "reviewer_attestation", "behavior_test", "behavior_test_status",
-    "public_standard", "redistributable_fixture",
+    "reviewer_attestation", "replacement_source", "replacement_source_md5",
+    "behavior_test", "behavior_test_md5", "public_standard_evidence",
+    "public_standard_evidence_md5", "redistributable_fixture", "fixture_md5",
+    "independent_result", "independent_result_md5",
     "provenance_classification"
+  )
+  evidenceFields <- c(
+    replacement_source = "replacement_source_md5",
+    behavior_test = "behavior_test_md5",
+    public_standard_evidence = "public_standard_evidence_md5",
+    redistributable_fixture = "fixture_md5",
+    independent_result = "independent_result_md5"
   )
   components <- vector("list", length(specificationFiles))
   for (index in seq_along(specificationFiles)) {
@@ -151,25 +209,32 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
         values[["reviewer_attestation"]],
         "independent-review-complete"
       ) &&
-      identical(values[["behavior_test_status"]], "pass") &&
-      startsWith(values[["public_standard"]], "public:") &&
-      startsWith(
-        values[["redistributable_fixture"]], "redistributable:"
-      ) &&
       identical(
         values[["provenance_classification"]], "new-independent"
       )
     if (!evidenceComplete) {
       return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
     }
-    components[[index]] <- values
+
+    resolved <- vapply(names(evidenceFields), function(field) {
+      path <- release_gate_verify_evidence_file(
+        root, values[[field]], values[[evidenceFields[[field]]]]
+      )
+      if (is.null(path)) "" else path
+    }, character(1))
+    if (any(!nzchar(resolved)) || anyDuplicated(resolved)) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    components[[index]] <- list(values = values, paths = resolved)
   }
 
   componentIds <- vapply(
-    components, `[[`, character(1), "component_id"
+    components, function(component) component$values[["component_id"]],
+    character(1)
   )
   provenanceKeys <- vapply(
-    components, `[[`, character(1), "provenance_key"
+    components, function(component) component$values[["provenance_key"]],
+    character(1)
   )
   coverageComplete <- !anyDuplicated(componentIds) &&
     !anyDuplicated(provenanceKeys) &&
@@ -1627,8 +1692,59 @@ release_gate_write_self_fixture <- function(root, status,
   ), file.path(root, "docs", "release", "RELEASE-GATES.md"))
   if (!is.null(cleanroomReview)) {
     dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE)
+    relative <- c(
+      replacement_source = "cleanroom/self/source.R",
+      behavior_test = "cleanroom/self/test.R",
+      public_standard_evidence = "cleanroom/self/standard.md",
+      redistributable_fixture = "cleanroom/self/fixture.dcf",
+      independent_result = "cleanroom/self/result.dcf"
+    )
+    absolute <- setNames(file.path(root, unname(relative)), names(relative))
+    invisible(lapply(
+      dirname(absolute), dir.create, recursive = TRUE, showWarnings = FALSE
+    ))
     writeLines(c(
-      "Cleanroom-Protocol-Version: 1",
+      "cleanroom_self = function(value) {",
+      "  value * 2",
+      "}"
+    ), absolute[["replacement_source"]], useBytes = TRUE)
+    writeLines(c(
+      "args = commandArgs(trailingOnly = TRUE)",
+      "if (!identical(args[c(1L, 3L)], c(\"--source\", \"--fixture\"))) stop(\"arguments\")",
+      "environment = new.env(parent = baseenv())",
+      "sys.source(args[[2L]], envir = environment)",
+      "fixture = read.dcf(args[[4L]])",
+      "stopifnot(identical(environment$cleanroom_self(as.numeric(fixture[1L, \"Input\"])), as.numeric(fixture[1L, \"Expected\"])))"
+    ), absolute[["behavior_test"]], useBytes = TRUE)
+    writeLines(c("Input: 2", "Expected: 4", "License: CC0-1.0"),
+               absolute[["redistributable_fixture"]], useBytes = TRUE)
+    writeLines("Public arithmetic behavior evidence.",
+               absolute[["public_standard_evidence"]], useBytes = TRUE)
+    hashes <- unname(tools::md5sum(absolute[c(
+      "replacement_source", "behavior_test", "public_standard_evidence",
+      "redistributable_fixture"
+    )]))
+    names(hashes) <- c(
+      "replacement_source_md5", "behavior_test_md5",
+      "public_standard_evidence_md5", "fixture_md5"
+    )
+    write.dcf(matrix(c(
+      "example-component", "R/example.R::example",
+      hashes[["replacement_source_md5"]], hashes[["behavior_test_md5"]],
+      hashes[["fixture_md5"]], hashes[["public_standard_evidence_md5"]],
+      "rscript-cleanroom-v1", "0", "self-test-result-producer",
+      "2026-08-25T00:00:00Z", "self-test-independent-reviewer",
+      "2026-08-25", "pass"
+    ), nrow = 1L, dimnames = list(NULL, c(
+      "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
+      "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",
+      "Test-Command-ID", "Exit-Status", "Result-Producer",
+      "Produced-At-UTC", "Reviewer", "Review-Date", "Result-Status"
+    ))), absolute[["independent_result"]])
+    resultHash <- release_gate_file_hash(absolute[["independent_result"]])
+
+    writeLines(c(
+      "Cleanroom-Protocol-Version: 2",
       "Cleanroom-Coverage: complete",
       paste0("Cleanroom-Review-Status: ", cleanroomReview),
       "Inherited-Provenance-Key: R/example.R::example"
@@ -1640,7 +1756,7 @@ release_gate_write_self_fixture <- function(root, status,
       "outputs: numeric scalar y",
       "errors: non-numeric input is rejected",
       "invariants: output length equals input length",
-      "compatibility_example: x=1 produces y=1",
+      "compatibility_example: x=2 produces y=4",
       "specification_author: self-test-specification-author",
       "specification_attestation: behavior-only-no-inherited-expression",
       "implementer: self-test-independent-implementer",
@@ -1649,10 +1765,16 @@ release_gate_write_self_fixture <- function(root, status,
       "implementer_attestation: no-inherited-source-access",
       "reviewer: self-test-independent-reviewer",
       "reviewer_attestation: independent-review-complete",
-      "behavior_test: self-test#observable-contract",
-      "behavior_test_status: pass",
-      "public_standard: public:documented-R-semantics",
-      "redistributable_fixture: redistributable:synthetic-example",
+      paste0("replacement_source: ", relative[["replacement_source"]]),
+      paste0("replacement_source_md5: ", hashes[["replacement_source_md5"]]),
+      paste0("behavior_test: ", relative[["behavior_test"]]),
+      paste0("behavior_test_md5: ", hashes[["behavior_test_md5"]]),
+      paste0("public_standard_evidence: ", relative[["public_standard_evidence"]]),
+      paste0("public_standard_evidence_md5: ", hashes[["public_standard_evidence_md5"]]),
+      paste0("redistributable_fixture: ", relative[["redistributable_fixture"]]),
+      paste0("fixture_md5: ", hashes[["fixture_md5"]]),
+      paste0("independent_result: ", relative[["independent_result"]]),
+      paste0("independent_result_md5: ", resultHash),
       "provenance_classification: new-independent"
     ), file.path(root, "specs", "cleanroom", "example-component.md"))
   }

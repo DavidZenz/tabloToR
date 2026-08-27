@@ -471,7 +471,8 @@ cleanroomFixturePaths <- function(root) {
     redistributable_fixture = "cleanroom/fixtures/example.dcf",
     independent_result = "cleanroom/results/example-result.dcf"
   )
-  list(relative = relative, absolute = file.path(root, relative))
+  absolute <- setNames(file.path(root, unname(relative)), names(relative))
+  list(relative = relative, absolute = absolute)
 }
 
 writeCleanroomComponentRecord <- function(root, values) {

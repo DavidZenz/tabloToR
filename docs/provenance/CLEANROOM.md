@@ -1,10 +1,10 @@
 # Clean-room replacement protocol
 
-Cleanroom-Protocol-Version: 1
+Cleanroom-Protocol-Version: 2
 Cleanroom-Coverage: not-activated
 Cleanroom-Review-Status: not-reviewed
 
-## Status and purpose
+## Status and governing decision
 
 This document defines the D-02 and D-04 fallback for replacing inherited
 expression. It does not assert that replacement work has started or that any
@@ -12,119 +12,94 @@ component is independently implemented. Activating the protocol requires a
 reviewed decision and changes `Rights-Status` to `clean-room-required`, never
 directly to `cleared`.
 
-Release eligibility requires every inherited provenance key to be represented
-by complete component evidence under this protocol. One missing, duplicate, or
-unreviewed key keeps public distribution blocked.
+Assumption delta: no change. The primary noun remains the rights basis.
+Clean-room replacement is an alternative evidentiary route for inherited
+expression, not a generalized identity, attribution, or data-model transition.
+It cannot clear an unrelated release gate or authorize publication.
+
+Release eligibility requires complete evidence for every inherited provenance
+key. Zero inherited keys, zero component specifications, or one missing,
+duplicate, stale, or unreviewed key is incomplete rather than vacuously
+complete.
 
 ## Distinct roles
 
-Each component has three named, distinct people:
+Each component has a behavior-only specification author, an independently
+eligible implementer, and an independent reviewer. The independently generated
+result also names its producer. The specification author, implementer, reviewer,
+and result producer must be distinct for the same component. Names or stable
+identities are evidence labels; they do not by themselves prove independence.
 
-1. The specification author records only observable behavior. This person may
-   study existing user documentation, public standards, and black-box results.
-   If they have seen inherited source, they must declare that access and must
-   not transmit source expression, source-derived structure, or implementation
-   hints to the implementer.
-2. The implementer writes the replacement from the approved behavior-only
-   specification. An implementer who has inspected inherited source for that
-   component is ineligible. Eligibility is component-specific and must be
-   declared before implementation begins.
-3. The reviewer is independent of both authors. The reviewer verifies role
-   separation, source-access declarations, admissible inputs, behavior tests,
-   provenance linkage, and absence of inherited expression. Review feedback
-   must not expose inherited implementation details to the implementer.
-
-No person may occupy more than one of these roles for the same component.
-Names or stable public identities are evidence labels; they do not by
-themselves prove independence.
-
-## Source-access declarations
-
-Before work starts, the specification author, implementer, and reviewer record
-whether they accessed inherited source for the component. The implementer must
-record `implementer_source_access: none` and attest
-`no-inherited-source-access`. Prior exposure cannot be cured by forgetting,
-waiting, or relying on a different checkout.
-
-If source exposure is discovered later, the evidence returns
-`CLEANROOM_IMPLEMENTER_INELIGIBLE`; the implementation cannot be accepted as
-independent and must be replaced by a new eligible implementer.
+The implementer records `implementer_source_access: none` and
+`no-inherited-source-access`. Any inherited-source exposure returns
+`CLEANROOM_IMPLEMENTER_INELIGIBLE`. Review feedback must never transmit
+inherited expression, source-derived structure, or implementation hints.
 
 ## Admissible inputs
 
-The implementer may receive only:
+The implementer may receive only the approved behavior specification, public
+standards, and redistributable synthetic or reduced fixtures. Inherited source
+excerpts, source-derived pseudocode or structural descriptions, private
+correspondence, proprietary fixtures, credentials, private model inputs, and
+large result artifacts are prohibited.
 
-- the approved component specification under `specs/cleanroom/`;
-- public standards identified with a stable citation and the `public:` prefix;
-- redistributable synthetic or reduced fixtures identified with the
-  `redistributable:` prefix and their redistribution basis;
-- black-box expected inputs, outputs, and errors that do not reveal inherited
-  expression or proprietary data.
+## Root-confined artifact evidence
 
-Inherited source excerpts, pseudocode or structural descriptions derived from
-inherited source, private correspondence, proprietary fixtures, credentials,
-and non-redistributable model data are forbidden implementer inputs.
+Every component record under `specs/cleanroom/` identifies five distinct files:
 
-## Required component evidence
+- replacement source and `replacement_source_md5`;
+- runnable behavior test and `behavior_test_md5`;
+- public-standard evidence and `public_standard_evidence_md5`;
+- redistributable fixture and `fixture_md5`; and
+- independent result and `independent_result_md5`.
 
-Each component specification must contain every field defined in
-`specs/cleanroom/README.md`, exactly once. Acceptance requires:
+Every path is a non-empty repository-relative path. The checker rejects
+absolute paths, drive-qualified paths, empty/dot/parent segments, missing files,
+directories, non-regular files, empty files, symlink escape after real-path
+resolution, duplicate artifact reuse, malformed hashes, and byte drift. Each
+hash is the exact lowercase 32-character MD5 of the resolved file. Diagnostics
+return only stable reason codes and never external paths or file contents.
 
-- a unique `component_id` and exact `provenance_key`;
-- complete inputs, outputs, errors, invariants, and compatibility example;
-- three distinct roles;
-- behavior-only specification, no-source-access implementation, and independent
-  review attestations;
-- an eligible implementer with no inherited-source access;
-- a named passing behavior test;
-- public-standard and redistributable-fixture evidence;
-- `provenance_classification: new-independent`; and
-- an approved protocol-level review after exact coverage is established.
+## Runnable test and independent result
 
-The protocol record lists every inherited row as
-`Inherited-Provenance-Key: PATH::SYMBOL`. Component specifications must cover
-that set exactly once. A `new-independent` provenance row is accepted only
-after its component evidence passes and the complete inherited-key set is
-covered. Classification never changes merely because a file was rewritten.
+The behavior test is invoked only through the R installation's fixed `Rscript`
+executable with `--vanilla`, the resolved test path, and fixed named
+`--source`/`--fixture` arguments. No component supplies a shell command. A
+nonzero status, subprocess error, or absent fresh pass returns
+`CLEANROOM_EVIDENCE_INCOMPLETE`.
 
-## Independent review
+The independent result is a single-record DCF artifact. It binds the component
+and provenance key; source, test, fixture, and public-standard hashes; command
+identity `rscript-cleanroom-v1`; exit status zero; result status `pass`; result
+producer; produced-at UTC timestamp; reviewer; and review date. All dates must
+round-trip exactly. A stale, malformed, self-produced, hash/key/command/status
+mismatch is incomplete evidence, or implementer ineligibility when the collision
+shows the implementer produced the result.
 
-The reviewer checks the specification and implementation histories, confirms
-the role identities are distinct, validates all source-access declarations,
-runs the behavior tests, and checks that fixtures are redistributable. The
-reviewer also compares the complete provenance-key oracle with component
-specifications and records the review outcome without exposing inherited
-expression in public evidence.
+## Coverage and integrated release boundary
 
-`Cleanroom-Coverage: complete` means exact one-to-one key coverage, not an
-estimate. `Cleanroom-Review-Status: approved` means the independent review is
-complete. Both markers are necessary but insufficient without valid component
-records.
+`Cleanroom-Coverage: complete` means exact one-to-one equality between the
+`Inherited-Provenance-Key` set and component records. Before synthetic release
+readiness, every covered ledger row must exist, have classification
+`new-independent`, and match the validated replacement-source hash. The full
+integrated source, attribution, name, governance, repository, description, and
+license evidence graph must also pass.
+
+Temporary synthetic fixtures may prove the positive route. They never update
+canonical RIGHTS or PROVENANCE evidence. The checked-in repository therefore
+retains `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
+`ATTRIBUTION_IDENTITY_UNRESOLVED` until separately reviewed evidence resolves
+them.
 
 ## Fail-closed outcomes
 
 - `CLEANROOM_IMPLEMENTER_INELIGIBLE` means an implementer is source-exposed or
-  otherwise declared ineligible.
-- `CLEANROOM_EVIDENCE_INCOMPLETE` means a required field, distinct role,
-  attestation, passing behavior test, admissible input, provenance link, or
-  exact coverage record is missing or contradictory.
+  occupies an incompatible independent role.
+- `CLEANROOM_EVIDENCE_INCOMPLETE` means a required field, artifact, hash,
+  runnable pass, result binding, role, attestation, or exact coverage record is
+  absent or contradictory.
 - `CLEANROOM_REVIEW_INCOMPLETE` means protocol-level independent approval is
   absent.
 
-These outcomes keep `release_ready=false`. Complete synthetic evidence may
-exercise release readiness in temporary tests, but cannot change the canonical
-rights record or authorize publication.
-
-## Activation sequence
-
-1. Review and record the decision to activate the fallback.
-2. Freeze the inherited provenance-key oracle.
-3. Assign a specification author and write behavior-only specifications.
-4. Establish implementer eligibility before sharing any specification.
-5. Implement and run the named behavior tests using admissible inputs only.
-6. Obtain independent review for every component and exact total coverage.
-7. Change provenance rows to `new-independent` only when their evidence passes.
-8. Re-run the release gate; any uncovered inherited key remains blocked.
-
-Until all steps complete, this document is a process contract rather than a
-redistribution grant.
+All outcomes keep `release_ready=false` unless every clean-room and integrated
+predicate passes.
