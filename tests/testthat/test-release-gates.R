@@ -250,7 +250,7 @@ test_that("the checked-in repository is positively recognized as blocked", {
   )
   expect_identical(
     unname(result$parse_status),
-    rep("pass", 10L)
+    rep("pass", 12L)
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
@@ -995,7 +995,8 @@ writeIntegratedSourceEvidence = function(root) {
   expected = inventory[c("path", "symbol")]
   ledger = tool$provenance_build_ledger(inventory)
   ledger$classification = "new-independent"
-  ledger$copyright_holder = "Fixture Author"
+  ledger$contributors = "David Zenz"
+  ledger$copyright_holder = "David Zenz"
   ledger$license_basis = "fixture-original-code-license"
   ledger$evidence = "synthetic reviewed fixture"
   ledger$reviewer = "Fixture Reviewer"
@@ -1016,6 +1017,7 @@ writeIntegratedSourceEvidence = function(root) {
     "7e063c65a19713857ed13023f8b77dad45b15c90"
   ledger$upstream_path[inherited] = ledger$path[inherited]
   ledger$copyright_holder[inherited] = "Maros Ivanic"
+  ledger$contributors[inherited] = "Maros Ivanic"
   ledger$license_basis[inherited] = "public-domain-cc0"
   ledger$status[inherited] = "reviewed-cleared"
 
@@ -1226,12 +1228,7 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   )
   writeLines(nameLines, namePath, useBytes = TRUE)
 
-  descriptionPath = file.path(root, "DESCRIPTION")
-  description = readLines(descriptionPath, warn = FALSE, encoding = "UTF-8")
-  description[grepl("^License:", description)] =
-    "License: Apache License (>= 2.0)"
-  writeLines(description, descriptionPath, useBytes = TRUE)
-
+  writeReviewedLicenseDecisionFixture(root)
   attributionPath = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
   attribution = readLines(attributionPath, warn = FALSE, encoding = "UTF-8")
   attribution = attribution[!grepl(
@@ -1255,7 +1252,7 @@ test_that("integrated release evidence can prove a synthetic ready state", {
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
-  expect_identical(unname(result$parse_status), rep("pass", 10L))
+  expect_identical(unname(result$parse_status), rep("pass", 12L))
 })
 
 
@@ -1385,6 +1382,8 @@ test_that("all six attribution destinations retain exact reviewed evidence", {
       key = paste(ledger$path, ledger$symbol, sep = "::")
       ledger$contributors[key == "R/GEModel.R::GEModel$loadTablo"] =
         "Unreviewed Person"
+      ledger$copyright_holder[
+        key == "R/GEModel.R::GEModel$loadTablo"] = "Unreviewed Person"
       rewriteIntegratedLedger(root, ledger)
     },
     NEWS = function(root) {

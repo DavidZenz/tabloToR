@@ -6,9 +6,11 @@ Rights-Gate-Status: cleared
 Intentional-Blockers: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED
 
 The executable source of truth is `tools/check_release_gates.R`. It evaluates
-rights, accepted public-domain evidence, complete symbol-level provenance,
-reviewed attribution, point-in-time name evidence, approved governance, and the
-canonical repository boundary as one fail-closed decision.
+the exact integrated evidence version before any legacy result, then validates
+rights, accepted public-domain evidence, freshly extracted source and Git
+provenance, every public attribution destination, strict name evidence, the
+reviewed package-license decision, approved governance, and the canonical
+repository boundary as one fail-closed decision.
 
 The checked-in repository is intentionally blocked by exactly two reviewed
 facts. The package license remains unresolved until the LinkingTo, vendored, and
@@ -18,14 +20,17 @@ Neither blocker authorizes an external repository or publication action.
 
 | Gate | Evidence | Passing predicate | Blocking result |
 | --- | --- | --- | --- |
+| Integrated contract | `RIGHTS.md` | Exactly one `Integrated-Evidence-Version: 1` before any base eligibility is consulted | `INTEGRATED_EVIDENCE_VERSION_INVALID` |
 | Rights and policy parity | `RIGHTS.md`, this file | Cleared scoped basis, exact upstream identity, complete provenance marker, and identical intentional blockers | `RIGHTS_RELEASE_STATUS_MISMATCH` or `INTENTIONAL_BLOCKERS_MISMATCH` |
 | Public-domain response | `UPSTREAM-RESPONSE.md`, `RIGHTS.md` | Exact URL, owner association, statement, scope, and whole-document hash | `PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE` or `PUBLIC_DOMAIN_EVIDENCE_HASH_MISMATCH` |
-| Provenance inventory | `EXPECTED-KEYS.csv`, `PROVENANCE.csv` | Exact 17-column schema, one reviewed row per expected symbol, no missing or duplicate keys | `PROVENANCE_COLUMNS_MISSING`, `PROVENANCE_KEY_MISMATCH`, `PROVENANCE_DUPLICATE_KEY`, or `PROVENANCE_ROW_BLOCKING` |
-| Attribution contract | `ATTRIBUTION.md`, provenance inventory | Snapshot hash and row count match, roles are reviewed, evidence keys exist, and blocking facts are explicit | `ATTRIBUTION_EVIDENCE_MISSING`, `ATTRIBUTION_ROLE_UNREVIEWED`, or `ATTRIBUTION_DESTINATION_MISMATCH` |
-| Successor name | `NAME-CHECK.md` | Six approved public sources are available with no exact collision; release readiness additionally needs a fresh release-kind report | `NAME_SOURCE_MISSING`, `NAME_SOURCE_UNAVAILABLE`, `NAME_EXACT_COLLISION`, `NAME_REPORT_UNSIGNED`, or `NAME_REPORT_STALE` |
+| Current-source provenance | `tools/provenance_inventory.R`, `EXPECTED-KEYS.csv`, `PROVENANCE.csv`, evaluated `R/` and `src/` | Named helpers load in isolation; fresh nonempty source extraction has Git evidence; exact keys, expression hashes, classifications, review fields, and third-party bases pass the shared validator | A named `PROVENANCE_*` source, key, hash, tool, or row reason |
+| Attribution contract | `ATTRIBUTION.md`, provenance inventory | Snapshot hash and row count match; roles are limited to `aut`/`ctb`/`cph`/`cre`; every role and blocker key has reviewed provenance evidence | `ATTRIBUTION_EVIDENCE_MISSING`, `ATTRIBUTION_ROLE_UNREVIEWED`, or `ATTRIBUTION_BLOCKER_INVALID` |
+| Attribution destinations | `DESCRIPTION`, `README.md`, `inst/CITATION`, `PROVENANCE.csv`, `CONTRIBUTORS.md`, `NEWS.md` | All six files exist and retain the exact reviewed people, roles, and evidence-key set | `ATTRIBUTION_DESTINATION_MISSING` or `ATTRIBUTION_DESTINATION_MISMATCH` |
+| Successor name | `NAME-CHECK.md`, `tools/check_name_availability.R` | The strict shared report verifier accepts version, timestamp, raw hashes, detail completeness, query identity, parent signatures, and review; release readiness additionally needs a fresh release-kind report | `NAME_TOOL_LOAD_FAILED`, `NAME_REPORT_INVALID`, or `NAME_REPORT_STALE` |
 | Governance identity | `GOVERNANCE.md` | Exact approved maintainer, contact, release authority, security route, reviewer, and date | `GOVERNANCE_IDENTITY_UNAPPROVED` or `GOVERNANCE_SECURITY_ROUTE_MISSING` |
 | Repository boundary | `REPOSITORY.md` | Exact owner/name/URL/issues pair, private-development boundary, and every external action remains not authorized | `REPOSITORY_URL_MISMATCH`, `REPOSITORY_ISSUES_MISMATCH`, or `REPOSITORY_BOUNDARY_INVALID` |
-| Package metadata | `DESCRIPTION`, governance/repository evidence | Package name stays `tabloToR`; approved maintainer, canonical URL, and issues match; unresolved License is allowed only with the dependency blocker | `DESCRIPTION_IDENTITY_MISMATCH`, `DESCRIPTION_URL_MISMATCH`, `DESCRIPTION_ISSUES_MISMATCH`, or a license reason |
+| Package metadata | `DESCRIPTION`, governance/repository evidence | Package name stays `tabloToR`; approved maintainer, canonical URL, and issues match | `DESCRIPTION_IDENTITY_MISMATCH`, `DESCRIPTION_URL_MISMATCH`, or `DESCRIPTION_ISSUES_MISMATCH` |
+| Package license | `LICENSE-DECISION.md`, `DESCRIPTION`, reviewed dependency audit | Pending markers exactly match the unresolved field and dependency blocker; a reviewed transition has a safe under-root audit path, exact MD5, reviewer/date, exact DESCRIPTION equality, and an R-valid license expression | A named `LICENSE_*` or `DESCRIPTION_LICENSE_MISMATCH` reason |
 | Sensitive evidence | Release and provenance evidence trees | No credential, private-correspondence, proprietary-model, or giant-result indicator | `SENSITIVE_EVIDENCE_CLASS` |
 
 ## Superseded request checkpoint

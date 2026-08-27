@@ -859,6 +859,18 @@ release_gate_validate_current_source = function(root, parseStatus) {
   )
 }
 
+release_gate_review_date_valid = function(values) {
+  vapply(values, function(value) {
+    if (!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value)) {
+      return(FALSE)
+    }
+    parsed = as.Date(value, format = "%Y-%m-%d")
+    !is.na(parsed) && identical(
+      format(parsed, "%Y-%m-%d"), value
+    )
+  }, logical(1))
+}
+
 release_gate_validate_attribution = function(
     root, rightsValues, provenance, parseStatus) {
   path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
@@ -896,7 +908,7 @@ release_gate_validate_attribution = function(
   ) && identical(
     values[["Upstream-Commit"]], rightsValues[["Upstream-Commit"]]
   ) && identical(values[["Reviewer"]], "David Zenz") &&
-    grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", values[["Review-Date"]])
+    release_gate_review_date_valid(values[["Review-Date"]])
   if (!metadataMatches) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_DESTINATION_MISMATCH", parseStatus, "attribution"
@@ -915,7 +927,16 @@ release_gate_validate_attribution = function(
   if (is.null(roles) || is.null(blockers) ||
       !identical(names(roles), roleColumns) ||
       !identical(names(blockers), blockerColumns) ||
+      !nrow(roles) ||
+      any(!nzchar(as.matrix(roles))) ||
+      any(!nzchar(as.matrix(blockers))) ||
+      any(!roles$role %in% c("aut", "ctb", "cph", "cre")) ||
       any(roles$status != "reviewed") ||
+      any(roles$reviewer != "David Zenz") ||
+      any(!release_gate_review_date_valid(roles$review_date)) ||
+      any(blockers$status != "blocking") ||
+      any(blockers$reviewer != "David Zenz") ||
+      any(!release_gate_review_date_valid(blockers$review_date)) ||
       !all(c("David Zenz", "Maros Ivanic") %in% roles[["person/entity"]])) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_ROLE_UNREVIEWED", parseStatus, "attribution"
@@ -929,6 +950,11 @@ release_gate_validate_attribution = function(
       "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
     )))
   }
+  if (any(!blockers$evidence_key %in% provenance$artifact_keys)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
+    )))
+  }
   blockingRows = blockers$status == "blocking"
   blockingReasons = blockers$reason[blockingRows]
   if (any(!nzchar(blockingReasons)) || anyDuplicated(blockingReasons)) {
@@ -937,7 +963,140 @@ release_gate_validate_attribution = function(
     )))
   }
   parseStatus[["attribution"]] = "pass"
-  list(parse_status = parseStatus, blockers = blockingReasons)
+  list(
+    parse_status = parseStatus, blockers = blockingReasons, roles = roles
+  )
+}
+
+release_gate_attribution_destination_paths = function(root) {
+  c(
+    DESCRIPTION = file.path(root, "DESCRIPTION"),
+    README = file.path(root, "README.md"),
+    CITATION = file.path(root, "inst", "CITATION"),
+    CONTRIBUTORS = file.path(root, "CONTRIBUTORS.md"),
+    PROVENANCE = file.path(
+      root, "docs", "provenance", "PROVENANCE.csv"
+    ),
+    NEWS = file.path(root, "NEWS.md")
+  )
+}
+
+release_gate_validate_attribution_destination_presence = function(
+    root, parseStatus) {
+  paths = release_gate_attribution_destination_paths(root)
+  if (!all(file.exists(paths))) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_DESTINATION_MISSING",
+      parseStatus, "attribution_destinations"
+    )))
+  }
+  list(parse_status = parseStatus, paths = paths)
+}
+
+release_gate_attribution_role_markers = function(lines) {
+  values = release_gate_marker_values(lines, "Attribution-Role")
+  if (!length(values)) return(NULL)
+  parts = strsplit(values, "|", fixed = TRUE)
+  if (any(lengths(parts) != 2L)) return(NULL)
+  people = vapply(parts, `[[`, character(1), 1L)
+  roles = lapply(parts, function(value) {
+    sort(unique(trimws(strsplit(value[[2L]], ",", fixed = TRUE)[[1L]])))
+  })
+  if (any(!nzchar(people)) || anyDuplicated(people) ||
+      any(!lengths(roles))) {
+    return(NULL)
+  }
+  names(roles) = people
+  roles
+}
+
+release_gate_validate_attribution_destinations = function(
+    root, attribution, provenance, parseStatus) {
+  presence = release_gate_validate_attribution_destination_presence(
+    root, parseStatus
+  )
+  if (!is.null(presence$error)) return(presence)
+  paths = presence$paths
+  lines = lapply(paths, release_gate_read_lines)
+  if (any(vapply(lines, is.null, logical(1)))) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_DESTINATION_MISSING",
+      parseStatus, "attribution_destinations"
+    )))
+  }
+
+  evidence = unique(trimws(unlist(strsplit(
+    attribution$roles$evidence_keys, ";", fixed = TRUE
+  ))))
+  people = unique(attribution$roles[["person/entity"]])
+  content = vapply(lines, paste, collapse = "\n", character(1))
+  content[["PROVENANCE"]] = paste(
+    paste(
+      provenance$inventory$path, provenance$inventory$symbol, sep = "::"
+    ),
+    provenance$inventory$contributors,
+    provenance$inventory$copyright_holder,
+    provenance$inventory$license_basis,
+    collapse = "\n"
+  )
+  complete = vapply(content, function(value) {
+    all(vapply(evidence, grepl, logical(1), x = value, fixed = TRUE)) &&
+      all(vapply(people, grepl, logical(1), x = value, fixed = TRUE))
+  }, logical(1))
+  if (!all(complete)) {
+    return(list(error = release_gate_integrated_failure(
+      "ATTRIBUTION_DESTINATION_MISMATCH",
+      parseStatus, "attribution_destinations"
+    )))
+  }
+
+  ledgerKeys = paste(
+    provenance$inventory$path, provenance$inventory$symbol, sep = "::"
+  )
+  for (index in seq_len(nrow(attribution$roles))) {
+    roleKeys = trimws(strsplit(
+      attribution$roles$evidence_keys[[index]], ";", fixed = TRUE
+    )[[1L]])
+    person = attribution$roles[["person/entity"]][[index]]
+    role = attribution$roles$role[[index]]
+    rows = match(roleKeys, ledgerKeys)
+    credited = vapply(rows, function(row) {
+      field = if (identical(role, "cph")) {
+        "copyright_holder"
+      } else {
+        "contributors"
+      }
+      grepl(person, provenance$inventory[[field]][[row]], fixed = TRUE)
+    }, logical(1))
+    if (anyNA(rows) || !all(credited)) {
+      return(list(error = release_gate_integrated_failure(
+        "ATTRIBUTION_DESTINATION_MISMATCH",
+        parseStatus, "attribution_destinations"
+      )))
+    }
+  }
+
+  expectedRoles = split(
+    attribution$roles$role, attribution$roles[["person/entity"]]
+  )
+  expectedRoles = lapply(expectedRoles, function(value) {
+    sort(unique(value))
+  })
+  for (destination in c("CONTRIBUTORS", "NEWS")) {
+    actualRoles = release_gate_attribution_role_markers(
+      lines[[destination]]
+    )
+    if (is.null(actualRoles) ||
+        !identical(actualRoles[sort(names(actualRoles))],
+                   expectedRoles[sort(names(expectedRoles))])) {
+      return(list(error = release_gate_integrated_failure(
+        "ATTRIBUTION_DESTINATION_MISMATCH",
+        parseStatus, "attribution_destinations"
+      )))
+    }
+  }
+  parseStatus[["attribution_destinations"]] = "pass"
+  list(parse_status = parseStatus)
 }
 
 
@@ -1134,13 +1293,26 @@ release_gate_evaluate = function(root = ".") {
     integrated = "pass"
   )
 
-  provenance = release_gate_validate_current_source(root, parseStatus)
+  destinationPresence =
+    release_gate_validate_attribution_destination_presence(
+      root, parseStatus
+    )
+  if (!is.null(destinationPresence$error)) {
+    return(destinationPresence$error)
+  }
+  provenance = release_gate_validate_current_source(
+    root, destinationPresence$parse_status
+  )
   if (!is.null(provenance$error)) return(provenance$error)
   attribution = release_gate_validate_attribution(
     root, rightsValues, provenance, provenance$parse_status
   )
   if (!is.null(attribution$error)) return(attribution$error)
-  nameEvidence = release_gate_validate_name(root, attribution$parse_status)
+  destinations = release_gate_validate_attribution_destinations(
+    root, attribution, provenance, attribution$parse_status
+  )
+  if (!is.null(destinations$error)) return(destinations$error)
+  nameEvidence = release_gate_validate_name(root, destinations$parse_status)
   if (!is.null(nameEvidence$error)) return(nameEvidence$error)
   governance = release_gate_validate_governance(
     root, nameEvidence$parse_status
@@ -1155,6 +1327,10 @@ release_gate_evaluate = function(root = ".") {
     repository$parse_status
   )
   if (!is.null(description$error)) return(description$error)
+  license = release_gate_validate_license_decision(
+    root, attribution$blockers, description$parse_status
+  )
+  if (!is.null(license$error)) return(license$error)
 
   rightsBlockers = release_gate_marker_values(
     rightsLines, "Unresolved-Release-Blocker"
@@ -1165,7 +1341,7 @@ release_gate_evaluate = function(root = ".") {
       !identical(rightsBlockers, blockers)) {
     return(release_gate_result(
       reason_codes = "INTENTIONAL_BLOCKERS_MISMATCH",
-      parse_status = description$parse_status,
+      parse_status = license$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
@@ -1174,14 +1350,14 @@ release_gate_evaluate = function(root = ".") {
       repository_state = "blocked",
       release_ready = FALSE,
       reason_codes = blockers,
-      parse_status = description$parse_status,
+      parse_status = license$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
   if (!release_gate_release_check_fresh(nameEvidence)) {
     return(release_gate_result(
       reason_codes = "NAME_REPORT_STALE",
-      parse_status = description$parse_status,
+      parse_status = license$parse_status,
       intentional_blockers = base$intentional_blockers
     ))
   }
@@ -1189,7 +1365,7 @@ release_gate_evaluate = function(root = ".") {
     repository_state = "eligible",
     release_ready = TRUE,
     reason_codes = character(),
-    parse_status = description$parse_status,
+    parse_status = license$parse_status,
     intentional_blockers = character()
   )
 }
@@ -1236,24 +1412,156 @@ release_gate_validate_description = function(
       "DESCRIPTION_ISSUES_MISMATCH", parseStatus, "description"
     )))
   }
-  dependencyBlocked =
-    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING" %in% blockers
-  unresolvedLicense = identical(
-    value("License"), "What license is it under?"
-  )
-  if (dependencyBlocked && !unresolvedLicense) {
-    return(list(error = release_gate_integrated_failure(
-      "DESCRIPTION_LICENSE_MISMATCH", parseStatus, "description"
-    )))
-  }
-  if (!dependencyBlocked && unresolvedLicense) {
-    return(list(error = release_gate_integrated_failure(
-      "DESCRIPTION_LICENSE_UNRESOLVED", parseStatus, "description"
-    )))
-  }
   parseStatus[["description"]] = "pass"
   list(parse_status = parseStatus)
 }
+
+release_gate_validate_license_expression = function(expression, root) {
+  if (!is.character(expression) || length(expression) != 1L ||
+      !nzchar(trimws(expression)) || grepl("[\r\n]", expression)) {
+    return(FALSE)
+  }
+  checker = tryCatch(
+    getFromNamespace(".check_package_license", "tools"),
+    error = function(error) NULL
+  )
+  if (!is.function(checker)) return(FALSE)
+  dcf = tempfile("release-gate-license-", fileext = ".dcf")
+  on.exit(unlink(dcf), add = TRUE)
+  values = matrix(
+    c("releasegatefixture", expression), nrow = 1L,
+    dimnames = list(NULL, c("Package", "License"))
+  )
+  checked = tryCatch(
+    {
+      write.dcf(values, dcf)
+      checker(dcf, dir = root)
+    },
+    error = function(error) NULL
+  )
+  !is.null(checked) && length(checked) == 0L
+}
+
+release_gate_license_review_date_valid = function(value) {
+  if (!grepl(
+    "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+    value
+  )) {
+    return(FALSE)
+  }
+  parsed = as.POSIXct(
+    value, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+  )
+  !is.na(parsed) && identical(
+    format(parsed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), value
+  )
+}
+
+release_gate_validate_license_decision = function(
+    root, blockers, parseStatus) {
+  fail = function(reason) {
+    list(error = release_gate_integrated_failure(
+      reason, parseStatus, "license"
+    ))
+  }
+  path = file.path(root, "docs", "provenance", "LICENSE-DECISION.md")
+  lines = release_gate_read_lines(path)
+  if (is.null(lines)) return(fail("LICENSE_DECISION_MISSING"))
+  fields = c(
+    "License-Decision-Version", "Decision-Status",
+    "Description-License", "Dependency-Audit-Artifact",
+    "Dependency-Audit-MD5", "Reviewer", "Review-Date-UTC"
+  )
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(fail("LICENSE_DECISION_INVALID"))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  if (any(!nzchar(trimws(values))) ||
+      !identical(values[["License-Decision-Version"]], "1")) {
+    return(fail("LICENSE_DECISION_INVALID"))
+  }
+
+  description = tryCatch(
+    read.dcf(file.path(root, "DESCRIPTION")),
+    error = function(error) NULL
+  )
+  if (is.null(description) ||
+      !"License" %in% colnames(description)) {
+    return(fail("DESCRIPTION_LICENSE_MISMATCH"))
+  }
+  descriptionLicense = unname(description[[1L, "License"]])
+  dependencyBlocked =
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING" %in% blockers
+
+  if (identical(values[["Decision-Status"]], "pending")) {
+    pending = c(
+      "License-Decision-Version" = "1",
+      "Decision-Status" = "pending",
+      "Description-License" = "What license is it under?",
+      "Dependency-Audit-Artifact" = "pending",
+      "Dependency-Audit-MD5" = "pending",
+      "Reviewer" = "pending",
+      "Review-Date-UTC" = "pending"
+    )
+    if (!identical(values, pending) ||
+        !identical(descriptionLicense, pending[["Description-License"]])) {
+      return(fail("LICENSE_DECISION_INVALID"))
+    }
+    if (!dependencyBlocked) return(fail("LICENSE_DECISION_PENDING"))
+    parseStatus[["license"]] = "pass"
+    return(list(parse_status = parseStatus, values = values))
+  }
+  if (!identical(values[["Decision-Status"]], "reviewed")) {
+    return(fail("LICENSE_DECISION_INVALID"))
+  }
+  if (dependencyBlocked) return(fail("LICENSE_BLOCKER_MISMATCH"))
+  if (identical(values[["Reviewer"]], "pending") ||
+      !nzchar(trimws(values[["Reviewer"]])) ||
+      !release_gate_license_review_date_valid(
+        values[["Review-Date-UTC"]]
+      )) {
+    return(fail("LICENSE_DECISION_UNREVIEWED"))
+  }
+  if (!identical(
+    descriptionLicense, values[["Description-License"]]
+  )) {
+    return(fail("DESCRIPTION_LICENSE_MISMATCH"))
+  }
+
+  artifact = values[["Dependency-Audit-Artifact"]]
+  normalizedArtifact = gsub("\\\\", "/", artifact)
+  components = strsplit(normalizedArtifact, "/", fixed = TRUE)[[1L]]
+  if (startsWith(normalizedArtifact, "/") ||
+      grepl("^[A-Za-z]:", normalizedArtifact) ||
+      any(components %in% c("", ".", ".."))) {
+    return(fail("LICENSE_DEPENDENCY_AUDIT_PATH_INVALID"))
+  }
+  artifactPath = file.path(root, normalizedArtifact)
+  if (!file.exists(artifactPath)) {
+    return(fail("LICENSE_DEPENDENCY_AUDIT_MISSING"))
+  }
+  rootPath = normalizePath(root, mustWork = TRUE)
+  resolvedArtifact = normalizePath(artifactPath, mustWork = TRUE)
+  if (!startsWith(
+    resolvedArtifact, paste0(rootPath, .Platform$file.sep)
+  )) {
+    return(fail("LICENSE_DEPENDENCY_AUDIT_PATH_INVALID"))
+  }
+  expectedHash = values[["Dependency-Audit-MD5"]]
+  if (!grepl("^[0-9a-f]{32}$", expectedHash) ||
+      !identical(release_gate_file_hash(resolvedArtifact), expectedHash)) {
+    return(fail("LICENSE_DEPENDENCY_AUDIT_HASH_MISMATCH"))
+  }
+  if (!release_gate_validate_license_expression(
+    descriptionLicense, rootPath
+  )) {
+    return(fail("LICENSE_EXPRESSION_INVALID"))
+  }
+  parseStatus[["license"]] = "pass"
+  list(parse_status = parseStatus, values = values)
+}
+
 release_gate_write_self_fixture <- function(root, status,
                                             includeScope = FALSE,
                                             cleanroomReview = NULL,
