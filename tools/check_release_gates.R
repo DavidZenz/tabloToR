@@ -93,6 +93,95 @@ release_gate_verify_evidence_file <- function(
   path
 }
 
+release_gate_cleanroom_timeout_seconds <- function() {
+  30L
+}
+
+release_gate_run_cleanroom_test <- function(
+    behavior_test, replacement_source, redistributable_fixture) {
+  paths <- c(behavior_test, replacement_source, redistributable_fixture)
+  if (length(paths) != 3L || any(!file.exists(paths))) return(FALSE)
+  log <- tempfile("release-gate-cleanroom-test-")
+  on.exit(unlink(log), add = TRUE)
+  arguments <- c(
+    "--vanilla", shQuote(behavior_test),
+    "--source", shQuote(replacement_source),
+    "--fixture", shQuote(redistributable_fixture)
+  )
+  status <- tryCatch(
+    suppressWarnings(system2(
+      file.path(R.home("bin"), "Rscript"), arguments,
+      stdout = log, stderr = log,
+      timeout = as.integer(release_gate_cleanroom_timeout_seconds())
+    )),
+    error = function(error) NA_integer_
+  )
+  identical(as.integer(status), 0L)
+}
+
+release_gate_cleanroom_timestamp_valid <- function(value) {
+  if (!is.character(value) || length(value) != 1L ||
+      !grepl(
+        "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
+        value
+      )) {
+    return(FALSE)
+  }
+  parsed <- as.POSIXct(
+    value, format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+  )
+  !is.na(parsed) && identical(
+    format(parsed, "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"), value
+  )
+}
+
+release_gate_cleanroom_date_valid <- function(value) {
+  if (!is.character(value) || length(value) != 1L ||
+      !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value)) {
+    return(FALSE)
+  }
+  parsed <- as.Date(value, format = "%Y-%m-%d")
+  !is.na(parsed) && identical(format(parsed, "%Y-%m-%d"), value)
+}
+
+release_gate_read_cleanroom_result <- function(path) {
+  required <- c(
+    "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
+    "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",
+    "Test-Command-ID", "Exit-Status", "Result-Producer",
+    "Produced-At-UTC", "Reviewer", "Review-Date", "Result-Status"
+  )
+  value <- tryCatch(
+    read.dcf(path),
+    error = function(error) NULL
+  )
+  if (is.null(value) || nrow(value) != 1L ||
+      !identical(colnames(value), required)) {
+    return(NULL)
+  }
+  result <- unname(value[1L, ])
+  names(result) <- required
+  if (any(is.na(result)) || any(!nzchar(trimws(result))) ||
+      !release_gate_cleanroom_timestamp_valid(result[["Produced-At-UTC"]]) ||
+      !release_gate_cleanroom_date_valid(result[["Review-Date"]])) {
+    return(NULL)
+  }
+  result
+}
+
+release_gate_cleanroom_result_fresh <- function(result, input_paths) {
+  produced <- as.POSIXct(
+    result[["Produced-At-UTC"]],
+    format = "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"
+  )
+  modified <- file.info(input_paths)[["mtime"]]
+  if (is.na(produced) || any(is.na(modified))) return(FALSE)
+  producedNumber <- as.numeric(produced)
+  newestInput <- max(as.numeric(modified))
+  producedNumber + 2 >= newestInput &&
+    producedNumber <= as.numeric(Sys.time()) + 60
+}
+
 release_gate_cleanroom_failure <- function(reason, parsePass,
                                            intentionalBlockers) {
   release_gate_result(
@@ -225,7 +314,57 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
     if (any(!nzchar(resolved)) || anyDuplicated(resolved)) {
       return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
     }
-    components[[index]] <- list(values = values, paths = resolved)
+
+    result <- release_gate_read_cleanroom_result(
+      resolved[["independent_result"]]
+    )
+    if (is.null(result)) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    if (identical(
+      result[["Result-Producer"]], values[["implementer"]]
+    )) {
+      return(fail("CLEANROOM_IMPLEMENTER_INELIGIBLE"))
+    }
+    resultRoles <- c(
+      values[["specification_author"]], values[["implementer"]],
+      values[["reviewer"]], result[["Result-Producer"]]
+    )
+    resultMatches <- length(unique(resultRoles)) == 4L &&
+      identical(result[["Component-ID"]], values[["component_id"]]) &&
+      identical(result[["Provenance-Key"]], values[["provenance_key"]]) &&
+      identical(
+        result[["Replacement-Source-MD5"]],
+        values[["replacement_source_md5"]]
+      ) &&
+      identical(
+        result[["Behavior-Test-MD5"]], values[["behavior_test_md5"]]
+      ) &&
+      identical(result[["Fixture-MD5"]], values[["fixture_md5"]]) &&
+      identical(
+        result[["Public-Standard-Evidence-MD5"]],
+        values[["public_standard_evidence_md5"]]
+      ) &&
+      identical(result[["Test-Command-ID"]], "rscript-cleanroom-v1") &&
+      identical(result[["Exit-Status"]], "0") &&
+      identical(result[["Reviewer"]], values[["reviewer"]]) &&
+      identical(result[["Result-Status"]], "pass")
+    inputPaths <- resolved[c(
+      "replacement_source", "behavior_test", "public_standard_evidence",
+      "redistributable_fixture"
+    )]
+    if (!resultMatches ||
+        !release_gate_cleanroom_result_fresh(result, inputPaths) ||
+        !release_gate_run_cleanroom_test(
+          resolved[["behavior_test"]],
+          resolved[["replacement_source"]],
+          resolved[["redistributable_fixture"]]
+        )) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    components[[index]] <- list(
+      values = values, paths = resolved, result = result
+    )
   }
 
   componentIds <- vapply(
@@ -249,13 +388,16 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
       intentional_blockers = intentionalBlockers
     ))
   }
-  release_gate_result(
+  eligible <- release_gate_result(
     repository_state = "eligible",
     release_ready = TRUE,
     reason_codes = character(),
     parse_status = c(parsePass, cleanroom = "pass"),
     intentional_blockers = intentionalBlockers
   )
+  eligible$cleanroom_components <- components
+  eligible$cleanroom_inherited_keys <- inheritedKeys
+  eligible
 }
 
 release_gate_public_domain_failure <- function(reason, parsePass,
@@ -924,6 +1066,45 @@ release_gate_validate_current_source = function(root, parseStatus) {
   )
 }
 
+release_gate_validate_cleanroom_provenance = function(
+    base, provenance, parseStatus) {
+  components = base$cleanroom_components
+  if (is.null(components) || !length(components)) {
+    return(list(parse_status = parseStatus))
+  }
+  fail = function() {
+    list(error = release_gate_integrated_failure(
+      "CLEANROOM_EVIDENCE_INCOMPLETE", parseStatus, "cleanroom"
+    ))
+  }
+  componentKeys = vapply(
+    components, function(component) component$values[["provenance_key"]],
+    character(1)
+  )
+  componentPaths = vapply(
+    components, function(component) {
+      gsub("\\", "/", component$values[["replacement_source"]], fixed = TRUE)
+    },
+    character(1)
+  )
+  ledger = provenance$inventory
+  ledgerKeys = paste(ledger$path, ledger$symbol, sep = "::")
+  inherited = ledger$classification %in%
+    c("inherited-identical", "inherited-modified")
+  matched = match(componentKeys, ledgerKeys)
+  valid = identical(
+    sort(componentKeys), sort(base$cleanroom_inherited_keys)
+  ) &&
+    !anyDuplicated(componentKeys) &&
+    !any(is.na(matched)) &&
+    !any(inherited) &&
+    all(ledger$classification[matched] == "new-independent") &&
+    identical(unname(ledger$path[matched]), unname(componentPaths))
+  if (!valid) return(fail())
+  parseStatus[["cleanroom"]] = "pass"
+  list(parse_status = parseStatus)
+}
+
 release_gate_review_date_valid = function(values) {
   vapply(values, function(value) {
     if (!grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value)) {
@@ -1369,6 +1550,13 @@ release_gate_evaluate = function(root = ".") {
     root, destinationPresence$parse_status
   )
   if (!is.null(provenance$error)) return(provenance$error)
+  cleanroomProvenance = release_gate_validate_cleanroom_provenance(
+    base, provenance, provenance$parse_status
+  )
+  if (!is.null(cleanroomProvenance$error)) {
+    return(cleanroomProvenance$error)
+  }
+  provenance$parse_status = cleanroomProvenance$parse_status
   attribution = release_gate_validate_attribution(
     root, rightsValues, provenance, provenance$parse_status
   )
@@ -1733,8 +1921,9 @@ release_gate_write_self_fixture <- function(root, status,
       hashes[["replacement_source_md5"]], hashes[["behavior_test_md5"]],
       hashes[["fixture_md5"]], hashes[["public_standard_evidence_md5"]],
       "rscript-cleanroom-v1", "0", "self-test-result-producer",
-      "2026-08-25T00:00:00Z", "self-test-independent-reviewer",
-      "2026-08-25", "pass"
+      format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+      "self-test-independent-reviewer",
+      format(Sys.Date(), "%Y-%m-%d"), "pass"
     ), nrow = 1L, dimnames = list(NULL, c(
       "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
       "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",

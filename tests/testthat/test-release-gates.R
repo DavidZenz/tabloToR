@@ -978,6 +978,7 @@ test_that("independent clean-room results bind exact inputs command and status",
     command = c("Test-Command-ID" = "shell-command"),
     exit = c("Exit-Status" = "1"),
     stale = c("Produced-At-UTC" = "2000-01-01T00:00:00Z"),
+    malformed_utc = c("Produced-At-UTC" = "today"),
     malformed_date = c("Review-Date" = "yesterday"),
     failed = c("Result-Status" = "fail"),
     reviewer = c("Reviewer" = "different-reviewer")
@@ -993,6 +994,23 @@ test_that("independent clean-room results bind exact inputs command and status",
     )
     expect_false(result$release_ready, info = name)
   }
+})
+
+test_that("clean-room results require the complete DCF schema", {
+  root <- tempfile("release-gate-cleanroom-result-schema-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(root)
+  path <- fixture$paths$absolute[["independent_result"]]
+  result <- read.dcf(path)
+  write.dcf(result[, colnames(result) != "Reviewer", drop = FALSE], path)
+  rewriteCleanroomComponentField(
+    root, "independent_result_md5",
+    unname(tools::md5sum(path)[[1L]])
+  )
+  expect_identical(
+    evaluateRightsGate(root)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
 })
 
 test_that("clean-room result production preserves independent roles", {
