@@ -215,6 +215,39 @@ test_that("a clean six-source fixture is ordered, hashed, and reportable", {
   expect_true(any(lines == "Review-Date-UTC: awaiting-human-approval"))
   expect_true(any(grepl("not trademark clearance", lines, fixed = TRUE)))
   expect_true(any(grepl("not a reservation", lines, fixed = TRUE)))
+  expect_identical(
+    sum(grepl("^Name-Evidence-Version:", lines)), 1L
+  )
+  expect_identical(length(grep("^Source-Detail:", lines)), 6L)
+  expect_error(
+    tool$name_check_verify_report(report, require_review = TRUE),
+    "NAME_REPORT_REVIEW_UNAPPROVED",
+    fixed = TRUE
+  )
+
+  duplicatedVersion = tempfile("GEModelR-name-check-", fileext = ".md")
+  on.exit(unlink(duplicatedVersion), add = TRUE)
+  writeLines(
+    append(lines, "Name-Evidence-Version: 1", after = 5L),
+    duplicatedVersion, useBytes = TRUE
+  )
+  expect_error(
+    tool$name_check_verify_report(
+      duplicatedVersion, require_review = FALSE
+    ),
+    "NAME_REPORT_MALFORMED",
+    fixed = TRUE
+  )
+
+  missingDetail = tempfile("GEModelR-name-check-", fileext = ".md")
+  on.exit(unlink(missingDetail), add = TRUE)
+  detailIndex = grep("^Source-Detail:", lines)
+  writeLines(lines[-detailIndex[[1L]]], missingDetail, useBytes = TRUE)
+  expect_error(
+    tool$name_check_verify_report(missingDetail, require_review = FALSE),
+    "NAME_REPORT_SOURCE_DETAILS_INVALID",
+    fixed = TRUE
+  )
 })
 
 test_that("a case-insensitive exact collision fails with the exact reason", {
@@ -396,6 +429,35 @@ test_that("bounded searches reject overflow truncation and empty mismatches", {
   expect_error(
     tool$name_check_validate_page_set("github", missingCount),
     "NAME_SOURCE_MALFORMED_GITHUB",
+    fixed = TRUE
+  )
+
+  liveZeroRuniverse = list(nameCheckPage(
+    "r-universe", 1L,
+    paste0(
+      '{"results":[],"query":{"_nocasepkg":"gemodelr"},',
+      '"skip":0,"limit":2}'
+    )
+  ))
+  expect_identical(
+    tool$name_check_validate_page_set(
+      "r-universe", liveZeroRuniverse
+    )$declared_count,
+    0L
+  )
+
+  missingRuniverseCount = list(nameCheckPage(
+    "r-universe", 1L,
+    paste0(
+      '{"results":[{"Package":"AnotherPackage"}],',
+      '"query":{"_nocasepkg":"gemodelr"},"skip":0,"limit":2}'
+    )
+  ))
+  expect_error(
+    tool$name_check_validate_page_set(
+      "r-universe", missingRuniverseCount
+    ),
+    "NAME_SOURCE_MALFORMED_R_UNIVERSE",
     fixed = TRUE
   )
 
@@ -739,10 +801,21 @@ test_that("checked-in identity records match exact human-approved values", {
     "Release-Authorization: not-authorized"
   ) %in% repository))
   expect_true(all(c(
-    "Initial-Name-Report: approved",
-    "Reviewer: David Zenz",
-    "Review-Date-UTC: 2026-08-25"
+    "Name-Evidence-Version: 1",
+    "Reviewer: awaiting-human-approval",
+    "Review-Date-UTC: awaiting-human-approval"
   ) %in% report))
+  expect_true(tool$name_check_verify_report(
+    file.path(root, "docs", "release", "NAME-CHECK.md"),
+    require_review = FALSE
+  ))
+  expect_error(
+    tool$name_check_verify_report(
+      file.path(root, "docs", "release", "NAME-CHECK.md"),
+      require_review = TRUE
+    ),
+    "NAME_REPORT_REVIEW_UNAPPROVED", fixed = TRUE
+  )
 })
 
 test_that("unapproved identity requires exact pending and authorization markers", {

@@ -247,8 +247,22 @@ name_check_parse_count = function(source_id, value) {
   candidates = name_check_parse_runiverse_candidates(text, source_id)
   limit = name_check_json_integer(text, "limit", source_id)
   if (limit < 1L) name_check_fail(name_check_malformed_reason(source_id))
+  total_key_count = name_check_pattern_count(
+    text, '"total"[[:space:]]*:'
+  )
+  if (total_key_count == 1L) {
+    total = name_check_json_integer(text, "total", source_id)
+  } else {
+    exact_empty = total_key_count == 0L && !length(candidates) &&
+      name_check_pattern_count(
+        text,
+        '"_nocasepkg"[[:space:]]*:[[:space:]]*"[A-Za-z][A-Za-z0-9.]*"'
+      ) == 1L
+    if (!exact_empty) name_check_fail(name_check_malformed_reason(source_id))
+    total = 0L
+  }
   list(
-    total = name_check_json_integer(text, "total", source_id),
+    total = total,
     returned = as.integer(length(candidates)),
     incomplete = FALSE,
     skip = name_check_json_integer(text, "skip", source_id),
@@ -522,6 +536,9 @@ name_check_evaluate_fixture = function(name, sources,
     source_id = required[[index]]
     source = sources[[index]]
     bounded = source_id %in% c("github", "r-universe")
+    composite_bioc = source_id %in% c(
+      "bioconductor-current", "bioconductor-history"
+    ) && !is.null(source$details)
     if (bounded) {
       pages = source$pages
       if (is.null(pages)) {
@@ -533,11 +550,14 @@ name_check_evaluate_fixture = function(name, sources,
       validated = name_check_validate_page_set(source_id, pages)
       candidates = validated$candidates
       details = validated$details
-      query = paste(details$query, collapse = " + ")
-      raw_md5 = name_check_raw_hash(
-        do.call(c, lapply(pages, `[[`, "raw")), source_id
-      )
-      detail_sets[[source_id]] = details
+      candidate_sets = lapply(pages, function(page) {
+        name_check_parse_count(source_id, page$raw)$candidates
+      })
+    } else if (composite_bioc) {
+      validated = name_check_validate_source_details(source_id, source)
+      candidates = validated$candidates
+      details = validated$details
+      candidate_sets = validated$candidate_sets
     } else {
       if (!isTRUE(source$available)) {
         name_check_fail(paste0(
@@ -548,20 +568,44 @@ name_check_evaluate_fixture = function(name, sources,
           !nzchar(source$query)) {
         name_check_fail(name_check_malformed_reason(source_id))
       }
-      query = source$query
-      raw_md5 = name_check_raw_hash(source$raw, source_id)
       candidates = name_check_parse_source(source_id, source$raw)
-      detail_sets[[source_id]] = data.frame(
+      details = data.frame(
+        detail_id = paste0(source_id, "-1"),
+        release = "",
+        repository = "",
         page = 1L,
-        query = query,
+        query = source$query,
         role = "results",
         declared_count = as.integer(length(candidates)),
         returned_count = as.integer(length(candidates)),
         completeness = "complete",
-        raw_md5 = raw_md5,
+        raw_md5 = name_check_raw_hash(source$raw, source_id),
         stringsAsFactors = FALSE
       )
+      candidate_sets = list(candidates)
     }
+    if (!"detail_id" %in% names(details)) {
+      details$detail_id = paste0(source_id, "-page-", details$page)
+    }
+    if (!"release" %in% names(details)) details$release = ""
+    if (!"repository" %in% names(details)) details$repository = ""
+    details = details[, c(
+      "detail_id", "release", "repository", "page", "query", "role",
+      "declared_count", "returned_count", "completeness", "raw_md5"
+    )]
+    if (length(candidate_sets) != nrow(details)) {
+      name_check_fail(name_check_incomplete_reason(source_id))
+    }
+    detail_matches = vapply(candidate_sets, function(values) {
+      exact = unique(name_check_exact_matches(name, values))
+      if (length(exact)) paste(exact, collapse = ",") else "NONE"
+    }, character(1))
+    details$available = "yes"
+    details$exact_matches = detail_matches
+    details$result = ifelse(detail_matches == "NONE", "pass", "collision")
+    query = paste(details$query, collapse = " + ")
+    raw_md5 = name_check_parent_hash(details)
+    detail_sets[[source_id]] = details
     exact = unique(name_check_exact_matches(name, candidates))
     if (length(exact)) {
       collisions = c(collisions, paste0(source_id, ":", exact))
@@ -609,6 +653,16 @@ name_check_write_report = function(result, output) {
   if (!dir.exists(parent)) dir.create(parent, recursive = TRUE)
   output = normalizePath(output, mustWork = FALSE)
   rows = result$sources
+  details = do.call(rbind, lapply(names(result$source_details), function(id) {
+    value = result$source_details[[id]]
+    value$source_id = id
+    value[, c(
+      "source_id", "detail_id", "release", "repository", "page", "query",
+      "role", "available", "declared_count", "returned_count",
+      "completeness", "raw_md5", "exact_matches", "result"
+    )]
+  }))
+  rownames(details) = NULL
   table_rows = vapply(seq_len(nrow(rows)), function(index) {
     paste0(
       "| ", name_check_markdown_escape(rows$source[[index]]),
@@ -629,11 +683,30 @@ name_check_write_report = function(result, output) {
       "|query=", rows$query[[index]]
     )
   }, character(1))
+  detail_rows = vapply(seq_len(nrow(details)), function(index) {
+    paste0(
+      "Source-Detail: ", details$source_id[[index]],
+      "|detail-id=", details$detail_id[[index]],
+      "|release=", details$release[[index]],
+      "|repository=", details$repository[[index]],
+      "|page=", details$page[[index]],
+      "|role=", details$role[[index]],
+      "|available=", details$available[[index]],
+      "|declared-count=", details$declared_count[[index]],
+      "|returned-count=", details$returned_count[[index]],
+      "|completeness=", details$completeness[[index]],
+      "|raw-md5=", details$raw_md5[[index]],
+      "|matches=", details$exact_matches[[index]],
+      "|result=", details$result[[index]],
+      "|query=", details$query[[index]]
+    )
+  }, character(1))
   lines = c(
     "# GEModelR Name Availability Evidence",
     "",
     "## Configuration",
     "",
+    "Name-Evidence-Version: 1",
     paste0("Name: ", result$name),
     paste0("Check-Kind: ", result$check_kind),
     paste0("Checked-At-UTC: ", result$checked_at_utc),
@@ -655,6 +728,10 @@ name_check_write_report = function(result, output) {
     "## Machine-readable source rows",
     "",
     machine_rows,
+    "",
+    "## Machine-readable source details",
+    "",
+    detail_rows,
     "",
     "## Reproduction",
     "",
@@ -684,6 +761,35 @@ name_check_marker = function(lines, field) {
   sub(pattern, "\\1", hits)
 }
 
+name_check_parse_machine_rows = function(lines, prefix, fields) {
+  hits = grep(paste0("^", prefix, ": "), lines, value = TRUE)
+  if (!length(hits)) name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+  records = lapply(hits, function(line) {
+    body = sub(paste0("^", prefix, ": "), "", line)
+    parts = strsplit(body, "|", fixed = TRUE)[[1L]]
+    record = stats::setNames(as.list(rep("", length(fields))), fields)
+    record[[fields[[1L]]]] = parts[[1L]]
+    for (part in parts[-1L]) {
+      position = regexpr("=", part, fixed = TRUE)[[1L]]
+      if (position < 2L) name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+      key = substr(part, 1L, position - 1L)
+      value = substr(part, position + 1L, nchar(part))
+      if (!key %in% fields[-1L] || nzchar(record[[key]])) {
+        name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+      }
+      record[[key]] = value
+    }
+    if (any(vapply(record[-c(3L, 4L)], function(value) {
+      !is.character(value) || length(value) != 1L || !nzchar(value)
+    }, logical(1)))) {
+      name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+    }
+    record
+  })
+  as.data.frame(do.call(rbind, lapply(records, unlist)),
+                stringsAsFactors = FALSE)
+}
+
 name_check_verify_report = function(path, require_review = TRUE) {
   if (!file.exists(path)) name_check_fail("NAME_REPORT_MISSING")
   lines = tryCatch(
@@ -691,8 +797,8 @@ name_check_verify_report = function(path, require_review = TRUE) {
     error = function(error) name_check_fail("NAME_REPORT_MALFORMED")
   )
   fields = c(
-    "Name", "Check-Kind", "Checked-At-UTC", "Overall-Result",
-    "Reviewer", "Review-Date-UTC"
+    "Name-Evidence-Version", "Name", "Check-Kind", "Checked-At-UTC",
+    "Overall-Result", "Reviewer", "Review-Date-UTC"
   )
   values = lapply(fields, function(field) name_check_marker(lines, field))
   names(values) = fields
@@ -700,25 +806,90 @@ name_check_verify_report = function(path, require_review = TRUE) {
     name_check_fail("NAME_REPORT_MALFORMED")
   }
   values = vapply(values, `[[`, character(1), 1L)
+  if (!identical(values[["Name-Evidence-Version"]], "1")) {
+    name_check_fail("NAME_REPORT_VERSION_UNSUPPORTED")
+  }
   name_check_validate_name(values[["Name"]])
   name_check_validate_kind(values[["Check-Kind"]])
-  valid_result = identical(
+  if (!identical(
     values[["Overall-Result"]], "NAME_AVAILABLE_NO_EXACT_COLLISION"
-  )
-  if (!valid_result) name_check_fail("NAME_REPORT_NOT_CLEAR")
+  )) {
+    name_check_fail("NAME_REPORT_NOT_CLEAR")
+  }
   if (!grepl(
     "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
     values[["Checked-At-UTC"]]
   )) {
     name_check_fail("NAME_REPORT_MALFORMED")
   }
-  source_rows = grep("^Source-Row: ", lines, value = TRUE)
-  source_ids = sub("^Source-Row: ([^|]+).*$", "\\1", source_rows)
-  if (!identical(source_ids, name_check_source_ids()) ||
-      any(!grepl("\\|available=yes\\|", source_rows)) ||
-      any(!grepl("\\|raw-md5=[0-9a-f]{32}\\|", source_rows)) ||
-      any(!grepl("\\|matches=NONE\\|result=pass\\|", source_rows))) {
+  source_rows = name_check_parse_machine_rows(
+    lines, "Source-Row",
+    c("source_id", "available", "raw-md5", "matches", "result", "query")
+  )
+  if (!identical(source_rows$source_id, name_check_source_ids()) ||
+      any(source_rows$available != "yes") ||
+      any(!grepl("^[0-9a-f]{32}$", source_rows[["raw-md5"]])) ||
+      any(source_rows$matches != "NONE") ||
+      any(source_rows$result != "pass") ||
+      any(!grepl("^https://", source_rows$query))) {
     name_check_fail("NAME_REPORT_SOURCE_ROWS_INVALID")
+  }
+  detail_rows = name_check_parse_machine_rows(
+    lines, "Source-Detail",
+    c(
+      "source_id", "detail-id", "release", "repository", "page", "role",
+      "available", "declared-count", "returned-count", "completeness",
+      "raw-md5", "matches", "result", "query"
+    )
+  )
+  if (nrow(detail_rows) < length(name_check_source_ids()) ||
+      !identical(unique(detail_rows$source_id), name_check_source_ids()) ||
+      anyDuplicated(detail_rows[["detail-id"]]) ||
+      any(detail_rows$available != "yes") ||
+      any(!grepl("^[0-9a-f]{32}$", detail_rows[["raw-md5"]])) ||
+      any(detail_rows$matches != "NONE") ||
+      any(detail_rows$result != "pass") ||
+      any(!grepl("^https://", detail_rows$query)) ||
+      any(!detail_rows$completeness %in% c(
+        "manifest", "complete", "count-probe"
+      ))) {
+    name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+  }
+  integer_fields = c("page", "declared-count", "returned-count")
+  for (field in integer_fields) {
+    parsed = suppressWarnings(as.integer(detail_rows[[field]]))
+    if (anyNA(parsed) || any(parsed < 0L) ||
+        any(as.character(parsed) != detail_rows[[field]])) {
+      name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+    }
+    detail_rows[[field]] = parsed
+  }
+  for (source_id in name_check_source_ids()) {
+    subset = detail_rows[detail_rows$source_id == source_id, , drop = FALSE]
+    normalized = data.frame(
+      detail_id = subset[["detail-id"]],
+      release = subset$release,
+      repository = subset$repository,
+      page = subset$page,
+      query = subset$query,
+      role = subset$role,
+      declared_count = subset[["declared-count"]],
+      returned_count = subset[["returned-count"]],
+      completeness = subset$completeness,
+      raw_md5 = subset[["raw-md5"]],
+      available = subset$available,
+      exact_matches = subset$matches,
+      result = subset$result,
+      stringsAsFactors = FALSE
+    )
+    parent = source_rows[source_rows$source_id == source_id, , drop = FALSE]
+    if (nrow(parent) != 1L ||
+        !identical(parent$query, paste(normalized$query, collapse = " + ")) ||
+        !identical(parent[["raw-md5"]], name_check_parent_hash(normalized)) ||
+        !identical(parent$matches, "NONE") ||
+        !identical(parent$result, "pass")) {
+      name_check_fail("NAME_REPORT_SOURCE_ROWS_INVALID")
+    }
   }
   pending = "awaiting-human-approval"
   if (isTRUE(require_review) &&
@@ -905,6 +1076,253 @@ name_check_download = function(url, source_id, timeout_seconds = 30L,
   readBin(path, what = "raw", n = size)
 }
 
+name_check_version_at_least = function(version, minimum) {
+  utils::compareVersion(as.character(version), as.character(minimum)) >= 0L
+}
+
+name_check_bioc_repositories = function(
+    version, release_manifest, repository_manifest, source_id
+) {
+  if (!source_id %in% c(
+    "bioconductor-current", "bioconductor-history"
+  ) || !is.character(version) || length(version) != 1L ||
+      !grepl("^[0-9]+[.][0-9]+$", version)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  release_text = name_check_raw_text(release_manifest, source_id)
+  repository_text = name_check_raw_text(repository_manifest, source_id)
+  version_pattern = gsub(".", "[.]", version, fixed = TRUE)
+  repositories = name_check_regex_values(
+    release_text,
+    paste0(
+      '/packages/json/', version_pattern,
+      '/([^"]+)/packages[.]js'
+    ),
+    "\\1"
+  )
+  if (!length(repositories)) {
+    if (!grepl("BiocView|AnnotationData[.]html|ExperimentData[.]html",
+               release_text)) {
+      name_check_fail(name_check_malformed_reason(source_id))
+    }
+    repositories = "bioc"
+    if (grepl("AnnotationData[.]html", release_text)) {
+      repositories = c(repositories, "data/annotation")
+    }
+    if (grepl("ExperimentData[.]html", release_text)) {
+      repositories = c(repositories, "data/experiment")
+    }
+  }
+  required_manifest_entries = c(
+    'BioCsoft = "bioc"', 'BioCann = "data/annotation"',
+    'BioCexp = "data/experiment"', 'BioCworkflows = "workflows"'
+  )
+  if (any(!vapply(
+    required_manifest_entries, grepl, logical(1),
+    x = repository_text, fixed = TRUE
+  ))) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  books_threshold = name_check_regex_values(
+    repository_text,
+    'BioCbooks[[:space:]]*=[[:space:]]*if[[:space:]]*[(]version[(][)][[:space:]]*>=[[:space:]]*"([0-9]+[.][0-9]+)"[)][[:space:]]*"books"',
+    "\\1"
+  )
+  if (length(books_threshold) != 1L) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  if (name_check_version_at_least(version, books_threshold[[1L]])) {
+    repositories = c(repositories, "books")
+  }
+  repositories = unique(repositories)
+  valid = grepl(
+    "^[A-Za-z0-9.]+(/[A-Za-z0-9.]+)*$", repositories
+  )
+  if (!length(repositories) || any(!valid)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  preferred = c(
+    "bioc", "data/annotation", "data/experiment", "workflows", "books"
+  )
+  repositories = c(
+    preferred[preferred %in% repositories],
+    sort(setdiff(repositories, preferred))
+  )
+  data.frame(
+    repository = repositories,
+    path = paste0(
+      "https://bioconductor.org/packages/", version, "/",
+      repositories, "/src/contrib/PACKAGES"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+name_check_bioc_detail_value = function(detail, field, source_id) {
+  value = detail[[field]]
+  if (!is.character(value) || length(value) != 1L || is.na(value) ||
+      !nzchar(value)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  value
+}
+
+name_check_validate_source_details = function(source_id, source) {
+  if (!source_id %in% c(
+    "bioconductor-current", "bioconductor-history"
+  ) || !is.list(source)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  incomplete_reason = name_check_incomplete_reason(source_id)
+  repository_manifest = source$repository_manifest
+  release_manifests = source$release_manifests
+  package_details = source$details
+  if (!is.list(repository_manifest) || !isTRUE(repository_manifest$available) ||
+      !is.list(release_manifests) || !length(release_manifests) ||
+      !is.list(package_details)) {
+    name_check_fail(incomplete_reason)
+  }
+  repository_query = name_check_bioc_detail_value(
+    repository_manifest, "query", source_id
+  )
+  if (!grepl("^https://", repository_query)) {
+    name_check_fail(name_check_malformed_reason(source_id))
+  }
+  repository_hash = name_check_raw_hash(repository_manifest$raw, source_id)
+  repository_raw = repository_manifest$raw
+  versions = vapply(release_manifests, function(manifest) {
+    name_check_bioc_detail_value(manifest, "release", source_id)
+  }, character(1))
+  if (anyDuplicated(versions) ||
+      (identical(source_id, "bioconductor-current") &&
+       length(versions) != 1L)) {
+    name_check_fail(incomplete_reason)
+  }
+  expected_sets = vector("list", length(release_manifests))
+  release_hashes = character(length(release_manifests))
+  release_queries = character(length(release_manifests))
+  release_raws = vector("list", length(release_manifests))
+  for (index in seq_along(release_manifests)) {
+    manifest = release_manifests[[index]]
+    if (!isTRUE(manifest$available)) {
+      name_check_fail(paste0(
+        "NAME_SOURCE_UNAVAILABLE_", name_check_reason_suffix(source_id)
+      ))
+    }
+    release = versions[[index]]
+    query = name_check_bioc_detail_value(manifest, "query", source_id)
+    expected_query = paste0(
+      "https://bioconductor.org/packages/", release, "/BiocViews.html"
+    )
+    if (!identical(query, expected_query)) {
+      name_check_fail(name_check_malformed_reason(source_id))
+    }
+    release_queries[[index]] = query
+    release_hashes[[index]] = name_check_raw_hash(manifest$raw, source_id)
+    release_raws[[index]] = manifest$raw
+    expected_sets[[index]] = name_check_bioc_repositories(
+      release, manifest$raw, repository_raw, source_id
+    )
+    expected_sets[[index]]$release = release
+  }
+  expected = do.call(rbind, expected_sets)
+  expected$key = paste(expected$release, expected$repository, sep = "/")
+  actual_release = vapply(package_details, function(detail) {
+    name_check_bioc_detail_value(detail, "release", source_id)
+  }, character(1))
+  actual_repository = vapply(package_details, function(detail) {
+    name_check_bioc_detail_value(detail, "repository", source_id)
+  }, character(1))
+  actual_keys = paste(actual_release, actual_repository, sep = "/")
+  if (anyDuplicated(actual_keys) ||
+      !identical(actual_keys, expected$key)) {
+    name_check_fail(incomplete_reason)
+  }
+  package_hashes = character(length(package_details))
+  package_queries = character(length(package_details))
+  package_counts = integer(length(package_details))
+  package_candidates = vector("list", length(package_details))
+  package_raws = vector("list", length(package_details))
+  for (index in seq_along(package_details)) {
+    detail = package_details[[index]]
+    if (!isTRUE(detail$available)) {
+      name_check_fail(paste0(
+        "NAME_SOURCE_UNAVAILABLE_", name_check_reason_suffix(source_id)
+      ))
+    }
+    query = name_check_bioc_detail_value(detail, "query", source_id)
+    if (!identical(query, expected$path[[index]])) {
+      name_check_fail(name_check_malformed_reason(source_id))
+    }
+    package_queries[[index]] = query
+    package_hashes[[index]] = name_check_raw_hash(detail$raw, source_id)
+    package_raws[[index]] = detail$raw
+    text = name_check_raw_text(detail$raw, source_id)
+    values = name_check_parse_packages(text, source_id)
+    package_candidates[[index]] = values
+    package_counts[[index]] = length(values)
+  }
+  manifest_details = data.frame(
+    detail_id = c(
+      paste0(source_id, "-repository-manifest"),
+      paste0(source_id, "-", versions, "-release-manifest")
+    ),
+    release = c("", versions),
+    repository = "manifest",
+    page = 0L,
+    query = c(repository_query, release_queries),
+    role = c("repository-manifest", rep("release-manifest", length(versions))),
+    declared_count = 0L,
+    returned_count = 0L,
+    completeness = "manifest",
+    raw_md5 = c(repository_hash, release_hashes),
+    stringsAsFactors = FALSE
+  )
+  package_frame = data.frame(
+    detail_id = paste0(
+      source_id, "-", expected$release, "-",
+      gsub("/", "-", expected$repository, fixed = TRUE)
+    ),
+    release = expected$release,
+    repository = expected$repository,
+    page = 0L,
+    query = package_queries,
+    role = "packages",
+    declared_count = package_counts,
+    returned_count = package_counts,
+    completeness = "complete",
+    raw_md5 = package_hashes,
+    stringsAsFactors = FALSE
+  )
+  candidate_sets = c(
+    rep(list(character()), nrow(manifest_details)), package_candidates
+  )
+  list(
+    candidates = unlist(package_candidates, use.names = FALSE),
+    details = rbind(manifest_details, package_frame),
+    candidate_sets = candidate_sets,
+    raw = do.call(c, c(list(repository_raw), release_raws, package_raws)),
+    complete = TRUE
+  )
+}
+
+name_check_parent_hash = function(details) {
+  fields = c(
+    "detail_id", "release", "repository", "page", "query", "role",
+    "declared_count", "returned_count", "completeness", "raw_md5",
+    "available", "exact_matches", "result"
+  )
+  if (!all(fields %in% names(details)) || !nrow(details)) {
+    name_check_fail("NAME_REPORT_SOURCE_DETAILS_INVALID")
+  }
+  rows = apply(details[, fields, drop = FALSE], 1L, function(row) {
+    paste(row, collapse = "|")
+  })
+  name_check_raw_hash(
+    charToRaw(paste(rows, collapse = "\n")), "report-source-details"
+  )
+}
+
 name_check_bioc_versions = function(release_index) {
   text = name_check_raw_text(release_index, "bioconductor-history")
   matches = name_check_regex_values(
@@ -919,35 +1337,53 @@ name_check_bioc_versions = function(release_index) {
                  as.numeric(sub("^.*[.]", "", versions)), decreasing = TRUE)]
 }
 
-name_check_bioc_history = function(timeout_seconds = 30L) {
-  index_url = "https://bioconductor.org/about/release-announcements/"
-  release_index = name_check_download(
-    index_url, "bioconductor-history", timeout_seconds
+name_check_collect_bioc = function(
+    source_id, versions, repository_manifest, timeout_seconds = 30L
+) {
+  repository_url = paste0(
+    "https://raw.githubusercontent.com/Bioconductor/",
+    "BiocManager/devel/R/repositories.R"
   )
-  versions = name_check_bioc_versions(release_index)
-  historical = versions[-1L]
-  indexed = historical[as.numeric(historical) >= 1.8]
-  chunks = list(release_index)
-  for (version in indexed) {
-    url = paste0(
-      "https://bioconductor.org/packages/", version,
-      "/bioc/src/contrib/PACKAGES"
+  release_manifests = vector("list", length(versions))
+  details = list()
+  for (index in seq_along(versions)) {
+    version = versions[[index]]
+    manifest_url = paste0(
+      "https://bioconductor.org/packages/", version, "/BiocViews.html"
     )
-    payload = name_check_download(
-      url, "bioconductor-history", timeout_seconds
+    manifest_raw = name_check_download(
+      manifest_url, source_id, timeout_seconds
     )
-    boundary = charToRaw(paste0(
-      "\nBioconductor-Version: ", version, "\n"
-    ))
-    chunks = c(chunks, list(boundary, payload))
+    release_manifests[[index]] = list(
+      release = version,
+      query = manifest_url,
+      available = TRUE,
+      raw = manifest_raw
+    )
+    repositories = name_check_bioc_repositories(
+      version, manifest_raw, repository_manifest, source_id
+    )
+    for (row in seq_len(nrow(repositories))) {
+      details[[length(details) + 1L]] = list(
+        release = version,
+        repository = repositories$repository[[row]],
+        query = repositories$path[[row]],
+        available = TRUE,
+        raw = name_check_download(
+          repositories$path[[row]], source_id, timeout_seconds
+        )
+      )
+    }
   }
   list(
-    raw = do.call(c, chunks),
-    query = paste0(
-      index_url,
-      " + https://bioconductor.org/packages/{version}/bioc/src/contrib/PACKAGES",
-      " [indexed package manifests: ", paste(indexed, collapse = ","), "]"
-    )
+    id = source_id,
+    repository_manifest = list(
+      query = repository_url,
+      available = TRUE,
+      raw = repository_manifest
+    ),
+    release_manifests = release_manifests,
+    details = details
   )
 }
 
@@ -964,11 +1400,6 @@ name_check_collect_live = function(name, timeout_seconds = 30L) {
       id = "cran-archive",
       query = "https://cran.r-project.org/src/contrib/Archive/",
       url = "https://cran.r-project.org/src/contrib/Archive/"
-    ),
-    list(
-      id = "bioconductor-current",
-      query = "https://bioconductor.org/packages/release/bioc/src/contrib/PACKAGES",
-      url = "https://bioconductor.org/packages/release/bioc/src/contrib/PACKAGES"
     )
   )
   collected = lapply(definitions, function(definition) {
@@ -981,13 +1412,31 @@ name_check_collect_live = function(name, timeout_seconds = 30L) {
       )
     )
   })
-  history = name_check_bioc_history(timeout_seconds)
-  collected = append(collected, list(list(
-    id = "bioconductor-history",
-    query = history$query,
-    available = TRUE,
-    raw = history$raw
-  )), after = 3L)
+  release_index_url = "https://bioconductor.org/about/release-announcements/"
+  release_index = name_check_download(
+    release_index_url, "bioconductor-history", timeout_seconds
+  )
+  versions = name_check_bioc_versions(release_index)
+  indexed = versions[as.numeric(versions) >= 1.8]
+  if (length(indexed) < 2L) {
+    name_check_fail("NAME_SOURCE_MALFORMED_BIOCONDUCTOR_HISTORY")
+  }
+  repository_url = paste0(
+    "https://raw.githubusercontent.com/Bioconductor/",
+    "BiocManager/devel/R/repositories.R"
+  )
+  repository_manifest = name_check_download(
+    repository_url, "bioconductor-current", timeout_seconds
+  )
+  current = name_check_collect_bioc(
+    "bioconductor-current", indexed[[1L]], repository_manifest,
+    timeout_seconds
+  )
+  history = name_check_collect_bioc(
+    "bioconductor-history", indexed[-1L], repository_manifest,
+    timeout_seconds
+  )
+  collected = c(collected, list(current, history))
   runiverse_query = paste0(
     "https://r-universe.dev/api/search?q=package%3A", encoded,
     "&limit=100"
