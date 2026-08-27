@@ -73,6 +73,28 @@ provenance_fixture <- function() {
 
 provenance_keys <- function(frame) paste(frame$path, frame$symbol, sep = "::")
 
+provenance_native_fixture_rows <- function(tool, lines, line_ending = "\n") {
+  path <- tempfile(fileext = ".cpp")
+  on.exit(unlink(path), add = TRUE)
+  text <- paste(lines, collapse = line_ending)
+  connection <- file(path, open = "wb")
+  writeBin(charToRaw(enc2utf8(text)), connection)
+  close(connection)
+  tool$provenance_native_rows(path, "src/fixture.cpp")
+}
+
+provenance_reviewed_ledger <- function(tool, inventory) {
+  ledger <- tool$provenance_build_ledger(inventory)
+  ledger$classification <- "new-independent"
+  ledger$copyright_holder <- "Fixture Author"
+  ledger$license_basis <- "fixture-license"
+  ledger$evidence <- "fixture review"
+  ledger$reviewer <- "Fixture Reviewer"
+  ledger$review_date <- "2026-08-25"
+  ledger$status <- "reviewed-provisional"
+  ledger
+}
+
 test_that("empty source roots fail closed with an exact reason", {
   tool <- provenance_load_tool()
   root <- tempfile("tabloToR-empty-provenance-")
@@ -159,6 +181,86 @@ test_that("normalized expression hashes ignore comments and layout", {
   expect_identical(matched$expression_hash.one, matched$expression_hash.two)
 })
 
+test_that("native hashes preserve behavior-relevant tokens", {
+  tool <- provenance_load_tool()
+  hash <- function(lines) {
+    rows <- provenance_native_fixture_rows(tool, lines)
+    expect_equal(nrow(rows), 1L)
+    rows$expression_hash[[1L]]
+  }
+  base <- c(
+    "const char *policy(int value) {",
+    "#define MODE 1",
+    "#if MODE == 1",
+    "  const char marker = 'a';",
+    "  return value == 1 ? \"allow\" : \"deny\";",
+    "#endif",
+    "}"
+  )
+  variants <- list(
+    string_literal = sub("allow", "permit", base, fixed = TRUE),
+    character_literal = sub("'a'", "'b'", base, fixed = TRUE),
+    numeric_token = sub("value == 1", "value == 2", base, fixed = TRUE),
+    define_value = sub("#define MODE 1", "#define MODE 2", base, fixed = TRUE),
+    if_condition = sub("#if MODE == 1", "#if MODE == 2", base, fixed = TRUE)
+  )
+  base_hash <- hash(base)
+  variant_hashes <- vapply(variants, hash, character(1))
+  expect_true(all(variant_hashes != base_hash))
+  expect_equal(length(unique(variant_hashes)), length(variant_hashes))
+})
+
+test_that("native normalization ignores comments line endings and safe layout", {
+  tool <- provenance_load_tool()
+  slash <- intToUtf8(92L)
+  quote <- intToUtf8(34L)
+  literal <- paste0(
+    quote, "allow", slash, quote, "quoted", slash, slash,
+    "path//literal", quote
+  )
+  compact <- c(
+    "const char *policy(int value){",
+    paste0("return value==1?", literal, ":\"deny/*literal*/\";"),
+    "}"
+  )
+  formatted <- c(
+    "const char * policy ( int value ) { // layout only",
+    paste0("  return value == 1 ? ", literal, " :"),
+    "    \"deny/*literal*/\"; /* trailing comment */",
+    "}"
+  )
+  compact_hash <- provenance_native_fixture_rows(tool, compact)$expression_hash
+  formatted_hash <- provenance_native_fixture_rows(tool, formatted)$expression_hash
+  crlf_hash <- provenance_native_fixture_rows(
+    tool, formatted, line_ending = "\r\n"
+  )$expression_hash
+
+  expect_identical(formatted_hash, compact_hash)
+  expect_identical(crlf_hash, formatted_hash)
+  normalized <- tool$provenance_normalize_native(paste(formatted, collapse = "\n"))
+  expect_match(normalized, literal, fixed = TRUE)
+  expect_match(normalized, "deny/*literal*/", fixed = TRUE)
+  expect_match(normalized, "return value", fixed = TRUE)
+})
+
+test_that("structural discovery stays independent from native hash semantics", {
+  tool <- provenance_load_tool()
+  first <- c(
+    "const char *policy() { return \"allow\"; }",
+    "int amount() { return 1; }"
+  )
+  second <- c(
+    "const char *policy() { return \"deny!\"; }",
+    "int amount() { return 2; }"
+  )
+  one <- provenance_native_fixture_rows(tool, first)
+  two <- provenance_native_fixture_rows(tool, second)
+
+  expect_identical(one[c("path", "symbol", "line_start", "line_end")],
+                   two[c("path", "symbol", "line_start", "line_end")])
+  expect_false(identical(one$expression_hash, two$expression_hash))
+})
+
 test_that("the independent expected-key oracle catches drift in both directions", {
   tool <- provenance_load_tool()
   root <- provenance_fixture()
@@ -200,7 +302,7 @@ test_that("regeneration preserves review evidence and flags changed hashes", {
   existing$evidence <- "reviewed fixture evidence"
   existing$reviewer <- "Fixture Reviewer"
   existing$review_date <- "2026-08-25"
-  existing$status <- "reviewed"
+  existing$status <- "reviewed-provisional"
   existing$notes <- "review-owned note"
 
   changed <- inventory
@@ -212,7 +314,7 @@ test_that("regeneration preserves review evidence and flags changed hashes", {
   expect_identical(regenerated$evidence, existing$evidence)
   expect_identical(regenerated$notes, existing$notes)
   expect_identical(regenerated$status[[1L]], "hash-changed-review-required")
-  expect_true(all(regenerated$status[-1L] == "reviewed"))
+  expect_true(all(regenerated$status[-1L] == "reviewed-provisional"))
 })
 
 
@@ -252,7 +354,7 @@ test_that("check mode validates without rewriting the independent oracle", {
   ledger[["evidence"]] <- "fixture review"
   ledger[["reviewer"]] <- "Fixture Reviewer"
   ledger[["review_date"]] <- "2026-08-25"
-  ledger[["status"]] <- "reviewed"
+  ledger[["status"]] <- "reviewed-provisional"
   directory <- file.path(root, "docs", "provenance")
   dir.create(directory, recursive = TRUE)
   expected_path <- file.path(directory, "EXPECTED-KEYS.csv")
@@ -296,7 +398,7 @@ test_that("ledger validation is fixed-schema, exact-key, and fail-closed", {
   ledger$evidence <- "fixture review"
   ledger$reviewer <- "Fixture Reviewer"
   ledger$review_date <- "2026-08-25"
-  ledger$status <- "reviewed"
+  ledger$status <- "reviewed-provisional"
 
   expect_true(tool$provenance_validate_ledger(ledger, expected, inventory))
   expect_error(
@@ -314,6 +416,7 @@ test_that("ledger validation is fixed-schema, exact-key, and fail-closed", {
   third_party[["upstream_path"]][[1L]] <- third_party[["path"]][[1L]]
   third_party[["copyright_holder"]][[1L]] <- "Fixture Vendor"
   third_party[["license_basis"]][[1L]] <- "fixture-vendor-license"
+  third_party[["status"]][[1L]] <- "reviewed-third-party"
   validator <- get("provenance_validate_ledger", envir = tool)
   expect_true(validator(third_party, expected, inventory))
   uncovered <- third_party
@@ -327,6 +430,42 @@ test_that("ledger validation is fixed-schema, exact-key, and fail-closed", {
   blocking$classification[[1L]] <- "unknown"
   expect_error(
     tool$provenance_validate_ledger(blocking, expected, inventory),
+    "PROVENANCE_ROW_BLOCKING"
+  )
+})
+
+
+test_that("review fields reject arbitrary states impossible dates and mismatches", {
+  tool <- provenance_load_tool()
+  root <- provenance_fixture()
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  inventory <- tool$provenance_collect_sources(root, include_git = FALSE)
+  expected <- inventory[c("path", "symbol")]
+  ledger <- provenance_reviewed_ledger(tool, inventory)
+
+  expect_true(tool$provenance_validate_review_fields(ledger))
+  invalid_status <- ledger
+  invalid_status$status[[1L]] <- "approved-by-unknown-process"
+  expect_error(
+    tool$provenance_validate_ledger(invalid_status, expected, inventory),
+    "PROVENANCE_ROW_BLOCKING"
+  )
+  invalid_date <- ledger
+  invalid_date$review_date[[1L]] <- "2026-02-30"
+  expect_error(
+    tool$provenance_validate_ledger(invalid_date, expected, inventory),
+    "PROVENANCE_ROW_BLOCKING"
+  )
+  loose_date <- ledger
+  loose_date$review_date[[1L]] <- "2026-8-5"
+  expect_error(
+    tool$provenance_validate_ledger(loose_date, expected, inventory),
+    "PROVENANCE_ROW_BLOCKING"
+  )
+  mismatched <- ledger
+  mismatched$status[[1L]] <- "reviewed-cleared"
+  expect_error(
+    tool$provenance_validate_ledger(mismatched, expected, inventory),
     "PROVENANCE_ROW_BLOCKING"
   )
 })
