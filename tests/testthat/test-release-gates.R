@@ -799,32 +799,10 @@ test_that("the built-in isolated self-test proves both result directions", {
 
 
 copyIntegratedReleaseEvidence = function(root) {
-  sourceRoot = releaseGateProjectRoot()
-  paths = c(
-    "DESCRIPTION",
-    "README.md",
-    "inst/CITATION",
-    "CONTRIBUTORS.md",
-    "NEWS.md",
-    "docs/provenance/RIGHTS.md",
-    "docs/provenance/UPSTREAM-REQUEST.md",
-    "docs/provenance/UPSTREAM-RESPONSE.md",
-    "docs/provenance/EXPECTED-KEYS.csv",
-    "docs/provenance/PROVENANCE.csv",
-    "docs/provenance/ATTRIBUTION.md",
-    "docs/release/NAME-CHECK.md",
-    "tools/check_name_availability.R",
-    "GOVERNANCE.md",
-    "docs/release/REPOSITORY.md",
-    "docs/release/RELEASE-GATES.md"
-  )
-  for (relativePath in paths) {
-    destination = file.path(root, relativePath)
-    dir.create(dirname(destination), recursive = TRUE, showWarnings = FALSE)
-    file.copy(file.path(sourceRoot, relativePath), destination, overwrite = TRUE)
-  }
-  writePendingLicenseDecisionFixture(root)
-  writeIntegratedSourceEvidence(root)
+  writeCompleteIntegratedFixture(root, blockers = c(
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    "ATTRIBUTION_IDENTITY_UNRESOLVED"
+  ))
 }
 
 writePendingLicenseDecisionFixture = function(root) {
@@ -1028,21 +1006,249 @@ writeIntegratedSourceEvidence = function(root) {
   write.csv(expected, expectedPath, row.names = FALSE, na = "")
   write.csv(ledger, ledgerPath, row.names = FALSE, na = "")
 
-  attributionPath = file.path(
-    root, "docs", "provenance", "ATTRIBUTION.md"
-  )
-  attribution = readLines(
-    attributionPath, warn = FALSE, encoding = "UTF-8"
-  )
-  attribution[grepl("^Inventory-Row-Count:", attribution)] = paste0(
-    "Inventory-Row-Count: ", nrow(ledger)
-  )
-  attribution[grepl("^Inventory-Snapshot-MD5:", attribution)] = paste0(
-    "Inventory-Snapshot-MD5: ",
-    unname(tools::md5sum(ledgerPath)[[1L]])
-  )
-  writeLines(attribution, attributionPath, useBytes = TRUE)
   invisible(list(inventory = inventory, expected = expected, ledger = ledger))
+}
+
+writeIntegratedNameEvidence = function(root) {
+  sourceRoot = releaseGateProjectRoot()
+  toolPath = file.path(root, "tools", "check_name_availability.R")
+  dir.create(dirname(toolPath), recursive = TRUE, showWarnings = FALSE)
+  file.copy(
+    file.path(sourceRoot, "tools", "check_name_availability.R"),
+    toolPath, overwrite = TRUE
+  )
+  tool = loadProvenanceFixtureTool(toolPath)
+  checkedAt = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  result = tool$name_check_evaluate_fixture(
+    "GEModelR", tool$name_check_test_fixture(),
+    check_kind = "release", checked_at = checkedAt
+  )
+  path = file.path(root, "docs", "release", "NAME-CHECK.md")
+  tool$name_check_write_report(result, path)
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  lines[grepl("^Reviewer:", lines)] = "Reviewer: David Zenz"
+  lines[grepl("^Review-Date-UTC:", lines)] =
+    paste0("Review-Date-UTC: ", checkedAt)
+  writeLines(lines, path, useBytes = TRUE)
+}
+
+writeIntegratedAttributionEvidence = function(root, ledger, blockers) {
+  keys = paste(ledger$path, ledger$symbol, sep = "::")
+  davidKeys = keys[ledger$contributors == "David Zenz"]
+  marosKeys = keys[ledger$contributors == "Maros Ivanic"]
+  roleRows = c(
+    paste0(
+      "| David Zenz | aut | ", paste(davidKeys, collapse = ";"),
+      " | fixture-original-code-license | all | David Zenz | ",
+      "2026-08-27 | reviewed |"
+    ),
+    paste0(
+      "| David Zenz | cre | ", paste(davidKeys, collapse = ";"),
+      " | fixture-original-code-license | all | David Zenz | ",
+      "2026-08-27 | reviewed |"
+    ),
+    paste0(
+      "| David Zenz | cph | ", paste(davidKeys, collapse = ";"),
+      " | fixture-original-code-license | all | David Zenz | ",
+      "2026-08-27 | reviewed |"
+    ),
+    paste0(
+      "| Maros Ivanic | ctb | ", paste(marosKeys, collapse = ";"),
+      " | public-domain-cc0 | all | David Zenz | ",
+      "2026-08-27 | reviewed |"
+    ),
+    paste0(
+      "| Maros Ivanic | cph | ", paste(marosKeys, collapse = ";"),
+      " | public-domain-cc0 | all | David Zenz | ",
+      "2026-08-27 | reviewed |"
+    )
+  )
+  blockerKeys = c(
+    DEPENDENCY_COMPATIBILITY_AUDIT_PENDING =
+      "R/sparseSolver.R::sparse_solve_model",
+    ATTRIBUTION_IDENTITY_UNRESOLVED =
+      "R/sparseCompiler.R::sparse_compile_spec"
+  )[blockers]
+  blockerFacts = c(
+    DEPENDENCY_COMPATIBILITY_AUDIT_PENDING =
+      "PACKAGE_LICENSE_UNFINALIZED",
+    ATTRIBUTION_IDENTITY_UNRESOLVED =
+      "GIT_IDENTITY_ALIAS_UNRESOLVED"
+  )
+  blockerRows = vapply(seq_along(blockers), function(index) {
+    paste0(
+      "| ", blockerFacts[[blockers[[index]]]], " | ",
+      blockerKeys[[index]], " | release | ", blockers[[index]],
+      " | David Zenz | 2026-08-27 | blocking |"
+    )
+  }, character(1))
+  path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
+  ledgerPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  writeLines(c(
+    "# Synthetic attribution fixture",
+    "",
+    "Attribution-Schema-Version: 1",
+    "Inventory-Path: docs/provenance/PROVENANCE.csv",
+    paste0("Inventory-Row-Count: ", nrow(ledger)),
+    paste0(
+      "Inventory-Snapshot-MD5: ",
+      unname(tools::md5sum(ledgerPath)[[1L]])
+    ),
+    "Upstream-Repository: https://github.com/mivanic/tabloToR",
+    "Upstream-Commit: upstream-fixture-commit",
+    "Reviewer: David Zenz",
+    "Review-Date: 2026-08-27",
+    "",
+    "## Reviewed role assignments",
+    "",
+    paste0(
+      "| person/entity | role | evidence_keys | rights_basis | ",
+      "destination | reviewer | review_date | status |"
+    ),
+    "| --- | --- | --- | --- | --- | --- | --- | --- |",
+    roleRows,
+    "",
+    "## Blocking facts",
+    "",
+    paste0(
+      "| fact | evidence_key | destination | reason | reviewer | ",
+      "review_date | status |"
+    ),
+    "| --- | --- | --- | --- | --- | --- | --- |",
+    blockerRows
+  ), path, useBytes = TRUE)
+  invisible(list(
+    keys = keys, david_keys = davidKeys, maros_keys = marosKeys
+  ))
+}
+
+writeIntegratedDestinations = function(root, evidence) {
+  evidenceText = paste(evidence$keys, collapse = "; ")
+  roleMarkers = c(
+    "Attribution-Role: David Zenz|aut,cph,cre",
+    "Attribution-Role: Maros Ivanic|cph,ctb"
+  )
+  description = c(
+    "Package: tabloToR",
+    "Type: Package",
+    "Title: Synthetic Integrated Release Fixture",
+    "Version: 0.0.1",
+    paste0(
+      "Authors@R: c(person(\"David\", \"Zenz\", ",
+      "email = \"zenz@wiiw.ac.at\", ",
+      "role = c(\"aut\", \"cre\", \"cph\")),"
+    ),
+    paste0(
+      " person(\"Maros\", \"Ivanic\", role = c(\"ctb\", \"cph\")))"
+    ),
+    "Maintainer: David Zenz <zenz@wiiw.ac.at>",
+    paste0("Description: Synthetic fixture evidence ", evidenceText),
+    "Attribution: David Zenz; Maros Ivanic",
+    "License: Apache License (>= 2.0)",
+    "URL: https://github.com/DavidZenz/GEModelR",
+    "BugReports: https://github.com/DavidZenz/GEModelR/issues",
+    "Encoding: UTF-8"
+  )
+  writeLines(description, file.path(root, "DESCRIPTION"), useBytes = TRUE)
+  writeLines(c(
+    "# Synthetic release fixture",
+    "",
+    "David Zenz and Maros Ivanic",
+    evidenceText
+  ), file.path(root, "README.md"), useBytes = TRUE)
+  citationPath = file.path(root, "inst", "CITATION")
+  dir.create(dirname(citationPath), recursive = TRUE, showWarnings = FALSE)
+  writeLines(c(
+    "David Zenz; Maros Ivanic",
+    evidenceText
+  ), citationPath, useBytes = TRUE)
+  writeLines(c(
+    "# Contributors",
+    "",
+    roleMarkers,
+    "David Zenz",
+    "Maros Ivanic",
+    paste0("Evidence-Key: ", evidence$keys)
+  ), file.path(root, "CONTRIBUTORS.md"), useBytes = TRUE)
+  writeLines(c(
+    "# NEWS",
+    "",
+    roleMarkers,
+    "David Zenz",
+    "Maros Ivanic",
+    paste0("Evidence-Key: ", evidence$keys)
+  ), file.path(root, "NEWS.md"), useBytes = TRUE)
+}
+
+writeIntegratedGovernanceEvidence = function(root) {
+  writeLines(c(
+    "# Synthetic governance fixture",
+    "Maintainer: David Zenz",
+    "Approved-Contact: zenz@wiiw.ac.at",
+    "Release-Authority: David Zenz",
+    "Security-Route: mailto:zenz@wiiw.ac.at",
+    "Identity-Approval: approved",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-27"
+  ), file.path(root, "GOVERNANCE.md"), useBytes = TRUE)
+  writeLines(c(
+    "# Synthetic repository fixture",
+    "Owner-Slug: DavidZenz",
+    "Repository-Name: GEModelR",
+    "Canonical-URL: https://github.com/DavidZenz/GEModelR",
+    "Issue-Tracker: https://github.com/DavidZenz/GEModelR/issues",
+    "Visibility-Boundary: private-development",
+    "Identity-Approval: approved",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-08-27",
+    "Reservation-Authorization: not-authorized",
+    "Visibility-Detachment-Authorization: not-authorized",
+    "Branch-Settings-Authorization: not-authorized",
+    "Release-Authorization: not-authorized"
+  ), file.path(root, "docs", "release", "REPOSITORY.md"), useBytes = TRUE)
+}
+
+writeCompleteIntegratedFixture = function(root, blockers = character()) {
+  if (dir.exists(root)) unlink(root, recursive = TRUE)
+  dir.create(root, recursive = TRUE)
+  writePublicDomainFixture(root)
+  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
+  rights = readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  rights = c(rights, "Integrated-Evidence-Version: 1")
+  if (length(blockers)) {
+    rights = c(
+      rights, paste0("Unresolved-Release-Blocker: ", blockers)
+    )
+  }
+  writeLines(rights, rightsPath, useBytes = TRUE)
+  releasePath = file.path(root, "docs", "release", "RELEASE-GATES.md")
+  release = readLines(releasePath, warn = FALSE, encoding = "UTF-8")
+  release[grepl("^Intentional-Blockers:", release)] = paste0(
+    "Intentional-Blockers: ",
+    if (length(blockers)) paste(blockers, collapse = ",") else "NONE"
+  )
+  writeLines(release, releasePath, useBytes = TRUE)
+
+  writeIntegratedNameEvidence(root)
+  sourceEvidence = writeIntegratedSourceEvidence(root)
+  attribution = writeIntegratedAttributionEvidence(
+    root, sourceEvidence$ledger, blockers
+  )
+  writeIntegratedDestinations(root, attribution)
+  writeIntegratedGovernanceEvidence(root)
+  if ("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING" %in% blockers) {
+    descriptionPath = file.path(root, "DESCRIPTION")
+    description = readLines(
+      descriptionPath, warn = FALSE, encoding = "UTF-8"
+    )
+    description[grepl("^License:", description)] =
+      "License: What license is it under?"
+    writeLines(description, descriptionPath, useBytes = TRUE)
+    writePendingLicenseDecisionFixture(root)
+  } else {
+    writeReviewedLicenseDecisionFixture(root)
+  }
+  invisible(root)
 }
 
 rewriteIntegratedLedger = function(root, ledger) {
@@ -1232,41 +1438,152 @@ test_that("a complete integrated fixture owns its release evidence graph", {
 test_that("integrated release evidence can prove a synthetic ready state", {
   root = tempfile("release-gate-integrated-ready-")
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
-  copyIntegratedReleaseEvidence(root)
-
-  namePath = file.path(root, "docs", "release", "NAME-CHECK.md")
-  nameLines = readLines(namePath, warn = FALSE, encoding = "UTF-8")
-  nameLines[grepl("^Check-Kind:", nameLines)] = "Check-Kind: release"
-  nameLines[grepl("^Checked-At-UTC:", nameLines)] = paste0(
-    "Checked-At-UTC: ", format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
-  )
-  writeLines(nameLines, namePath, useBytes = TRUE)
-
-  writeReviewedLicenseDecisionFixture(root)
-  attributionPath = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
-  attribution = readLines(attributionPath, warn = FALSE, encoding = "UTF-8")
-  attribution = attribution[!grepl(
-    "PACKAGE_LICENSE_UNFINALIZED|GIT_IDENTITY_ALIAS_UNRESOLVED",
-    attribution
-  )]
-  writeLines(attribution, attributionPath, useBytes = TRUE)
-
-  releasePath = file.path(root, "docs", "release", "RELEASE-GATES.md")
-  release = readLines(releasePath, warn = FALSE, encoding = "UTF-8")
-  release[grepl("^Intentional-Blockers:", release)] =
-    "Intentional-Blockers: NONE"
-  writeLines(release, releasePath, useBytes = TRUE)
-
-  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
-  rights = readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
-  rights = rights[!grepl("^Unresolved-Release-Blocker:", rights)]
-  writeLines(rights, rightsPath, useBytes = TRUE)
+  writeCompleteIntegratedFixture(root)
 
   result = evaluateReleaseGate(root)
   expect_identical(result$repository_state, "eligible")
   expect_true(result$release_ready)
   expect_length(result$reason_codes, 0L)
   expect_identical(unname(result$parse_status), rep("pass", 12L))
+})
+
+test_that("integrated release mutations fail at their exact boundary", {
+  replaceLine = function(root, relativePath, pattern, replacement) {
+    path = file.path(root, relativePath)
+    lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+    lines[grepl(pattern, lines)] = replacement
+    writeLines(lines, path, useBytes = TRUE)
+  }
+  cases = list(
+    integration_version = list(
+      reason = "INTEGRATED_EVIDENCE_VERSION_INVALID",
+      stream = "integrated",
+      mutate = function(root) {
+        path = file.path(root, "docs", "provenance", "RIGHTS.md")
+        lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+        lines = lines[!grepl("^Integrated-Evidence-Version:", lines)]
+        writeLines(lines, path, useBytes = TRUE)
+      }
+    ),
+    source_hash = list(
+      reason = "PROVENANCE_KEY_MISMATCH",
+      stream = "provenance",
+      mutate = function(root) writeLines(c(
+        "processTablo = function(value) {",
+        "  value + 1",
+        "}"
+      ), file.path(root, "R", "processTablo.R"), useBytes = TRUE)
+    ),
+    attribution_destination = list(
+      reason = "ATTRIBUTION_DESTINATION_MISSING",
+      stream = "attribution_destinations",
+      mutate = function(root) unlink(file.path(root, "README.md"))
+    ),
+    name_detail = list(
+      reason = "NAME_REPORT_INVALID",
+      stream = "name",
+      mutate = function(root) {
+        path = file.path(root, "docs", "release", "NAME-CHECK.md")
+        lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+        hit = which(grepl("^Source-Detail:", lines))[[1L]]
+        writeLines(lines[-hit], path, useBytes = TRUE)
+      }
+    ),
+    name_signature = list(
+      reason = "NAME_REPORT_INVALID",
+      stream = "name",
+      mutate = function(root) replaceLine(
+        root, "docs/release/NAME-CHECK.md", "^Reviewer:",
+        "Reviewer: awaiting-human-approval"
+      )
+    ),
+    license_decision = list(
+      reason = "LICENSE_DECISION_MISSING",
+      stream = "license",
+      mutate = function(root) unlink(file.path(
+        root, "docs", "provenance", "LICENSE-DECISION.md"
+      ))
+    ),
+    license_audit = list(
+      reason = "LICENSE_DEPENDENCY_AUDIT_HASH_MISMATCH",
+      stream = "license",
+      mutate = function(root) {
+        path = file.path(
+          root, "docs", "provenance", "DEPENDENCY-AUDIT.md"
+        )
+        writeLines(
+          c(readLines(path, warn = FALSE), "tampered"),
+          path, useBytes = TRUE
+        )
+      }
+    ),
+    license_expression = list(
+      reason = "LICENSE_EXPRESSION_INVALID",
+      stream = "license",
+      mutate = function(root) writeReviewedLicenseDecisionFixture(
+        root, license = "definitely-not-a-valid-license"
+      )
+    ),
+    attribution_blocker = list(
+      reason = "INTENTIONAL_BLOCKERS_MISMATCH",
+      stream = NA_character_,
+      mutate = function(root) {
+        path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
+        lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+        row = paste0(
+          "| GIT_IDENTITY_ALIAS_UNRESOLVED | ",
+          "R/sparseCompiler.R::sparse_compile_spec | release | ",
+          "ATTRIBUTION_IDENTITY_UNRESOLVED | David Zenz | ",
+          "2026-08-27 | blocking |"
+        )
+        writeLines(c(lines, row), path, useBytes = TRUE)
+      }
+    ),
+    governance = list(
+      reason = "GOVERNANCE_SECURITY_ROUTE_MISSING",
+      stream = "governance",
+      mutate = function(root) replaceLine(
+        root, "GOVERNANCE.md", "^Security-Route:",
+        "Security-Route: missing"
+      )
+    ),
+    repository = list(
+      reason = "REPOSITORY_URL_MISMATCH",
+      stream = "repository",
+      mutate = function(root) replaceLine(
+        root, "docs/release/REPOSITORY.md", "^Canonical-URL:",
+        "Canonical-URL: https://github.com/DavidZenz/wrong"
+      )
+    ),
+    blocker_marker = list(
+      reason = "INTENTIONAL_BLOCKERS_MISMATCH",
+      stream = NA_character_,
+      mutate = function(root) replaceLine(
+        root, "docs/release/RELEASE-GATES.md",
+        "^Intentional-Blockers:",
+        "Intentional-Blockers: ATTRIBUTION_IDENTITY_UNRESOLVED"
+      )
+    )
+  )
+
+  for (name in names(cases)) {
+    root = tempfile("release-gate-integrated-mutation-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeCompleteIntegratedFixture(root)
+    cases[[name]]$mutate(root)
+
+    result = evaluateReleaseGate(root)
+    expect_identical(result$repository_state, "invalid", info = name)
+    expect_false(result$release_ready, info = name)
+    expect_identical(result$reason_codes, cases[[name]]$reason, info = name)
+    if (is.na(cases[[name]]$stream)) {
+      expect_true(all(result$parse_status == "pass"), info = name)
+    } else {
+      expect_identical(
+        result$parse_status[[cases[[name]]$stream]], "fail", info = name
+      )
+    }
+  }
 })
 
 

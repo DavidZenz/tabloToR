@@ -53,6 +53,14 @@ public response is scoped to the audited upstream-authored baseline.
 - `Rscript --vanilla tools/check_release_gates.R --self-test` checks the legacy
   rights alternatives and malformed/sensitive fixtures without network access.
 
+The integrated regression contract constructs a complete temporary R source
+tree, initializes and commits its local Git history, then derives expected keys,
+expression hashes, provenance rows, attribution destinations, strict
+release-kind name evidence, governance, repository, and reviewed license
+evidence from that fixture. It does not import checked-in mutable ledgers.
+Table-driven mutations assert the exact failing parser and reason code for every
+integration boundary, while temporary roots are removed after each assertion.
+
 A fresh release-kind name report is required before a blocker-free root can be
 release-ready. Even a technically ready result does not create, reserve, change,
 or publish a repository: every such action requires its separate human
