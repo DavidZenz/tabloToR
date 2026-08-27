@@ -552,12 +552,14 @@ writeCompleteCleanroomFixture <- function(
     "replacement_source_md5", "behavior_test_md5",
     "public_standard_evidence_md5", "fixture_md5"
   )
+  producedAt <- format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC")
+  reviewDate <- format(Sys.Date(), "%Y-%m-%d")
   write.dcf(matrix(c(
     "example-component", provenanceKey,
     hashes[["replacement_source_md5"]], hashes[["behavior_test_md5"]],
     hashes[["fixture_md5"]], hashes[["public_standard_evidence_md5"]],
     "rscript-cleanroom-v1", "0", resultProducer,
-    "2026-08-27T00:00:00Z", reviewer, "2026-08-27", "pass"
+    producedAt, reviewer, reviewDate, "pass"
   ), nrow = 1L, dimnames = list(NULL, c(
     "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
     "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",
@@ -862,6 +864,155 @@ test_that("clean-room component and inherited coverage cannot be empty or duplic
     evaluateRightsGate(duplicateKey)$reason_codes,
     "CLEANROOM_EVIDENCE_INCOMPLETE"
   )
+})
+
+cleanroomResultFields <- c(
+  "Component-ID", "Provenance-Key", "Replacement-Source-MD5",
+  "Behavior-Test-MD5", "Fixture-MD5", "Public-Standard-Evidence-MD5",
+  "Test-Command-ID", "Exit-Status", "Result-Producer",
+  "Produced-At-UTC", "Reviewer", "Review-Date", "Result-Status"
+)
+
+rewriteCleanroomResult <- function(root, replacements = character()) {
+  paths <- cleanroomFixturePaths(root)
+  result <- read.dcf(paths$absolute[["independent_result"]])
+  stopifnot(identical(colnames(result), cleanroomResultFields))
+  for (field in names(replacements)) result[1L, field] <- replacements[[field]]
+  write.dcf(result, paths$absolute[["independent_result"]])
+  rewriteCleanroomComponentField(
+    root, "independent_result_md5",
+    unname(tools::md5sum(paths$absolute[["independent_result"]])[[1L]])
+  )
+}
+
+rehashCleanroomArtifact <- function(root, artifact) {
+  componentHashes <- c(
+    replacement_source = "replacement_source_md5",
+    behavior_test = "behavior_test_md5",
+    public_standard_evidence = "public_standard_evidence_md5",
+    redistributable_fixture = "fixture_md5"
+  )
+  resultHashes <- c(
+    replacement_source = "Replacement-Source-MD5",
+    behavior_test = "Behavior-Test-MD5",
+    public_standard_evidence = "Public-Standard-Evidence-MD5",
+    redistributable_fixture = "Fixture-MD5"
+  )
+  paths <- cleanroomFixturePaths(root)
+  hash <- unname(tools::md5sum(paths$absolute[[artifact]])[[1L]])
+  rewriteCleanroomComponentField(root, componentHashes[[artifact]], hash)
+  rewriteCleanroomResult(root, setNames(hash, resultHashes[[artifact]]))
+  invisible(hash)
+}
+
+test_that("clean-room behavior evidence is freshly executed with fixed arguments", {
+  expect_true(exists(
+    "release_gate_run_cleanroom_test", envir = releaseGateEnvironment,
+    inherits = FALSE
+  ))
+
+  sourceDrift <- tempfile("release-gate-cleanroom-fresh-source-")
+  on.exit(unlink(sourceDrift, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(sourceDrift)
+  writeLines(c(
+    "cleanroom_replacement = function(value) {",
+    "  value * 3",
+    "}"
+  ), fixture$paths$absolute[["replacement_source"]], useBytes = TRUE)
+  rehashCleanroomArtifact(sourceDrift, "replacement_source")
+  expect_identical(
+    evaluateRightsGate(sourceDrift)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+
+  nonzero <- tempfile("release-gate-cleanroom-nonzero-")
+  on.exit(unlink(nonzero, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(nonzero)
+  writeLines("quit(save = \"no\", status = 3L)",
+             fixture$paths$absolute[["behavior_test"]], useBytes = TRUE)
+  rehashCleanroomArtifact(nonzero, "behavior_test")
+  expect_identical(
+    evaluateRightsGate(nonzero)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("clean-room behavior subprocess errors and timeouts fail closed", {
+  root <- tempfile("release-gate-cleanroom-timeout-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  fixture <- writeCompleteCleanroomFixture(root)
+  writeLines("Sys.sleep(3)", fixture$paths$absolute[["behavior_test"]],
+             useBytes = TRUE)
+  rehashCleanroomArtifact(root, "behavior_test")
+  oldTimeout <- get0(
+    "release_gate_cleanroom_timeout_seconds", envir = releaseGateEnvironment,
+    inherits = FALSE
+  )
+  assign(
+    "release_gate_cleanroom_timeout_seconds", function() 1L,
+    envir = releaseGateEnvironment
+  )
+  on.exit({
+    if (is.null(oldTimeout)) {
+      rm("release_gate_cleanroom_timeout_seconds",
+         envir = releaseGateEnvironment)
+    } else {
+      assign("release_gate_cleanroom_timeout_seconds", oldTimeout,
+             envir = releaseGateEnvironment)
+    }
+  }, add = TRUE)
+  expect_identical(
+    evaluateRightsGate(root)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("independent clean-room results bind exact inputs command and status", {
+  cases <- list(
+    component = c("Component-ID" = "other-component"),
+    key = c("Provenance-Key" = "R/other.R::other"),
+    source_hash = c("Replacement-Source-MD5" = paste(rep("0", 32L), collapse = "")),
+    test_hash = c("Behavior-Test-MD5" = paste(rep("0", 32L), collapse = "")),
+    fixture_hash = c("Fixture-MD5" = paste(rep("0", 32L), collapse = "")),
+    standard_hash = c("Public-Standard-Evidence-MD5" = paste(rep("0", 32L), collapse = "")),
+    command = c("Test-Command-ID" = "shell-command"),
+    exit = c("Exit-Status" = "1"),
+    stale = c("Produced-At-UTC" = "2000-01-01T00:00:00Z"),
+    malformed_date = c("Review-Date" = "yesterday"),
+    failed = c("Result-Status" = "fail"),
+    reviewer = c("Reviewer" = "different-reviewer")
+  )
+  for (name in names(cases)) {
+    root <- tempfile("release-gate-cleanroom-result-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeCompleteCleanroomFixture(root)
+    rewriteCleanroomResult(root, cases[[name]])
+    result <- evaluateRightsGate(root)
+    expect_identical(
+      result$reason_codes, "CLEANROOM_EVIDENCE_INCOMPLETE", info = name
+    )
+    expect_false(result$release_ready, info = name)
+  }
+})
+
+test_that("clean-room result production preserves independent roles", {
+  collisions <- c(
+    "fixture-specification-author", "fixture-independent-implementer",
+    "fixture-independent-reviewer"
+  )
+  for (producer in collisions) {
+    root <- tempfile("release-gate-cleanroom-result-role-")
+    on.exit(unlink(root, recursive = TRUE), add = TRUE)
+    writeCompleteCleanroomFixture(root)
+    rewriteCleanroomResult(root, c("Result-Producer" = producer))
+    result <- evaluateRightsGate(root)
+    expected <- if (identical(
+      producer, "fixture-independent-implementer"
+    )) "CLEANROOM_IMPLEMENTER_INELIGIBLE" else
+      "CLEANROOM_EVIDENCE_INCOMPLETE"
+    expect_identical(result$reason_codes, expected, info = producer)
+    expect_false(result$release_ready, info = producer)
+  }
 })
 
 test_that("the clean-room tree rejects sensitive fixture classes", {
@@ -1503,6 +1654,143 @@ rewriteIntegratedLedger = function(root, ledger) {
   )
   writeLines(attribution, attributionPath, useBytes = TRUE)
 }
+
+writeCompleteIntegratedCleanroomFixture <- function(root) {
+  writeCompleteIntegratedFixture(root)
+
+  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
+  rights <- readLines(rightsPath, warn = FALSE, encoding = "UTF-8")
+  rights[grepl("^Rights-Status:", rights)] <-
+    "Rights-Status: clean-room-required"
+  rights[grepl("^Request-Status:", rights)] <- "Request-Status: resolved"
+  writeLines(rights, rightsPath, useBytes = TRUE)
+  releasePath <- file.path(root, "docs", "release", "RELEASE-GATES.md")
+  release <- readLines(releasePath, warn = FALSE, encoding = "UTF-8")
+  release[grepl("^Rights-Gate-Status:", release)] <-
+    "Rights-Gate-Status: clean-room-required"
+  writeLines(release, releasePath, useBytes = TRUE)
+
+  stage <- tempfile("release-gate-cleanroom-stage-")
+  on.exit(unlink(stage, recursive = TRUE), add = TRUE)
+  writeCompleteCleanroomFixture(
+    stage, provenanceKey = "R/processTablo.R::processTablo"
+  )
+  file.copy(
+    file.path(stage, "docs", "provenance", "CLEANROOM.md"),
+    file.path(root, "docs", "provenance", "CLEANROOM.md"), overwrite = TRUE
+  )
+  dir.create(file.path(root, "specs", "cleanroom"), recursive = TRUE,
+             showWarnings = FALSE)
+  file.copy(
+    file.path(stage, "specs", "cleanroom", "example-component.md"),
+    file.path(root, "specs", "cleanroom", "example-component.md"),
+    overwrite = TRUE
+  )
+  file.copy(file.path(stage, "cleanroom"), root, recursive = TRUE)
+
+  protocolPath <- file.path(root, "docs", "provenance", "CLEANROOM.md")
+  protocol <- readLines(protocolPath, warn = FALSE, encoding = "UTF-8")
+  protocol[grepl("^Inherited-Provenance-Key:", protocol)] <-
+    "Inherited-Provenance-Key: R/processTablo.R::processTablo"
+  writeLines(protocol, protocolPath, useBytes = TRUE)
+
+  paths <- cleanroomFixturePaths(root)
+  writeLines(c("Input: 2", "Expected: 2", "License: CC0-1.0"),
+             paths$absolute[["redistributable_fixture"]], useBytes = TRUE)
+  writeLines(c(
+    "args = commandArgs(trailingOnly = TRUE)",
+    "if (!identical(args[c(1L, 3L)], c(\"--source\", \"--fixture\"))) {",
+    "  stop(\"fixed clean-room arguments required\", call. = FALSE)",
+    "}",
+    "environment = new.env(parent = baseenv())",
+    "sys.source(args[[2L]], envir = environment)",
+    "fixture = read.dcf(args[[4L]])",
+    "actual = environment$processTablo(as.numeric(fixture[1L, \"Input\"]))",
+    "if (!identical(actual, as.numeric(fixture[1L, \"Expected\"]))) {",
+    "  stop(\"observable behavior mismatch\", call. = FALSE)",
+    "}"
+  ), paths$absolute[["behavior_test"]], useBytes = TRUE)
+  rewriteCleanroomComponentField(
+    root, "replacement_source", "R/processTablo.R"
+  )
+  rewriteCleanroomComponentField(
+    root, "replacement_source_md5",
+    unname(tools::md5sum(file.path(root, "R", "processTablo.R"))[[1L]])
+  )
+  rewriteCleanroomComponentField(
+    root, "provenance_key", "R/processTablo.R::processTablo"
+  )
+  rehashCleanroomArtifact(root, "behavior_test")
+  rehashCleanroomArtifact(root, "redistributable_fixture")
+  rewriteCleanroomResult(root, c(
+    "Component-ID" = "example-component",
+    "Provenance-Key" = "R/processTablo.R::processTablo",
+    "Replacement-Source-MD5" = unname(tools::md5sum(
+      file.path(root, "R", "processTablo.R")
+    )[[1L]]),
+    "Produced-At-UTC" = format(Sys.time(), "%Y-%m-%dT%H:%M:%SZ", tz = "UTC"),
+    "Review-Date" = format(Sys.Date(), "%Y-%m-%d")
+  ))
+
+  ledgerPath <- file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  ledger <- read.csv(
+    ledgerPath, stringsAsFactors = FALSE, check.names = FALSE,
+    colClasses = "character", na.strings = NULL
+  )
+  inherited <- ledger$classification %in% c(
+    "inherited-identical", "inherited-modified"
+  )
+  ledger$classification[inherited] <- "new-independent"
+  ledger$upstream_repository[inherited] <- ""
+  ledger$upstream_commit[inherited] <- ""
+  ledger$upstream_path[inherited] <- ""
+  ledger$license_basis[inherited] <- "fixture-original-code-license"
+  ledger$status[inherited] <- "reviewed-provisional"
+  rewriteIntegratedLedger(root, ledger)
+  invisible(root)
+}
+
+test_that("complete clean-room replacement joins the integrated release graph", {
+  root <- tempfile("release-gate-cleanroom-integrated-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  writeCompleteIntegratedCleanroomFixture(root)
+
+  result <- evaluateReleaseGate(root)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
+  expect_length(result$reason_codes, 0L)
+  expect_identical(result$parse_status[["cleanroom"]], "pass")
+
+  ledgerPath <- file.path(root, "docs", "provenance", "PROVENANCE.csv")
+  ledger <- read.csv(
+    ledgerPath, stringsAsFactors = FALSE, check.names = FALSE,
+    colClasses = "character", na.strings = NULL
+  )
+  key <- paste(ledger$path, ledger$symbol, sep = "::")
+  row <- key == "R/processTablo.R::processTablo"
+  ledger$classification[row] <- "inherited-modified"
+  ledger$upstream_repository[row] <- "https://example.invalid/upstream"
+  ledger$upstream_commit[row] <- "fixture-upstream"
+  ledger$upstream_path[row] <- "R/processTablo.R"
+  ledger$license_basis[row] <- "public-domain-cc0"
+  ledger$status[row] <- "reviewed-mixed-provisional"
+  rewriteIntegratedLedger(root, ledger)
+  expect_identical(
+    evaluateReleaseGate(root)$reason_codes,
+    "CLEANROOM_EVIDENCE_INCOMPLETE"
+  )
+})
+
+test_that("synthetic clean-room fixtures never clear canonical release blockers", {
+  canonical <- evaluateReleaseGate(releaseGateProjectRoot())
+  expect_identical(canonical$repository_state, "blocked")
+  expect_false(canonical$release_ready)
+  expect_identical(
+    canonical$reason_codes,
+    c("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+      "ATTRIBUTION_IDENTITY_UNRESOLVED")
+  )
+})
 
 test_that("integrated evidence version is mandatory and exact", {
   cases = list(
