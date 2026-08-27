@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 01
 current_phase_name: Provenance and Release Boundary
 status: executing
-stopped_at: Completed 01-09-PLAN.md
-last_updated: "2026-08-27T09:10:13.905Z"
+stopped_at: Completed 01-07-PLAN.md
+last_updated: "2026-08-27T10:21:17.059Z"
 last_activity: 2026-08-27
-last_activity_desc: Completed Plan 01-08 exhaustive name evidence
-state_head: 4483b8ab36e50fd99c7089610882e3f14ad1cd38
+last_activity_desc: Completed Plan 01-07 integrated release gate
+state_head: e754decc459f98eebd706f3f32086205c8d2cced
 progress:
   total_phases: 7
   completed_phases: 0
   total_plans: 11
-  completed_plans: 8
+  completed_plans: 9
 milestone_name: milestone
 ---
 
@@ -29,30 +29,30 @@ See: `.planning/PROJECT.md` (updated 2026-08-22)
 ## Current Position
 
 Phase: 01 (Provenance and Release Boundary) — READY TO EXECUTE
-Plan: 9 of 11
+Plan: 10 of 11
 Status: Ready to execute
-Last activity: 2026-08-27 — Completed Plan 01-08 exhaustive name evidence
+Last activity: 2026-08-27 — Completed Plan 01-07 integrated release gate
 
-Progress: [███████░░░] 73%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
-- Average duration: 388 min (checkpoint wait included)
-- Total execution time: 2714 min (checkpoint wait included)
+- Total plans completed: 9
+- Average duration: 316 min (checkpoint wait included)
+- Total execution time: 2846 min (checkpoint wait included)
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 7 | 2714 min | 388 min |
+| 01 | 9 | 2846 min | 316 min |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-03 (23 min), 01-04 (53 min), 01-05 (20 min), 01-06 (25 min), 01-08 (40h including checkpoint wait)
-- Trend: Exhaustive signed name evidence completed with fail-closed source coverage
+- Last 5 plans: 01-05 (20 min), 01-06 (25 min), 01-08 (40h including checkpoint wait), 01-09 (91 min), 01-07 (41 min)
+- Trend: Integrated release gate now validates source-derived provenance, attribution, and license evidence
 
 **Per-Plan Metrics:**
 
@@ -66,6 +66,7 @@ Progress: [███████░░░] 73%
 | Phase 01 P06 | 25m | 2 tasks | 8 files |
 | Phase 01 P08 | 40h including checkpoint wait | 3 tasks | 3 files |
 | Phase 01 P09 | 1h31m | 3 tasks | 5 files |
+| Phase 01 P07 | 41min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -103,6 +104,10 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 01]: Approval is point-in-time exact-name collision evidence only and grants no trademark, reservation, repository-mutation, or publication authorization.
 - [Phase 01]: Accepted the complete 54-row native hash migration with the exact response accept; reviewer=David Zenz.
 - [Phase 01]: Preserved D-06: stable keys, hashes, and Git history identify review scope but do not assign authorship, ownership, contributor, or license roles.
+- [Phase 01]: Integrated release readiness validates freshly extracted Git-backed source before trusting provenance ledgers.
+- [Phase 01]: Attribution is release-complete only when all six public destinations preserve reviewed people, roles, and evidence keys.
+- [Phase 01]: Reviewed license readiness requires a safe under-root hash-bound dependency audit and an exact R-valid DESCRIPTION license expression.
+- [Phase 01]: Synthetic source-derived evidence proves the positive path while production retains exactly DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED.
 
 ### Pending Todos
 
@@ -124,6 +129,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-27T09:10:13.863Z
-Stopped at: Completed 01-09-PLAN.md
+Last session: 2026-08-27T10:21:17.044Z
+Stopped at: Completed 01-07-PLAN.md
 Resume file: None

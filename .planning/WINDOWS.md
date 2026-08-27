@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 1
+open_count: 2
 waived_count: 0
-fixed_count: 12
-total_count: 13
-last_updated: 2026-08-27T07:29:05.522Z
+fixed_count: 13
+total_count: 15
+last_updated: 2026-08-27T10:22:33.916Z
 ---
 
 # Broken Windows Ledger
@@ -28,6 +28,8 @@ last_updated: 2026-08-27T07:29:05.522Z
 | 11 | 01 | deviation | .planning/STATE.md |  | Repaired stale derived progress and blocker narrative after state.update-progress skipped the unscoped verifying phase. | fixed |  | 2026-08-25T12:49:50.252Z | 2026-08-25T12:49:59.919Z |
 | 12 | 01 | deviation | tests/testthat/test-name-availability.R | 803 | Checked-in report regression required unsigned markers after explicit Task 3 approval; updated to exact signed reviewer/date and strict verification. | fixed |  | 2026-08-27T07:27:05.647Z | 2026-08-27T07:27:29.666Z |
 | 13 | 01 | deviation | .planning/STATE.md |  | Reconciled stale Plan 2 and 55% narrative after unscoped state.update-progress skipped seven-summary phase state. | fixed |  | 2026-08-27T07:29:01.669Z | 2026-08-27T07:29:05.522Z |
+| 14 | 01 | stub | docs/provenance/LICENSE-DECISION.md | 7 | Pending package-license value is intentional until DEPENDENCY_COMPATIBILITY_AUDIT_PENDING is resolved by a reviewed hash-bound audit. | open |  | 2026-08-27T10:19:30.085Z |  |
+| 15 | 01 | deviation | .planning/STATE.md |  | Reconciled stale 73% progress and seven-plan velocity after state.update-progress skipped the unscoped in-progress phase following Plan 01-07. | fixed |  | 2026-08-27T10:21:37.195Z | 2026-08-27T10:22:33.916Z |
 
 ````json
 [
@@ -186,6 +188,30 @@ last_updated: 2026-08-27T07:29:05.522Z
     "reason": "",
     "recorded_at": "2026-08-27T07:29:01.669Z",
     "resolved_at": "2026-08-27T07:29:05.522Z"
+  },
+  {
+    "id": 14,
+    "kind": "stub",
+    "phase": "01",
+    "file": "docs/provenance/LICENSE-DECISION.md",
+    "line": 7,
+    "description": "Pending package-license value is intentional until DEPENDENCY_COMPATIBILITY_AUDIT_PENDING is resolved by a reviewed hash-bound audit.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-08-27T10:19:30.085Z",
+    "resolved_at": null
+  },
+  {
+    "id": 15,
+    "kind": "deviation",
+    "phase": "01",
+    "file": ".planning/STATE.md",
+    "line": null,
+    "description": "Reconciled stale 73% progress and seven-plan velocity after state.update-progress skipped the unscoped in-progress phase following Plan 01-07.",
+    "status": "fixed",
+    "reason": "",
+    "recorded_at": "2026-08-27T10:21:37.195Z",
+    "resolved_at": "2026-08-27T10:22:33.916Z"
   }
 ]
 ````
