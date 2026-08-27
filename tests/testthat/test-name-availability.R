@@ -29,7 +29,8 @@ nameCheckTool = function() {
     "name_check_evaluate_fixture", "name_check_write_report",
     "name_check_verify_report", "name_check_verify_identity",
     "name_check_parse_count", "name_check_validate_page_set",
-    "name_check_collect_pages"
+    "name_check_collect_pages", "name_check_bioc_repositories",
+    "name_check_validate_source_details"
   )
   missing = required[!vapply(
     required, exists, logical(1), envir = nameCheckEnvironment,
@@ -474,6 +475,180 @@ test_that("ASCII equal candidates preserve source order", {
   )
 })
 
+
+
+nameCheckBiocReleaseManifest = function(version, repositories) {
+  scripts = paste0(
+    '<script src="/packages/json/', version, '/', repositories,
+    '/packages.js"></script>'
+  )
+  charToRaw(paste(c("<html>", scripts, "</html>"), collapse = "\n"))
+}
+
+nameCheckBiocRepositoryManifest = function() {
+  charToRaw(paste0(
+    'paths <- c(\n',
+    '  BioCsoft = "bioc",\n',
+    '  BioCann = "data/annotation",\n',
+    '  BioCexp = "data/experiment",\n',
+    '  BioCworkflows = "workflows",\n',
+    '  BioCbooks = if (version() >= "3.12") "books" else character()\n',
+    ')\n'
+  ))
+}
+
+nameCheckBiocSource = function(sourceId, versions, omit = NULL,
+                                malformed = NULL, unhashable = NULL) {
+  repositoryManifest = nameCheckBiocRepositoryManifest()
+  releaseManifests = lapply(versions, function(version) {
+    repositories = c(
+      "bioc", "data/annotation", "data/experiment",
+      if (utils::compareVersion(version, "3.6") >= 0L) "workflows"
+    )
+    list(
+      release = version,
+      query = paste0(
+        "https://bioconductor.org/packages/", version, "/BiocViews.html"
+      ),
+      available = TRUE,
+      raw = nameCheckBiocReleaseManifest(version, repositories)
+    )
+  })
+  details = list()
+  for (manifest in releaseManifests) {
+    repositories = c(
+      "bioc", "data/annotation", "data/experiment",
+      if (utils::compareVersion(manifest$release, "3.6") >= 0L) "workflows",
+      if (utils::compareVersion(manifest$release, "3.12") >= 0L) "books"
+    )
+    for (repository in repositories) {
+      key = paste(manifest$release, repository, sep = "/")
+      if (identical(key, omit)) next
+      raw = charToRaw(paste0(
+        "Package: ", gsub("[^A-Za-z0-9]", "", repository),
+        "Fixture\nVersion: 1.0.0\n"
+      ))
+      if (identical(key, malformed)) raw = charToRaw("not a package index")
+      if (identical(key, unhashable)) raw = environment()
+      details[[length(details) + 1L]] = list(
+        release = manifest$release,
+        repository = repository,
+        query = paste0(
+          "https://bioconductor.org/packages/", manifest$release, "/",
+          repository, "/src/contrib/PACKAGES"
+        ),
+        available = TRUE,
+        raw = raw
+      )
+    }
+  }
+  list(
+    id = sourceId,
+    repository_manifest = list(
+      query = paste0(
+        "https://raw.githubusercontent.com/Bioconductor/",
+        "BiocManager/devel/R/repositories.R"
+      ),
+      available = TRUE,
+      raw = repositoryManifest
+    ),
+    release_manifests = releaseManifests,
+    details = details
+  )
+}
+
+test_that("Bioconductor repository manifests enumerate every advertised set", {
+  tool = nameCheckTool()
+  manifest = nameCheckBiocReleaseManifest(
+    "3.23", c("bioc", "data/annotation", "data/experiment", "workflows")
+  )
+  repositories = tool$name_check_bioc_repositories(
+    "3.23", manifest, nameCheckBiocRepositoryManifest(),
+    "bioconductor-current"
+  )
+  expect_identical(
+    repositories$repository,
+    c("bioc", "data/annotation", "data/experiment", "workflows", "books")
+  )
+  expect_identical(
+    repositories$path,
+    paste0(
+      "https://bioconductor.org/packages/3.23/",
+      repositories$repository, "/src/contrib/PACKAGES"
+    )
+  )
+
+  old = tool$name_check_bioc_repositories(
+    "3.5",
+    nameCheckBiocReleaseManifest(
+      "3.5", c("bioc", "data/annotation", "data/experiment")
+    ),
+    nameCheckBiocRepositoryManifest(), "bioconductor-history"
+  )
+  expect_identical(
+    old$repository, c("bioc", "data/annotation", "data/experiment")
+  )
+})
+
+test_that("Bioconductor composite sources fail closed on omitted details", {
+  tool = nameCheckTool()
+  current = nameCheckBiocSource("bioconductor-current", "3.23")
+  validated = tool$name_check_validate_source_details(
+    "bioconductor-current", current
+  )
+  expect_identical(
+    validated$details$repository,
+    c("manifest", "manifest", "bioc", "data/annotation",
+      "data/experiment", "workflows", "books")
+  )
+  expect_true(validated$complete)
+
+  expect_error(
+    tool$name_check_validate_source_details(
+      "bioconductor-current",
+      nameCheckBiocSource(
+        "bioconductor-current", "3.23", omit = "3.23/data/experiment"
+      )
+    ),
+    "NAME_SOURCE_INCOMPLETE_BIOCONDUCTOR_CURRENT",
+    fixed = TRUE
+  )
+  expect_error(
+    tool$name_check_validate_source_details(
+      "bioconductor-history",
+      nameCheckBiocSource(
+        "bioconductor-history", c("3.23", "3.5"),
+        omit = "3.5/data/annotation"
+      )
+    ),
+    "NAME_SOURCE_INCOMPLETE_BIOCONDUCTOR_HISTORY",
+    fixed = TRUE
+  )
+})
+
+test_that("Bioconductor detail payloads must parse and hash", {
+  tool = nameCheckTool()
+  expect_error(
+    tool$name_check_validate_source_details(
+      "bioconductor-current",
+      nameCheckBiocSource(
+        "bioconductor-current", "3.23", malformed = "3.23/books"
+      )
+    ),
+    "NAME_SOURCE_MALFORMED_BIOCONDUCTOR_CURRENT",
+    fixed = TRUE
+  )
+  expect_error(
+    tool$name_check_validate_source_details(
+      "bioconductor-history",
+      nameCheckBiocSource(
+        "bioconductor-history", "3.23", unhashable = "3.23/workflows"
+      )
+    ),
+    "NAME_SOURCE_UNHASHABLE_BIOCONDUCTOR_HISTORY",
+    fixed = TRUE
+  )
+})
 nameCheckWriteIdentity = function(root, approved = FALSE,
                                    owner = "approved-owner",
                                    reviewer = "Release reviewer",
