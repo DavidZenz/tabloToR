@@ -19,10 +19,11 @@ Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R wi
 - ✓ Solve unaggregated GTAP 12a (163 regions × 65 commodities) with bounded memory — validated full-scale.
 - ✓ Offer an opt-in native structured backend with fail-closed preflight and residual verification — existing.
 - ✓ Produce reproducible A/B, tuning, scaling, memory, and residual benchmarks — existing.
+- ✓ Establish a documented modification and redistribution basis for the audited inherited source — Phase 1.
+- ✓ Record reviewed provenance, attribution, GEModelR name availability, maintainer identity, and repository governance — Phase 1.
 
 ### Active
 
-- [ ] Establish the legal provenance, license, authorship, attribution, and redistribution basis for GEModelR.
 - [ ] Rename package identity, native symbols, options, diagnostics, documentation, and benchmark metadata from `tabloToR` to `GEModelR` through an auditable migration.
 - [ ] Preserve source-level compatibility for the `GEModel` workflow and explicitly document intentional changes.
 - [ ] Define a narrow supported API while keeping legacy and R sparse implementations as correctness references.
@@ -62,13 +63,16 @@ The implementation is therefore already beyond a toy extension, but distribution
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Name the successor package GEModelR | Clear professional identity centered on the stable public abstraction | — Pending |
+| Name the successor package GEModelR | Clear professional identity centered on the stable public abstraction | ✓ Validated in Phase 1 |
 | Productize the existing repository incrementally | The implementation and benchmark evidence are already substantial | — Pending |
 | Keep one package initially | Compiler, state, partition metadata, and native kernels are tightly coupled | — Pending |
 | Keep legacy and R sparse backends | They provide compatibility and trusted numerical reference behavior | — Pending |
 | Keep C++ opt-in initially | Portability and downstream validation should precede default promotion | — Pending |
-| Make licensing a release preflight gate | Current metadata does not establish redistribution rights | — Pending |
+| Make licensing a release preflight gate | Current metadata does not establish redistribution rights | ✓ Validated in Phase 1; dependency audit remains blocking |
 | Publish GitHub/R-universe before CRAN | Enables controlled validation before stricter public distribution | — Pending |
+| Accept the upstream public-domain/CC0 response for the audited baseline | The upstream author explicitly confirmed public-domain status and modification/redistribution rights | ✓ Validated in Phase 1 |
+| Keep public release fail-closed | Dependency compatibility and the unresolved attribution alias still require reviewed dispositions | ✓ Validated in Phase 1 |
+| Separate technical readiness from repository/publication authority | Passing package and release checks must not mutate or publish external resources | ✓ Validated in Phase 1 |
 
 ## Evolution
 
@@ -87,4 +91,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update benchmark evidence and maintenance context.
 
 ---
-*Last updated: 2026-08-22 after initialization*
+*Last updated: 2026-08-31 after Phase 1*

@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 01
-current_phase_name: Provenance and Release Boundary
-status: ready_for_verification
-stopped_at: Completed 01-11-PLAN.md
-last_updated: "2026-08-27T14:04:11.555Z"
-last_activity: 2026-08-27
-last_activity_desc: Completed Plan 01-11 after unchanged package check passed
-state_head: e7bf62f7c8fb896fb66c95439d0b6c3026008332
+current_phase: 2
+current_phase_name: Compatibility and Numerical Baseline
+status: planning
+stopped_at: Phase 01 complete, ready to plan Phase 2
+last_updated: "2026-08-31T09:51:02.436Z"
+last_activity: 2026-08-31
+last_activity_desc: Phase 01 complete, transitioned to Phase 2
+state_head: 3d9baaa20841f1a62137aef72bca01f0a5ba2f79
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 11
   completed_plans: 11
 milestone_name: milestone
@@ -21,17 +21,17 @@ milestone_name: milestone
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-08-22)
+See: `.planning/PROJECT.md` (updated 2026-08-31)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 01 — Provenance and Release Boundary
+**Current focus:** Phase 2 — Compatibility and Numerical Baseline
 
 ## Current Position
 
-Phase: 01 (Provenance and Release Boundary) — GAP EXECUTION COMPLETE
-Plan: 11 of 11
-Status: Ready for phase re-verification
-Last activity: 2026-08-27 — Completed Plan 01-11 after unchanged package check passed
+Phase: 2 — Compatibility and Numerical Baseline
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-08-31 — Phase 01 complete, transitioned to Phase 2
 
 Progress: [██████████] 100%
 
@@ -47,7 +47,7 @@ Progress: [██████████] 100%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| 01 | 11 | 3053 min | 278 min |
+| 01 | 11 | - | - |
 
 **Recent Trend:**
 
@@ -76,47 +76,11 @@ Progress: [██████████] 100%
 
 Decisions are logged in `.planning/PROJECT.md`.
 
-- Use GEModelR as the successor package name, subject to authoritative availability checks.
-- Keep parser, public model API, R reference solvers, and optional C++ backend in one package for v1.
-- Preserve legacy and Matrix defaults; keep C++ explicitly selected initially.
-- Use horizontal technical phases for this brownfield migration.
-- Target GitHub and R-universe before considering CRAN.
-- [Phase 01]: Checked-in release-gate success means complete intentional blocking by RIGHTS_BLOCKED, never release readiness.
-- [Phase 01]: Eligible written-grant and clean-room evidence remains isolated in temporary fixtures until real rights evidence is reviewed.
-- [Phase 01]: Sensitive evidence is rejected by stable class reason without printing matched paths or contents.
-- [Phase 1]: Accept the upstream public-domain/CC0 response as sufficient modification and redistribution evidence for the audited baseline; no redundant request will be posted.
-- [Phase 1]: Treat GEModelR as an independently selected successor identity; authoritative name availability and governance checks remain in Plan 01-04.
-- [Phase 1]: Keep release fail-closed until Plan 01-03 completes provenance inventory and coverage for all shipped components, including unrelated third-party material.
-- [Phase 1]: Provisionally use Apache License 2.0 for original GEModelR code, subject to a final LinkingTo, vendored, and native dependency compatibility audit; do not finalize package licensing yet.
-- [Phase 1]: Use a separately enumerated path,symbol manifest as the immutable provenance coverage oracle; the production utility only reads and validates it.
-- [Phase 1]: Classify the audited source tree as 27 inherited-identical, 13 inherited-modified, 208 new-independent, and 2 generated units.
-- [Phase 1]: Keep Apache-2.0 evidence explicitly provisional for post-baseline work pending dependency compatibility audit.
-- [Phase 1]: Treat Git history as audit evidence only; reviewed rights and ownership fields remain separate.
-- [Phase 1]: Approve the initial GEModelR report as point-in-time exact-name collision evidence only, not trademark clearance or reservation.
-- [Phase 1]: Use David Zenz / DavidZenz with zenz@wiiw.ac.at and mailto:zenz@wiiw.ac.at as the exact approved v1 identity values.
-- [Phase 1]: Keep repository reservation, visibility or detachment, branch settings, and release or publication separately not-authorized.
-- [Phase 1]: Assign David Zenz aut/cre/cph and Maros Ivanic aut only from reviewed source and governance evidence.
-- [Phase 1]: Credit the upstream public-domain/CC0 baseline voluntarily while keeping mivanicERS unresolved.
-- [Phase 1]: Keep the package named tabloToR and defer final package licensing and standalone Maintainer metadata to Plan 01-06.
-- [Phase 1]: Release blockers must match RIGHTS.md, ATTRIBUTION.md, and RELEASE-GATES.md exactly.
-- [Phase 1]: A blocker-free release decision requires a fresh release-kind six-source name report.
-- [Phase 1]: The unresolved DESCRIPTION License is valid only while the dependency compatibility blocker is present.
-- [Phase 1]: Technical release readiness never authorizes repository creation, settings changes, or publication.
-- [Phase 01]: Accepted the regenerated exhaustive report with the exact response accept; reviewer=David Zenz.
-- [Phase 01]: Approval is point-in-time exact-name collision evidence only and grants no trademark, reservation, repository-mutation, or publication authorization.
-- [Phase 01]: Accepted the complete 54-row native hash migration with the exact response accept; reviewer=David Zenz.
-- [Phase 01]: Preserved D-06: stable keys, hashes, and Git history identify review scope but do not assign authorship, ownership, contributor, or license roles.
-- [Phase 01]: Integrated release readiness validates freshly extracted Git-backed source before trusting provenance ledgers.
-- [Phase 01]: Attribution is release-complete only when all six public destinations preserve reviewed people, roles, and evidence keys.
-- [Phase 01]: Reviewed license readiness requires a safe under-root hash-bound dependency audit and an exact R-valid DESCRIPTION license expression.
-- [Phase 01]: Synthetic source-derived evidence proves the positive path while production retains exactly DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED.
-- [Phase 01]: Cleanroom protocol v2 requires five distinct, non-empty, under-root artifacts with exact lowercase MD5 bindings.
-- [Phase 01]: Runnable clean-room evidence uses the fixed rscript-cleanroom-v1 command contract and an exact one-row DCF result schema.
-- [Phase 01]: Clean-room coverage clears inherited expression only when every declared key maps to a new-independent provenance row in the integrated graph.
-- [Phase 01]: Canonical rights and provenance evidence remain unchanged, preserving both intentional release blockers.
-- [Phase 01]: Accepted the superseded Plan 01-01 blocked-rights marker deviation; accepted_by=David Zenz.
-- [Phase 01]: Accepted the superseded Plan 01-02 request-posting deviation; accepted_by=David Zenz.
-- [Phase 01]: Accepted the historical D-03 sequential-execution deviation; accepted_by=David Zenz.
+- [Phase 1]: Accept the upstream public-domain/CC0 response as the modification and redistribution basis for the audited inherited baseline.
+- [Phase 1]: Use GEModelR as the reviewed successor name and David Zenz / DavidZenz / zenz@wiiw.ac.at as the approved v1 identity.
+- [Phase 1]: Treat the 250-key provenance ledger and six attribution destinations as the canonical reviewed source/credit boundary; Git evidence alone assigns no rights or roles.
+- [Phase 1]: Keep Apache-2.0 provisional and public release fail-closed on `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED`.
+- [Phase 1]: Keep repository mutation and publication separately unauthorized; technical readiness never grants external-action authority.
 
 ### Pending Todos
 
@@ -138,6 +102,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-08-27T14:04:11.536Z
-Stopped at: Completed 01-11-PLAN.md
+Last session: 2026-08-31
+Stopped at: Phase 01 complete, ready to plan Phase 2
 Resume file: None
