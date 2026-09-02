@@ -1,0 +1,11 @@
+set reg (north,south,east);
+coefficient (all,r,reg) weight(r);
+read weight from file basedata header "WEIGHT";
+coefficient (all,r,reg) stock(r);
+read stock from file basedata header "STOCK";
+coefficient (all,r,reg) reported(r);
+formula (all,r,reg) reported(r) = stock(r);
+variable (all,r,reg)(change) q(r);
+variable (all,r,reg) tax(r);
+equation market (all,r,reg) q(r) = weight(r) * tax(r);
+update (all,r,reg)(change) stock(r) = q(r);

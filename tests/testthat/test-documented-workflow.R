@@ -16,7 +16,7 @@ test_that("WF-PREFERRED-SPARSE runs the public three-region workflow", {
     workflow$states$shocks_set$labels,
     c('tax["north"]', 'tax["south"]', 'tax["east"]')
   )
-  expect_equal(workflow$states$shocks_set$values, c(1, 2, -1))
+  expect_equal(unname(workflow$states$shocks_set$values), c(1, 2, -1))
   expect_identical(workflow$states$solved$loaded_engine, "sparse")
 
   expected_solution_structure = list(
