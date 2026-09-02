@@ -556,22 +556,22 @@ The schema and field names above are recommended Phase 2 values, not current in-
 |---|---|---|---|
 | — | No claims are tagged `[ASSUMED]`; unresolved choices are recorded below rather than presented as facts. | — | — |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Can a SmallAg/debug fixture be redistributed?**
    - What we know: No such fixture or clearance record was found in this checkout, and proprietary/private model inputs are forbidden. [VERIFIED: repository-wide `rg` scan 2026-09-02; AGENTS.md:42-45]
    - What's unclear: The provenance and license of any external candidate.
-   - Recommendation: Do not schedule it as a core Phase 2 gate; add it only after a reviewed provenance record. The synthetic three-region fixture is the required ordinary-check substitute.
+   - Resolution: SmallAg is excluded until its redistribution provenance is reviewed and recorded. The synthetic three-region fixture is the required ordinary-check substitute.
 
 2. **What strict numbers should the three-region fixture lock?**
    - What we know: Current synthetic/native evidence supports `1e-8` solution and `1e-10` residual/block thresholds, while full GTAP uses `2e-7`. [VERIFIED: tests/testthat/test-sparse-schur-cpp.R:1-85; benchmarks/check_benchmark_gate.R:9-15]
    - What's unclear: Conditioning of the not-yet-authored three-region workflow.
-   - Recommendation: Start with the ordinary policy above, record condition evidence/observed residuals in the proposal, and require explicit review for any exception.
+   - Resolution: Ordinary three-region starts use a 1e-8 solution tolerance and 1e-10 true-residual tolerance, with conditioning evidence recorded in the proposal; any exception requires explicit review.
 
 3. **How much raw `saveRDS(model)` compatibility should be promised?**
    - What we know: Same-session tiny legacy and sparse models round-tripped and solved locally, but raw objects were about 3 MB and R does not define serialization as a stable long-term format. [VERIFIED: local characterization run 2026-09-02] [CITED: https://stat.ethz.ch/R-manual/R-devel/library/base/html/serialize.html]
    - What's unclear: Whether downstream users currently persist raw models.
-   - Recommendation: Classify raw object serialization as compatibility-only, test same-version round trip, and make the versioned logical payload the supported contract.
+   - Resolution: raw saveRDS(model) is same-version compatibility-only; the versioned logical payload is the supported contract.
 
 ## Environment Availability
 

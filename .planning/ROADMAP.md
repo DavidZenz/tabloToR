@@ -79,6 +79,31 @@ GEModelR reaches its first public release through seven auditable technical phas
 
 **Plans**: 6 plans
 
+Plans:
+**Wave 1**
+
+- [ ] 02-01-PLAN.md — Freeze the observed GEModel contract and structural compatibility helpers
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 02-02-PLAN.md — Exercise redistributable workflows, shock APIs, defaults, outputs, and legacy smoke
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 02-03-PLAN.md — Enforce numerical authority, equivalence, and true-residual acceptance
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
+- [ ] 02-04-PLAN.md — Make solve state transactional and post-simulation retryable
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
+- [ ] 02-05-PLAN.md — Add versioned logical serialization and fresh-process restore
+
+**Wave 6** *(blocked on Wave 5 completion)*
+
+- [ ] 02-06-PLAN.md — Add proposal-only baseline tooling and integrated regression gates
+
 ### Phase 3: GEModelR Identity Migration
 
 **Goal**: Convert package, native, runtime-option, diagnostic, benchmark, and documentation identity to GEModelR while keeping numerical code behavior fixed.
@@ -155,7 +180,7 @@ GEModelR reaches its first public release through seven auditable technical phas
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
-| 2. Compatibility and Numerical Baseline | 0/TBD | Not started | - |
+| 2. Compatibility and Numerical Baseline | 0/6 | Planned | - |
 | 3. GEModelR Identity Migration | 0/TBD | Not started | - |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |
