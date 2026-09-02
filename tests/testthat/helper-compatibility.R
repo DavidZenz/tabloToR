@@ -99,3 +99,49 @@ compatibilityMethodContract = function() {
   rownames(contract) = NULL
   contract
 }
+
+describeCompatibilityStructure = function(value) {
+  list(
+    class = class(value),
+    type = typeof(value),
+    length = length(value),
+    names = names(value),
+    dim = dim(value),
+    dimnames = dimnames(value),
+    missing = as.vector(is.na(value)),
+    encoding = if (is.character(value)) {
+      unname(Encoding(value))
+    } else character()
+  )
+}
+
+compatibilityValuesEqual = function(actual, expected,
+                                     check_encoding = TRUE) {
+  if (!identical(actual, expected)) return(FALSE)
+  if (!isTRUE(check_encoding)) return(TRUE)
+  if (!is.character(actual) && !is.character(expected)) return(TRUE)
+  if (!is.character(actual) || !is.character(expected)) return(FALSE)
+  identical(unname(Encoding(actual)), unname(Encoding(expected)))
+}
+
+compatibilityDefaultEquivalent = function(method, argument, explicit) {
+  if (!method %in% observedCompatibilitySurface()$methods) {
+    stop(sprintf("Unknown GEModel method: %s", method), call. = FALSE)
+  }
+  method_formals = formals(GEModel$methods(method))
+  if (!argument %in% names(method_formals)) {
+    stop(sprintf("Unknown %s argument: %s", method, argument),
+         call. = FALSE)
+  }
+  default_expression = method_formals[[argument]]
+  if (identical(compatibilityFormalText(default_expression), "<required>")) {
+    stop(sprintf("%s has no default for %s", method, argument),
+         call. = FALSE)
+  }
+  default = eval(default_expression, envir = baseenv())
+  if (argument %in% c("engine", "output", "reduction") &&
+      length(default) > 1L) {
+    default = default[[1L]]
+  }
+  compatibilityValuesEqual(default, explicit)
+}
