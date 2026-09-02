@@ -67,3 +67,197 @@ test_that("candidate acceptance stays outside broad alphabetic exports", {
     ".sparse_accept_candidate" %in% getNamespaceExports("tabloToR")
   )
 })
+
+test_that("backend declarations encode layered numerical authority", {
+  declarations = numericalBackendDeclarations()
+
+  expect_identical(
+    declarations$authority[declarations$backend == "Matrix"],
+    "Matrix"
+  )
+  expect_identical(
+    declarations$authority[
+      declarations$backend == "StructuredSchurFGMRESCpp"
+    ],
+    "StructuredSchurFGMRES"
+  )
+  expect_identical(
+    declarations$role[declarations$backend == "legacy"],
+    "compatibility-smoke"
+  )
+  expect_true(all(declarations$required[
+    declarations$backend %in%
+      c("Matrix", "SparseM", "StructuredSchurFGMRES", "legacy")
+  ]))
+  expect_false(any(declarations$required[
+    declarations$backend %in%
+      c("SuiteSparse", "StructuredSchurFGMRESCpp", "OpenMP")
+  ]))
+})
+
+test_that("conditioning tiers are explicit and never backend-specific", {
+  tolerances = loadNumericalTolerances()
+  ordinary = tolerances[tolerances$conditioning == "ordinary", , drop = FALSE]
+  exception = numericalToleranceFor(
+    "full-gtap-external", "ill-conditioned"
+  )
+
+  expect_false("backend" %in% names(tolerances))
+  expect_true(all(ordinary$residual_rtol == 1e-10))
+  expect_equal(exception$residual_rtol, 2e-7)
+  expect_match(exception$rationale, "external only", fixed = TRUE)
+  expect_match(
+    exception$rationale, "never a backend-specific exception", fixed = TRUE
+  )
+})
+
+test_that("compact expectation rows freeze transparent canonical outputs", {
+  expectations = loadNumericalExpectations()
+  authority = runThreeRegionBackend("Matrix")
+  selected = expectations[
+    expectations$fixture == "three-region", , drop = FALSE
+  ]
+
+  expect_equal(nrow(selected), 6L)
+  expect_identical(
+    paste(names(authority$output), collapse = "|"),
+    selected$value[selected$key == "solution.names"]
+  )
+  values = selected[selected$kind == "value", , drop = FALSE]
+  expect_equal(
+    unname(authority$output),
+    as.numeric(values$value),
+    tolerance = 1e-12
+  )
+  expect_lt(file.info(numericalBaselinePath("expectations.csv"))$size, 4096)
+})
+
+test_that("required generic backends execute against Matrix authority", {
+  tolerance = numericalToleranceFor("three-region", "ordinary")
+  authority = runThreeRegionBackend("Matrix")
+
+  for (backend in c("Matrix", "SparseM")) {
+    capability = numericalBackendCapability(backend)
+    skipOptionalCapability(capability)
+    candidate = runThreeRegionBackend(backend)
+    expectNumericalEquivalent(
+      authority$output, candidate$output, tolerance,
+      authority$system, candidate$system, info = backend
+    )
+    expect_identical(candidate$model$lastDiagnostics$solver_backend, backend)
+  }
+})
+
+test_that("optional SuiteSparse has explicit availability behavior", {
+  capability = numericalBackendCapability("SuiteSparse")
+  skipOptionalCapability(capability)
+  tolerance = numericalToleranceFor("three-region", "ordinary")
+  authority = runThreeRegionBackend("Matrix")
+  candidate = runThreeRegionBackend("SuiteSparse")
+
+  expectNumericalEquivalent(
+    authority$output, candidate$output, tolerance,
+    authority$system, candidate$system, info = "SuiteSparse"
+  )
+})
+
+test_that("required structured R authority executes with full residual", {
+  capability = numericalBackendCapability("StructuredSchurFGMRES")
+  skipOptionalCapability(capability)
+  tolerance = numericalToleranceFor("tiny-structured", "ordinary")
+  authority = runStructuredBackend("StructuredSchurFGMRES")
+
+  expect_equal(unname(authority$output), 1:7, tolerance = 1e-10)
+  expectNumericalEquivalent(
+    authority$output, authority$output, tolerance,
+    authority$system, authority$system,
+    info = "StructuredSchurFGMRES authority"
+  )
+  expect_identical(
+    authority$model$lastDiagnostics$solver_backend,
+    "StructuredSchurFGMRES"
+  )
+})
+
+test_that("optional structured C++ is accepted against structured R", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  tolerance = numericalToleranceFor("tiny-structured", "ordinary")
+  authority = runStructuredBackend("StructuredSchurFGMRES")
+  candidate = runStructuredBackend("StructuredSchurFGMRESCpp")
+
+  expectNumericalEquivalent(
+    authority$output, candidate$output, tolerance,
+    authority$system, candidate$system,
+    info = "StructuredSchurFGMRESCpp"
+  )
+  expect_identical(
+    candidate$model$lastDiagnostics$candidate_acceptance$backend,
+    "StructuredSchurFGMRESCpp"
+  )
+  expect_true(candidate$model$lastDiagnostics$candidate_acceptance$finite)
+  expect_lte(
+    candidate$model$lastDiagnostics$candidate_acceptance$
+      true_residual$relative_l2,
+    tolerance$residual_rtol
+  )
+})
+
+test_that("optional OpenMP path matches serial native accumulation", {
+  capability = numericalBackendCapability("OpenMP")
+  skipOptionalCapability(capability)
+  fixture = make_cpp_schur_fixture()
+  local = which(fixture$row_group == 0L)
+  regions = list(
+    which(fixture$row_group == 1L),
+    which(fixture$row_group == 2L)
+  )
+  global = which(fixture$row_group == 3L)
+  external = unlist(c(regions, list(global)), use.names = FALSE)
+  B = fixture$A[local, local, drop = FALSE]
+  L = fixture$A[external, local, drop = FALSE]
+  R = fixture$A[local, external, drop = FALSE]
+  D = fixture$A[external, external, drop = FALSE]
+  factor = Matrix::lu(B, order = 1L)
+  external_regions = list(
+    seq_along(regions[[1L]]),
+    length(regions[[1L]]) + seq_along(regions[[2L]])
+  )
+  external_global = sum(vapply(regions, length, integer(1))) +
+    seq_along(global)
+
+  serial = .tabloToR_schur_accumulate_batch_serial(
+    list(factor), list(L), list(R), D, external_regions,
+    external_global, 1:2, 2L, 1L
+  )
+  parallel = .tabloToR_schur_accumulate_batch(
+    list(factor), list(L), list(R), D, external_regions,
+    external_global, 1:2, 2L, 2L
+  )
+
+  expect_equal(parallel$regional, serial$regional, tolerance = 1e-10)
+  expect_equal(parallel$global_region, serial$global_region,
+               tolerance = 1e-10)
+  expect_identical(parallel$diagnostics$threads_effective, 2L)
+})
+
+test_that("mocked optional unavailability emits the exact skip reason", {
+  capability = numericalBackendCapability(
+    "StructuredSchurFGMRESCpp",
+    available = FALSE,
+    reason = "mocked native symbol absence"
+  )
+  condition = tryCatch(
+    skipOptionalCapability(capability),
+    skip = function(condition) condition
+  )
+
+  expect_s3_class(condition, "skip")
+  expect_identical(
+    conditionMessage(condition),
+    paste0(
+      "Reason: optional capability StructuredSchurFGMRESCpp unavailable: ",
+      "mocked native symbol absence"
+    )
+  )
+})
