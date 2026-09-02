@@ -218,3 +218,4 @@
 "structural","character-encoding","supported","edge-case","","","structural-descriptor","reviewable-manifest",FALSE,FALSE,TRUE,"deterministic-synthetic-case"
 "structural","indexed","supported","edge-case","","","structural-descriptor","reviewable-manifest",FALSE,FALSE,TRUE,"deterministic-synthetic-case"
 "structural","omitted-explicit-default","supported","edge-case","","","structural-descriptor","reviewable-manifest",FALSE,FALSE,TRUE,"deterministic-synthetic-case"
+"internal",".sparse_accept_candidate","internal","function","candidate,expected_structure,reference,solution_atol,solution_rtol,residual_tolerance,diagnostics","expected_structure=NULL;reference=NULL;solution_atol=0;solution_rtol=0;residual_tolerance=2e-7;diagnostics=FALSE","accepted-candidate-and-residual-metadata","not-applicable",FALSE,FALSE,TRUE,"backend-neutral-pre-mutation-finiteness-structure-value-and-true-residual-gate"

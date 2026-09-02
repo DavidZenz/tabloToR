@@ -1328,6 +1328,110 @@ sparse_true_residual = function(A, solution, rhs) {
   result
 }
 
+.sparse_accept_candidate = function(
+    candidate,
+    expected_structure = NULL,
+    reference = NULL,
+    solution_atol = 0,
+    solution_rtol = 0,
+    residual_tolerance = 2e-7,
+    diagnostics = FALSE) {
+  required = c("backend", "solution", "coefficient_matrix", "rhs")
+  missing_fields = setdiff(required, names(candidate))
+  if (!is.list(candidate) || length(missing_fields)) {
+    stop(sprintf(
+      "Sparse candidate is missing field(s): %s",
+      paste(missing_fields, collapse = ", ")
+    ), call. = FALSE)
+  }
+  coefficient_matrix = candidate$coefficient_matrix
+  if (!inherits(coefficient_matrix, "sparseMatrix")) {
+    stop("Sparse candidate coefficient matrix must remain sparse",
+         call. = FALSE)
+  }
+  structure_of = function(value) {
+    list(
+      class = class(value),
+      type = typeof(value),
+      length = length(value),
+      names = names(value),
+      dim = dim(value),
+      dimnames = dimnames(value),
+      missing = as.vector(is.na(value)),
+      encoding = if (is.character(value)) {
+        unname(Encoding(value))
+      } else character()
+    )
+  }
+  solution_structure = structure_of(candidate$solution)
+  if (!is.null(candidate$output_structure) &&
+      !identical(candidate$output_structure, solution_structure)) {
+    stop("Sparse candidate output structure metadata is inconsistent",
+         call. = FALSE)
+  }
+  if (!is.null(expected_structure) &&
+      !identical(solution_structure, expected_structure)) {
+    stop("Sparse candidate output structure does not match the contract",
+         call. = FALSE)
+  }
+  finite = all(is.finite(candidate$solution)) &&
+    all(is.finite(candidate$rhs)) &&
+    all(is.finite(coefficient_matrix@x))
+  if (!finite) {
+    stop("Sparse candidate contains non-finite values; the solution was not applied.",
+         call. = FALSE)
+  }
+  tolerance_values = c(solution_atol, solution_rtol, residual_tolerance)
+  if (length(tolerance_values) != 3L ||
+      any(!is.finite(tolerance_values)) || any(tolerance_values < 0)) {
+    stop("Sparse candidate tolerances must be finite non-negative scalars",
+         call. = FALSE)
+  }
+  if (!is.null(reference)) {
+    reference_structure = structure_of(reference)
+    if (!identical(solution_structure, reference_structure)) {
+      stop("Sparse candidate and authority structures differ",
+           call. = FALSE)
+    }
+    if (any(!is.finite(reference))) {
+      stop("Sparse candidate authority contains non-finite values",
+           call. = FALSE)
+    }
+    difference = abs(candidate$solution - reference)
+    limit = solution_atol + solution_rtol *
+      pmax(abs(reference), abs(candidate$solution))
+    if (any(difference > limit)) {
+      stop("Sparse candidate differs from its numerical authority",
+           call. = FALSE)
+    }
+  }
+  true_residual = sparse_true_residual(
+    coefficient_matrix, candidate$solution, candidate$rhs
+  )
+  if (true_residual$relative_l2 > residual_tolerance) {
+    stop(sprintf(
+      paste(
+        "Sparse candidate true residual %.3e exceeds tolerance %.3e;",
+        "the solution was not applied."
+      ),
+      true_residual$relative_l2, residual_tolerance
+    ), call. = FALSE)
+  }
+  candidate$output_structure = solution_structure
+  candidate$finite = finite
+  candidate$true_residual = true_residual
+  candidate$accepted = TRUE
+  candidate$retained_diagnostics = if (isTRUE(diagnostics)) {
+    list(
+      backend = candidate$backend,
+      finite = finite,
+      output_structure = solution_structure,
+      true_residual = true_residual
+    )
+  } else NULL
+  candidate
+}
+
 
 sparse_reduce_system = function(A, rhs) {
   if (length(A@x) && any(!is.finite(A@x) | A@x == 0)) {
@@ -1834,7 +1938,8 @@ sparse_check_budget = function(estimate, budget) {
 
 sparse_solve_one_step = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
-                                 structured_partition = NULL) {
+                                 structured_partition = NULL,
+                                 candidate_transform = NULL) {
   if (isTRUE(measure)) {
     before_bytes = sparse_gc_bytes()
     matrix_start = proc.time()[[3L]]
@@ -1873,31 +1978,54 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       reduction = reduction
     )
   }
-  true_residual = if (
-    isTRUE(measure) ||
-      backend %in% c("StructuredSchur", "StructuredSchurFGMRES") ||
-      isTRUE(getOption("tabloToR.sparse.check_residual", FALSE))
-  ) sparse_true_residual(coefficient_matrix, solution, emitted$rhs) else NULL
-  if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
-    residual_tolerance = getOption(
-      "tabloToR.sparse.structured_residual_tolerance", 2e-7
+  expected_structure = list(
+    class = "numeric",
+    type = "double",
+    length = ncol(coefficient_matrix),
+    names = NULL,
+    dim = NULL,
+    dimnames = NULL,
+    missing = rep(FALSE, ncol(coefficient_matrix)),
+    encoding = character()
+  )
+  candidate = list(
+    backend = backend,
+    solution = solution,
+    coefficient_matrix = coefficient_matrix,
+    rhs = emitted$rhs,
+    output_structure = list(
+      class = class(solution),
+      type = typeof(solution),
+      length = length(solution),
+      names = names(solution),
+      dim = dim(solution),
+      dimnames = dimnames(solution),
+      missing = as.vector(is.na(solution)),
+      encoding = if (is.character(solution)) {
+        unname(Encoding(solution))
+      } else character()
     )
-    if (!is.numeric(residual_tolerance) || length(residual_tolerance) != 1L ||
-        !is.finite(residual_tolerance) || residual_tolerance < 0) {
-      stop(
-        "tabloToR.sparse.structured_residual_tolerance must be a non-negative finite scalar",
-        call. = FALSE
-      )
+  )
+  if (!is.null(candidate_transform)) {
+    if (!is.function(candidate_transform)) {
+      stop("candidate_transform must be a function", call. = FALSE)
     }
-    if (true_residual$relative_l2 > residual_tolerance) {
-      stop(sprintf(
-        paste(
-          "StructuredSchur residual %.3e exceeds tolerance %.3e;",
-          "the solution was not applied."
-        ), true_residual$relative_l2, residual_tolerance
-      ), call. = FALSE)
-    }
+    candidate = candidate_transform(candidate)
   }
+  residual_tolerance = getOption(
+    "tabloToR.sparse.structured_residual_tolerance", 2e-7
+  )
+  accepted = .sparse_accept_candidate(
+    candidate,
+    expected_structure = expected_structure,
+    residual_tolerance = residual_tolerance,
+    diagnostics = measure
+  )
+  solution = accepted$solution
+  true_residual = accepted$true_residual
+  acceptance_diagnostics = accepted$retained_diagnostics
+  accepted$coefficient_matrix = NULL
+  candidate$coefficient_matrix = NULL
   if (length(column_order)) {
     original_solution = numeric(length(solution))
     original_solution[column_order] = solution
@@ -1934,6 +2062,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     nnz = emitted$nnz,
     true_residual = true_residual,
     solver_diagnostics = solver_diagnostics,
+    acceptance_diagnostics = acceptance_diagnostics,
     column_permuted = length(column_order) > 0L,
     phase = phase,
     index = index
