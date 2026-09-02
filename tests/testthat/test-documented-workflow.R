@@ -164,3 +164,251 @@ test_that("WF-REPEATED-SOLVE retains then clears shocks for both APIs", {
     }
   }
 })
+
+test_that("WF-DEFAULT-OMITTED and WF-DEFAULT-EXPLICIT are equivalent", {
+  legacy_omitted = GEModel$new()
+  legacy_omitted$loadTablo(three_region_fixture_path())
+  legacy_omitted$setClosure("tax")
+  legacy_omitted$loadData(three_region_input_data())
+  set_three_region_shocks(legacy_omitted, "preferred")
+
+  legacy_explicit = make_three_region_model(engine = "legacy")
+  set_three_region_shocks(legacy_explicit, "preferred")
+
+  omitted_visible = withVisible(
+    legacy_omitted$solveModel(iter = 1, steps = 1)
+  )
+  explicit_visible = withVisible(legacy_explicit$solveModel(
+    iter = 1, steps = 1, engine = "legacy", backend = "Matrix"
+  ))
+
+  expect_identical(legacy_omitted$loadedEngine, "legacy")
+  expect_false(omitted_visible$visible)
+  expect_false(explicit_visible$visible)
+  expect_equal(legacy_omitted$solution, legacy_explicit$solution,
+               tolerance = 1e-12)
+  expect_identical(
+    describeCompatibilityStructure(legacy_omitted$solution),
+    describeCompatibilityStructure(legacy_explicit$solution)
+  )
+
+  sparse_omitted = make_three_region_model()
+  sparse_explicit = make_three_region_model()
+  set_three_region_shocks(sparse_omitted, "preferred")
+  set_three_region_shocks(sparse_explicit, "preferred")
+  sparse_omitted$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    diagnostics = TRUE, reduction = "off"
+  )
+  sparse_explicit$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    diagnostics = TRUE, backend = "Matrix", reduction = "off",
+    variables = NULL, dimensions = NULL
+  )
+
+  expect_identical(sparse_omitted$lastDiagnostics$solver_backend, "Matrix")
+  expect_identical(sparse_explicit$lastDiagnostics$solver_backend, "Matrix")
+  expect_equal(sparse_omitted$solution, sparse_explicit$solution,
+               tolerance = 1e-12)
+  expect_identical(sparse_omitted$data, sparse_explicit$data)
+  expect_identical(sparse_omitted$compactOutput, list())
+  expect_identical(sparse_explicit$compactOutput, list())
+})
+
+test_that("WF-FULL-OUTPUT freezes full and selected structures", {
+  full = make_three_region_model()
+  set_three_region_shocks(full, "preferred", c(1, 2, -1))
+  returned = withVisible(full$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    postsim = TRUE, diagnostics = TRUE, output = "full",
+    backend = "Matrix", reduction = "off"
+  ))
+
+  expect_false(returned$visible)
+  expect_identical(returned$value, full)
+  expect_identical(
+    describeCompatibilityStructure(full$solution),
+    list(
+      class = "numeric",
+      type = "double",
+      length = 3L,
+      names = c('q["north"]', 'q["south"]', 'q["east"]'),
+      dim = NULL,
+      dimnames = NULL,
+      missing = c(FALSE, FALSE, FALSE),
+      encoding = character()
+    )
+  )
+  expect_identical(full$compactOutput, list())
+  expect_identical(
+    names(full$data),
+    c("basedata", "reported", "stock", "weight", "reg", "/", "tax", "q",
+      "variables", "variableNumbers", "equations", "equationNumbers")
+  )
+  expect_identical(full$lastDiagnostics$post_simulation_retained, TRUE)
+
+  selected = make_three_region_model()
+  set_three_region_shocks(selected, "preferred", c(1, 2, -1))
+  selected$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    postsim = TRUE, output = "full", variables = "stock",
+    dimensions = list(reg = "south"), reduction = "off"
+  )
+
+  expect_identical(names(selected$compactOutput), "stock")
+  expect_identical(
+    describeCompatibilityStructure(selected$compactOutput$stock),
+    list(
+      class = "array",
+      type = "double",
+      length = 1L,
+      names = "south",
+      dim = 1L,
+      dimnames = list(reg = "south"),
+      missing = FALSE,
+      encoding = character()
+    )
+  )
+  expect_identical(names(selected$solution),
+                   c('q["north"]', 'q["south"]', 'q["east"]'))
+
+  empty = make_three_region_model()
+  set_three_region_shocks(empty, "preferred")
+  empty$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    variables = character(), dimensions = list(), reduction = "off"
+  )
+  expect_identical(empty$compactOutput, list())
+})
+
+test_that("WF-COMPACT-OUTPUT and WF-POSTSIM-OFF freeze compact structures", {
+  compact = make_three_region_model()
+  set_three_region_shocks(compact, "preferred", c(1, 2, -1))
+  returned = withVisible(compact$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    postsim = TRUE, diagnostics = TRUE, output = "compact",
+    variables = "stock", dimensions = list(reg = "south"),
+    backend = "Matrix", reduction = "off"
+  ))
+
+  expect_false(returned$visible)
+  expect_identical(returned$value, compact)
+  expect_identical(names(compact$solution), NULL)
+  expect_identical(names(compact$compactOutput), c("stock", "solution"))
+  expect_identical(dim(compact$compactOutput$stock), 1L)
+  expect_identical(dimnames(compact$compactOutput$stock),
+                   list(reg = "south"))
+  expect_identical(names(compact$compactOutput$solution), NULL)
+  expect_identical(length(compact$compactOutput$solution), 3L)
+  expect_true(length(compact$data) > 0L)
+  expect_identical(compact$lastDiagnostics$post_simulation_retained, TRUE)
+
+  no_postsim = make_three_region_model()
+  set_three_region_shocks(no_postsim, "preferred", c(1, 2, -1))
+  no_postsim$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    postsim = FALSE, diagnostics = TRUE, output = "compact",
+    variables = character(), reduction = "off"
+  )
+  expect_identical(names(no_postsim$compactOutput), "solution")
+  expect_identical(no_postsim$data, list())
+  expect_identical(no_postsim$lastDiagnostics$post_simulation_retained, FALSE)
+})
+
+test_that("full output clears stale compact and selected projections", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred")
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    output = "compact", variables = "stock", reduction = "off"
+  )
+  expect_identical(names(model$compactOutput), c("stock", "solution"))
+
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    output = "full", variables = NULL, dimensions = NULL,
+    reduction = "off"
+  )
+  expect_identical(model$compactOutput, list())
+  expect_identical(names(model$solution),
+                   c('q["north"]', 'q["south"]', 'q["east"]'))
+})
+
+test_that("missing and zero conventions remain distinct", {
+  model = make_three_region_model()
+  state = model$sparseState
+  bindings = list(r = 1L, ".set:r" = "reg")
+
+  expect_identical(
+    sparse_eval_expr(
+      quote(tax[r]), state, bindings, model$sparseIndex
+    ),
+    0
+  )
+  expect_true(is.na(sparse_eval_expr(
+    quote(q[r]), state, bindings, model$sparseIndex
+  )))
+
+  model$setShocks(setNames(c(0, NA), c("tax[north]", "")))
+  resolved = sparse_resolve_shocks(model, state, model$sparseIndex)
+  expect_identical(resolved$positions, integer())
+  expect_identical(resolved$values, numeric())
+  expect_identical(resolved$labels, character())
+
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse",
+    postsim = FALSE, output = "full", reduction = "off"
+  )
+  expect_equal(unname(model$solution), c(0, 0, 0), tolerance = 1e-12)
+})
+
+test_that("WF-PREFERRED-LEGACY-SMOKE exercises only public compatibility", {
+  model = make_three_region_model(engine = "legacy")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  returned = withVisible(model$solveModel(iter = 1, steps = 1))
+
+  expect_false(returned$visible)
+  expect_identical(returned$value, NULL)
+  expect_identical(model$loadedEngine, "legacy")
+  expect_identical(model$lastDiagnostics, list())
+  expect_identical(
+    describeCompatibilityStructure(model$solution),
+    list(
+      class = "numeric",
+      type = "double",
+      length = 3L,
+      names = c('q["north"]', 'q["south"]', 'q["east"]'),
+      dim = NULL,
+      dimnames = NULL,
+      missing = c(FALSE, FALSE, FALSE),
+      encoding = character()
+    )
+  )
+  expect_true(all(is.finite(model$solution)))
+  expect_identical(length(model$data$q), 3L)
+})
+
+test_that("every workflow row is executable or visibly flagged", {
+  lines = readLines(three_region_workflows_path(), warn = FALSE)
+  required = c(
+    "WF-PREFERRED-SPARSE",
+    "WF-VARIABLEVALUES-SPARSE",
+    "WF-PREFERRED-LEGACY-SMOKE",
+    "WF-DEFAULT-OMITTED",
+    "WF-DEFAULT-EXPLICIT",
+    "WF-REPEATED-SOLVE",
+    "WF-FULL-OUTPUT",
+    "WF-COMPACT-OUTPUT",
+    "WF-POSTSIM-OFF"
+  )
+
+  for (id in required) {
+    row = lines[grepl(paste0("`", id, "`"), lines, fixed = TRUE)]
+    expect_length(row, 1L)
+    expect_match(row, "VERIFIED", fixed = TRUE, info = id)
+    expect_match(row, "test-documented-workflow.R", fixed = TRUE, info = id)
+  }
+  unclassified = lines[grepl("`WF-UNCLASSIFIED`", lines, fixed = TRUE)]
+  expect_length(unclassified, 1L)
+  expect_match(unclassified, "FLAGGED-UNVERIFIED", fixed = TRUE)
+})
