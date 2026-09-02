@@ -2118,7 +2118,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       if (output == "compact") solution else NULL
     )
   } else NULL
-  if (!is.null(selected)) model$compactOutput = selected
+  model$compactOutput = if (!is.null(selected)) selected else list()
   if (postsim) {
     model$data = if (output == "full") {
       sparse_materialize_labels(state, index, equations = TRUE, variables = TRUE)
