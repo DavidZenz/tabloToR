@@ -9,6 +9,69 @@ sparse_make_state = function(data) {
   state$data = data
   state
 }
+
+.transaction_fault = function(phase, context = list()) {
+  hook = getOption("tabloToR.transaction.fault")
+  if (!is.function(hook)) return(invisible(NULL))
+  tryCatch(
+    hook(phase, context),
+    error = function(error) {
+      attr(error, "transaction_phase") = phase
+      stop(error)
+    }
+  )
+  invisible(NULL)
+}
+
+.transaction_phase = function(phase, expression) {
+  tryCatch(
+    force(expression),
+    error = function(error) {
+      if (is.null(attr(error, "transaction_phase"))) {
+        attr(error, "transaction_phase") = phase
+      }
+      stop(error)
+    }
+  )
+}
+
+.transaction_failure_diagnostics = function(engine, error) {
+  phase = attr(error, "transaction_phase")
+  if (is.null(phase) || !length(phase)) phase = "setup"
+  list(
+    engine = engine,
+    status = "failed",
+    accepted_numerical_state = FALSE,
+    retryable_postsim = FALSE,
+    failure_phase = as.character(phase)[[1L]],
+    failure_reason = conditionMessage(error)
+  )
+}
+
+.commit_accepted_state = function(model, record) {
+  required = c(
+    "state", "index", "solution", "data", "compact_output",
+    "diagnostics", "loaded_engine"
+  )
+  missing = setdiff(required, names(record))
+  if (length(missing)) {
+    stop(sprintf(
+      "Accepted state record is missing field(s): %s",
+      paste(missing, collapse = ", ")
+    ), call. = FALSE)
+  }
+  .transaction_fault(
+    "commit-accepted-state", list(engine = record$loaded_engine)
+  )
+  model$sparseState = record$state
+  model$sparseIndex = record$index
+  model$solution = record$solution
+  model$data = record$data
+  model$compactOutput = record$compact_output
+  model$lastDiagnostics = record$diagnostics
+  model$loadedEngine = record$loaded_engine
+  invisible(model)
+}
 sparse_process_tablo = function(tabloPath) {
   statements = tabloToStatements(tabloPath)
   sparse_spec = sparse_compile_spec(statements)
@@ -1944,6 +2007,7 @@ sparse_check_budget = function(estimate, budget) {
     before_bytes = sparse_gc_bytes()
     matrix_start = proc.time()[[3L]]
   }
+  .transaction_fault("compilation")
   column_order = sparse_lhs_column_order(index, state)
   index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
@@ -1954,6 +2018,7 @@ sparse_check_budget = function(estimate, budget) {
     matrix_bytes = sparse_gc_bytes()
     solve_start = proc.time()[[3L]]
   }
+  .transaction_fault("factorization")
   solver_diagnostics = NULL
   if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
     if (is.null(structured_partition)) {
@@ -2015,6 +2080,8 @@ sparse_check_budget = function(estimate, budget) {
   residual_tolerance = getOption(
     "tabloToR.sparse.structured_residual_tolerance", 2e-7
   )
+  .transaction_fault("finiteness")
+  .transaction_fault("residual")
   accepted = .sparse_accept_candidate(
     candidate,
     expected_structure = expected_structure,
@@ -2038,6 +2105,7 @@ sparse_check_budget = function(estimate, budget) {
     update_start = proc.time()[[3L]]
   }
   sparse_apply_solution(state, index, solution)
+  .transaction_fault("simulation-update")
   sparse_apply_shocks(state, index, shocks)
   sparse_apply_updates(
     state, index, model$sparseSpec,
@@ -2078,7 +2146,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   )
 }
 
-sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
+.sparse_solve_model_impl = function(model, iter = 3, steps = c(1, 3),
                               postsim = TRUE, diagnostics = FALSE,
                               output = c("full", "compact"),
                               variables = NULL, dimensions = NULL,
@@ -2103,10 +2171,10 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
          call. = FALSE)
   }
-  state = model$sparseState
-  if (is.null(state) || !is.environment(state)) {
+  committed_state = model$sparseState
+  if (is.null(committed_state) || !is.environment(committed_state)) {
     state = sparse_make_state(model$data)
-  }
+  } else state = sparse_make_state(sparse_state_data(committed_state))
   closure = model$closure
   if (is.null(closure)) closure = character()
   index = sparse_rebuild_columns(index, closure)
@@ -2136,7 +2204,6 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     }
     structured_partition = sparse_gtap_elimination_partition(index, state)
   }
-  model$sparseIndex = full_index
   budget = memory_budget
   if (is.null(budget) || !length(budget)) budget = model$memoryBudget
   estimate = sparse_estimate_memory(
@@ -2195,6 +2262,10 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
           measure = diagnostics,
           structured_partition = structured_partition
         )
+        .transaction_fault("after-substep", list(
+          iteration = iteration, step = step_id,
+          substep = current_step
+        ))
         index = solved$index
         if (!is.null(solved$solver_diagnostics)) {
           solver_diagnostics_history[[
@@ -2230,6 +2301,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     sparse_restore_checkpoint(state, outer_checkpoint)
     sparse_apply_solution(state, index, iteration_solution)
     sparse_apply_shocks(state, index, remaining)
+    .transaction_fault("simulation-update", list(iteration = iteration))
     sparse_apply_updates(
       state, index, model$sparseSpec,
       updates = model$sparseSpec$simulation_updates
@@ -2242,6 +2314,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
   if (postsim) {
+    .transaction_fault("post-update")
     sparse_apply_updates(
       state, index, model$sparseSpec,
       updates = model$sparseSpec$post_updates
@@ -2256,22 +2329,22 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       if (output == "compact") solution else NULL
     )
   } else NULL
-  model$compactOutput = if (!is.null(selected)) selected else list()
-  if (postsim) {
-    model$data = if (output == "full") {
+  compact_output = if (!is.null(selected)) selected else list()
+  data_result = if (postsim) {
+    if (output == "full") {
       sparse_materialize_labels(state, index, equations = TRUE, variables = TRUE)
     } else {
       sparse_state_data(state)
     }
   } else {
-    model$data = list()
+    list()
   }
-  model$sparseState = state
-  model$sparseIndex = full_index
-  model$solution = solution
-  model$loadedEngine = "sparse"
   diagnostics_result = list(
     engine = "sparse",
+    status = "complete",
+    accepted_numerical_state = TRUE,
+    retryable_postsim = FALSE,
+    failure_phase = NULL,
     iterations = iter,
     steps = steps,
     elapsed_seconds = proc.time()[[3L]] - start_time,
@@ -2289,6 +2362,45 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     post_simulation_retained = isTRUE(postsim),
     peak_gc_bytes = if (isTRUE(diagnostics)) sparse_gc_bytes() else NA_real_
   )
-  model$lastDiagnostics = if (isTRUE(diagnostics)) diagnostics_result else list()
+  diagnostics_record = if (isTRUE(diagnostics)) diagnostics_result else list()
+  .commit_accepted_state(model, list(
+    state = state,
+    index = full_index,
+    solution = solution,
+    data = data_result,
+    compact_output = compact_output,
+    diagnostics = diagnostics_record,
+    loaded_engine = "sparse"
+  ))
   invisible(model)
+}
+
+sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
+                              postsim = TRUE, diagnostics = FALSE,
+                              output = c("full", "compact"),
+                              variables = NULL, dimensions = NULL,
+                              backend = "Matrix",
+                              reduction = c("auto", "off", "on"),
+                              memory_budget = NULL) {
+  tryCatch(
+    .sparse_solve_model_impl(
+      model,
+      iter = iter,
+      steps = steps,
+      postsim = postsim,
+      diagnostics = diagnostics,
+      output = output,
+      variables = variables,
+      dimensions = dimensions,
+      backend = backend,
+      reduction = reduction,
+      memory_budget = memory_budget
+    ),
+    error = function(error) {
+      model$lastDiagnostics = .transaction_failure_diagnostics(
+        "sparse", error
+      )
+      stop(error)
+    }
+  )
 }
