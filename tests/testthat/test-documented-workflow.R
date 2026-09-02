@@ -73,3 +73,86 @@ test_that("WF-PREFERRED-SPARSE is mapped to executable public calls", {
   )
   expect_match(workflows, "Matrix", fixed = TRUE)
 })
+
+test_that("D-03 shock APIs share normalized indexed application semantics", {
+  preferred = make_three_region_model()
+  preferred$setShocks(setNames(
+    c(0, NA, 1, 2, -3, 4),
+    c("", "tax[east]", 'tax["north"]', "tax[ north ]",
+      "tax[north]", 'tax["south"]')
+  ))
+  direct = make_three_region_model()
+  direct$variableValues = list(
+    tax = three_region_shock_array(c(0, 4, NA))
+  )
+
+  preferred_resolved = sparse_resolve_shocks(
+    preferred, preferred$sparseState, preferred$sparseIndex
+  )
+  direct_resolved = sparse_resolve_shocks(
+    direct, direct$sparseState, direct$sparseIndex
+  )
+
+  expect_identical(preferred_resolved$positions, direct_resolved$positions)
+  expect_equal(preferred_resolved$values, direct_resolved$values)
+  expect_identical(preferred_resolved$labels, 'tax["south"]')
+  expect_equal(preferred_resolved$values, 4)
+
+  solve_three_region_once(preferred)
+  solve_three_region_once(direct)
+  expect_equal(preferred$solution, direct$solution, tolerance = 1e-12)
+  expect_equal(unname(preferred$solution), c(0, 6, 0), tolerance = 1e-12)
+})
+
+test_that("shock normalization preserves scalar and multi-index labels", {
+  normalized = sparse_normalize_shocks(setNames(
+    c(2, 3),
+    c("scalar[]", 'matrix["north","east"]')
+  ))
+  scalar = sparse_parse_label(normalized$labels[[1L]])
+  multi = sparse_parse_label(normalized$labels[[2L]])
+
+  expect_identical(unname(normalized$values), c(2, 3))
+  expect_identical(scalar, list(name = "scalar", indices = character()))
+  expect_identical(
+    multi,
+    list(name = "matrix", indices = c("north", "east"))
+  )
+})
+
+test_that("missing-element subassignment is partial positional input", {
+  model = make_three_region_model()
+  model$variableValues$tax[2L] = 2
+  resolved = sparse_resolve_shocks(
+    model, model$sparseState, model$sparseIndex
+  )
+
+  expect_identical(model$variableValues$tax, c(NA_real_, 2))
+  expect_identical(resolved$labels, 'tax["south"]')
+  expect_equal(resolved$values, 2)
+})
+
+test_that("WF-REPEATED-SOLVE retains then clears shocks for both APIs", {
+  for (engine in c("sparse", "legacy")) {
+    for (api in c("preferred", "variableValues")) {
+      model = make_three_region_model(engine = engine)
+      set_three_region_shocks(model, api)
+
+      solve_three_region_once(model, engine = engine)
+      first = model$solution
+      solve_three_region_once(model, engine = engine)
+      retained = model$solution
+
+      clear_three_region_shocks(model, api)
+      solve_three_region_once(model, engine = engine)
+      cleared = model$solution
+
+      label = paste(engine, api)
+      expect_equal(unname(first), c(1, 0, 0), tolerance = 1e-12,
+                   info = label)
+      expect_equal(retained, first, tolerance = 1e-12, info = label)
+      expect_equal(unname(cleared), c(0, 0, 0), tolerance = 1e-12,
+                   info = label)
+    }
+  }
+})

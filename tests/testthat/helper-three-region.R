@@ -63,12 +63,57 @@ phase02_workflow_snapshot = function(model) {
   )
 }
 
-make_three_region_model = function() {
+make_three_region_model = function(engine = "sparse") {
   model = GEModel$new()
   model$loadTablo(three_region_fixture_path())
   model$setClosure("tax")
-  model$loadData(three_region_input_data(), engine = "sparse")
+  model$loadData(three_region_input_data(), engine = engine)
   model
+}
+
+three_region_shock_array = function(values = c(1, 0, 0)) {
+  array(
+    as.numeric(values),
+    dim = 3L,
+    dimnames = list(reg = c("north", "south", "east"))
+  )
+}
+
+set_three_region_shocks = function(model, api, values = c(1, 0, 0)) {
+  api = match.arg(api, c("preferred", "variableValues"))
+  if (api == "preferred") {
+    model$setShocks(setNames(
+      as.numeric(values),
+      c('tax["north"]', 'tax["south"]', 'tax["east"]')
+    ))
+  } else {
+    model$variableValues = list(tax = three_region_shock_array(values))
+  }
+  invisible(model)
+}
+
+clear_three_region_shocks = function(model, api) {
+  api = match.arg(api, c("preferred", "variableValues"))
+  if (api == "preferred") {
+    model$setShocks(setNames(0, 'tax["north"]'))
+  } else {
+    model$variableValues = list()
+  }
+  invisible(model)
+}
+
+solve_three_region_once = function(model, engine = "sparse") {
+  model$solveModel(
+    iter = 1,
+    steps = 1,
+    engine = engine,
+    postsim = FALSE,
+    diagnostics = TRUE,
+    output = "full",
+    backend = "Matrix",
+    reduction = "off"
+  )
+  invisible(model)
 }
 
 run_three_region_workflow = function() {
