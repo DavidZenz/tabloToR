@@ -6,6 +6,7 @@
 .sparse_schur_cpp_runtime$capabilities = NULL
 .sparse_schur_cpp_runtime$live_dense_factors = list()
 .sparse_schur_cpp_runtime$build_diagnostics = list()
+.sparse_schur_cpp_runtime$acceptance_history = list()
 
 .sparse_schur_cpp_symbols = c(
   "_tabloToR_tabloToR_schur_cpp_capabilities",
@@ -515,14 +516,31 @@ sparse_exact_schur_solve = function(...) {
 .sparse_solve_one_step_reference = sparse_solve_one_step
 sparse_solve_one_step = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
-                                 structured_partition = NULL) {
+                                 structured_partition = NULL,
+                                 candidate_transform = NULL) {
+  transform = candidate_transform
+  if (isTRUE(.sparse_schur_cpp_runtime$active)) {
+    transform = function(candidate) {
+      candidate$backend = "StructuredSchurFGMRESCpp"
+      if (!is.null(candidate_transform)) {
+        candidate = candidate_transform(candidate)
+      }
+      candidate
+    }
+  }
   result = .sparse_solve_one_step_reference(
     state, model, index, shocks, backend, reduction, measure,
-    structured_partition
+    structured_partition, transform
   )
   if (isTRUE(.sparse_schur_cpp_runtime$active) &&
       !is.null(result$solver_diagnostics)) {
     result$solver_diagnostics$solution = NULL
+  }
+  if (isTRUE(.sparse_schur_cpp_runtime$active) &&
+      !is.null(result$acceptance_diagnostics)) {
+    history = .sparse_schur_cpp_runtime$acceptance_history
+    history[[length(history) + 1L]] = result$acceptance_diagnostics
+    .sparse_schur_cpp_runtime$acceptance_history = history
   }
   result
 }
@@ -577,6 +595,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
   .sparse_schur_cpp_runtime$state = model$sparseState
   .sparse_schur_cpp_runtime$index_key = sparse_pattern_key(model$sparseIndex)
   .sparse_schur_cpp_runtime$build_diagnostics = list()
+  .sparse_schur_cpp_runtime$acceptance_history = list()
   on.exit({
     .sparse_schur_cpp_runtime$active = FALSE
     .sparse_schur_cpp_runtime$state = NULL
@@ -595,6 +614,10 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     model$lastDiagnostics$diagnostics_schema_version = 2L
     model$lastDiagnostics$solver_backend = "StructuredSchurFGMRESCpp"
     model$lastDiagnostics$solver_backend_impl = "cpp"
+    acceptances = .sparse_schur_cpp_runtime$acceptance_history
+    model$lastDiagnostics$candidate_acceptance = if (length(acceptances)) {
+      acceptances[[length(acceptances)]]
+    } else NULL
     model$lastDiagnostics$max_full_relative_residual = if (length(residuals)) {
       max(residuals)
     } else NA_real_
