@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02
 current_phase_name: Compatibility and Numerical Baseline
 status: executing
-stopped_at: Completed 02-02-PLAN.md
-last_updated: "2026-09-02T13:48:57.194Z"
+stopped_at: Completed 02-03-PLAN.md
+last_updated: "2026-09-02T14:34:04.433Z"
 last_activity: 2026-09-02
 last_activity_desc: Phase 02 execution started
-state_head: 347c3b710bc2e87108b26b601a32b22f77ca5fb2
+state_head: 9fcee45c4aa2343c46a2d8ed871a13678df47224
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 17
-  completed_plans: 13
+  completed_plans: 14
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 02 (Compatibility and Numerical Baseline) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-02 — Phase 02 execution started
 
@@ -71,6 +71,7 @@ Progress: [██████████] 100%
 | Phase 01-provenance-and-release-boundary P11 | 2h55m | 2 tasks | 3 files |
 | Phase 02 P01 | 20min | 2 tasks | 4 files |
 | Phase 02 P02 | 24min | 3 tasks | 7 files |
+| Phase 02 P03 | 33min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 02]: Aggregate duplicate indexed shock labels by normalized runtime identity before legacy application.
 - [Phase 02]: Keep legacy as workflow smoke and default-parity coverage, never as a numerical oracle.
 - [Phase 02]: Keep WF-UNCLASSIFIED visibly FLAGGED-UNVERIFIED until a documented branch exists.
+- [Phase 02]: Use one backend-neutral structure, finiteness, value, and full-system true-residual gate before any sparse candidate mutates model state; diagnostics only control retained evidence.
+- [Phase 02]: Keep Matrix as generic numerical authority, StructuredSchurFGMRES as native structured authority, and legacy as compatibility smoke only.
+- [Phase 02]: Select numerical tolerances only by fixture and conditioning metadata; keep the 2e-7 exception confined to named external full-GTAP evidence.
 
 ### Pending Todos
 
@@ -110,6 +114,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-02T13:48:57.163Z
-Stopped at: Completed 02-02-PLAN.md
+Last session: 2026-09-02T14:34:04.397Z
+Stopped at: Completed 02-03-PLAN.md
 Resume file: None
