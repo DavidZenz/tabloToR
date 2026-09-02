@@ -14,14 +14,14 @@
 
 ### Compatibility
 
-- [ ] **COMP-01**: Existing users can perform the documented `GEModel$new()`, `loadTablo()`, `loadData()`, closure/shock, `solveModel()`, and output workflow under GEModelR.
-- [ ] **COMP-02**: Omitted engine/backend arguments preserve the legacy engine and Matrix sparse backend defaults already protected by tests.
-- [ ] **COMP-03**: Supported model fields, method signatures, closure/shock semantics, output names, compact/full output behavior, and serialization behavior are documented and regression-tested.
+- [x] **COMP-01**: Existing users can perform the documented `GEModel$new()`, `loadTablo()`, `loadData()`, closure/shock, `solveModel()`, and output workflow under GEModelR.
+- [x] **COMP-02**: Omitted engine/backend arguments preserve the legacy engine and Matrix sparse backend defaults already protected by tests.
+- [x] **COMP-03**: Supported model fields, method signatures, closure/shock semantics, output names, compact/full output behavior, and serialization behavior are documented and regression-tested.
 - [ ] **COMP-04**: The rename provides explicit installation and namespace migration instructions for scripts using `tabloToR::`.
 
 ### Numerical Integrity
 
-- [ ] **NUM-01**: Legacy, Matrix sparse, structured R, and optional structured C++ paths satisfy documented solution-equivalence and true-residual tolerances on redistributable fixtures.
+- [x] **NUM-01**: Legacy, Matrix sparse, structured R, and optional structured C++ paths satisfy documented solution-equivalence and true-residual tolerances on redistributable fixtures.
 - [ ] **NUM-02**: Solver results are applied to mutable model state only after the selected backend passes its required residual and finiteness checks.
 - [ ] **NUM-03**: The full GTAP benchmark records package/model signatures, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs.
 
@@ -77,11 +77,11 @@
 | PROV-02 | Phase 1 | Complete |
 | PROV-03 | Phase 1 | Complete |
 | PROV-04 | Phase 1 | Complete |
-| COMP-01 | Phase 2 | Pending |
-| COMP-02 | Phase 2 | Pending |
-| COMP-03 | Phase 2 | Pending |
+| COMP-01 | Phase 2 | Complete |
+| COMP-02 | Phase 2 | Complete |
+| COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 3 | Pending |
-| NUM-01 | Phase 2 | Pending |
+| NUM-01 | Phase 2 | Complete |
 | NUM-02 | Phase 2 | Pending |
 | NUM-03 | Phase 6 | Pending |
 | MIGR-01 | Phase 3 | Pending |

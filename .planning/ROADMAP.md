@@ -77,16 +77,16 @@ GEModelR reaches its first public release through seven auditable technical phas
   3. Cross-backend solution and true-residual gates pass at documented tolerances before model state is updated.
   4. Baseline artifacts identify package source, fixture/model signatures, platform, and dependency versions.
 
-**Plans**: 6 plans
+**Plans**: 2/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 02-01-PLAN.md — Freeze the observed GEModel contract and structural compatibility helpers
+- [x] 02-01-PLAN.md — Freeze the observed GEModel contract and structural compatibility helpers
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
-- [ ] 02-02-PLAN.md — Exercise redistributable workflows, shock APIs, defaults, outputs, and legacy smoke
+- [x] 02-02-PLAN.md — Exercise redistributable workflows, shock APIs, defaults, outputs, and legacy smoke
 
 **Wave 3** *(blocked on Wave 2 completion)*
 
@@ -180,7 +180,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
-| 2. Compatibility and Numerical Baseline | 0/6 | Planned | - |
+| 2. Compatibility and Numerical Baseline | 2/6 | In Progress|  |
 | 3. GEModelR Identity Migration | 0/TBD | Not started | - |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |

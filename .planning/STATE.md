@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02
 current_phase_name: Compatibility and Numerical Baseline
 status: executing
-stopped_at: Phase 2 context gathered
-last_updated: "2026-09-02T11:16:36.885Z"
-last_activity: 2026-08-31
-last_activity_desc: Phase 01 complete, transitioned to Phase 2
-state_head: 2f1c80b3205bebba00b8986cb7ef3e60f55d69cc
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-09-02T13:48:57.194Z"
+last_activity: 2026-09-02
+last_activity_desc: Phase 02 execution started
+state_head: 347c3b710bc2e87108b26b601a32b22f77ca5fb2
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 17
-  completed_plans: 11
+  completed_plans: 13
 milestone_name: milestone
 ---
 
@@ -24,14 +24,14 @@ milestone_name: milestone
 See: `.planning/PROJECT.md` (updated 2026-08-31)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 2 — Compatibility and Numerical Baseline
+**Current focus:** Phase 02 — Compatibility and Numerical Baseline
 
 ## Current Position
 
-Phase: 02 (Compatibility and Numerical Baseline) — READY TO EXECUTE
-Plan: Not started
+Phase: 02 (Compatibility and Numerical Baseline) — EXECUTING
+Plan: 3 of 6
 Status: Ready to execute
-Last activity: 2026-08-31 — Phase 01 complete, transitioned to Phase 2
+Last activity: 2026-09-02 — Phase 02 execution started
 
 Progress: [██████████] 100%
 
@@ -69,6 +69,8 @@ Progress: [██████████] 100%
 | Phase 01 P07 | 41min | 3 tasks | 4 files |
 | Phase 01-provenance-and-release-boundary P10 | 32min | 2 tasks | 4 files |
 | Phase 01-provenance-and-release-boundary P11 | 2h55m | 2 tasks | 3 files |
+| Phase 02 P01 | 20min | 2 tasks | 4 files |
+| Phase 02 P02 | 24min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -81,6 +83,12 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: Treat the 250-key provenance ledger and six attribution destinations as the canonical reviewed source/credit boundary; Git evidence alone assigns no rights or roles.
 - [Phase 1]: Keep Apache-2.0 provisional and public release fail-closed on `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED`.
 - [Phase 1]: Keep repository mutation and publication separately unauthorized; technical readiness never grants external-action authority.
+- [Phase 02]: Phase 2 Plan 01: Keep GEModel as the supported namespace entry point while inventorying other alphabetic exports as internal until Phase 4 narrowing.
+- [Phase 02]: Phase 2 Plan 01: Treat raw saveRDS(model) as compatibility-only same-version best effort and legacy execution as workflow smoke rather than numerical authority.
+- [Phase 02]: Retain public shock sources until explicitly replaced or cleared; never infer new shocks from mutable backend state.
+- [Phase 02]: Aggregate duplicate indexed shock labels by normalized runtime identity before legacy application.
+- [Phase 02]: Keep legacy as workflow smoke and default-parity coverage, never as a numerical oracle.
+- [Phase 02]: Keep WF-UNCLASSIFIED visibly FLAGGED-UNVERIFIED until a documented branch exists.
 
 ### Pending Todos
 
@@ -102,6 +110,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-02T08:10:49.760Z
-Stopped at: Phase 2 context gathered
-Resume file: .planning/phases/02-compatibility-and-numerical-baseline/02-CONTEXT.md
+Last session: 2026-09-02T13:48:57.163Z
+Stopped at: Completed 02-02-PLAN.md
+Resume file: None
