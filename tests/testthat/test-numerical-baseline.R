@@ -46,7 +46,7 @@ test_that("bad finite candidates are rejected before state mutation", {
     }
 
     expect_error(
-      .sparse_solve_one_step_reference(
+      .sparse_solve_one_step_impl(
         prepared$state,
         prepared$model,
         prepared$index,
@@ -64,7 +64,11 @@ test_that("bad finite candidates are rejected before state mutation", {
 
 test_that("candidate acceptance stays outside broad alphabetic exports", {
   expect_false(
-    ".sparse_accept_candidate" %in% getNamespaceExports("tabloToR")
+    any(c(".sparse_accept_candidate", ".sparse_solve_one_step_impl") %in%
+          getNamespaceExports("tabloToR"))
+  )
+  expect_false(
+    "candidate_transform" %in% names(formals(sparse_solve_one_step))
   )
 })
 

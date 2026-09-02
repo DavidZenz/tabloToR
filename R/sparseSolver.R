@@ -1936,7 +1936,7 @@ sparse_check_budget = function(estimate, budget) {
   invisible(NULL)
 }
 
-sparse_solve_one_step = function(state, model, index, shocks, backend,
+.sparse_solve_one_step_impl = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
                                  structured_partition = NULL,
                                  candidate_transform = NULL) {
@@ -2066,6 +2066,15 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     column_permuted = length(column_order) > 0L,
     phase = phase,
     index = index
+  )
+}
+
+sparse_solve_one_step = function(state, model, index, shocks, backend,
+                                 reduction, measure = FALSE,
+                                 structured_partition = NULL) {
+  .sparse_solve_one_step_impl(
+    state, model, index, shocks, backend, reduction, measure,
+    structured_partition
   )
 }
 

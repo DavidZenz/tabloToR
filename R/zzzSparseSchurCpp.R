@@ -516,19 +516,15 @@ sparse_exact_schur_solve = function(...) {
 .sparse_solve_one_step_reference = sparse_solve_one_step
 sparse_solve_one_step = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
-                                 structured_partition = NULL,
-                                 candidate_transform = NULL) {
-  transform = candidate_transform
+                                 structured_partition = NULL) {
+  transform = NULL
   if (isTRUE(.sparse_schur_cpp_runtime$active)) {
     transform = function(candidate) {
       candidate$backend = "StructuredSchurFGMRESCpp"
-      if (!is.null(candidate_transform)) {
-        candidate = candidate_transform(candidate)
-      }
       candidate
     }
   }
-  result = .sparse_solve_one_step_reference(
+  result = .sparse_solve_one_step_impl(
     state, model, index, shocks, backend, reduction, measure,
     structured_partition, transform
   )
