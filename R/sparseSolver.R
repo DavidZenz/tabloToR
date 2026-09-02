@@ -106,12 +106,21 @@ legacy_shocks_from_explicit = function(model) {
     shocks = setNames(numeric(), character())
   }
   key = function(labels) gsub("[\\\"'[:space:]]", "", labels)
-  positions = match(key(explicit$labels), key(names(shocks)))
-  for (i in seq_along(explicit$labels)) {
+  explicit_keys = key(explicit$labels)
+  unique_keys = unique(explicit_keys)
+  explicit_values = vapply(unique_keys, function(value) {
+    sum(explicit$values[explicit_keys == value])
+  }, numeric(1))
+  explicit_labels = explicit$labels[match(unique_keys, explicit_keys)]
+  keep = !is.na(explicit_values) & explicit_values != 0
+  explicit_values = explicit_values[keep]
+  explicit_labels = explicit_labels[keep]
+  positions = match(unique_keys[keep], key(names(shocks)))
+  for (i in seq_along(explicit_labels)) {
     if (is.na(positions[[i]])) {
-      shocks[[explicit$labels[[i]]]] = explicit$values[[i]]
+      shocks[[explicit_labels[[i]]]] = explicit_values[[i]]
     } else {
-      shocks[[positions[[i]]]] = explicit$values[[i]]
+      shocks[[positions[[i]]]] = explicit_values[[i]]
     }
   }
   shocks[!is.na(shocks)]
@@ -386,7 +395,7 @@ sparse_endogenous_labels = function(index) {
 sparse_shocks_from_variable_values = function(model, state, index) {
   values_list = model$variableValues
   if (is.null(values_list) || !length(values_list)) {
-    values_list = sparse_state_data(state)
+    return(sparse_normalize_shocks(NULL))
   }
   labels = character()
   values = numeric()

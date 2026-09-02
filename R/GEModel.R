@@ -256,10 +256,27 @@ GEModel = setRefClass(
       if (!is.null(explicitShocks) && length(explicitShocks$labels)) {
         shocks <<- legacy_shocks_from_explicit(.self)
       } else {
-        shocks <<- do.call(c,unname(Map(function(f){
+        shockPieces = unname(Map(function(f){
           toVector(variableValues[[f]],f)
-        }, names(variableValues))))
-        shocks <<- shocks[!is.na(shocks)]
+        }, names(variableValues)))
+        resolvedShocks = if (length(shockPieces)) {
+          do.call(c, shockPieces)
+        } else {
+          setNames(numeric(), character())
+        }
+        keepShocks = !is.na(resolvedShocks)
+        resolvedShocks = setNames(
+          as.numeric(resolvedShocks[keepShocks]), names(resolvedShocks)[keepShocks]
+        )
+        if (!length(resolvedShocks)) {
+          variableLabels = as.character(data$variables)
+          variableNames = tolower(sub("\\[.*$", "", variableLabels))
+          closureLabels = variableLabels[variableNames %in% closure]
+          resolvedShocks = setNames(
+            numeric(length(closureLabels)), closureLabels
+          )
+        }
+        shocks <<- resolvedShocks
       }
 
       #browser()
