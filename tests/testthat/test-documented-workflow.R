@@ -85,6 +85,12 @@ test_that("D-03 shock APIs share normalized indexed application semantics", {
   direct$variableValues = list(
     tax = three_region_shock_array(c(0, 4, NA))
   )
+  legacy = make_three_region_model(engine = "legacy")
+  legacy$setShocks(setNames(
+    c(0, NA, 1, 2, -3, 4),
+    c("", "tax[east]", 'tax["north"]', "tax[ north ]",
+      "tax[north]", 'tax["south"]')
+  ))
 
   preferred_resolved = sparse_resolve_shocks(
     preferred, preferred$sparseState, preferred$sparseIndex
@@ -100,8 +106,10 @@ test_that("D-03 shock APIs share normalized indexed application semantics", {
 
   solve_three_region_once(preferred)
   solve_three_region_once(direct)
+  solve_three_region_once(legacy, engine = "legacy")
   expect_equal(preferred$solution, direct$solution, tolerance = 1e-12)
   expect_equal(unname(preferred$solution), c(0, 6, 0), tolerance = 1e-12)
+  expect_equal(unname(legacy$solution), c(0, 6, 0), tolerance = 1e-12)
 })
 
 test_that("shock normalization preserves scalar and multi-index labels", {
