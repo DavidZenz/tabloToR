@@ -1,0 +1,2 @@
+fixture,conditioning,tier,solution_atol,solution_rtol,residual_rtol,rationale,reviewer
+three-region,ordinary,strict,1e-10,1e-8,1e-10,"Transparent synthetic diagonal system with exact integer coefficients and no conditioning exception","Phase 02 Plan 03"
