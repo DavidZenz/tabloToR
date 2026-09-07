@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02
 current_phase_name: Compatibility and Numerical Baseline
 status: executing
-stopped_at: Completed 02-04-PLAN.md
-last_updated: "2026-09-07T07:35:27.925Z"
+stopped_at: Completed 02-05-PLAN.md
+last_updated: "2026-09-07T12:59:57.395Z"
 last_activity: 2026-09-02
 last_activity_desc: Phase 02 execution started
-state_head: bdc4f3ba54bfab82722677b62b91f0840d229590
+state_head: 15f09395bb77b6ed78ddf3df77742d6f1e2b14ba
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 17
-  completed_plans: 15
+  completed_plans: 16
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 02 (Compatibility and Numerical Baseline) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-02 — Phase 02 execution started
 
@@ -73,6 +73,7 @@ Progress: [██████████] 100%
 | Phase 02 P02 | 24min | 3 tasks | 7 files |
 | Phase 02 P03 | 33min | 2 tasks | 8 files |
 | Phase 02 P04 | 4d17h | 2 tasks | 6 files |
+| Phase 02 P05 | 53min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 02]: Commit accepted sparse numerical state before post-simulation while preserving the last complete data/output until post publication succeeds.
 - [Phase 02]: Run legacy solves on a deep reference-class copy and publish only after all lifecycle boundaries succeed.
 - [Phase 02]: Expose retryPostsim(diagnostics = FALSE) as a solve-free retry over stored accepted state and immutable post inputs.
+- [Phase 02]: Treat gemodel-logical-state schema version 1L as the only supported portable format; raw GEModel RDS remains same-version compatibility-only.
+- [Phase 02]: Validate both the decoded envelope and its source-reconstructed model in isolation before mutating the receiving GEModel.
+- [Phase 02]: Rebuild sparse and legacy runtime structures from source while restoring logical values and leaving sparse/native caches empty.
 
 ### Pending Todos
 
@@ -118,6 +122,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T07:35:27.894Z
-Stopped at: Completed 02-04-PLAN.md
+Last session: 2026-09-07T12:59:57.359Z
+Stopped at: Completed 02-05-PLAN.md
 Resume file: None
