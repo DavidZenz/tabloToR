@@ -20,13 +20,14 @@ serializationModelSnapshot = function(model) {
   } else {
     model$data
   }
+  levels = .serialization_strip_runtime(levels)
   list(
     engine = model$loadedEngine,
     levels = levels,
     closure = model$closure,
     shocks = model$explicitShocks,
     solution = model$solution,
-    data = model$data,
+    data = .serialization_strip_runtime(model$data),
     compact_output = model$compactOutput,
     memory_budget = model$memoryBudget,
     diagnostics = model$lastDiagnostics

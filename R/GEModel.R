@@ -68,12 +68,17 @@ GEModel = setRefClass(
       } else if (!is.null(results$sparseSpec)) {
         results$sparseSpec
       } else sparse_compile_spec(tabloStatements)
+      sourceData <<- .serialization_capture_tablo(tabloPath)
       loadedEngine <<- character()
     },
     loadData = function(inputData, engine = c("legacy", "sparse")) {
       #browser()
       engine = match.arg(engine)
       .postsimRecord <<- list()
+      source_record = sourceData
+      source_record$loaded_data = inputData
+      source_record$data_fingerprint =
+        .serialization_object_fingerprint(inputData)
       if (engine == "sparse" && length(sparseSpec$compile_errors)) {
         errors = unique(as.character(sparseSpec$compile_errors))
         stop(sprintf(
@@ -102,7 +107,7 @@ GEModel = setRefClass(
           sparseState, sparseIndex, sparseSpec,
           updates = sparseSpec$formula_initialization_updates
         )
-        sourceData <<- list()
+        sourceData <<- source_record
         loadedEngine <<- "sparse"
         return(invisible(.self))
       }
@@ -110,6 +115,7 @@ GEModel = setRefClass(
       data <<- generateVariables(data)
       variableValues <<- data[variables]
       changeVariables <<- data$variables[substr(data$variables,1,regexpr('\\[',data$variables)-1) %in% basicChangeVariables]
+      sourceData <<- source_record
       loadedEngine <<- "legacy"
     },
     setShocks = function(shocks) {
@@ -151,6 +157,31 @@ GEModel = setRefClass(
     },
     retryPostsim = function(diagnostics = FALSE) {
       .retry_postsim_from_record(.self, diagnostics = diagnostics)
+    },
+    saveState = function(file) {
+      if (!is.character(file) || length(file) != 1L || is.na(file) ||
+          !nzchar(file)) {
+        stop("file must be one non-empty path", call. = FALSE)
+      }
+      payload = .build_logical_state_payload(.self)
+      saveRDS(payload, file, version = 3L)
+      invisible(.self)
+    },
+    loadState = function(file) {
+      if (!is.character(file) || length(file) != 1L || is.na(file) ||
+          !nzchar(file) || !file.exists(file)) {
+        stop("file must identify one existing logical-state payload",
+             call. = FALSE)
+      }
+      size = file.info(file)$size
+      if (is.na(size) || size > .serialization_max_bytes()) {
+        stop("Logical-state file exceeds the configured size limit",
+             call. = FALSE)
+      }
+      payload = readRDS(file)
+      .validate_logical_state_payload(payload)
+      restored = .restore_logical_state_payload(payload)
+      .install_restored_logical_state(.self, restored)
     },
     generateSolution = function(subShocks){
       #browser()
