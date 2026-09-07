@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 02
 current_phase_name: Compatibility and Numerical Baseline
-status: executing
-stopped_at: Completed 02-05-PLAN.md
-last_updated: "2026-09-07T12:59:57.395Z"
+status: verifying
+stopped_at: Completed 02-06-PLAN.md
+last_updated: "2026-09-07T15:12:00.075Z"
 last_activity: 2026-09-02
 last_activity_desc: Phase 02 execution started
-state_head: 15f09395bb77b6ed78ddf3df77742d6f1e2b14ba
+state_head: a5077019918dff69132adc92d9910a44e1d8bb8e
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 17
-  completed_plans: 16
+  completed_plans: 17
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 
 Phase: 02 (Compatibility and Numerical Baseline) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-02 — Phase 02 execution started
 
 Progress: [██████████] 100%
@@ -74,6 +74,7 @@ Progress: [██████████] 100%
 | Phase 02 P03 | 33min | 2 tasks | 8 files |
 | Phase 02 P04 | 4d17h | 2 tasks | 6 files |
 | Phase 02 P05 | 53min | 2 tasks | 6 files |
+| Phase 02 P06 | 1h51m | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -101,6 +102,10 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 02]: Treat gemodel-logical-state schema version 1L as the only supported portable format; raw GEModel RDS remains same-version compatibility-only.
 - [Phase 02]: Validate both the decoded envelope and its source-reconstructed model in isolation before mutating the receiving GEModel.
 - [Phase 02]: Rebuild sparse and legacy runtime structures from source while restoring logical values and leaving sparse/native caches empty.
+- [Phase 02]: Accepted canonical Phase 02 baseline hash 453a6986e600df6cf426c11d794f2b1d after review by David Zenz.
+- [Phase 02]: Ordered fingerprint inputs by lowercase byte order for locale-stable source hashes.
+- [Phase 02]: Kept top-level baseline CLIs as thin wrappers around implementations installed from inst/tools.
+- [Phase 02]: Limited proposal regeneration to source-tree gates while installed checks validate CLIs and canonical acceptance.
 
 ### Pending Todos
 
@@ -122,6 +127,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-07T12:59:57.359Z
-Stopped at: Completed 02-05-PLAN.md
+Last session: 2026-09-07T15:12:00.039Z
+Stopped at: Completed 02-06-PLAN.md
 Resume file: None
