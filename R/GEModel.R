@@ -169,17 +169,25 @@ GEModel = setRefClass(
     },
     loadState = function(file) {
       if (!is.character(file) || length(file) != 1L || is.na(file) ||
-          !nzchar(file) || !file.exists(file)) {
+          !nzchar(file) || !file.exists(file) ||
+          !file_test("-f", file)) {
         stop("file must identify one existing logical-state payload",
              call. = FALSE)
       }
       size = file.info(file)$size
-      if (is.na(size) || size > .serialization_max_bytes()) {
-        stop("Logical-state file exceeds the configured size limit",
+      if (is.na(size) || size < 1 ||
+          size > .serialization_max_bytes()) {
+        stop("Logical-state file is empty or exceeds the configured size limit",
              call. = FALSE)
       }
-      payload = readRDS(file)
-      .validate_logical_state_payload(payload)
+      payload = tryCatch(
+        readRDS(file),
+        error = function(error) {
+          .serialization_stop(sprintf(
+            "RDS decoding failed: %s", conditionMessage(error)
+          ))
+        }
+      )
       restored = .restore_logical_state_payload(payload)
       .install_restored_logical_state(.self, restored)
     },

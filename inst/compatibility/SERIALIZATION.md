@@ -19,12 +19,15 @@ dimensions, dimnames, missing values, and character encodings are retained by
 the RDS transport and validated as part of the logical field structure.
 
 `model$loadState(file)` reads artifacts from a trusted local boundary. It
-checks the file-size limit, exact schema and field allowlists, primitive types,
-classes, dimensions, finiteness, element and byte limits, and both source
-fingerprints before constructing a replacement model. It reconstructs the
-TABLO compiler and loaded data through the public `loadTablo()` and
-`loadData()` workflow. An existing receiver is not mutated unless validation
-and reconstruction both complete.
+rejects non-regular or empty files and checks the compressed file-size limit
+before RDS decoding. The decoded envelope is then checked for exact schema and
+field allowlists, primitive types, permitted attributes, dimensions,
+finiteness, element and byte limits, and both source fingerprints before an
+isolated replacement model is constructed. Reconstruction uses the public
+`loadTablo()` and `loadData()` workflow, then verifies closure and shock
+identity, level names and dimensions, accepted solution size, and output
+allowlists against that reconstructed model. An existing receiver is not
+mutated unless every validation and reconstruction step completes.
 
 ## Deliberately excluded runtime state
 
@@ -32,8 +35,9 @@ The supported payload never contains environments, functions, external
 pointers, native factor handles, solver cache entries, compiler workspaces,
 derived sparse indexes/specifications, or transient applied-shock and
 post-simulation retry progress. Compiler functions and indexes are reconstructed
-from the recorded source. Sparse/native cache and factor state starts empty and
-is rebuilt lazily by a later supported solve.
+from the recorded source. Sparse/native cache and factor state start empty and
+are rebuilt independently by later backend work; a Matrix solve does not create
+a native cache entry.
 
 The serialized source and loaded data are sufficient to rebuild the model; the
 fingerprints detect identity mismatch or accidental artifact corruption. MD5 is

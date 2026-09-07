@@ -53,19 +53,71 @@
 
 .serialization_validate_names = function(value, expected, context) {
   actual = names(value)
-  if (is.null(actual) || anyDuplicated(actual) ||
-      !setequal(actual, expected) || length(actual) != length(expected)) {
-    missing = setdiff(expected, actual)
-    unknown = setdiff(actual, expected)
+  invalid_names = is.null(actual) || !is.character(actual) ||
+    length(actual) != length(expected) || anyNA(actual) ||
+    any(!nzchar(actual)) || anyDuplicated(actual)
+  if (invalid_names || !setequal(actual, expected)) {
+    missing = if (is.null(actual)) expected else setdiff(expected, actual)
+    unknown = if (is.null(actual)) character() else setdiff(actual, expected)
     detail = c(
       if (length(missing)) sprintf("missing: %s", paste(missing, collapse = ", ")),
       if (length(unknown)) sprintf("unknown: %s", paste(unknown, collapse = ", "))
     )
-    if (!length(detail)) detail = "duplicate or unnamed fields"
+    if (!length(detail)) detail = "duplicate, missing, or unnamed fields"
     .serialization_stop(sprintf(
       "%s fields are not allowlisted (%s)", context,
       paste(detail, collapse = "; ")
     ))
+  }
+  invisible(TRUE)
+}
+
+.serialization_validate_attributes = function(value, path) {
+  value_attributes = attributes(value)
+  if (is.null(value_attributes)) return(invisible(TRUE))
+  allowed = c("names", if (is.array(value)) c("dim", "dimnames"))
+  unknown = setdiff(names(value_attributes), allowed)
+  if (length(unknown)) {
+    .serialization_stop(sprintf(
+      "%s has unsupported attribute(s): %s",
+      path, paste(unknown, collapse = ", ")
+    ))
+  }
+  value_names = names(value)
+  if (!is.null(value_names) &&
+      (!is.character(value_names) || length(value_names) != length(value) ||
+       anyNA(value_names))) {
+    .serialization_stop(sprintf("%s has invalid names", path))
+  }
+  dimensions = dim(value)
+  if (!is.null(dimensions)) {
+    if (!is.integer(dimensions) || anyNA(dimensions) ||
+        any(dimensions < 0L) ||
+        prod(as.double(dimensions)) != length(value)) {
+      .serialization_stop(sprintf("%s has invalid dimensions", path))
+    }
+    dimension_names = dimnames(value)
+    if (!is.null(dimension_names)) {
+      if (!is.list(dimension_names) ||
+          length(dimension_names) != length(dimensions)) {
+        .serialization_stop(sprintf("%s has invalid dimnames", path))
+      }
+      for (index in seq_along(dimension_names)) {
+        labels = dimension_names[[index]]
+        if (!is.null(labels) &&
+            (!is.character(labels) ||
+             length(labels) != dimensions[[index]] || anyNA(labels))) {
+          .serialization_stop(sprintf("%s has invalid dimnames", path))
+        }
+      }
+      dimension_labels = names(dimension_names)
+      if (!is.null(dimension_labels) &&
+          (!is.character(dimension_labels) ||
+           length(dimension_labels) != length(dimensions) ||
+           anyNA(dimension_labels))) {
+        .serialization_stop(sprintf("%s has invalid dimension names", path))
+      }
+    }
   }
   invisible(TRUE)
 }
@@ -90,11 +142,18 @@
       is.expression(value) || inherits(value, "connection")) {
     .serialization_stop(sprintf("%s contains executable runtime state", path))
   }
+  .serialization_validate_attributes(value, path)
   if (is.list(value)) {
     if (length(value) > .serialization_max_elements()) {
       .serialization_stop(sprintf("%s exceeds the element limit", path))
     }
     value_names = names(value)
+    if (!is.null(value_names)) {
+      named = nzchar(value_names)
+      if (anyDuplicated(value_names[named])) {
+        .serialization_stop(sprintf("%s has duplicate named fields", path))
+      }
+    }
     for (index in seq_along(value)) {
       label = if (!is.null(value_names) && nzchar(value_names[[index]])) {
         value_names[[index]]
@@ -105,20 +164,14 @@
     }
     return(invisible(TRUE))
   }
-  if (!is.null(value) &&
-      !typeof(value) %in% c("logical", "integer", "double", "character", "raw")) {
+  if (!typeof(value) %in% c(
+    "logical", "integer", "double", "character", "raw"
+  )) {
     .serialization_stop(sprintf("%s has unsupported type %s", path,
                                 typeof(value)))
   }
   if (length(value) > .serialization_max_elements()) {
     .serialization_stop(sprintf("%s exceeds the element limit", path))
-  }
-  dimensions = dim(value)
-  if (!is.null(dimensions)) {
-    if (!is.numeric(dimensions) || anyNA(dimensions) ||
-        any(dimensions < 0) || prod(as.double(dimensions)) != length(value)) {
-      .serialization_stop(sprintf("%s has invalid dimensions", path))
-    }
   }
   if (is.numeric(value) && any(is.infinite(value))) {
     .serialization_stop(sprintf("%s contains non-finite numeric values", path))
@@ -206,6 +259,10 @@
 
 .validate_logical_state_payload = function(
     payload, max_bytes = .serialization_max_bytes()) {
+  if (!is.numeric(max_bytes) || length(max_bytes) != 1L ||
+      is.na(max_bytes) || !is.finite(max_bytes) || max_bytes <= 0) {
+    .serialization_stop("maximum byte limit must be one positive number")
+  }
   if (!is.list(payload) || is.object(payload)) {
     .serialization_stop("top level must be an unclassed list")
   }
@@ -227,8 +284,12 @@
       !payload$engine %in% c("legacy", "sparse")) {
     .serialization_stop("engine must be exactly legacy or sparse")
   }
-  if (!is.character(payload$closure) || anyNA(payload$closure)) {
-    .serialization_stop("closure must be a non-missing character vector")
+  if (!is.character(payload$closure) || anyNA(payload$closure) ||
+      any(!nzchar(payload$closure)) ||
+      anyDuplicated(payload$closure)) {
+    .serialization_stop(
+      "closure must contain unique non-missing non-empty names"
+    )
   }
   if (!is.list(payload$source) || is.object(payload$source)) {
     .serialization_stop("source must be an unclassed list")
@@ -243,23 +304,31 @@
       is.na(source$name) || !nzchar(source$name)) {
     .serialization_stop("source name must be one non-empty string")
   }
+  if (!identical(basename(source$name), source$name) ||
+      grepl("[/\\\\]", source$name)) {
+    .serialization_stop(
+      "source name must be a basename without path separators"
+    )
+  }
   if (!is.raw(source$tablo_source) || !length(source$tablo_source)) {
     .serialization_stop("TABLO source must be non-empty raw content")
+  }
+  if (!is.list(source$loaded_data) || is.object(source$loaded_data)) {
+    .serialization_stop("loaded source data must be an unclassed list")
   }
   fingerprint_pattern = "^[[:xdigit:]]{32}$"
   fingerprints = c(source$tablo_fingerprint, source$data_fingerprint)
   if (!is.character(fingerprints) || length(fingerprints) != 2L ||
       anyNA(fingerprints) || any(!grepl(fingerprint_pattern, fingerprints))) {
-    .serialization_stop("source fingerprints must be 32 hexadecimal characters")
+    .serialization_stop(
+      "source fingerprints must be 32 hexadecimal characters"
+    )
   }
   if (!identical(
     source$tablo_fingerprint,
     .serialization_object_fingerprint(source$tablo_source)
   )) {
     .serialization_stop("TABLO source fingerprint mismatch")
-  }
-  if (!is.list(source$loaded_data) || is.object(source$loaded_data)) {
-    .serialization_stop("loaded source data must be an unclassed list")
   }
   if (!identical(
     source$data_fingerprint,
@@ -269,6 +338,11 @@
   }
   if (!is.list(payload$levels) || is.object(payload$levels)) {
     .serialization_stop("levels must be an unclassed list")
+  }
+  level_names = names(payload$levels)
+  if (is.null(level_names) || anyNA(level_names) ||
+      any(!nzchar(level_names)) || anyDuplicated(level_names)) {
+    .serialization_stop("levels must have unique non-empty names")
   }
   if (!is.list(payload$shocks) || is.object(payload$shocks)) {
     .serialization_stop("shocks must be an unclassed list")
@@ -283,7 +357,9 @@
       anyDuplicated(payload$shocks$labels) ||
       any(!is.finite(payload$shocks$values)) ||
       any(payload$shocks$values == 0)) {
-    .serialization_stop("shocks must contain unique labels and finite nonzero values")
+    .serialization_stop(
+      "shocks must contain unique labels and finite nonzero values"
+    )
   }
   if (!is.list(payload$accepted) || is.object(payload$accepted)) {
     .serialization_stop("accepted state must be an unclassed list")
@@ -292,13 +368,25 @@
     payload$accepted, c("solution", "data", "compact_output"),
     "accepted state"
   )
-  if (!is.numeric(payload$accepted$solution) ||
+  if (!is.double(payload$accepted$solution) ||
       any(!is.finite(payload$accepted$solution))) {
-    .serialization_stop("accepted solution must be finite numeric data")
+    .serialization_stop("accepted solution must be finite double data")
   }
   if (!is.list(payload$accepted$data) ||
-      !is.list(payload$accepted$compact_output)) {
-    .serialization_stop("accepted outputs must be lists")
+      !is.list(payload$accepted$compact_output) ||
+      is.object(payload$accepted$data) ||
+      is.object(payload$accepted$compact_output)) {
+    .serialization_stop("accepted outputs must be unclassed lists")
+  }
+  for (field in c("data", "compact_output")) {
+    output_names = names(payload$accepted[[field]])
+    if (length(payload$accepted[[field]]) &&
+        (is.null(output_names) || anyNA(output_names) ||
+         any(!nzchar(output_names)) || anyDuplicated(output_names))) {
+      .serialization_stop(sprintf(
+        "accepted %s must have unique non-empty names", field
+      ))
+    }
   }
   budget = payload$memory_budget
   if (!is.numeric(budget) || length(budget) > 1L ||
@@ -310,8 +398,190 @@
   }
   .serialization_validate_portable(payload)
   serialized_size = length(serialize(payload, NULL, version = 3L))
-  if (serialized_size > max_bytes || as.numeric(object.size(payload)) > max_bytes) {
+  if (serialized_size > max_bytes ||
+      as.numeric(object.size(payload)) > max_bytes) {
     .serialization_stop("payload exceeds the configured size limit")
+  }
+  invisible(payload)
+}
+
+.serialization_validate_structure = function(
+    value, template, path, allow_dimension_drop = FALSE) {
+  if (is.null(template)) {
+    if (!is.null(value)) {
+      .serialization_stop(sprintf("%s must be NULL", path))
+    }
+    return(invisible(TRUE))
+  }
+  if (is.list(template)) {
+    if (!is.list(value) || is.object(value) ||
+        !identical(names(value), names(template))) {
+      .serialization_stop(sprintf(
+        "%s fields do not match the reconstructed model", path
+      ))
+    }
+    if (!identical(dim(value), dim(template)) ||
+        !identical(dimnames(value), dimnames(template))) {
+      .serialization_stop(sprintf(
+        "%s dimensions do not match the reconstructed model", path
+      ))
+    }
+    for (index in seq_along(template)) {
+      label = names(template)[[index]]
+      if (is.null(label) || !nzchar(label)) label = as.character(index)
+      .serialization_validate_structure(
+        value[[index]], template[[index]],
+        paste(path, label, sep = "$"),
+        allow_dimension_drop = allow_dimension_drop
+      )
+    }
+    return(invisible(TRUE))
+  }
+  numeric_template = is.numeric(template) || is.logical(template)
+  numeric_value = is.numeric(value) || is.logical(value)
+  if ((numeric_template && !numeric_value) ||
+      (!numeric_template &&
+       (!identical(typeof(value), typeof(template)) ||
+        !identical(class(value), class(template))))) {
+    .serialization_stop(sprintf(
+      "%s type does not match the reconstructed model", path
+    ))
+  }
+  dimensions_match = identical(dim(value), dim(template)) &&
+    identical(dimnames(value), dimnames(template))
+  dropped_dimensions = isTRUE(allow_dimension_drop) &&
+    is.null(dim(value)) && !is.null(dim(template))
+  if (!identical(length(value), length(template)) ||
+      !identical(names(value), names(template)) ||
+      (!dimensions_match && !dropped_dimensions)) {
+    .serialization_stop(sprintf(
+      "%s dimensions do not match the reconstructed model", path
+    ))
+  }
+  invisible(TRUE)
+}
+
+.validate_reconstructed_logical_state = function(payload, restored) {
+  rebuilt_levels = if (identical(payload$engine, "sparse")) {
+    sparse_state_data(restored$sparseState)
+  } else {
+    restored$data
+  }
+  rebuilt_levels = .serialization_strip_runtime(rebuilt_levels)
+  available_variables = unique(vapply(
+    restored$sparseSpec$variables,
+    function(variable) as.character(variable$name)[1L],
+    character(1)
+  ))
+  if (identical(payload$engine, "sparse")) {
+    .serialization_validate_structure(
+      payload$levels, rebuilt_levels, "levels"
+    )
+  } else {
+    if (!identical(names(payload$levels), names(rebuilt_levels))) {
+      .serialization_stop(
+        "levels fields do not match the reconstructed model"
+      )
+    }
+    updates = c(
+      restored$sparseSpec$simulation_updates,
+      restored$sparseSpec$formula_initialization_updates
+    )
+    update_fields = if (length(updates)) {
+      vapply(
+        updates,
+        function(update) as.character(update$target$name)[1L],
+        character(1)
+      )
+    } else character()
+    dimension_dropping_fields = unique(c(
+      available_variables, update_fields
+    ))
+    for (field in names(rebuilt_levels)) {
+      .serialization_validate_structure(
+        payload$levels[[field]], rebuilt_levels[[field]],
+        paste0("levels$", field),
+        allow_dimension_drop = field %in% dimension_dropping_fields
+      )
+    }
+  }
+  if (any(!payload$closure %in% available_variables)) {
+    .serialization_stop(
+      "closure contains variables absent from the reconstructed model"
+    )
+  }
+  shock_variables = sub("\\[.*$", "", payload$shocks$labels)
+  if (length(shock_variables) &&
+      any(!shock_variables %in% payload$closure)) {
+    .serialization_stop(
+      "shock labels are outside the reconstructed model closure"
+    )
+  }
+
+  expected_solution_length = if (identical(payload$engine, "sparse")) {
+    as.integer(restored$sparseIndex$endogenous_count)
+  } else {
+    length(restored$data$equations)
+  }
+  solution = payload$accepted$solution
+  if (length(solution) &&
+      length(solution) != expected_solution_length) {
+    .serialization_stop(
+      "accepted solution size does not match the reconstructed model"
+    )
+  }
+  solution_names = names(solution)
+  if (!is.null(solution_names) &&
+      (anyNA(solution_names) || any(!nzchar(solution_names)) ||
+       anyDuplicated(solution_names))) {
+    .serialization_stop(
+      "accepted solution names must be unique and non-missing"
+    )
+  }
+
+  level_fields = names(payload$levels)
+  metadata_fields = c(
+    "variables", "variableNumbers", "equations", "equationNumbers"
+  )
+  unknown_data = setdiff(
+    names(payload$accepted$data), c(level_fields, metadata_fields)
+  )
+  if (length(unknown_data)) {
+    .serialization_stop(sprintf(
+      "accepted data contains unknown field(s): %s",
+      paste(unknown_data, collapse = ", ")
+    ))
+  }
+  unknown_compact = setdiff(
+    names(payload$accepted$compact_output), c(level_fields, "solution")
+  )
+  if (length(unknown_compact)) {
+    .serialization_stop(sprintf(
+      "compact output contains unknown field(s): %s",
+      paste(unknown_compact, collapse = ", ")
+    ))
+  }
+  for (field in intersect(
+    names(payload$accepted$data), level_fields
+  )) {
+    candidate = payload$accepted$data[[field]]
+    level = payload$levels[[field]]
+    if (identical(dim(candidate), dim(level)) &&
+        identical(dimnames(candidate), dimnames(level))) {
+      .serialization_validate_structure(
+        candidate, level, paste0("accepted data$", field)
+      )
+    }
+  }
+  if ("solution" %in% names(payload$accepted$compact_output)) {
+    compact_solution = payload$accepted$compact_output$solution
+    if (!is.double(compact_solution) ||
+        length(compact_solution) != length(solution) ||
+        any(!is.finite(compact_solution))) {
+      .serialization_stop(
+        "compact solution does not match accepted solution structure"
+      )
+    }
   }
   invisible(payload)
 }
@@ -326,26 +596,41 @@
   close(connection)
   on.exit(unlink(path), add = TRUE)
 
-  restored = GEModel$new()
-  restored$loadTablo(path)
-  restored$setClosure(payload$closure)
-  restored$loadData(payload$source$loaded_data, engine = payload$engine)
+  restored = tryCatch({
+    candidate = GEModel$new()
+    candidate$loadTablo(path)
+    candidate$setClosure(payload$closure)
+    candidate$loadData(
+      payload$source$loaded_data, engine = payload$engine
+    )
+    candidate
+  }, error = function(error) {
+    .serialization_stop(sprintf(
+      "source reconstruction failed: %s", conditionMessage(error)
+    ))
+  })
+  .validate_reconstructed_logical_state(payload, restored)
+
   restored$sourceData = payload$source
   if (identical(payload$engine, "sparse")) {
-    rebuilt_levels = sparse_state_data(restored$sparseState)
-    for (name in names(payload$levels)) {
-      rebuilt_levels[[name]] = payload$levels[[name]]
+    restored$sparseState = sparse_make_state(payload$levels)
+    restored$data = payload$accepted$data
+  } else {
+    rebuilt_data = restored$data
+    for (field in names(payload$levels)) {
+      rebuilt_data[[field]] = payload$levels[[field]]
     }
-    restored$sparseState = sparse_make_state(rebuilt_levels)
+    restored$data = rebuilt_data
   }
-  restored$data = payload$accepted$data
   restored$solution = payload$accepted$solution
   restored$compactOutput = payload$accepted$compact_output
   restored$explicitShocks = payload$shocks
   restored$shocks = setNames(
     payload$shocks$values, payload$shocks$labels
   )
-  restored$variableValues = list()
+  if (identical(payload$engine, "sparse")) {
+    restored$variableValues = list()
+  }
   restored$memoryBudget = payload$memory_budget
   restored$lastDiagnostics = payload$diagnostics
   restored$loadedEngine = payload$engine

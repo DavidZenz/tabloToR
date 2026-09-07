@@ -49,6 +49,7 @@ test_that("accepted logical state round trips through the versioned payload", {
   expect_true(fresh$returned_self)
   expect_identical(fresh$before, expected)
   expect_identical(fresh$cache_before, 0L)
+  expect_identical(fresh$cache_after, 0L)
   expect_identical(fresh$after$engine, "sparse")
   expect_identical(
     describeCompatibilityStructure(fresh$after$solution),
@@ -64,12 +65,13 @@ test_that("accepted logical state round trips through the versioned payload", {
 test_that("serialization entry points and helpers have explicit contract rows", {
   manifest = loadCompatibilityManifest()
   expected = data.frame(
-    kind = c("method", "method", rep("internal", 3L)),
+    kind = c("method", "method", rep("internal", 4L)),
     name = c(
       "saveState", "loadState", ".build_logical_state_payload",
-      ".validate_logical_state_payload", ".restore_logical_state_payload"
+      ".validate_logical_state_payload", ".validate_reconstructed_logical_state",
+      ".restore_logical_state_payload"
     ),
-    tier = c("supported", "supported", rep("internal", 3L)),
+    tier = c("supported", "supported", rep("internal", 4L)),
     stringsAsFactors = FALSE
   )
   actual = manifest[
@@ -86,9 +88,7 @@ test_that("serialization entry points and helpers have explicit contract rows", 
 })
 
 test_that("serialization policy documents portable and compatibility-only forms", {
-  path = testthat::test_path(
-    "..", "..", "inst", "compatibility", "SERIALIZATION.md"
-  )
+  path = serializationPolicyPath()
   expect_true(file.exists(path))
   text = paste(readLines(path, warn = FALSE), collapse = "\n")
   expect_match(text, "gemodel-logical-state", fixed = TRUE)
@@ -159,13 +159,19 @@ test_that("fresh R processes reject incompatible payloads without mutation", {
   )
   payload = .build_logical_state_payload(model)
   malformed = list(
-    unknown_schema = within(payload, schema_version = 99L),
-    source_mismatch = within(payload, {
-      source$tablo_fingerprint = paste(rep("f", 32L), collapse = "")
-    }),
-    dimension_mismatch = within(payload, {
-      levels$stock = as.numeric(levels$stock)
-    })
+    unknown_schema = (function(value) {
+      value$schema_version = 99L
+      value
+    })(payload),
+    source_mismatch = (function(value) {
+      value$source$tablo_fingerprint =
+        paste(rep("f", 32L), collapse = "")
+      value
+    })(payload),
+    dimension_mismatch = (function(value) {
+      value$levels$stock = as.numeric(value$levels$stock)
+      value
+    })(payload)
   )
   state_files = vapply(malformed, function(value) {
     path = tempfile(fileext = ".rds")
@@ -311,11 +317,33 @@ test_that("raw reference serialization remains same-version compatibility-only",
   expect_identical(raw_row$tier, "compatibility-only")
   expect_identical(raw_row$serialization, "same-version-best-effort")
 
-  policy = paste(readLines(testthat::test_path(
-    "..", "..", "inst", "compatibility", "SERIALIZATION.md"
-  ), warn = FALSE), collapse = "\n")
+  policy = paste(readLines(serializationPolicyPath(), warn = FALSE),
+                 collapse = "\n")
   expect_match(policy, "not a stable portable or cross-version contract",
                fixed = TRUE)
   expect_match(policy, "Do not load payloads from untrusted parties",
                fixed = TRUE)
+})
+
+test_that("logical state rebuilds the declared legacy runtime", {
+  model = make_three_region_model("legacy")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  suppressMessages(model$solveModel(
+    iter = 1, steps = 1, engine = "legacy"
+  ))
+  expected = serializationModelSnapshot(model)
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+
+  model$saveState(state_file)
+  restored = GEModel$new()
+  restored$loadState(state_file)
+
+  expect_identical(restored$loadedEngine, "legacy")
+  expect_identical(serializationModelSnapshot(restored), expected)
+  expect_true(is.function(restored$data[["/"]]))
+  expect_silent(suppressMessages(restored$solveModel(
+    iter = 1, steps = 1, engine = "legacy"
+  )))
+  expect_true(all(is.finite(restored$solution)))
 })

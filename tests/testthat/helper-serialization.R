@@ -64,6 +64,20 @@ writeSerializationPayload = function(payload, path) {
   invisible(path)
 }
 
+serializationPolicyPath = function() {
+  source_path = testthat::test_path(
+    "..", "..", "inst", "compatibility", "SERIALIZATION.md"
+  )
+  if (file.exists(source_path)) return(source_path)
+  installed_path = system.file(
+    "compatibility", "SERIALIZATION.md", package = "tabloToR"
+  )
+  if (!nzchar(installed_path)) {
+    stop("Installed serialization policy is unavailable", call. = FALSE)
+  }
+  installed_path
+}
+
 expectSerializationRejectedWithoutMutation = function(
     payload, pattern = "Invalid logical state payload", info = NULL) {
   state_file = tempfile(fileext = ".rds")
@@ -99,6 +113,10 @@ runSerializationRejectionFreshProcess = function(state_files) {
     "result_file = args[[length(args)]]",
     "r_files = sort(list.files(file.path(package_root, 'R'), pattern = '\\\\.R$', full.names = TRUE))",
     "for (path in r_files) sys.source(path, envir = .GlobalEnv)",
+    "if (!length(r_files)) {",
+    "  library(tabloToR)",
+    "  GEModel = get('GEModel', envir = asNamespace('tabloToR'))",
+    "}",
     "results = lapply(state_files, function(state_file) {",
     "  model = GEModel$new()",
     "  model$closure = 'fresh-process-sentinel'",
@@ -142,7 +160,26 @@ runSerializationFreshProcess = function(state_file) {
     "package_root = normalizePath(args[[1L]], mustWork = TRUE)",
     "r_files = sort(list.files(file.path(package_root, 'R'), pattern = '\\\\.R$', full.names = TRUE))",
     "for (path in r_files) sys.source(path, envir = .GlobalEnv)",
-    "sys.source(file.path(package_root, 'tests', 'testthat', 'helper-serialization.R'), envir = .GlobalEnv)",
+    "if (!length(r_files)) {",
+    "  library(tabloToR)",
+    "  package_namespace = asNamespace('tabloToR')",
+    "  GEModel = get('GEModel', envir = package_namespace)",
+    "  sparse_state_data = get('sparse_state_data', envir = package_namespace)",
+    "  .serialization_strip_runtime = get('.serialization_strip_runtime', envir = package_namespace)",
+    "}",
+    "serializationModelSnapshot = function(model) {",
+    "  levels = if (is.environment(model$sparseState)) sparse_state_data(model$sparseState) else model$data",
+    "  levels = .serialization_strip_runtime(levels)",
+    "  list(",
+    "    engine = model$loadedEngine, levels = levels,",
+    "    closure = model$closure, shocks = model$explicitShocks,",
+    "    solution = model$solution,",
+    "    data = .serialization_strip_runtime(model$data),",
+    "    compact_output = model$compactOutput,",
+    "    memory_budget = model$memoryBudget,",
+    "    diagnostics = model$lastDiagnostics",
+    "  )",
+    "}",
     "model = GEModel$new()",
     "returned = model$loadState(args[[2L]])",
     "before = serializationModelSnapshot(model)",
