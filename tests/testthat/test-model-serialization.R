@@ -97,3 +97,225 @@ test_that("serialization policy documents portable and compatibility-only forms"
   expect_match(text, "trusted local", ignore.case = TRUE)
   expect_match(text, "cache", ignore.case = TRUE)
 })
+
+test_that("malformed logical payloads fail closed before receiver mutation", {
+  model = make_three_region_model("sparse")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "full", backend = "Matrix",
+    reduction = "off"
+  )
+  payload = .build_logical_state_payload(model)
+
+  malformed = list()
+
+  malformed$unknown_top_level = payload
+  malformed$unknown_top_level$unexpected = TRUE
+
+  malformed$unknown_schema_version = payload
+  malformed$unknown_schema_version$schema_version = 2L
+
+  malformed$invalid_engine_type = payload
+  malformed$invalid_engine_type$engine = 1L
+
+  malformed$invalid_source_fingerprint = payload
+  malformed$invalid_source_fingerprint$source$tablo_fingerprint =
+    paste(rep("0", 32L), collapse = "")
+
+  malformed$unknown_level = payload
+  malformed$unknown_level$levels$unexpected = 1
+
+  malformed$invalid_level_dimensions = payload
+  malformed$invalid_level_dimensions$levels$stock =
+    as.numeric(malformed$invalid_level_dimensions$levels$stock)
+
+  malformed$invalid_solution_dimensions = payload
+  malformed$invalid_solution_dimensions$accepted$solution =
+    malformed$invalid_solution_dimensions$accepted$solution[1L]
+
+  malformed$runtime_attribute = payload
+  malformed$runtime_attribute$diagnostics$unsafe = structure(
+    1, runtime = new.env(parent = emptyenv())
+  )
+
+  malformed$invalid_nested_name = payload
+  names(malformed$invalid_nested_name$diagnostics)[1L] = NA_character_
+
+  for (name in names(malformed)) {
+    expectSerializationRejectedWithoutMutation(
+      malformed[[name]], info = name
+    )
+  }
+})
+
+test_that("fresh R processes reject incompatible payloads without mutation", {
+  model = make_three_region_model("sparse")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "full", backend = "Matrix",
+    reduction = "off"
+  )
+  payload = .build_logical_state_payload(model)
+  malformed = list(
+    unknown_schema = within(payload, schema_version = 99L),
+    source_mismatch = within(payload, {
+      source$tablo_fingerprint = paste(rep("f", 32L), collapse = "")
+    }),
+    dimension_mismatch = within(payload, {
+      levels$stock = as.numeric(levels$stock)
+    })
+  )
+  state_files = vapply(malformed, function(value) {
+    path = tempfile(fileext = ".rds")
+    writeSerializationPayload(value, path)
+    path
+  }, character(1))
+  on.exit(unlink(state_files), add = TRUE)
+
+  results = runSerializationRejectionFreshProcess(state_files)
+  expect_true(all(vapply(results, function(value) {
+    is.character(value$error) &&
+      grepl("Invalid logical state payload", value$error, fixed = TRUE)
+  }, logical(1))))
+  expect_true(all(vapply(results, `[[`, logical(1), "unchanged")))
+})
+
+test_that("serialization limits reject oversized artifacts and values", {
+  model = make_three_region_model("sparse")
+  payload = .build_logical_state_payload(model)
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  writeSerializationPayload(payload, state_file)
+
+  receiver = GEModel$new()
+  receiver$closure = "receiver-sentinel"
+  before = serializationReceiverSnapshot(receiver)
+  withr::local_options(
+    tabloToR.serialization.max_bytes = file.info(state_file)$size - 1
+  )
+  expect_error(receiver$loadState(state_file), "size limit")
+  expect_identical(serializationReceiverSnapshot(receiver), before)
+
+  withr::local_options(tabloToR.serialization.max_elements = 2)
+  expect_error(
+    .validate_logical_state_payload(payload),
+    "element limit"
+  )
+})
+
+test_that("portable edge values retain structure equality and encoding", {
+  utf8 = "\u00e9"
+  Encoding(utf8) = "UTF-8"
+  latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+  Encoding(latin1) = "latin1"
+  edges = list(
+    empty = numeric(),
+    singleton = array(
+      7,
+      dim = 1L,
+      dimnames = list(region = "north")
+    ),
+    nullable = NULL,
+    missing = c(NA_real_, 1),
+    encoded = c(utf8 = utf8, latin1 = latin1)
+  )
+  model = make_three_region_model("sparse")
+  model$lastDiagnostics = list(portable_edges = edges)
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+
+  model$saveState(state_file)
+  payload = readRDS(state_file)
+  restored = GEModel$new()
+  restored$loadState(state_file)
+
+  expect_identical(payload$diagnostics$portable_edges, edges)
+  expect_identical(restored$lastDiagnostics$portable_edges, edges)
+  expect_identical(
+    lapply(restored$lastDiagnostics$portable_edges,
+           describeCompatibilityStructure),
+    lapply(edges, describeCompatibilityStructure)
+  )
+  expect_true(compatibilityValuesEqual(
+    restored$lastDiagnostics$portable_edges$encoded,
+    edges$encoded,
+    check_encoding = TRUE
+  ))
+})
+
+test_that("restored runtime cache starts empty and can rebuild independently", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  model = make_three_region_model("sparse")
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  model$saveState(state_file)
+  restored = GEModel$new()
+  restored$loadState(state_file)
+
+  expect_identical(restored$sparseState$.solver_cache, list())
+  fixture = make_cpp_schur_fixture()
+  runtime = .sparse_schur_cpp_runtime
+  old = list(
+    active = runtime$active,
+    state = runtime$state,
+    index_key = runtime$index_key
+  )
+  on.exit({
+    runtime$active = old$active
+    runtime$state = old$state
+    runtime$index_key = old$index_key
+    .sparse_cpp_release_live_factors()
+  }, add = TRUE)
+  runtime$active = TRUE
+  runtime$state = restored$sparseState
+  runtime$index_key = "serialization-rebuild"
+  .sparse_exact_schur_build_cpp(
+    fixture$A, fixture$row_group, fixture$column_group,
+    fixture$local_count, fixture$region_count, fixture$global_group,
+    rhs = fixture$rhs, panel_size = 2L
+  )
+  .sparse_cpp_release_live_factors()
+
+  expect_identical(
+    names(restored$sparseState$.solver_cache),
+    "StructuredSchurFGMRESCpp"
+  )
+  expect_false(serializationContainsRuntimeState(
+    restored$sparseState$.solver_cache
+  ))
+})
+
+test_that("raw reference serialization remains same-version compatibility-only", {
+  model = make_three_region_model("sparse")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  solve_three_region_once(model)
+  raw_file = tempfile(fileext = ".rds")
+  on.exit(unlink(raw_file), add = TRUE)
+
+  saveRDS(model, raw_file, version = 3L)
+  restored = readRDS(raw_file)
+  expect_true(inherits(restored, "GEModel"))
+  expect_silent(suppressMessages(solve_three_region_once(restored)))
+  expect_true(all(is.finite(restored$solution)))
+
+  manifest = loadCompatibilityManifest()
+  raw_row = manifest[
+    manifest$kind == "serialization" &
+      manifest$name == "raw-saveRDS-model",
+    , drop = FALSE
+  ]
+  expect_identical(nrow(raw_row), 1L)
+  expect_identical(raw_row$tier, "compatibility-only")
+  expect_identical(raw_row$serialization, "same-version-best-effort")
+
+  policy = paste(readLines(testthat::test_path(
+    "..", "..", "inst", "compatibility", "SERIALIZATION.md"
+  ), warn = FALSE), collapse = "\n")
+  expect_match(policy, "not a stable portable or cross-version contract",
+               fixed = TRUE)
+  expect_match(policy, "Do not load payloads from untrusted parties",
+               fixed = TRUE)
+})
