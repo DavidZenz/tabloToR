@@ -1,7 +1,27 @@
 phase02_tool_path = function(name) {
-  normalizePath(
-    testthat::test_path("..", "..", "tools", name),
-    mustWork = TRUE
+  source_candidate = testthat::test_path("..", "..", "inst", "tools", name)
+  if (file.exists(source_candidate)) {
+    return(normalizePath(source_candidate, mustWork = TRUE))
+  }
+  installed_candidate = system.file("tools", name, package = "tabloToR")
+  normalizePath(installed_candidate, mustWork = TRUE)
+}
+
+phase02_cli_path = function(name) {
+  source_candidate = testthat::test_path("..", "..", "tools", name)
+  if (file.exists(source_candidate)) {
+    return(normalizePath(source_candidate, mustWork = TRUE))
+  }
+  phase02_tool_path(name)
+}
+
+phase02_require_source_tree = function() {
+  available = file.exists(testthat::test_path("..", "..", "DESCRIPTION")) &&
+    dir.exists(testthat::test_path("..", "..", "R")) &&
+    dir.exists(testthat::test_path("..", "..", "src"))
+  testthat::skip_if_not(
+    available,
+    "Phase 02 proposal regeneration requires the package source tree"
   )
 }
 
@@ -28,6 +48,7 @@ copy_phase02_canonical = function(refresh, destination) {
 }
 
 test_that("proposal generation is explicit compact and deterministic", {
+  phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   first = tempfile("phase02-proposal-first-")
   second = tempfile("phase02-proposal-second-")
@@ -48,6 +69,7 @@ test_that("proposal generation is explicit compact and deterministic", {
     readLines(file.path(first, "DIFF.md"), warn = FALSE),
     readLines(file.path(second, "DIFF.md"), warn = FALSE)
   )
+  expect_true(is.function(make_three_region_model))
 
   expectations = read.csv(
     file.path(first, "expectations.csv"), stringsAsFactors = FALSE,
@@ -66,6 +88,7 @@ test_that("proposal generation is explicit compact and deterministic", {
 })
 
 test_that("stable fingerprints and volatile run metadata are separated", {
+  phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   proposal = tempfile("phase02-proposal-metadata-")
   refresh$phase02_generate_proposal(proposal)
@@ -99,7 +122,8 @@ test_that("stable fingerprints and volatile run metadata are separated", {
   )))
 })
 
-test_that("proposal and check modes cannot mutate canonical artifacts", {
+test_that("proposal and check modes cannot mutate accepted canonical artifacts", {
+  phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   canonical = refresh$phase02_canonical_dir()
   before = refresh$phase02_artifact_hash(canonical)
@@ -108,9 +132,8 @@ test_that("proposal and check modes cannot mutate canonical artifacts", {
   refresh$phase02_generate_proposal(proposal)
   clean = refresh$phase02_check_baselines()
 
-  expect_false(clean$clean)
-  expect_match(clean$diff, "fingerprints.dcf")
-  expect_match(clean$diff, "missing")
+  expect_true(clean$clean)
+  expect_match(clean$diff, "No stable baseline changes", fixed = TRUE)
   expect_identical(before, refresh$phase02_artifact_hash(canonical))
   expect_error(
     refresh$phase02_generate_proposal(canonical),
@@ -125,6 +148,7 @@ test_that("proposal and check modes cannot mutate canonical artifacts", {
 })
 
 test_that("read-only check reports missing stale and corrupt keys", {
+  phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   canonical = tempfile("phase02-canonical-copy-")
   proposal = tempfile("phase02-proposal-clean-copy-")
@@ -159,6 +183,7 @@ test_that("read-only check reports missing stale and corrupt keys", {
 })
 
 test_that("acceptance validates proposals and supports dry-run and safe commit", {
+  phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   accept = load_phase02_tool("accept_phase02_baselines.R")
   proposal = tempfile("phase02-proposal-accept-")
@@ -217,7 +242,7 @@ test_that("acceptance validates proposals and supports dry-run and safe commit",
 })
 
 test_that("acceptance CLI documents the exact reviewed boundary", {
-  script = phase02_tool_path("accept_phase02_baselines.R")
+  script = phase02_cli_path("accept_phase02_baselines.R")
   output = system2(
     file.path(R.home("bin"), "Rscript"),
     c("--vanilla", shQuote(script), "--help"),
@@ -234,4 +259,64 @@ test_that("acceptance CLI documents the exact reviewed boundary", {
     fixed = TRUE
   )
   expect_match(paste(output, collapse = "\n"), "--dry-run", fixed = TRUE)
+})
+
+test_that("canonical acceptance is complete and bound to accepted artifacts", {
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  canonical = normalizePath(
+    testthat::test_path("baselines", "phase02"), mustWork = TRUE
+  )
+  record = readLines(file.path(canonical, "ACCEPTANCE.md"), warn = FALSE)
+  text = paste(record, collapse = "\n")
+  fingerprints = as.list(read.dcf(
+    file.path(canonical, "fingerprints.dcf")
+  )[1, ])
+
+  for (field in c(
+    "Reviewer", "Reason", "Accepted-UTC", "Proposal-Hash",
+    "Old-Canonical-Hash", "New-Canonical-Hash", "Fixture-MD5",
+    "Source-Fingerprint", "Tolerance-Tier"
+  )) {
+    expect_match(text, paste0("- **", field, ":**"), fixed = TRUE)
+  }
+  expect_match(
+    text,
+    paste0("- **New-Canonical-Hash:** `",
+           refresh$phase02_artifact_hash(canonical), "`"),
+    fixed = TRUE
+  )
+  expect_match(
+    text,
+    paste0("- **Fixture-MD5:** `", fingerprints[["Fixture-MD5"]], "`"),
+    fixed = TRUE
+  )
+  expect_match(
+    text,
+    paste0("- **Source-Fingerprint:** `",
+           fingerprints[["Source-Fingerprint"]], "`"),
+    fixed = TRUE
+  )
+  expect_match(text, "strict (solution atol 1e-10, rtol 1e-08; ",
+               fixed = TRUE)
+  expect_match(text, "residual rtol 1e-10)", fixed = TRUE)
+  expect_false(grepl(
+    "Old-Canonical-Hash:** `453a6986e600df6cf426c11d794f2b1d`",
+    text, fixed = TRUE
+  ))
+})
+
+test_that("source fingerprint ordering is locale independent", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  files = refresh$phase02_source_files(refresh$phase02_repository_root())
+  expected = unique(files)
+  expected = expected[order(
+    tolower(expected), expected, method = "radix"
+  )]
+
+  expect_identical(files, expected)
+  expect_identical(
+    refresh$phase02_source_fingerprint(refresh$phase02_repository_root()),
+    "4b42d701c21b8b40ac9c22329400ce84"
+  )
 })
