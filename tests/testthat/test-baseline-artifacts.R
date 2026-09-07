@@ -11,15 +11,20 @@ load_phase02_tool = function(name) {
   environment
 }
 
-copy_phase02_canonical = function(refresh, destination) {
+copy_phase02_artifacts = function(refresh, source, destination) {
   dir.create(destination, recursive = TRUE, showWarnings = FALSE)
   files = refresh$phase02_stable_artifact_names()
+  files = files[file.exists(file.path(source, files))]
   copied = file.copy(
-    file.path(refresh$phase02_canonical_dir(), files),
+    file.path(source, files),
     file.path(destination, files)
   )
   stopifnot(all(copied))
   invisible(destination)
+}
+
+copy_phase02_canonical = function(refresh, destination) {
+  copy_phase02_artifacts(refresh, refresh$phase02_canonical_dir(), destination)
 }
 
 test_that("proposal generation is explicit compact and deterministic", {
@@ -53,7 +58,9 @@ test_that("proposal generation is explicit compact and deterministic", {
     'q["north"]|q["south"]|q["east"]'
   )
   expect_equal(
-    as.numeric(expectations$value[expectations$kind == "value"]),
+    as.numeric(expectations$value[
+      expectations$fixture == "three-region" & expectations$kind == "value"
+    ]),
     c(1, 3, -2), tolerance = 1e-12
   )
 })
@@ -101,7 +108,9 @@ test_that("proposal and check modes cannot mutate canonical artifacts", {
   refresh$phase02_generate_proposal(proposal)
   clean = refresh$phase02_check_baselines()
 
-  expect_true(clean$clean)
+  expect_false(clean$clean)
+  expect_match(clean$diff, "fingerprints.dcf")
+  expect_match(clean$diff, "missing")
   expect_identical(before, refresh$phase02_artifact_hash(canonical))
   expect_error(
     refresh$phase02_generate_proposal(canonical),
@@ -118,7 +127,9 @@ test_that("proposal and check modes cannot mutate canonical artifacts", {
 test_that("read-only check reports missing stale and corrupt keys", {
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
   canonical = tempfile("phase02-canonical-copy-")
-  copy_phase02_canonical(refresh, canonical)
+  proposal = tempfile("phase02-proposal-clean-copy-")
+  refresh$phase02_generate_proposal(proposal)
+  copy_phase02_artifacts(refresh, proposal, canonical)
 
   clean = refresh$phase02_check_baselines(canonical_dir = canonical)
   expect_true(clean$clean)
