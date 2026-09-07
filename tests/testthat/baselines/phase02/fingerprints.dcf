@@ -1,0 +1,18 @@
+Schema: phase02-baseline-fingerprints-v1
+Fixture-Path: tests/testthat/fixtures/three-region.tab
+Fixture-MD5: 15e0bfa34b066974f6541f7a78ddfc1c
+Fixture-Provenance-Path: tests/testthat/fixtures/PROVENANCE.md
+Fixture-Provenance-MD5: e8364f418968fdd23d3788e654536e62
+Fixture-Input-Signature: aeda841525d36024d54788705d49ed2a
+Source-Scope: DESCRIPTION; NAMESPACE; R/*.R; src/*.{c,cc,cpp,h,hpp}; inst/compatibility/*; approved Phase 02 fixture/helper files; generated baselines and proposals excluded
+Source-File-Count: 21
+Source-Fingerprint: 4b42d701c21b8b40ac9c22329400ce84
+Package-Name: tabloToR
+Package-Version: 0.1.0
+Package-Signature: ebca41b0059b8d938828d30f84959766
+Model-Signature: 0a8f374c483973543ea78866b4cf8f9f
+Expectations-MD5: 6734d2e6010c7e80327c78b69506d755
+Tolerances-MD5: ff7e849992ff1b9ab15d503c4abd0cad
+External-Evidence-Path: benchmarks/GTAP12A_CPP_RESULTS.md
+External-Evidence-MD5: 9e0f560768c971761af0cba850742a55
+External-Inputs-Committed: false
