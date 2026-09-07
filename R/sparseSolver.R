@@ -35,14 +35,15 @@ sparse_make_state = function(data) {
   )
 }
 
-.transaction_failure_diagnostics = function(engine, error) {
+.transaction_failure_diagnostics = function(engine, error,
+                                             retryable_postsim = FALSE) {
   phase = attr(error, "transaction_phase")
   if (is.null(phase) || !length(phase)) phase = "setup"
   list(
     engine = engine,
     status = "failed",
     accepted_numerical_state = FALSE,
-    retryable_postsim = FALSE,
+    retryable_postsim = isTRUE(retryable_postsim),
     failure_phase = as.character(phase)[[1L]],
     failure_reason = conditionMessage(error)
   )
@@ -2521,7 +2522,8 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
         stop(error)
       }
       model$lastDiagnostics = .transaction_failure_diagnostics(
-        "sparse", error
+        "sparse", error,
+        retryable_postsim = length(model$.postsimRecord) > 0L
       )
       stop(error)
     }

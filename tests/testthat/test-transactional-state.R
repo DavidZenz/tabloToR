@@ -227,6 +227,41 @@ test_that("retryPostsim without an accepted record never enters the solver", {
   expect_identical(recorder(), character())
 })
 
+test_that("a later numerical failure preserves an older retry record", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(2, 0, 0))
+  failTransactionAt("post-update")
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected post-update failure"
+  )
+  accepted_solution = model$solution
+  accepted_record = serialize(model$.postsimRecord, NULL, version = 3L)
+
+  localTransactionFault(NULL)
+  failTransactionAt("compilation")
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected compilation failure"
+  )
+
+  expect_identical(model$solution, accepted_solution)
+  expect_identical(
+    serialize(model$.postsimRecord, NULL, version = 3L),
+    accepted_record
+  )
+  expect_identical(model$lastDiagnostics$status, "failed")
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_true(model$lastDiagnostics$retryable_postsim)
+  expect_identical(model$lastDiagnostics$failure_phase, "compilation")
+})
+
 test_that("post retry API and internal helper are tiered explicitly", {
   exported = getNamespaceExports("tabloToR")
   expect_true("retryPostsim" %in% GEModel$methods())
