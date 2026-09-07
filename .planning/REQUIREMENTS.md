@@ -22,7 +22,7 @@
 ### Numerical Integrity
 
 - [x] **NUM-01**: Legacy, Matrix sparse, structured R, and optional structured C++ paths satisfy documented solution-equivalence and true-residual tolerances on redistributable fixtures.
-- [ ] **NUM-02**: Solver results are applied to mutable model state only after the selected backend passes its required residual and finiteness checks.
+- [x] **NUM-02**: Solver results are applied to mutable model state only after the selected backend passes its required residual and finiteness checks.
 - [ ] **NUM-03**: The full GTAP benchmark records package/model signatures, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs.
 
 ### Package Migration and API
@@ -82,7 +82,7 @@
 | COMP-03 | Phase 2 | Complete |
 | COMP-04 | Phase 3 | Pending |
 | NUM-01 | Phase 2 | Complete |
-| NUM-02 | Phase 2 | Pending |
+| NUM-02 | Phase 2 | Complete |
 | NUM-03 | Phase 6 | Pending |
 | MIGR-01 | Phase 3 | Pending |
 | MIGR-02 | Phase 3 | Pending |

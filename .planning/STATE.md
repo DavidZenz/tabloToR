@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 02
 current_phase_name: Compatibility and Numerical Baseline
 status: executing
-stopped_at: Completed 02-03-PLAN.md
-last_updated: "2026-09-02T14:34:04.433Z"
+stopped_at: Completed 02-04-PLAN.md
+last_updated: "2026-09-07T07:35:27.925Z"
 last_activity: 2026-09-02
 last_activity_desc: Phase 02 execution started
-state_head: 9fcee45c4aa2343c46a2d8ed871a13678df47224
+state_head: bdc4f3ba54bfab82722677b62b91f0840d229590
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 17
-  completed_plans: 14
+  completed_plans: 15
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 02 (Compatibility and Numerical Baseline) — EXECUTING
-Plan: 4 of 6
+Plan: 5 of 6
 Status: Ready to execute
 Last activity: 2026-09-02 — Phase 02 execution started
 
@@ -72,6 +72,7 @@ Progress: [██████████] 100%
 | Phase 02 P01 | 20min | 2 tasks | 4 files |
 | Phase 02 P02 | 24min | 3 tasks | 7 files |
 | Phase 02 P03 | 33min | 2 tasks | 8 files |
+| Phase 02 P04 | 4d17h | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 02]: Use one backend-neutral structure, finiteness, value, and full-system true-residual gate before any sparse candidate mutates model state; diagnostics only control retained evidence.
 - [Phase 02]: Keep Matrix as generic numerical authority, StructuredSchurFGMRES as native structured authority, and legacy as compatibility smoke only.
 - [Phase 02]: Select numerical tolerances only by fixture and conditioning metadata; keep the 2e-7 exception confined to named external full-GTAP evidence.
+- [Phase 02]: Commit accepted sparse numerical state before post-simulation while preserving the last complete data/output until post publication succeeds.
+- [Phase 02]: Run legacy solves on a deep reference-class copy and publish only after all lifecycle boundaries succeed.
+- [Phase 02]: Expose retryPostsim(diagnostics = FALSE) as a solve-free retry over stored accepted state and immutable post inputs.
 
 ### Pending Todos
 
@@ -114,6 +118,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-02T14:34:04.397Z
-Stopped at: Completed 02-03-PLAN.md
+Last session: 2026-09-07T07:35:27.894Z
+Stopped at: Completed 02-04-PLAN.md
 Resume file: None
