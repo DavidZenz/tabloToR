@@ -185,6 +185,12 @@ test_that("post failures preserve accepted solve and prior complete output", {
 
     localTransactionFault(NULL)
     expected = make_three_region_model()
+    set_three_region_shocks(expected, "preferred", c(1, 0, 0))
+    expected$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, output = "compact", variables = "stock",
+      reduction = "off"
+    )
     set_three_region_shocks(expected, "preferred", c(2, 0, 0))
     expected$solveModel(
       iter = 1, steps = 1, engine = "sparse", postsim = TRUE,

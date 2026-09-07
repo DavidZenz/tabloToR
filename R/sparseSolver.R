@@ -48,10 +48,26 @@ sparse_make_state = function(data) {
   )
 }
 
+.postsim_failure_diagnostics = function(record, error) {
+  diagnostics = record$diagnostics
+  if (!is.list(diagnostics) || !length(diagnostics)) {
+    diagnostics = list(engine = record$engine)
+  }
+  phase = attr(error, "transaction_phase")
+  if (is.null(phase) || !length(phase)) phase = "postsim"
+  diagnostics$status = "postsim-incomplete"
+  diagnostics$accepted_numerical_state = TRUE
+  diagnostics$retryable_postsim = TRUE
+  diagnostics$failure_phase = as.character(phase)[[1L]]
+  diagnostics$failure_reason = conditionMessage(error)
+  diagnostics$post_simulation_retained = FALSE
+  diagnostics
+}
+
 .commit_accepted_state = function(model, record) {
   required = c(
-    "state", "index", "solution", "data", "compact_output",
-    "diagnostics", "loaded_engine"
+    "state", "index", "solution", "diagnostics", "loaded_engine",
+    "postsim_record"
   )
   missing = setdiff(required, names(record))
   if (length(missing)) {
@@ -66,10 +82,114 @@ sparse_make_state = function(data) {
   model$sparseState = record$state
   model$sparseIndex = record$index
   model$solution = record$solution
+  model$lastDiagnostics = record$diagnostics
+  model$loadedEngine = record$loaded_engine
+  model$.postsimRecord = record$postsim_record
+  invisible(model)
+}
+
+.commit_postsim_state = function(model, record) {
+  required = c("state", "data", "compact_output", "diagnostics")
+  missing = setdiff(required, names(record))
+  if (length(missing)) {
+    stop(sprintf(
+      "Post-simulation state record is missing field(s): %s",
+      paste(missing, collapse = ", ")
+    ), call. = FALSE)
+  }
+  .transaction_fault("commit-postsim-state")
+  model$sparseState = record$state
   model$data = record$data
   model$compactOutput = record$compact_output
   model$lastDiagnostics = record$diagnostics
-  model$loadedEngine = record$loaded_engine
+  model$.postsimRecord = list()
+  invisible(model)
+}
+
+.retry_postsim_from_record = function(model, diagnostics = FALSE) {
+  record = model$.postsimRecord
+  required = c(
+    "engine", "state_data", "index", "spec", "solution", "diagnostics",
+    "postsim", "output", "variables", "dimensions"
+  )
+  if (!is.list(record) || !length(record) ||
+      length(setdiff(required, names(record)))) {
+    stop("No retryable post-simulation record is available", call. = FALSE)
+  }
+  state = sparse_make_state(record$state_data)
+  tryCatch({
+    .transaction_phase("post-update", {
+      .transaction_fault("post-update")
+      if (isTRUE(record$postsim)) {
+        sparse_apply_updates(
+          state, record$index, record$spec,
+          updates = record$spec$post_updates
+        )
+      }
+    })
+    result = .transaction_phase("output-projection", {
+      .transaction_fault("output-projection")
+      selected = if (record$output == "compact" ||
+                     !is.null(record$variables) ||
+                     !is.null(record$dimensions)) {
+        sparse_project_outputs(
+          state, record$index, record$variables, record$dimensions,
+          if (record$output == "compact") record$solution else NULL
+        )
+      } else NULL
+      compact_output = if (!is.null(selected)) selected else list()
+      data_result = if (isTRUE(record$postsim)) {
+        if (record$output == "full") {
+          sparse_materialize_labels(
+            state, record$index, equations = TRUE, variables = TRUE
+          )
+        } else {
+          sparse_state_data(state)
+        }
+      } else {
+        list()
+      }
+      list(data = data_result, compact_output = compact_output)
+    })
+    complete = record$diagnostics
+    complete$status = "complete"
+    complete$accepted_numerical_state = TRUE
+    complete$retryable_postsim = FALSE
+    complete$failure_phase = NULL
+    complete$failure_reason = NULL
+    complete$post_simulation_retained = isTRUE(record$postsim)
+    public_diagnostics = if (isTRUE(diagnostics)) complete else list()
+    .commit_postsim_state(model, list(
+      state = state,
+      data = result$data,
+      compact_output = result$compact_output,
+      diagnostics = public_diagnostics
+    ))
+    invisible(model)
+  }, error = function(error) {
+    attr(error, "tabloToR.accepted_numerical_state") = TRUE
+    model$lastDiagnostics = .postsim_failure_diagnostics(record, error)
+    stop(error)
+  })
+}
+
+.commit_legacy_state = function(model, working, diagnostics = FALSE) {
+  .transaction_fault("commit-accepted-state", list(engine = "legacy"))
+  model$shocks = working$shocks
+  model$data = working$data
+  model$solution = working$solution
+  model$compactOutput = working$compactOutput
+  model$lastDiagnostics = if (isTRUE(diagnostics)) {
+    list(
+      engine = "legacy",
+      status = "complete",
+      accepted_numerical_state = TRUE,
+      retryable_postsim = FALSE,
+      failure_phase = NULL
+    )
+  } else list()
+  model$loadedEngine = working$loadedEngine
+  model$.postsimRecord = list()
   invisible(model)
 }
 sparse_process_tablo = function(tabloPath) {
@@ -2043,6 +2163,7 @@ sparse_check_budget = function(estimate, budget) {
       reduction = reduction
     )
   }
+  .transaction_fault("convergence")
   expected_structure = list(
     class = "numeric",
     type = "double",
@@ -2313,38 +2434,15 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   if (is.null(final_solution)) final_solution = numeric(index$endogenous_count)
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
-  if (postsim) {
-    .transaction_fault("post-update")
-    sparse_apply_updates(
-      state, index, model$sparseSpec,
-      updates = model$sparseSpec$post_updates
-    )
-  }
   solution = final_solution
   if (output == "full") names(solution) = sparse_endogenous_labels(index)
-  selected = if (output == "compact" || !is.null(variables) ||
-                 !is.null(dimensions)) {
-    sparse_project_outputs(
-      state, index, variables, dimensions,
-      if (output == "compact") solution else NULL
-    )
-  } else NULL
-  compact_output = if (!is.null(selected)) selected else list()
-  data_result = if (postsim) {
-    if (output == "full") {
-      sparse_materialize_labels(state, index, equations = TRUE, variables = TRUE)
-    } else {
-      sparse_state_data(state)
-    }
-  } else {
-    list()
-  }
   diagnostics_result = list(
     engine = "sparse",
-    status = "complete",
+    status = "numerically-accepted",
     accepted_numerical_state = TRUE,
-    retryable_postsim = FALSE,
+    retryable_postsim = TRUE,
     failure_phase = NULL,
+    failure_reason = NULL,
     iterations = iter,
     steps = steps,
     elapsed_seconds = proc.time()[[3L]] - start_time,
@@ -2362,17 +2460,39 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     post_simulation_retained = isTRUE(postsim),
     peak_gc_bytes = if (isTRUE(diagnostics)) sparse_gc_bytes() else NA_real_
   )
-  diagnostics_record = if (isTRUE(diagnostics)) diagnostics_result else list()
+  postsim_record = list(
+    engine = "sparse",
+    state_data = sparse_state_data(state),
+    index = index,
+    spec = model$sparseSpec,
+    solution = solution,
+    diagnostics = diagnostics_result,
+    postsim = isTRUE(postsim),
+    output = output,
+    variables = variables,
+    dimensions = dimensions
+  )
+  diagnostics_record = if (isTRUE(diagnostics)) {
+    diagnostics_result
+  } else {
+    list(
+      engine = "sparse",
+      status = "numerically-accepted",
+      accepted_numerical_state = TRUE,
+      retryable_postsim = TRUE,
+      failure_phase = NULL,
+      failure_reason = NULL
+    )
+  }
   .commit_accepted_state(model, list(
     state = state,
     index = full_index,
     solution = solution,
-    data = data_result,
-    compact_output = compact_output,
     diagnostics = diagnostics_record,
-    loaded_engine = "sparse"
+    loaded_engine = "sparse",
+    postsim_record = postsim_record
   ))
-  invisible(model)
+  .retry_postsim_from_record(model, diagnostics = diagnostics)
 }
 
 sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
@@ -2397,6 +2517,9 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       memory_budget = memory_budget
     ),
     error = function(error) {
+      if (isTRUE(attr(error, "tabloToR.accepted_numerical_state"))) {
+        stop(error)
+      }
       model$lastDiagnostics = .transaction_failure_diagnostics(
         "sparse", error
       )

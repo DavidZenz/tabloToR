@@ -32,7 +32,8 @@ GEModel = setRefClass(
     sourceData = 'list',
     memoryBudget = 'numeric',
     lastDiagnostics = 'list',
-    compactOutput = 'list'
+    compactOutput = 'list',
+    .postsimRecord = 'list'
   ),
   methods = list(
     # Loads a tablo without any data (only produces generic functions to genrate coefficients/equation coefficients etc.)
@@ -72,6 +73,7 @@ GEModel = setRefClass(
     loadData = function(inputData, engine = c("legacy", "sparse")) {
       #browser()
       engine = match.arg(engine)
+      .postsimRecord <<- list()
       if (engine == "sparse" && length(sparseSpec$compile_errors)) {
         errors = unique(as.character(sparseSpec$compile_errors))
         stop(sprintf(
@@ -146,6 +148,9 @@ GEModel = setRefClass(
         dense_fallback = TRUE,
         post_simulation_retained = isTRUE(postsim)
       )
+    },
+    retryPostsim = function(diagnostics = FALSE) {
+      .retry_postsim_from_record(.self, diagnostics = diagnostics)
     },
     generateSolution = function(subShocks){
       #browser()
@@ -249,6 +254,43 @@ GEModel = setRefClass(
         ))
       }
 
+      if (!isTRUE(getOption("tabloToR.legacy.transaction.working"))) {
+        old_transaction_option = getOption(
+          "tabloToR.legacy.transaction.working"
+        )
+        options(tabloToR.legacy.transaction.working = TRUE)
+        on.exit(options(
+          tabloToR.legacy.transaction.working = old_transaction_option
+        ), add = TRUE)
+        tryCatch({
+          working = .self$copy(shallow = FALSE)
+          working$solveModel(
+            iter = iter,
+            steps = steps,
+            engine = "legacy",
+            postsim = postsim,
+            diagnostics = diagnostics,
+            output = output,
+            variables = variables,
+            dimensions = dimensions,
+            backend = backend,
+            reduction = reduction,
+            memory_budget = memory_budget
+          )
+          .commit_legacy_state(
+            .self, working, diagnostics = diagnostics
+          )
+        }, error = function(error) {
+          lastDiagnostics <<- .transaction_failure_diagnostics(
+            "legacy", error
+          )
+          stop(error)
+        })
+        return(invisible(NULL))
+      }
+
+      .transaction_fault("compilation")
+
       # Create a shock variable
 
       #browser()
@@ -348,7 +390,17 @@ GEModel = setRefClass(
             message(sprintf('Step %s/%s', currentStep,steps[step]))
             #browser()
             # Solve the model for this shock
+            .transaction_fault("factorization")
             subStepSolution[[currentStep]] = generateSolution(stepShocks)
+            .transaction_fault("convergence")
+            .transaction_fault("finiteness")
+            if (any(!is.finite(subStepSolution[[currentStep]]))) {
+              stop(
+                "Legacy solve produced a non-finite candidate solution",
+                call. = FALSE
+              )
+            }
+            .transaction_fault("residual")
 
             # Update the variables
             data <<- within(data,{
@@ -361,6 +413,7 @@ GEModel = setRefClass(
             })
 
             # Update the data
+            .transaction_fault("simulation-update")
             data <<- generateUpdates(data)
 
           }
@@ -445,6 +498,7 @@ GEModel = setRefClass(
         invisible(NULL)
 
         #browser()
+        .transaction_fault("simulation-update")
         data <<- generateUpdates(data)
       }
 
