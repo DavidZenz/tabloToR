@@ -11,7 +11,10 @@ transactionalModelSnapshot = function(model, include_diagnostics = TRUE) {
     sparseState = if (is.environment(model$sparseState)) {
       sparse_state_data(model$sparseState)
     } else NULL,
-    sparseIndex = model$sparseIndex
+    sparseIndex = model$sparseIndex,
+    postsimRecord = if (".postsimRecord" %in% names(GEModel$fields())) {
+      model$.postsimRecord
+    } else list()
   )
   if (isTRUE(include_diagnostics)) {
     fields$lastDiagnostics = model$lastDiagnostics
@@ -48,4 +51,21 @@ failTransactionAt = function(phase, occurrence = 1L, env = parent.frame()) {
     }
     invisible(NULL)
   }, env = env)
+}
+
+recordTransactionPhases = function(fail_phase = NULL, occurrence = 1L,
+                                    env = parent.frame()) {
+  phases = character()
+  seen = 0L
+  localTransactionFault(function(actual, context) {
+    phases <<- c(phases, actual)
+    if (!is.null(fail_phase) && identical(actual, fail_phase)) {
+      seen <<- seen + 1L
+      if (seen == occurrence) {
+        stop(sprintf("injected %s failure", actual), call. = FALSE)
+      }
+    }
+    invisible(NULL)
+  }, env = env)
+  function() phases
 }
