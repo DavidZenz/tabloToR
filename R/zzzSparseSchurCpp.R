@@ -517,6 +517,11 @@ sparse_exact_schur_solve = function(...) {
 sparse_solve_one_step = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
                                  structured_partition = NULL) {
+  old_state = .sparse_schur_cpp_runtime$state
+  if (isTRUE(.sparse_schur_cpp_runtime$active)) {
+    .sparse_schur_cpp_runtime$state = state
+    on.exit({ .sparse_schur_cpp_runtime$state = old_state }, add = TRUE)
+  }
   transform = NULL
   if (isTRUE(.sparse_schur_cpp_runtime$active)) {
     transform = function(candidate) {
@@ -588,7 +593,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     expected_abi = 1L, threads = threads
   )
   .sparse_schur_cpp_runtime$active = TRUE
-  .sparse_schur_cpp_runtime$state = model$sparseState
+  .sparse_schur_cpp_runtime$state = NULL
   .sparse_schur_cpp_runtime$index_key = sparse_pattern_key(model$sparseIndex)
   .sparse_schur_cpp_runtime$build_diagnostics = list()
   .sparse_schur_cpp_runtime$acceptance_history = list()

@@ -11,6 +11,11 @@ transactionalModelSnapshot = function(model, include_diagnostics = TRUE) {
     sparseState = if (is.environment(model$sparseState)) {
       sparse_state_data(model$sparseState)
     } else NULL,
+    sparseSolverCache = if (is.environment(model$sparseState) &&
+                            !is.null(model$sparseState$.solver_cache)) {
+      model$sparseState$.solver_cache
+    } else list(),
+
     sparseIndex = model$sparseIndex,
     postsimRecord = if (".postsimRecord" %in% names(GEModel$fields())) {
       model$.postsimRecord

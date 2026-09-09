@@ -101,6 +101,37 @@ test_that("sparse numerical rejection matrix preserves committed state", {
   }
 })
 
+test_that("C++ residual rejection cannot publish its structural cache", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  model = make_cpp_structured_model()
+  partition = function(index, state) {
+    list(
+      stages = list(NULL),
+      external = sparse_external_block_partition(index, state)
+    )
+  }
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  expect_identical(model$sparseState$.solver_cache, list())
+  failTransactionAt("residual")
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      model$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+        diagnostics = TRUE, backend = "StructuredSchurFGMRESCpp"
+      ),
+      sparse_gtap_elimination_partition = partition,
+      .package = "tabloToR"
+    ),
+    "injected residual failure"
+  )
+
+  expectTransactionalStateIdentical(before, model)
+  expect_identical(model$sparseState$.solver_cache, list())
+})
+
+
 test_that("legacy rejection matrix runs on an isolated copy", {
   phases = c(
     "compilation", "factorization", "convergence", "finiteness",
