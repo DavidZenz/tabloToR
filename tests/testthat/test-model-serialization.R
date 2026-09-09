@@ -134,6 +134,17 @@ test_that("malformed logical payloads fail closed before receiver mutation", {
   malformed$invalid_solution_dimensions$accepted$solution =
     malformed$invalid_solution_dimensions$accepted$solution[1L]
 
+  malformed$invalid_accepted_data = payload
+  malformed$invalid_accepted_data$accepted$data$stock = "CORRUPTED"
+
+  malformed$invalid_compact_projection = payload
+  malformed$invalid_compact_projection$accepted$compact_output =
+    list(stock = "CORRUPTED")
+
+  malformed$compact_solution_mismatch = payload
+  malformed$compact_solution_mismatch$accepted$compact_output =
+    list(solution = payload$accepted$solution + 1)
+
   malformed$runtime_attribute = payload
   malformed$runtime_attribute$diagnostics$unsafe = structure(
     1, runtime = new.env(parent = emptyenv())

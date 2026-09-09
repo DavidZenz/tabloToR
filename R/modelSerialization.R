@@ -540,11 +540,18 @@
   }
 
   level_fields = names(payload$levels)
-  metadata_fields = c(
-    "variables", "variableNumbers", "equations", "equationNumbers"
-  )
+  accepted_data_template = if (identical(payload$engine, "sparse")) {
+    sparse_materialize_labels(
+      sparse_make_state(payload$levels), restored$sparseIndex,
+      equations = TRUE, variables = TRUE
+    )
+  } else {
+    template = .serialization_strip_runtime(restored$data)
+    for (field in level_fields) template[[field]] = payload$levels[[field]]
+    template
+  }
   unknown_data = setdiff(
-    names(payload$accepted$data), c(level_fields, metadata_fields)
+    names(payload$accepted$data), names(accepted_data_template)
   )
   if (length(unknown_data)) {
     .serialization_stop(sprintf(
@@ -552,36 +559,82 @@
       paste(unknown_data, collapse = ", ")
     ))
   }
-  unknown_compact = setdiff(
-    names(payload$accepted$compact_output), c(level_fields, "solution")
-  )
+  for (field in names(payload$accepted$data)) {
+    .serialization_validate_structure(
+      payload$accepted$data[[field]], accepted_data_template[[field]],
+      paste0("accepted data$", field),
+      allow_dimension_drop = !identical(payload$engine, "sparse") &&
+        field %in% dimension_dropping_fields
+    )
+  }
+
+  compact_output = payload$accepted$compact_output
+  unknown_compact = setdiff(names(compact_output), c(level_fields, "solution"))
   if (length(unknown_compact)) {
     .serialization_stop(sprintf(
       "compact output contains unknown field(s): %s",
       paste(unknown_compact, collapse = ", ")
     ))
   }
-  for (field in intersect(
-    names(payload$accepted$data), level_fields
-  )) {
-    candidate = payload$accepted$data[[field]]
-    level = payload$levels[[field]]
-    if (identical(dim(candidate), dim(level)) &&
-        identical(dimnames(candidate), dimnames(level))) {
-      .serialization_validate_structure(
-        candidate, level, paste0("accepted data$", field)
-      )
+  validate_projection = function(value, template, path) {
+    if (is.list(template) || is.null(dim(template))) {
+      .serialization_validate_structure(value, template, path)
+      return(invisible(TRUE))
     }
+    numeric_template = is.numeric(template) || is.logical(template)
+    numeric_value = is.numeric(value) || is.logical(value)
+    if ((numeric_template && !numeric_value) ||
+        (!numeric_template &&
+         (!identical(typeof(value), typeof(template)) ||
+          !identical(class(value), class(template))))) {
+      .serialization_stop(sprintf(
+        "%s type does not match the reconstructed model", path
+      ))
+    }
+    value_dimensions = dim(value)
+    template_dimensions = dim(template)
+    if (is.null(value_dimensions) ||
+        length(value_dimensions) != length(template_dimensions) ||
+        any(value_dimensions > template_dimensions) ||
+        !identical(names(value), names(template))) {
+      .serialization_stop(sprintf(
+        "%s dimensions do not match the reconstructed model", path
+      ))
+    }
+    value_dimnames = dimnames(value)
+    template_dimnames = dimnames(template)
+    if (is.null(value_dimnames) != is.null(template_dimnames) ||
+        (!is.null(value_dimnames) &&
+         !identical(names(value_dimnames), names(template_dimnames)))) {
+      .serialization_stop(sprintf(
+        "%s dimensions do not match the reconstructed model", path
+      ))
+    }
+    if (!is.null(value_dimnames)) {
+      for (index in seq_along(value_dimnames)) {
+        labels = value_dimnames[[index]]
+        template_labels = template_dimnames[[index]]
+        if (is.null(labels) != is.null(template_labels) ||
+            (!is.null(labels) && any(!labels %in% template_labels))) {
+          .serialization_stop(sprintf(
+            "%s dimensions do not match the reconstructed model", path
+          ))
+        }
+      }
+    }
+    invisible(TRUE)
   }
-  if ("solution" %in% names(payload$accepted$compact_output)) {
-    compact_solution = payload$accepted$compact_output$solution
-    if (!is.double(compact_solution) ||
-        length(compact_solution) != length(solution) ||
-        any(!is.finite(compact_solution))) {
-      .serialization_stop(
-        "compact solution does not match accepted solution structure"
-      )
-    }
+  for (field in setdiff(names(compact_output), "solution")) {
+    validate_projection(
+      compact_output[[field]], payload$levels[[field]],
+      paste0("compact output$", field)
+    )
+  }
+  if ("solution" %in% names(compact_output) &&
+      !identical(compact_output$solution, solution)) {
+    .serialization_stop(
+      "compact solution is not identical to the accepted solution"
+    )
   }
   invisible(payload)
 }
