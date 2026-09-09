@@ -242,6 +242,7 @@ test_that("acceptance validates proposals and supports dry-run and safe commit",
   expect_identical(committed$new_canonical_hash,
                    refresh$phase02_artifact_hash(canonical))
 
+
   expect_error(
     accept$phase02_accept_proposal(
       proposal, reviewer = "", reason = "valid reason",
@@ -312,6 +313,7 @@ test_that("acceptance is bound to current source and reviewed run evidence", {
     file.path(forged, "DIFF.md"), forged
   )
 
+
   expect_error(
     accept$phase02_accept_proposal(
       forged, reviewer = "Reviewer",
@@ -352,6 +354,7 @@ test_that("canonical acceptance is complete and bound to accepted artifacts", {
   fingerprints = as.list(read.dcf(
     file.path(canonical, "fingerprints.dcf")
   )[1, ])
+
 
   for (field in c(
     "Reviewer", "Reason", "Accepted-UTC", "Proposal-Hash",
@@ -400,4 +403,51 @@ test_that("source fingerprint ordering is locale independent", {
     refresh$phase02_source_fingerprint(refresh$phase02_repository_root()),
     "4b42d701c21b8b40ac9c22329400ce84"
   )
+})
+
+test_that("acceptance publication is locked and rolls back atomically", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  accept = load_phase02_tool("accept_phase02_baselines.R")
+  proposal = tempfile("phase02-proposal-atomic-")
+  canonical = tempfile("phase02-canonical-atomic-")
+  refresh$phase02_generate_proposal(proposal)
+  copy_phase02_canonical(refresh, canonical)
+  old_record = c("# Previous acceptance", "", "reviewed")
+  writeLines(old_record, file.path(canonical, "ACCEPTANCE.md"))
+  before = refresh$phase02_artifact_hash(canonical)
+  lock = paste0(normalizePath(canonical, winslash = "/"), ".accept-lock")
+  backup = paste0(normalizePath(canonical, winslash = "/"), ".accept-backup")
+
+  dir.create(lock)
+  expect_error(
+    accept$phase02_accept_proposal(
+      proposal, reviewer = "Reviewer", reason = "Reviewed evidence",
+      canonical_dir = canonical
+    ),
+    "locked by another process"
+  )
+  unlink(lock, recursive = TRUE, force = TRUE)
+
+  withr::local_options(
+    tabloToR.phase02.acceptance.fault = function(phase) {
+      if (identical(phase, "after-canonical-backup")) {
+        stop("injected publication failure", call. = FALSE)
+      }
+    }
+  )
+  expect_error(
+    accept$phase02_accept_proposal(
+      proposal, reviewer = "Reviewer", reason = "Reviewed evidence",
+      canonical_dir = canonical
+    ),
+    "injected publication failure"
+  )
+  expect_true(dir.exists(canonical))
+  expect_identical(refresh$phase02_artifact_hash(canonical), before)
+  expect_identical(
+    readLines(file.path(canonical, "ACCEPTANCE.md"), warn = FALSE), old_record
+  )
+  expect_false(dir.exists(lock))
+  expect_false(dir.exists(backup))
 })

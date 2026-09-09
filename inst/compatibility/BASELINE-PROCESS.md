@@ -66,10 +66,14 @@ Use `--dry-run` first when desired. Acceptance revalidates regular files, size
 bounds, every artifact schema/hash, and the exact diff against the current
 canonical set. It regenerates a fresh proposal and requires the reviewed stable
 hash and source/fixture/model identities to match current repository evidence.
-It stages and verifies all stable artifacts before replacement,
-keeps rollback copies during the operation, and writes `ACCEPTANCE.md` with the
-reviewer, reason, UTC date, proposal hash, old/new canonical hashes, fixture and
-source identities, and tolerance tier.
+It stages and verifies the complete candidate directory, including
+`ACCEPTANCE.md`, before replacement. An exclusive sibling lock prevents
+concurrent acceptance, and publication swaps the canonical directory as one
+unit while retaining a sibling `.accept-backup` until post-swap verification
+passes. A failed swap restores that backup; a backup left by process termination
+is preserved as a blocking, recoverable checkpoint for manual inspection. The
+acceptance record contains the reviewer, reason, UTC date, proposal hash,
+old/new canonical hashes, fixture and source identities, and tolerance tier.
 
 No environment flag, ordinary test, or refresh invocation can accept a proposal.
 A stale proposal must be regenerated and reviewed again.

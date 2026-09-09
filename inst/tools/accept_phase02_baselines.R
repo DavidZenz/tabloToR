@@ -237,6 +237,12 @@ phase02_acceptance_record = function(reviewer, reason, proposal_hash,
   )
 }
 
+phase02_acceptance_fault = function(phase) {
+  hook = getOption("tabloToR.phase02.acceptance.fault")
+  if (is.function(hook)) hook(phase)
+  invisible(NULL)
+}
+
 phase02_accept_proposal = function(
     proposal, reviewer, reason, canonical_dir = phase02_canonical_dir(),
     dry_run = FALSE) {
@@ -245,7 +251,22 @@ phase02_accept_proposal = function(
   if (!is.logical(dry_run) || length(dry_run) != 1L || is.na(dry_run)) {
     stop("dry_run must be TRUE or FALSE", call. = FALSE)
   }
-  canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
+  canonical_dir = normalizePath(
+    canonical_dir, winslash = "/", mustWork = TRUE
+  )
+  lock = paste0(canonical_dir, ".accept-lock")
+  backup = paste0(canonical_dir, ".accept-backup")
+  if (!dir.create(lock, showWarnings = FALSE)) {
+    stop("Canonical baseline acceptance is locked by another process",
+         call. = FALSE)
+  }
+  on.exit(unlink(lock, recursive = TRUE, force = TRUE), add = TRUE)
+  if (file.exists(backup) || dir.exists(backup)) {
+    stop(
+      "A recoverable canonical backup exists; inspect it before acceptance",
+      call. = FALSE
+    )
+  }
   validated = phase02_validate_proposal(proposal, canonical_dir)
   current_dir = tempfile(
     "phase02-current-source-", tmpdir = dirname(canonical_dir)
@@ -288,6 +309,7 @@ phase02_accept_proposal = function(
     reviewer, reason, validated$hash, validated$run_metadata_hash,
     old_hash, new_hash, fingerprints, tolerances
   )
+  phase02_write_lines(record, file.path(staging, "ACCEPTANCE.md"), staging)
   if (isTRUE(dry_run)) {
     return(invisible(list(
       dry_run = TRUE, proposal_hash = validated$hash,
@@ -296,44 +318,40 @@ phase02_accept_proposal = function(
     )))
   }
 
-  backup = tempfile("phase02-accept-backup-", tmpdir = dirname(canonical_dir))
-  dir.create(backup)
-  on.exit(unlink(backup, recursive = TRUE, force = TRUE), add = TRUE)
-  existing = c(stable, "ACCEPTANCE.md")
-  existing = existing[file.exists(file.path(canonical_dir, existing))]
-  if (length(existing) && !all(file.copy(
-    file.path(canonical_dir, existing), file.path(backup, existing)
-  ))) {
-    stop("Could not back up the canonical baseline", call. = FALSE)
-  }
   committed = FALSE
+  canonical_moved = FALSE
   on.exit({
-    if (!committed) {
-      for (name in stable) unlink(file.path(canonical_dir, name))
-      if (file.exists(file.path(canonical_dir, "ACCEPTANCE.md"))) {
-        unlink(file.path(canonical_dir, "ACCEPTANCE.md"))
+    if (!committed && canonical_moved) {
+      if (dir.exists(canonical_dir) &&
+          !file.rename(canonical_dir, staging)) {
+        warning("Could not move the failed canonical publication aside",
+                call. = FALSE)
       }
-      if (length(existing)) file.copy(
-        file.path(backup, existing), file.path(canonical_dir, existing),
-        overwrite = TRUE
-      )
+      if (!dir.exists(canonical_dir) && dir.exists(backup) &&
+          !file.rename(backup, canonical_dir)) {
+        warning("Could not restore the recoverable canonical backup",
+                call. = FALSE)
+      }
     }
   }, add = TRUE)
-  if (!all(file.copy(file.path(staging, stable),
-                     file.path(canonical_dir, stable), overwrite = TRUE))) {
-    stop("Could not replace all canonical baseline artifacts", call. = FALSE)
+  if (!file.rename(canonical_dir, backup)) {
+    stop("Could not create the recoverable canonical backup", call. = FALSE)
   }
-  acceptance_temp = tempfile("phase02-acceptance-", tmpdir = canonical_dir)
-  writeLines(record, acceptance_temp, useBytes = TRUE)
-  if (!file.rename(acceptance_temp,
-                   file.path(canonical_dir, "ACCEPTANCE.md"))) {
-    unlink(acceptance_temp)
-    stop("Could not publish ACCEPTANCE.md", call. = FALSE)
+  canonical_moved = TRUE
+  phase02_acceptance_fault("after-canonical-backup")
+  if (!file.rename(staging, canonical_dir)) {
+    stop("Could not publish the staged canonical baseline", call. = FALSE)
   }
-  if (!identical(phase02_artifact_hash(canonical_dir), new_hash)) {
+  phase02_acceptance_fault("after-canonical-publication")
+  if (!identical(phase02_artifact_hash(canonical_dir), new_hash) ||
+      !file.exists(file.path(canonical_dir, "ACCEPTANCE.md"))) {
     stop("Canonical verification failed after acceptance", call. = FALSE)
   }
   committed = TRUE
+  if (unlink(backup, recursive = TRUE, force = TRUE) != 0L) {
+    warning("Accepted baseline but could not remove its recovery backup",
+            call. = FALSE)
+  }
   invisible(list(
     dry_run = FALSE, proposal_hash = validated$hash,
     old_canonical_hash = old_hash, new_canonical_hash = new_hash,
