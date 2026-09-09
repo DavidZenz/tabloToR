@@ -546,9 +546,9 @@ test_that("accepted native hash migration matches canonical fresh rows", {
     root, "docs", "provenance", "HASH-REVIEW.md"
   ))
 
-  expect_identical(nrow(expected), 250L)
-  expect_identical(nrow(ledger), 250L)
-  expect_identical(nrow(fresh), 250L)
+  expect_identical(nrow(expected), 280L)
+  expect_identical(nrow(ledger), 280L)
+  expect_identical(nrow(fresh), 280L)
   expect_identical(sum(ledger$language == "C/C++"), 55L)
   expect_identical(nrow(proposal$rows), 54L)
   expect_identical(proposal$rows$key, sort(proposal$rows$key))
@@ -615,7 +615,7 @@ test_that("accepted native hash migration matches canonical fresh rows", {
   provenance_path <- file.path(root, "docs", "provenance", "PROVENANCE.csv")
   attribution_path <- file.path(root, "docs", "provenance", "ATTRIBUTION.md")
   expect_identical(unname(tools::md5sum(provenance_path)[[1L]]),
-                   "5f845308997b398cdf404eb1a555ff8f")
+                   "0bbefa5482fa04fa9da15eb300e612d0")
   expect_identical(proposal$headers[["provenance_md5"]],
                    "90940fa1b5bdc223b6829255f5e87e71")
   expect_identical(proposal$headers[["attribution_md5"]],
@@ -625,4 +625,66 @@ test_that("accepted native hash migration matches canonical fresh rows", {
     "Inventory-Snapshot-MD5: ",
     unname(tools::md5sum(provenance_path)[[1L]])
   )))
+})
+
+test_that("accepted Phase 02 inventory review matches canonical fresh rows", {
+  tool <- provenance_load_tool()
+  root <- dirname(dirname(provenance_script_path()))
+  ledger <- tool$provenance_read_csv(
+    file.path(root, "docs", "provenance", "PROVENANCE.csv"),
+    tool$provenance_columns
+  )
+  fresh <- tool$provenance_collect_sources(root, include_git = TRUE)
+  columns <- c(
+    "previous_key_count", "current_key_count", "key", "change",
+    "old_hash", "accepted_hash", "source_lines", "first_local_commit",
+    "classification", "contributors", "copyright_holder", "license_basis",
+    "evidence", "status", "reviewer", "review_date", "disposition"
+  )
+  review <- tool$provenance_read_csv(
+    file.path(root, "docs", "provenance", "INVENTORY-REVIEW.csv"), columns
+  )
+
+  expect_identical(nrow(ledger), 280L)
+  expect_identical(nrow(fresh), 280L)
+  expect_identical(nrow(review), 39L)
+  expect_identical(sum(review$change == "added"), 30L)
+  expect_identical(sum(review$change == "expression-hash-changed"), 9L)
+  expect_identical(review$key, sort(review$key, method = "radix"))
+  expect_false(anyDuplicated(review$key) > 0L)
+  expect_true(all(review$previous_key_count == "250"))
+  expect_true(all(review$current_key_count == "280"))
+
+  ledger_id <- match(review$key, provenance_keys(ledger))
+  fresh_id <- match(review$key, provenance_keys(fresh))
+  expect_false(anyNA(ledger_id))
+  expect_false(anyNA(fresh_id))
+  expect_identical(review$accepted_hash, fresh$expression_hash[fresh_id])
+  expect_identical(review$accepted_hash, ledger$expression_hash[ledger_id])
+  expect_true(all(review$old_hash[review$change == "added"] == ""))
+  expect_true(all(review$old_hash[review$change != "added"] != ""))
+  expect_true(all(review$old_hash != review$accepted_hash))
+  expect_identical(
+    review$source_lines,
+    sprintf("%d-%d", fresh$line_start[fresh_id], fresh$line_end[fresh_id])
+  )
+  expect_identical(
+    review$first_local_commit, fresh$first_local_commit[fresh_id]
+  )
+  fields <- c(
+    "classification", "contributors", "copyright_holder", "license_basis",
+    "evidence", "status", "reviewer", "review_date"
+  )
+  for (field in fields) {
+    expect_identical(review[[field]], ledger[[field]][ledger_id])
+  }
+  expect_true(all(review$reviewer == "David Zenz"))
+  expect_true(all(review$review_date == "2026-09-09"))
+  expect_true(all(review$disposition == "accepted"))
+  expect_identical(
+    unname(tools::md5sum(file.path(
+      root, "docs", "provenance", "PROVENANCE.csv"
+    ))[[1L]]),
+    "0bbefa5482fa04fa9da15eb300e612d0"
+  )
 })

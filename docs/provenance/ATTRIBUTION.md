@@ -4,16 +4,19 @@
 
 Attribution-Schema-Version: 1
 Inventory-Path: docs/provenance/PROVENANCE.csv
-Inventory-Row-Count: 250
-Inventory-Snapshot-MD5: 5f845308997b398cdf404eb1a555ff8f
+Inventory-Row-Count: 280
+Inventory-Snapshot-MD5: 0bbefa5482fa04fa9da15eb300e612d0
+Inventory-Review-Path: docs/provenance/INVENTORY-REVIEW.csv
+Inventory-Review-MD5: f19029655d4e6d366901296ee771e2c3
 Upstream-Repository: https://github.com/mivanic/tabloToR
 Upstream-Commit: 7e063c65a19713857ed13023f8b77dad45b15c90
 Reviewer: David Zenz
-Review-Date: 2026-08-25
+Review-Date: 2026-09-09
 
-The inventory snapshot binds these role decisions to the reviewed Plan 01-03
-ledger. The MD5 is a deterministic change detector, not proof of authorship or
-ownership. A changed inventory requires a fresh attribution review.
+The inventory snapshot binds these role decisions to the reviewed Phase 01 ledger
+and the accepted Phase 02 source expansion in INVENTORY-REVIEW.csv. The MD5
+values are deterministic change detectors, not proof of authorship or ownership.
+A changed inventory requires a fresh attribution review.
 
 ## Reviewed role assignments
 
