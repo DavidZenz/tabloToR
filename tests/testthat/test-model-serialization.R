@@ -246,6 +246,30 @@ test_that("serialization limits reject oversized artifacts and values", {
   )
 })
 
+test_that("compressed RDS expansion is rejected after trusted-local decode", {
+  model = make_three_region_model("sparse")
+  payload = .build_logical_state_payload(model)
+  payload$diagnostics$compressible_padding = paste(
+    rep("A", 1024^2), collapse = ""
+  )
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  writeSerializationPayload(payload, state_file)
+
+  compressed_size = as.numeric(file.info(state_file)$size)
+  logical_size = length(serialize(payload, NULL, version = 3L))
+  limit = floor((compressed_size + logical_size) / 2)
+  expect_lt(compressed_size, limit)
+  expect_gt(logical_size, limit)
+
+  receiver = GEModel$new()
+  receiver$closure = "receiver-sentinel"
+  before = serializationReceiverSnapshot(receiver)
+  withr::local_options(tabloToR.serialization.max_bytes = limit)
+  expect_error(receiver$loadState(state_file), "payload exceeds.*size limit")
+  expect_identical(serializationReceiverSnapshot(receiver), before)
+})
+
 test_that("portable edge values retain structure equality and encoding", {
   utf8 = "\u00e9"
   Encoding(utf8) = "UTF-8"

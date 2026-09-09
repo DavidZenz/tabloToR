@@ -19,9 +19,12 @@ dimensions, dimnames, missing values, and character encodings are retained by
 the RDS transport and validated as part of the logical field structure.
 
 `model$loadState(file)` reads artifacts from a trusted local boundary. It
-rejects non-regular or empty files and checks the compressed file-size limit
-before RDS decoding. The decoded envelope is then checked for exact schema and
-field allowlists, primitive types, permitted attributes, dimensions,
+rejects non-regular or empty files and checks the compressed input file-size
+limit before RDS decoding. This pre-decode limit does not bound the in-memory
+size of highly compressible RDS content: base R must expand the object before
+package validation can inspect it. The decoded envelope is then checked for
+exact schema and field allowlists, primitive types, permitted attributes,
+dimensions,
 finiteness, element and byte limits, and both source fingerprints before an
 isolated replacement model is constructed. Reconstruction uses the public
 `loadTablo()` and `loadData()` workflow, then verifies closure and shock
@@ -45,9 +48,11 @@ used only as deterministic local change detection, not as an authenticity or
 security signature. Do not load payloads from untrusted parties: base R must
 decode the RDS object before package-level allowlist validation can run.
 
-The default maximum logical payload and input file size is 256 MiB and the
-default per-value element limit is 50 million. Maintainers may lower these
-limits with `options(tabloToR.serialization.max_bytes = ...)` and
+The default maximum logical payload and compressed input file size is 256 MiB
+and the default per-value element limit is 50 million. After decoding, the same
+byte limit is enforced against both the reserialized logical payload and its R
+object size. Maintainers may lower these limits with
+`options(tabloToR.serialization.max_bytes = ...)` and
 `options(tabloToR.serialization.max_elements = ...)` for constrained local
 workflows.
 
