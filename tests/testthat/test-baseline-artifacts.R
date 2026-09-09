@@ -120,6 +120,12 @@ test_that("stable fingerprints and volatile run metadata are separated", {
   expect_true(is.finite(as.numeric(
     metadata[["Solver-Residual-Relative-L2"]]
   )))
+  manifest = as.list(read.dcf(file.path(proposal, "proposal.dcf"))[1, ])
+  expect_identical(manifest[["Schema"]], "phase02-baseline-proposal-v2")
+  expect_identical(
+    manifest[["Run-Metadata-MD5"]],
+    refresh$phase02_hash_file(file.path(proposal, "run-metadata.dcf"))
+  )
 })
 
 test_that("proposal and check modes cannot mutate accepted canonical artifacts", {
@@ -210,7 +216,7 @@ test_that("acceptance validates proposals and supports dry-run and safe commit",
   expect_false(committed$dry_run)
   for (field in c(
     "Reviewer:", "Reason:", "Accepted-UTC:", "Proposal-Hash:",
-    "Old-Canonical-Hash:", "New-Canonical-Hash:"
+    "Run-Metadata-MD5:", "Old-Canonical-Hash:", "New-Canonical-Hash:"
   )) {
     expect_true(any(startsWith(record, paste0("- **", field))))
   }
@@ -238,6 +244,62 @@ test_that("acceptance validates proposals and supports dry-run and safe commit",
       canonical_dir = canonical
     ),
     "proposal"
+  )
+})
+
+test_that("acceptance is bound to current source and reviewed run evidence", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  accept = load_phase02_tool("accept_phase02_baselines.R")
+  canonical = tempfile("phase02-canonical-source-bound-")
+  copy_phase02_canonical(refresh, canonical)
+
+  metadata_tampered = tempfile("phase02-proposal-metadata-tampered-")
+  refresh$phase02_generate_proposal(metadata_tampered)
+  cat(
+    "Tampered: yes\n",
+    file = file.path(metadata_tampered, "run-metadata.dcf"),
+    append = TRUE
+  )
+  expect_error(
+    accept$phase02_accept_proposal(
+      metadata_tampered, reviewer = "Reviewer",
+      reason = "Reviewed evidence", canonical_dir = canonical,
+      dry_run = TRUE
+    ),
+    "run-metadata evidence hash"
+  )
+
+  forged = tempfile("phase02-proposal-forged-source-")
+  refresh$phase02_generate_proposal(forged)
+  fingerprints = as.list(read.dcf(
+    file.path(forged, "fingerprints.dcf")
+  )[1, ])
+  fingerprints[["Source-Fingerprint"]] = paste(rep("0", 32L), collapse = "")
+  refresh$phase02_write_dcf(
+    fingerprints, file.path(forged, "fingerprints.dcf"), forged
+  )
+  manifest = as.list(read.dcf(file.path(forged, "proposal.dcf"))[1, ])
+  manifest[["Proposal-Hash"]] = refresh$phase02_artifact_hash(forged)
+  manifest[["Artifact-fingerprints-dcf-MD5"]] =
+    refresh$phase02_hash_file(file.path(forged, "fingerprints.dcf"))
+  refresh$phase02_write_dcf(
+    manifest, file.path(forged, "proposal.dcf"), forged
+  )
+  refresh$phase02_write_lines(
+    refresh$phase02_render_diff(
+      refresh$phase02_diff_frame(canonical, forged)
+    ),
+    file.path(forged, "DIFF.md"), forged
+  )
+
+  expect_error(
+    accept$phase02_accept_proposal(
+      forged, reviewer = "Reviewer",
+      reason = "Reviewed evidence", canonical_dir = canonical,
+      dry_run = TRUE
+    ),
+    "no longer matches the current source and model"
   )
 })
 

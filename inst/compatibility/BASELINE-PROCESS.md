@@ -16,7 +16,8 @@ excluded from the source fingerprint so the fingerprint is not recursive.
 Each proposal also contains `run-metadata.dcf`, `proposal.dcf`, and `DIFF.md`.
 Run metadata is deliberately volatile and separate: it records R and dependency
 versions, platform, CPU, physical RAM, BLAS, elapsed time, peak RSS, and solver
-metadata. `proposal.dcf` hashes only the stable artifacts. `DIFF.md` compares
+metadata. `proposal.dcf` hashes the stable artifacts and binds the reviewed run
+metadata through a separate `Run-Metadata-MD5` evidence hash. `DIFF.md` compares
 stable old/new values by artifact and key, so two unchanged runs produce the
 same review diff even though volatile execution metadata changes.
 
@@ -62,8 +63,10 @@ rtk Rscript --vanilla tools/accept_phase02_baselines.R \
 ```
 
 Use `--dry-run` first when desired. Acceptance revalidates regular files, size
-bounds, the proposal manifest/hash, and the exact diff against the current
-canonical set. It stages and verifies all stable artifacts before replacement,
+bounds, every artifact schema/hash, and the exact diff against the current
+canonical set. It regenerates a fresh proposal and requires the reviewed stable
+hash and source/fixture/model identities to match current repository evidence.
+It stages and verifies all stable artifacts before replacement,
 keeps rollback copies during the operation, and writes `ACCEPTANCE.md` with the
 reviewer, reason, UTC date, proposal hash, old/new canonical hashes, fixture and
 source identities, and tolerance tier.

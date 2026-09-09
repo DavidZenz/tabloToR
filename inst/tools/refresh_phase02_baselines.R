@@ -531,10 +531,16 @@ phase02_generate_proposal = function(output,
     phase02_stable_artifact_names(),
     function(name) phase02_hash_file(file.path(output, name)), character(1)
   )
+  run_metadata_hash = phase02_hash_file(
+    file.path(output, "run-metadata.dcf")
+  )
   phase02_write_dcf(
     c(
-      list(Schema = "phase02-baseline-proposal-v1",
-           `Proposal-Hash` = proposal_hash),
+      list(
+        Schema = "phase02-baseline-proposal-v2",
+        `Proposal-Hash` = proposal_hash,
+        `Run-Metadata-MD5` = run_metadata_hash
+      ),
       as.list(stats::setNames(
         stable_hashes,
         paste0("Artifact-", gsub("[^A-Za-z0-9]", "-",

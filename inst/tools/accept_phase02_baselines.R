@@ -93,10 +93,17 @@ phase02_validate_proposal = function(proposal, canonical_dir) {
     error = function(error) stop("The proposal manifest is corrupt",
                                  call. = FALSE)
   )
-  if (nrow(manifest) != 1L || !all(c("Schema", "Proposal-Hash") %in%
-                                    colnames(manifest)) ||
+  stable_columns = paste0(
+    "Artifact-", gsub("[^A-Za-z0-9]", "-", phase02_stable_artifact_names()),
+    "-MD5"
+  )
+  required_manifest = c(
+    "Schema", "Proposal-Hash", "Run-Metadata-MD5", stable_columns
+  )
+  if (nrow(manifest) != 1L ||
+      !setequal(colnames(manifest), required_manifest) ||
       !identical(unname(manifest[1L, "Schema"]),
-                 "phase02-baseline-proposal-v1")) {
+                 "phase02-baseline-proposal-v2")) {
     stop("The proposal manifest has an unsupported schema", call. = FALSE)
   }
   declared = unname(manifest[1L, "Proposal-Hash"])
@@ -105,6 +112,82 @@ phase02_validate_proposal = function(proposal, canonical_dir) {
     stop("The proposal hash does not match its stable artifacts",
          call. = FALSE)
   }
+  stable = phase02_stable_artifact_names()
+  stable_hashes = vapply(
+    stable, function(name) phase02_hash_file(file.path(proposal, name)),
+    character(1)
+  )
+  declared_stable = unname(manifest[1L, stable_columns])
+  if (!identical(declared_stable, unname(stable_hashes))) {
+    stop("The proposal manifest does not match its artifact hashes",
+         call. = FALSE)
+  }
+  run_metadata_hash = phase02_hash_file(
+    file.path(proposal, "run-metadata.dcf")
+  )
+  if (!identical(
+    unname(manifest[1L, "Run-Metadata-MD5"]), run_metadata_hash
+  )) {
+    stop("The proposal run-metadata evidence hash does not match",
+         call. = FALSE)
+  }
+  artifacts = tryCatch({
+    expectations = read.csv(
+      file.path(proposal, "expectations.csv"), stringsAsFactors = FALSE,
+      check.names = FALSE
+    )
+    tolerances = read.csv(
+      file.path(proposal, "tolerances.csv"), stringsAsFactors = FALSE,
+      check.names = FALSE
+    )
+    fingerprints = read.dcf(file.path(proposal, "fingerprints.dcf"))
+    metadata = read.dcf(file.path(proposal, "run-metadata.dcf"))
+    if (!identical(names(expectations), c(
+      "fixture", "authority", "kind", "key", "value", "rationale"
+    )) || !nrow(expectations) ||
+        anyDuplicated(expectations[c("fixture", "authority", "kind", "key")])) {
+      stop("expectations.csv schema is invalid")
+    }
+    if (!identical(names(tolerances), c(
+      "fixture", "conditioning", "tier", "solution_atol", "solution_rtol",
+      "residual_rtol", "rationale", "reviewer"
+    )) || !nrow(tolerances) ||
+        anyDuplicated(tolerances[c("fixture", "conditioning")]) ||
+        any(!is.finite(as.matrix(tolerances[c(
+          "solution_atol", "solution_rtol", "residual_rtol"
+        )]))) ||
+        any(as.matrix(tolerances[c(
+          "solution_atol", "solution_rtol", "residual_rtol"
+        )]) < 0)) {
+      stop("tolerances.csv schema is invalid")
+    }
+    identity_fields = c(
+      "Schema", "Fixture-Path", "Fixture-MD5",
+      "Fixture-Input-Signature", "Source-Fingerprint",
+      "Package-Signature", "Model-Signature"
+    )
+    if (nrow(fingerprints) != 1L ||
+        !all(identity_fields %in% colnames(fingerprints)) ||
+        !identical(unname(fingerprints[1L, "Schema"]),
+                   "phase02-baseline-fingerprints-v1")) {
+      stop("fingerprints.dcf schema is invalid")
+    }
+    if (nrow(metadata) != 1L ||
+        !all(c("Schema", "Generated-UTC", "Solver-Backend") %in%
+             colnames(metadata)) ||
+        !identical(unname(metadata[1L, "Schema"]),
+                   "phase02-baseline-run-metadata-v1")) {
+      stop("run-metadata.dcf schema is invalid")
+    }
+    list(
+      expectations = expectations, tolerances = tolerances,
+      fingerprints = as.list(fingerprints[1L, ]),
+      identity_fields = identity_fields
+    )
+  }, error = function(error) {
+    stop(sprintf("The proposal artifact schema is invalid: %s",
+                 conditionMessage(error)), call. = FALSE)
+  })
   comparison = phase02_diff_frame(canonical_dir, proposal)
   expected_diff = phase02_render_diff(comparison)
   actual_diff = readLines(file.path(proposal, "DIFF.md"), warn = FALSE)
@@ -112,11 +195,17 @@ phase02_validate_proposal = function(proposal, canonical_dir) {
     stop("The proposal diff is stale relative to the canonical baseline",
          call. = FALSE)
   }
-  list(path = proposal, hash = actual, comparison = comparison)
+  list(
+    path = proposal, hash = actual, comparison = comparison,
+    run_metadata_hash = run_metadata_hash,
+    fingerprints = artifacts$fingerprints,
+    tolerances = artifacts$tolerances,
+    identity_fields = artifacts$identity_fields
+  )
 }
 
 phase02_acceptance_record = function(reviewer, reason, proposal_hash,
-                                      old_hash, new_hash,
+                                      run_metadata_hash, old_hash, new_hash,
                                       fingerprints, tolerances) {
   ordinary = tolerances[
     tolerances$fixture == "three-region" &
@@ -129,6 +218,7 @@ phase02_acceptance_record = function(reviewer, reason, proposal_hash,
     paste0("- **Accepted-UTC:** ",
            format(Sys.time(), tz = "UTC", usetz = TRUE)),
     paste0("- **Proposal-Hash:** `", proposal_hash, "`"),
+    paste0("- **Run-Metadata-MD5:** `", run_metadata_hash, "`"),
     paste0("- **Old-Canonical-Hash:** `", old_hash, "`"),
     paste0("- **New-Canonical-Hash:** `", new_hash, "`"),
     paste0("- **Fixture-MD5:** `", fingerprints[["Fixture-MD5"]], "`"),
@@ -157,6 +247,24 @@ phase02_accept_proposal = function(
   }
   canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
   validated = phase02_validate_proposal(proposal, canonical_dir)
+  current_dir = tempfile(
+    "phase02-current-source-", tmpdir = dirname(canonical_dir)
+  )
+  on.exit(unlink(current_dir, recursive = TRUE, force = TRUE), add = TRUE)
+  regenerated = phase02_generate_proposal(
+    current_dir, canonical_dir = canonical_dir
+  )
+  current = phase02_validate_proposal(current_dir, canonical_dir)
+  if (!identical(regenerated$proposal_hash, validated$hash) ||
+      !identical(
+        unname(validated$fingerprints[validated$identity_fields]),
+        unname(current$fingerprints[current$identity_fields])
+      )) {
+    stop(
+      "The reviewed proposal no longer matches the current source and model",
+      call. = FALSE
+    )
+  }
   old_hash = phase02_artifact_hash(canonical_dir)
   staging = tempfile("phase02-accept-staging-", tmpdir = dirname(canonical_dir))
   if (!dir.create(staging)) {
@@ -174,16 +282,11 @@ phase02_accept_proposal = function(
     stop("The staged canonical hash does not match the proposal hash",
          call. = FALSE)
   }
-  fingerprints = as.list(read.dcf(
-    file.path(staging, "fingerprints.dcf")
-  )[1L, ])
-  tolerances = read.csv(
-    file.path(staging, "tolerances.csv"), stringsAsFactors = FALSE,
-    check.names = FALSE
-  )
+  fingerprints = validated$fingerprints
+  tolerances = validated$tolerances
   record = phase02_acceptance_record(
-    reviewer, reason, validated$hash, old_hash, new_hash,
-    fingerprints, tolerances
+    reviewer, reason, validated$hash, validated$run_metadata_hash,
+    old_hash, new_hash, fingerprints, tolerances
   )
   if (isTRUE(dry_run)) {
     return(invisible(list(
