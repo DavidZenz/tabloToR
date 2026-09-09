@@ -46,6 +46,25 @@ copy_phase02_artifacts = function(refresh, source, destination) {
 copy_phase02_canonical = function(refresh, destination) {
   copy_phase02_artifacts(refresh, refresh$phase02_canonical_dir(), destination)
 }
+test_that("path containment distinguishes equal child sibling and ancestor", {
+
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  root = tempfile("phase02-path-root-")
+  child = file.path(root, "child")
+  sibling = paste0(root, "-sibling")
+  dir.create(child, recursive = TRUE)
+  dir.create(sibling)
+  on.exit(unlink(c(root, sibling), recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_true(refresh$phase02_path_contains(root, root))
+  expect_true(refresh$phase02_path_contains(root, child))
+  expect_false(refresh$phase02_path_contains(root, sibling))
+  expect_false(refresh$phase02_path_contains(child, root))
+  expect_false(grepl("\\\\", refresh$phase02_path_key(child)))
+  if (identical(.Platform$OS.type, "windows")) {
+    expect_true(refresh$phase02_path_contains(toupper(root), tolower(child)))
+  }
+})
 
 test_that("proposal generation is explicit compact and deterministic", {
   phase02_require_source_tree()

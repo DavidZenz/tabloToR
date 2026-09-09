@@ -48,9 +48,16 @@ phase02_canonical_dir = function(root = phase02_repository_root()) {
   )
 }
 
+phase02_path_key = function(path) {
+  value = normalizePath(path, winslash = "/", mustWork = FALSE)
+  value = sub("/+$", "", value)
+  if (identical(.Platform$OS.type, "windows")) value = tolower(value)
+  value
+}
+
 phase02_path_contains = function(parent, child) {
-  parent = sub("/+$", "", normalizePath(parent, mustWork = FALSE))
-  child = sub("/+$", "", normalizePath(child, mustWork = FALSE))
+  parent = phase02_path_key(parent)
+  child = phase02_path_key(child)
   identical(parent, child) || startsWith(child, paste0(parent, "/"))
 }
 
