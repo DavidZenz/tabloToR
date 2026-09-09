@@ -247,6 +247,59 @@ test_that("post failures preserve accepted solve and prior complete output", {
   }
 })
 
+test_that("C++ post failures and retries retain native backend provenance", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  partition = function(index, state) {
+    list(
+      stages = list(NULL),
+      external = sparse_external_block_partition(index, state)
+    )
+  }
+
+  for (phase in c("post-update", "output-projection")) {
+    model = make_cpp_structured_model()
+    failTransactionAt(phase)
+    expect_error(
+      testthat::with_mocked_bindings(
+        model$solveModel(
+          iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+          diagnostics = TRUE, output = "compact", variables = "x",
+          backend = "StructuredSchurFGMRESCpp"
+        ),
+        sparse_gtap_elimination_partition = partition,
+        .package = "tabloToR"
+      ),
+      paste("injected", phase, "failure"),
+      info = phase
+    )
+
+    expect_identical(
+      model$lastDiagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(model$lastDiagnostics$solver_backend_impl, "cpp")
+    expect_identical(
+      model$.postsimRecord$diagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(
+      model$.postsimRecord$diagnostics$solver_backend_impl, "cpp"
+    )
+
+    localTransactionFault(NULL)
+    model$retryPostsim(diagnostics = TRUE)
+    expect_identical(
+      model$lastDiagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(model$lastDiagnostics$solver_backend_impl, "cpp")
+  }
+})
+
 test_that("retryPostsim without an accepted record never enters the solver", {
   model = make_three_region_model()
   recorder = recordTransactionPhases()

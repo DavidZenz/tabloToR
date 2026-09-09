@@ -2288,6 +2288,14 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   backend = match.arg(backend, c(
     "Matrix", "SuiteSparse", "SparseM", "StructuredSchur", "StructuredSchurFGMRES"
   ))
+  native_requested = exists(
+    ".sparse_schur_cpp_runtime", mode = "environment", inherits = TRUE
+  ) && isTRUE(.sparse_schur_cpp_runtime$active) &&
+    identical(backend, "StructuredSchurFGMRES")
+  requested_backend = if (native_requested) {
+    "StructuredSchurFGMRESCpp"
+  } else backend
+  backend_impl = if (native_requested) "cpp" else "r"
   index = model$sparseIndex
   if (is.null(index) || !length(index)) {
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
@@ -2450,7 +2458,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     estimated_memory = estimate,
     max_sparse_nonzeros = max_nnz,
     true_residual_history = residual_history,
-    solver_backend = backend,
+    solver_backend = requested_backend,
+    solver_backend_impl = backend_impl,
     solver_diagnostics = if (length(solver_diagnostics_history)) {
       solver_diagnostics_history[[length(solver_diagnostics_history)]]
     } else NULL,
@@ -2482,7 +2491,9 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       accepted_numerical_state = TRUE,
       retryable_postsim = TRUE,
       failure_phase = NULL,
-      failure_reason = NULL
+      failure_reason = NULL,
+      solver_backend = requested_backend,
+      solver_backend_impl = backend_impl
     )
   }
   .commit_accepted_state(model, list(
