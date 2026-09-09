@@ -510,7 +510,20 @@
       "closure contains variables absent from the reconstructed model"
     )
   }
-  shock_variables = sub("\\[.*$", "", payload$shocks$labels)
+  shock_variables = vapply(
+    payload$shocks$labels,
+    function(label) {
+      tryCatch(
+        sparse_parse_label(label)$name,
+        error = function(error) {
+          .serialization_stop(sprintf(
+            "shock label is invalid: %s", conditionMessage(error)
+          ))
+        }
+      )
+    },
+    character(1)
+  )
   if (length(shock_variables) &&
       any(!shock_variables %in% payload$closure)) {
     .serialization_stop(

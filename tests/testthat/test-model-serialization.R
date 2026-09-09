@@ -62,6 +62,30 @@ test_that("accepted logical state round trips through the versioned payload", {
   expect_true(all(is.finite(fresh$after$solution)))
 })
 
+test_that("case-insensitive shock labels round trip through logical state", {
+  model = make_three_region_model("sparse")
+  shocks = setNames(
+    c(1, 2, -1),
+    c("TAX[north]", " tax[ 'south' ] ", "Tax[\"east\"]")
+  )
+  model$setShocks(shocks)
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    diagnostics = TRUE, output = "full", backend = "Matrix",
+    reduction = "off"
+  )
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  model$saveState(state_file)
+
+  restored = GEModel$new()
+  restored$loadState(state_file)
+
+  expect_identical(restored$explicitShocks$labels, names(shocks))
+  expect_identical(unname(restored$explicitShocks$values), unname(shocks))
+  expect_identical(restored$solution, model$solution)
+})
+
 test_that("serialization entry points and helpers have explicit contract rows", {
   manifest = loadCompatibilityManifest()
   expected = data.frame(
