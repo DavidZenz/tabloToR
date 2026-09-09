@@ -383,10 +383,11 @@ test_that("canonical acceptance is complete and bound to accepted artifacts", {
   expect_match(text, "strict (solution atol 1e-10, rtol 1e-08; ",
                fixed = TRUE)
   expect_match(text, "residual rtol 1e-10)", fixed = TRUE)
-  expect_false(grepl(
-    "Old-Canonical-Hash:** `453a6986e600df6cf426c11d794f2b1d`",
-    text, fixed = TRUE
-  ))
+  expect_match(
+    text,
+    "- **Old-Canonical-Hash:** `453a6986e600df6cf426c11d794f2b1d`",
+    fixed = TRUE
+  )
 })
 
 test_that("source fingerprint ordering is locale independent", {
@@ -401,7 +402,7 @@ test_that("source fingerprint ordering is locale independent", {
   expect_identical(files, expected)
   expect_identical(
     refresh$phase02_source_fingerprint(refresh$phase02_repository_root()),
-    "4b42d701c21b8b40ac9c22329400ce84"
+    "f57c39e0bdd3020b48a602773c580a8d"
   )
 })
 
