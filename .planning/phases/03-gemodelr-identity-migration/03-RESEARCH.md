@@ -515,22 +515,16 @@ sparse.lu_order = 3
 
 ## Open Questions
 
-1. **How will users obtain the pre-rename bridge?**
-   - What we know: Existing schema-1 files have no package-source fingerprint, while D-06 requires one from a reviewed allowlist. [VERIFIED: R/modelSerialization.R:220-337] [VERIFIED: .planning/phases/03-gemodelr-identity-migration/03-CONTEXT.md:26-29]
-   - What's unclear: Phase 3 does not publish a release, so the distribution mechanism for a predecessor bridge commit/tag is not yet locked. [VERIFIED: .planning/phases/03-gemodelr-identity-migration/03-CONTEXT.md:120-126]
-   - Recommendation: Put a human checkpoint before the rename wave to approve a stable predecessor bridge ref and exact user command. If no ref will be distributed, return to discussion because silently accepting untagged files would contradict D-06.
+1. **RESOLVED — How will users obtain the pre-rename bridge?**
+   - Resolution: Before `Package:` changes, a blocking human checkpoint must verify that an already-authorized, immutable predecessor commit-addressed ref or content-addressed archive is objectively reachable by users. The gate must reproduce the recorded package/source/fixture fingerprints and present exact, placeholder-free installation and raw-RDS-to-`saveState()` conversion commands. It fails closed when the locator, reachability, fingerprints, commands, or approval are absent or mismatched; an untagged state is never inferred or normalized.
 
-2. **Is renaming the external GitHub repository/remotes part of this phase?**
-   - What we know: `DESCRIPTION` already points at `DavidZenz/GEModelR`, while local `origin` retains `DavidZenz/tabloToR`. [VERIFIED: DESCRIPTION:13-14] [VERIFIED: local `git remote -v` audit on 2026-09-09]
-   - What's unclear: External publication is deferred to Phase 7. [VERIFIED: .planning/phases/03-gemodelr-identity-migration/03-CONTEXT.md:120-126]
-   - Recommendation: Treat remote mutation as out of scope; document predecessor URLs as upstream attribution and validate package metadata only.
+2. **RESOLVED — Is renaming the external GitHub repository/remotes part of this phase?**
+   - Resolution: No. Remote mutation and publication are deferred and not authorized in Phase 3. Plans may perform read-only reachability checks against an already-authorized ref/archive, but must not push, tag, upload, rename remotes, change repository settings, or publish.
 
-3. **What is the full-check acceptance policy for known benchmark-path failures?**
-   - What we know: Phase 2 verification identified installed-check benchmark path portability as deferred work while the focused baseline was green. [VERIFIED: .planning/phases/02-compatibility-and-numerical-baseline/02-VERIFICATION.md:77-104]
-   - What's unclear: Whether the identity rename mechanically resolves those paths or leaves the pre-existing failures unchanged.
-   - Recommendation: Require no new `R CMD check` failures and keep a named exception only for the already documented portability issue; do not broaden Phase 3 into Phase 5 portability work.
+3. **RESOLVED — What is the full-check acceptance policy?**
+   - Resolution: `R CMD check` must finish with zero ERRORs and zero WARNINGs. NOTES are acceptable only when each is captured verbatim, reviewed, documented with its cause and disposition, and shown not to hide identity, numerical, serialization, native-registration, archive, or installed-workflow failure. An unresolved high-severity finding blocks completion.
 
-## Environment Availability
+
 
 | Dependency | Required By | Available | Version | Fallback |
 |------------|-------------|-----------|---------|----------|

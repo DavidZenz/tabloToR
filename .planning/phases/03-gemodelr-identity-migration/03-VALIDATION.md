@@ -1,72 +1,91 @@
 ---
 phase: 03
 slug: gemodelr-identity-migration
-status: draft
+status: planned
 nyquist_compliant: false
 wave_0_complete: false
 created: 2026-09-09
+revised: 2026-09-10
 ---
 
 # Phase 03 — Validation Strategy
 
-> Per-phase validation contract for feedback sampling during execution.
+> Per-task sampling contract synchronized to the finalized twelve-plan execution chain.
 
 ## Test Infrastructure
 
 | Property | Value |
 |----------|-------|
-| **Framework** | testthat 3.3.2, edition 3 |
-| **Config file** | `DESCRIPTION`; launcher `tests/testthat.R` |
-| **Quick run command** | `rtk R --vanilla -q -e 'testthat::test_local(filter = "identity-migration|model-serialization|public-solver-contract", reporter = "summary")'` |
-| **Baseline command** | `rtk Rscript --vanilla tools/refresh_phase02_baselines.R --check` |
-| **Full suite command** | `rtk R --vanilla -q -e 'testthat::test_local(reporter = "summary")'` |
-| **Package gate** | Clean temporary source copy: `R CMD build`, `R CMD check`, isolated `R CMD INSTALL`, then fresh-process workflow and DLL inspection |
-| **Estimated runtime** | Under 60 seconds focused; full package gate varies by host |
+| Framework | testthat 3.3.2, edition 3 |
+| Config | DESCRIPTION and tests/testthat.R |
+| Quick gate | Focused identity-migration, model-serialization, and public-solver-contract tests |
+| Continuous baseline gate | Identity-aware read-only Phase 2 migration-source checker; existing predecessor --check mode is used until Wave 0 creates the adapted mode |
+| Full suite | Complete testthat suite in a clean process |
+| Final package gate | rtk Rscript --vanilla tools/qualify_phase03_migration.R --execute; no working-tree test_local substitute |
+| Expected latency | Focused sampling targets 60 seconds; archive/check/install qualification may take longer |
 
 ## Sampling Rate
 
-- **After every task commit:** Run the focused identity/serialization/solver-contract filter and the read-only Phase 2 baseline check.
-- **After native regeneration tasks:** Also inspect registered routines and run an isolated fresh-process native smoke test.
-- **After every plan wave:** Run the complete testthat suite.
-- **Before `$gsd-verify-work`:** Run the clean build/check/install gate, identity audit, complete tests, and Phase 2 baseline check.
-- **Max feedback latency:** 60 seconds for focused tests; longer package checks run only at wave and phase gates.
+- After every task: run its focused gate and, once available, the identity-aware read-only Phase 2 numerical/digest gate.
+- After the predecessor fixture task: reproduce the fixture from the reviewed source and assert source, fixture, and canonical evidence digests.
+- At the human bridge checkpoint: fail closed unless an already-authorized immutable source is user-reachable and the exact installation/conversion commands are approved; do not publish or mutate remotes.
+- After the atomic load-critical task: parse the non-generating static assertion for the exact eleven routine names/arities, R_init_GEModelR, GEModelR DLL identity, and dynamicLookup FALSE after the single generation step; perform no package-loading check before that switch is coherent.
+- After every wave: run the full suite when loadable, plus continuous MIGR-02 and immutable-evidence checks.
+- At the final wave: first self-test the deterministic harness, then invoke that harness once to qualify the recorded clean HEAD through hashed git export, extracted source, exact built archive, check/install linkage, isolated fresh workflow/DLL state, complete tests, identity audits, and Phase 2 gates.
+- R CMD check acceptance is zero ERROR and zero WARNING; NOTES must be documented and reviewed.
 
 ## Per-Task Verification Map
 
-| Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
-|---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| 03-01-01 | 03-01 | 1 | MIGR-01, MIGR-02 | T-03-01, T-03-02 | Predecessor lineage is explicit and accepted evidence remains immutable | serialization/artifact | `rtk R --vanilla -q -e 'testthat::test_local(filter="identity-migration|model-serialization", reporter="summary")'` | ❌ W0 | ⬜ pending |
-| 03-01-02 | 03-01 | 1 | MIGR-02 | T-03-03 | Phase 2 baseline digests and behavior are frozen before rename | differential regression | `rtk Rscript --vanilla tools/refresh_phase02_baselines.R --check` | Partial | ⬜ pending |
-| 03-02-01 | 03-02 | 2 | COMP-04, MIGR-01 | T-03-04 | Package and documentation identity migrate without unsupported predecessor references | contract | `rtk R --vanilla -q -e 'testthat::test_local(filter="identity-migration", reporter="summary")'` | ❌ W0 | ⬜ pending |
-| 03-02-02 | 03-02 | 2 | COMP-04, MIGR-01 | T-03-05 | Every old public option fails before mutation with exact replacement guidance | option matrix | `rtk R --vanilla -q -e 'testthat::test_local(filter="identity-migration|transactional-state", reporter="summary")'` | ❌ W0 | ⬜ pending |
-| 03-03-01 | 03-03 | 3 | MIGR-01, MIGR-02 | T-03-01, T-03-02 | Current and reviewed predecessor logical states validate in isolation; malformed lineage never mutates the receiver | serialization integration | `rtk R --vanilla -q -e 'testthat::test_local(filter="model-serialization|identity-migration", reporter="summary")'` | ❌ W0 | ⬜ pending |
-| 03-04-01 | 03-04 | 4 | MIGR-01, MIGR-02 | T-03-06 | Only GEModelR DLL and registered native routines load; dynamic lookup stays disabled | native/installed integration | `rtk R --vanilla -q -e 'testthat::test_local(filter="identity-migration|public-cpp-backend|sparse-lu-cpp|sparse-schur-cpp", reporter="summary")'` | ❌ W0 | ⬜ pending |
-| 03-05-01 | 03-05 | 5 | MIGR-01, MIGR-02 | T-03-03, T-03-07 | Historical records retain predecessor bytes while active producers report GEModelR | artifact audit | `rtk Rscript --vanilla tools/check_identity_migration.R` | ❌ W0 | ⬜ pending |
-| 03-06-01 | 03-06 | 6 | COMP-04, MIGR-01, MIGR-02 | T-03-01–T-03-07 | Clean source, archive, installation, workflow, serialization, diagnostics, and numerical baseline all satisfy the migration contract | package/integration | `rtk R --vanilla -q -e 'testthat::test_local(reporter="summary")'` plus clean build/check/install gate | ❌ W0 | ⬜ pending |
+| Task ID | Wave | Requirements | Planned verification gate | Status |
+|---------|------|--------------|---------------------------|--------|
+| 03-01-01 | 1 | MIGR-01, MIGR-02 | Adapt and exercise the non-circular identity-aware read-only baseline checker | pending Wave 0/execution |
+| 03-01-02 | 1 | MIGR-01, MIGR-02 | Freeze and continuously compare canonical Phase 2 bytes, digests, and protected numerical invariants | pending Wave 0/execution |
+| 03-02-01 | 2 | MIGR-01, MIGR-02 | Exercise mandatory tagged package lineage while Package remains tabloToR | pending Wave 0/execution |
+| 03-02-02 | 2 | MIGR-01, MIGR-02 | Reproduce the genuine public-save predecessor fixture and exact reviewed fingerprints | pending Wave 0/execution |
+| 03-03-01 | 3 | COMP-04, MIGR-01, MIGR-02 | Read-only reachability/reproduction gate plus blocking human approval of exact commands | pending manual checkpoint |
+| 03-04-01 | 4 | COMP-04, MIGR-01, MIGR-02 | Run compileAttributes once in action; then use the static non-generating R assertion for all eleven exact names/arities, R_init_GEModelR, GEModelR DLL identity, and dynamicLookup FALSE | pending execution |
+| 03-05-01 | 5 | COMP-04, MIGR-01, MIGR-02 | Audit current package/docs identity while retaining historical attribution | pending Wave 0/execution |
+| 03-06-01 | 6 | COMP-04, MIGR-01, MIGR-02 | Exercise every old public option at its operation-local guard before mutation | pending Wave 0/execution |
+| 03-06-02 | 6 | COMP-04, MIGR-01, MIGR-02 | Test direct private-hook, attribute, diagnostic, sparse, and public-contract identity | pending execution |
+| 03-07-01 | 7 | COMP-04, MIGR-01, MIGR-02 | Run lineage and round-trip matrix; compare approved predecessor registry/fixture digests before and after | pending Wave 0/execution |
+| 03-08-01 | 8 | MIGR-01, MIGR-02 | Run source-mode locator/parity tests, then build and R CMD check a temporary archive so installed-first lookup finds all four packaged benchmark drivers; repeat numerical/digest gates | pending execution/resources |
+| 03-09-01 | 9 | COMP-04, MIGR-01, MIGR-02 | Run helper, sparse LU/Schur, compiled-backend, serialization, and compatibility tests | pending execution |
+| 03-10-01 | 10 | COMP-04, MIGR-01, MIGR-02 | Exhaustively classify every case-insensitive tracked old-identity hit; fail closed outside the exact allowlist | pending Wave 0/execution |
+| 03-10-02 | 10 | COMP-04, MIGR-01, MIGR-02 | Test provenance inventory and verify historical-map/evidence digests | pending execution |
+| 03-11-01 | 11 | COMP-04, MIGR-01, MIGR-02 | Repeat exhaustive tracked-source audit after remaining non-load-critical cleanup | pending Wave 0/execution |
+| 03-12-01 | 12 | COMP-04, MIGR-01, MIGR-02 | Author/test tools/qualify_phase03_migration.R; run its focused test and --self-test fail-closed contract | pending Wave 0/execution |
+| 03-12-02 | 12 | COMP-04, MIGR-01, MIGR-02 | Invoke only rtk Rscript --vanilla tools/qualify_phase03_migration.R --execute and record its HEAD/export/archive/install/log digest chain in the summary | pending Wave 0/execution |
 
-## Wave 0 Requirements
+## Wave 0 Dependencies
 
-- [ ] `tests/testthat/test-identity-migration.R` — source, documentation, options, native, archive, and installed-package identity contracts.
-- [ ] Bridge-produced schema-1 predecessor logical-state fixture with explicit package lineage.
-- [ ] Serialization lineage matrix covering current, allowlisted predecessor, missing, malformed, unknown, and content-fingerprint mismatch cases.
-- [ ] `tools/check_identity_migration.R` — reusable tracked-source/archive/install/DLL/registration audit.
-- [ ] Immutable digest snapshot for accepted Phase 2 historical artifacts.
-- [ ] Machine-readable old/new option mapping and intentional-predecessor occurrence allowlist.
+- [ ] Identity tests spanning source, docs, options, native/generated/runtime symbols, archive, installation, DLL loading, and public workflow.
+- [ ] Adapted identity-aware read-only Phase 2 checker, canonical-evidence digest manifest, and continuous numerical gate.
+- [ ] Tagged schema-1 predecessor fixture, strict fingerprint registry, and read-only reachability/reproduction tool.
+- [ ] Human approval evidence for an already-authorized reachable immutable predecessor source and exact commands.
+- [ ] Serialization lineage matrix for current, allowlisted predecessor, absent, malformed, duplicate, unknown, stale, and fingerprint-mismatch cases.
+- [ ] Strict option map, operation-local public guards, and direct private-hook coverage.
+- [ ] Static non-generating validator for hand-authored, generated, runtime-compiled, and R-side symbols, with all eleven exact names/arities, R_init_GEModelR, DLL identity, and dynamicLookup FALSE.
+- [ ] Exact five-category old-identity allowlist, historical maps, and exhaustive tracked-hit classifier.
+- [ ] Four packaged inst/benchmarks drivers, installed-first/source-fallback locator tests, and exact source/install parity assertions.
+- [ ] Reusable source/archive/install identity and DLL audit.
+- [ ] tools/qualify_phase03_migration.R plus focused self-tests for clean-state enforcement, stage linkage, exact NOTE allowlisting, isolated-library resolution, and nonzero failure behavior.
 
-## Manual-Only Verifications
+Wave 0 is not complete because execution-created tests, fixtures, registries, classifiers, and qualification tools are not yet present in their planned final form. The phase is therefore not Nyquist compliant.
 
-| Behavior | Requirement | Why Manual | Test Instructions |
-|----------|-------------|------------|-------------------|
-| Pre-rename serialization bridge availability | MIGR-01 | Users need a stable predecessor commit/ref before the package identity changes, and Phase 3 does not publish a release | Before rename, review and approve the exact predecessor commit/ref plus the documented installation/save command; verify a user can create the lineage-tagged schema-1 state from that ref |
+## Manual-Only Verification
+
+| Behavior | Requirements | Reason | Gate |
+|----------|--------------|--------|------|
+| Pre-rename bridge availability | COMP-04, MIGR-01, MIGR-02 | User reachability and authorization require human review | Before the Package rename, approve the exact immutable locator, fingerprints, installation command, and raw-RDS-to-logical-saveState conversion command; otherwise stop |
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verification or Wave 0 dependencies.
-- [ ] Sampling continuity: no three consecutive tasks without automated verification.
-- [ ] Wave 0 covers all missing references.
-- [ ] No watch-mode flags.
-- [ ] Focused feedback latency remains below 60 seconds.
-- [ ] Bridge fixture/ref and old baseline digests are frozen before the rename wave.
-- [ ] `nyquist_compliant: true` is set in frontmatter after validation.
+- [x] All 17 planned XML tasks have one verification-map row.
+- [x] The map includes the final clean-source/archive/install and fresh-process qualification gate.
+- [ ] Wave 0 dependencies exist and pass.
+- [ ] Sampling continuity is demonstrated during execution.
+- [ ] The blocking bridge approval is recorded before the rename wave.
+- [ ] Final R CMD check has zero ERROR/WARNING and only documented reviewed NOTES.
+- [ ] Set wave_0_complete and nyquist_compliant true only after execution evidence satisfies every gate.
 
-**Approval:** pending
+**Approval:** pending execution
