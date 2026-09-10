@@ -46,6 +46,61 @@ copy_phase02_artifacts = function(refresh, source, destination) {
 copy_phase02_canonical = function(refresh, destination) {
   copy_phase02_artifacts(refresh, refresh$phase02_canonical_dir(), destination)
 }
+
+copy_phase02_source_scope = function(refresh, destination) {
+  root = refresh$phase02_repository_root()
+  relative = refresh$phase02_source_files(root)
+  for (path in relative) {
+    target = file.path(destination, path)
+    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+    stopifnot(file.copy(file.path(root, path), target))
+  }
+  invisible(destination)
+}
+
+read_phase02_source_text = function(path) {
+  rawToChar(readBin(path, "raw", n = file.info(path)$size))
+}
+
+write_phase02_source_text = function(text, path) {
+  connection = file(path, open = "wb")
+  on.exit(close(connection), add = TRUE)
+  writeBin(charToRaw(text), connection)
+  invisible(path)
+}
+
+write_phase02_identity_map = function(value, path) {
+  write.dcf(
+    as.data.frame(value, stringsAsFactors = FALSE, check.names = FALSE),
+    file = path, keep.white = names(value), useBytes = TRUE
+  )
+  invisible(path)
+}
+
+replace_phase02_source_identity = function(refresh, root, map) {
+  for (relative in refresh$phase02_source_files(root)) {
+    path = file.path(root, relative)
+    text = read_phase02_source_text(path)
+    for (index in seq_len(nrow(map))) {
+      text = gsub(
+        map[index, "Predecessor"], map[index, "Current"], text,
+        fixed = TRUE
+      )
+    }
+    write_phase02_source_text(text, path)
+  }
+  invisible(root)
+}
+
+mutate_phase02_source = function(root, relative, old, new) {
+  path = file.path(root, relative)
+  text = read_phase02_source_text(path)
+  stopifnot(grepl(old, text, fixed = TRUE))
+  text = sub(old, new, text, fixed = TRUE)
+  write_phase02_source_text(text, path)
+  invisible(root)
+}
+
 test_that("path containment distinguishes equal child sibling and ancestor", {
 
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
@@ -404,6 +459,184 @@ test_that("source fingerprint ordering is locale independent", {
     refresh$phase02_source_fingerprint(refresh$phase02_repository_root()),
     "f57c39e0bdd3020b48a602773c580a8d"
   )
+})
+
+test_that("migration identity map has a strict reviewed schema", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  map = refresh$phase02_load_identity_map()
+
+  expect_identical(names(map), refresh$phase02_identity_map_fields())
+  expect_identical(
+    map$`Rule-Id`, c("package-mixed-case", "package-upper-case")
+  )
+  expect_true(all(map$`Review-State` == "reviewed"))
+  expect_silent(refresh$phase02_validate_identity_map(map))
+
+  invalid_maps = list(
+    missing = map[, -1L, drop = FALSE],
+    extra = cbind(map, Extra = "forbidden"),
+    duplicate = rbind(map, map[1L, , drop = FALSE]),
+    malformed = {
+      value = map
+      value[1L, "Expected-Occurrences"] = "many"
+      value
+    },
+    unreviewed = {
+      value = map
+      value[1L, "Review-State"] = "pending"
+      value
+    },
+    stale = {
+      value = map
+      value[1L, "Expected-Occurrences"] = "999999"
+      value
+    },
+    digest = {
+      value = map
+      value[1L, "Normalized-Source-Fingerprint"] =
+        "00000000000000000000000000000000"
+      value
+    }
+  )
+  for (name in names(invalid_maps)) {
+    path = tempfile(paste0("phase02-identity-map-", name, "-"),
+                    fileext = ".dcf")
+    write_phase02_identity_map(invalid_maps[[name]], path)
+    expect_error(
+      refresh$phase02_load_identity_map(path),
+      regexp = "identity map|Identity map|mapping row|source fingerprint",
+      info = name
+    )
+  }
+})
+
+test_that("migration source gate accepts identity-only substitutions", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  map = refresh$phase02_load_identity_map()
+  source = tempfile("phase02-identity-source-")
+  copy_phase02_source_scope(refresh, source)
+
+  expect_silent(refresh$phase02_validate_identity_source(source, map))
+  replace_phase02_source_identity(refresh, source, map)
+  expect_silent(refresh$phase02_validate_identity_source(source, map))
+
+  text = paste(
+    vapply(
+      file.path(source, refresh$phase02_source_files(source)),
+      read_phase02_source_text, character(1)
+    ),
+    collapse = "\n"
+  )
+  expect_false(grepl("tabloToR", text, fixed = TRUE))
+  expect_false(grepl("TABLOTOR", text, fixed = TRUE))
+})
+
+test_that("migration source gate rejects every non-identity contract drift", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  map = refresh$phase02_load_identity_map()
+  mutations = list(
+    algorithm = c(
+      "R/sparseSolver.R", "residual_norm / max(1, rhs_norm)",
+      "residual_norm / max(2, rhs_norm)"
+    ),
+    signature = c(
+      "R/GEModel.R", "solveModel = function(iter = 3",
+      "solveModel = function(iter = 4"
+    ),
+    default = c(
+      "R/GEModel.R", "backend = \"Matrix\"", "backend = \"SparseM\""
+    ),
+    tolerance = c(
+      "R/sparseSolver.R", "residual_tolerance = 2e-7",
+      "residual_tolerance = 3e-7"
+    ),
+    ordering = c(
+      "R/sparseSolver.R", "order_value = order(i, j)",
+      "order_value = order(j, i)"
+    ),
+    residual = c(
+      "R/sparseSolver.R", "relative_l2 = residual_norm / max(1, rhs_norm)",
+      "relative_l2 = 0"
+    ),
+    unmapped_identity = c(
+      "DESCRIPTION", "Package: GEModelR", "Package: GemodelR"
+    )
+  )
+
+  for (name in names(mutations)) {
+    source = tempfile(paste0("phase02-source-drift-", name, "-"))
+    copy_phase02_source_scope(refresh, source)
+    replace_phase02_source_identity(refresh, source, map)
+    mutation = mutations[[name]]
+    mutate_phase02_source(source, mutation[[1L]], mutation[[2L]],
+                          mutation[[3L]])
+    expect_error(
+      refresh$phase02_validate_identity_source(source, map),
+      "source fingerprint|mapping row",
+      info = name
+    )
+  }
+})
+
+test_that("migration comparison rejects schema and canonical evidence drift", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  map = refresh$phase02_load_identity_map()
+  canonical = tempfile("phase02-migration-canonical-")
+  observed = tempfile("phase02-migration-observed-")
+  copy_phase02_canonical(refresh, canonical)
+  copy_phase02_canonical(refresh, observed)
+
+  expect_silent(
+    refresh$phase02_compare_migration_artifacts(canonical, observed, map)
+  )
+
+  fingerprints = read.dcf(file.path(observed, "fingerprints.dcf"))
+  fingerprints[1L, "Schema"] = "phase02-baseline-fingerprints-v2"
+  write.dcf(fingerprints, file.path(observed, "fingerprints.dcf"),
+            useBytes = TRUE)
+  expect_error(
+    refresh$phase02_compare_migration_artifacts(canonical, observed, map),
+    "non-identity baseline field"
+  )
+
+  unlink(observed, recursive = TRUE, force = TRUE)
+  copy_phase02_canonical(refresh, observed)
+  expectations = read.csv(
+    file.path(observed, "expectations.csv"), stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  expectations$value[1L] = "canonical drift"
+  write.csv(expectations, file.path(observed, "expectations.csv"),
+            row.names = FALSE, quote = TRUE)
+  expect_error(
+    refresh$phase02_compare_migration_artifacts(canonical, observed, map),
+    "canonical numerical artifact"
+  )
+})
+
+test_that("migration check is read-only and independent of acceptance", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  canonical = refresh$phase02_canonical_dir()
+  before = vapply(
+    c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md"),
+    function(name) refresh$phase02_hash_file(file.path(canonical, name)),
+    character(1)
+  )
+
+  expect_silent(refresh$phase02_check_migration_source())
+  after = vapply(
+    c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md"),
+    function(name) refresh$phase02_hash_file(file.path(canonical, name)),
+    character(1)
+  )
+  expect_identical(after, before)
+  expect_false(exists("phase02_accept_proposal", envir = refresh,
+                      inherits = FALSE))
 })
 
 test_that("acceptance publication is locked and rolls back atomically", {
