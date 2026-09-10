@@ -49,7 +49,7 @@ copy_phase02_canonical = function(refresh, destination) {
 
 copy_phase02_source_scope = function(refresh, destination) {
   root = refresh$phase02_repository_root()
-  relative = refresh$phase02_source_files(root)
+  relative = refresh$phase02_identity_source_files(root)
   for (path in relative) {
     target = file.path(destination, path)
     dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
@@ -78,7 +78,7 @@ write_phase02_identity_map = function(value, path) {
 }
 
 replace_phase02_source_identity = function(refresh, root, map) {
-  for (relative in refresh$phase02_source_files(root)) {
+  for (relative in refresh$phase02_identity_source_files(root)) {
     path = file.path(root, relative)
     text = read_phase02_source_text(path)
     for (index in seq_len(nrow(map))) {
@@ -524,7 +524,7 @@ test_that("migration source gate accepts identity-only substitutions", {
 
   text = paste(
     vapply(
-      file.path(source, refresh$phase02_source_files(source)),
+      file.path(source, refresh$phase02_identity_source_files(source)),
       read_phase02_source_text, character(1)
     ),
     collapse = "\n"
@@ -589,6 +589,10 @@ test_that("migration comparison rejects schema and canonical evidence drift", {
   observed = tempfile("phase02-migration-observed-")
   copy_phase02_canonical(refresh, canonical)
   copy_phase02_canonical(refresh, observed)
+  stopifnot(file.copy(
+    file.path(refresh$phase02_canonical_dir(), "ACCEPTANCE.md"),
+    file.path(canonical, "ACCEPTANCE.md")
+  ))
 
   expect_silent(
     refresh$phase02_compare_migration_artifacts(canonical, observed, map)
@@ -614,7 +618,7 @@ test_that("migration comparison rejects schema and canonical evidence drift", {
             row.names = FALSE, quote = TRUE)
   expect_error(
     refresh$phase02_compare_migration_artifacts(canonical, observed, map),
-    "canonical numerical artifact"
+    "Canonical numerical artifact"
   )
 })
 

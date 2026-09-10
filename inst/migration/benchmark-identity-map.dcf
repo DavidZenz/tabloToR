@@ -1,0 +1,17 @@
+Schema: gemodelr-benchmark-identity-map-v1
+Rule-Id: package-mixed-case
+Predecessor: tabloToR
+Current: GEModelR
+Canonical: <<PACKAGE-IDENTITY-MIXED>>
+Expected-Occurrences: 271
+Normalized-Source-Fingerprint: e4e8b11927023136491ed86c064d811f
+Review-State: reviewed
+
+Schema: gemodelr-benchmark-identity-map-v1
+Rule-Id: package-upper-case
+Predecessor: TABLOTOR
+Current: GEMODELR
+Canonical: <<PACKAGE-IDENTITY-UPPER>>
+Expected-Occurrences: 2
+Normalized-Source-Fingerprint: e4e8b11927023136491ed86c064d811f
+Review-State: reviewed

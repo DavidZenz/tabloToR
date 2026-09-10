@@ -161,10 +161,16 @@ phase02_runtime_environment = function(root) {
     stop("The existing testthat/pkgload development runtime is required",
          call. = FALSE)
   }
+  description = read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
+  package = unname(description[["Package"]])
+  if (!package %in% c("tabloToR", "GEModelR")) {
+    stop("The package identity is not covered by the migration map",
+         call. = FALSE)
+  }
   loaded_from_root = FALSE
-  if ("tabloToR" %in% loadedNamespaces()) {
+  if (package %in% loadedNamespaces()) {
     namespace_path = tryCatch(
-      getNamespaceInfo(asNamespace("tabloToR"), "path"),
+      getNamespaceInfo(asNamespace(package), "path"),
       error = function(error) NA_character_
     )
     checked_source = length(namespace_path) == 1L &&
@@ -216,6 +222,19 @@ phase02_source_files = function(root) {
   relative[file.exists(file.path(root, relative))]
 }
 
+phase02_identity_source_files = function(root) {
+  r_files = file.path(
+    "R",
+    list.files(
+      file.path(root, "R"), pattern = "\\.R$", recursive = TRUE,
+      full.names = FALSE
+    )
+  )
+  relative = unique(c(phase02_source_files(root), r_files))
+  relative = relative[order(tolower(relative), relative, method = "radix")]
+  relative[file.exists(file.path(root, relative))]
+}
+
 phase02_source_fingerprint = function(root) {
   relative = phase02_source_files(root)
   paths = file.path(root, relative)
@@ -226,6 +245,193 @@ phase02_source_fingerprint = function(root) {
   }
   hashes = unname(tools::md5sum(paths))
   phase02_signature(as.list(stats::setNames(hashes, relative)))
+}
+
+phase02_identity_map_fields = function() {
+  c(
+    "Schema", "Rule-Id", "Predecessor", "Current", "Canonical",
+    "Expected-Occurrences", "Normalized-Source-Fingerprint", "Review-State"
+  )
+}
+
+phase02_identity_map_path = function(root = phase02_repository_root()) {
+  file.path(root, "inst", "migration", "benchmark-identity-map.dcf")
+}
+
+phase02_validate_identity_map = function(value) {
+  fields = phase02_identity_map_fields()
+  if (!is.data.frame(value) || !identical(names(value), fields)) {
+    stop("Identity map fields do not match the strict schema", call. = FALSE)
+  }
+  value[] = lapply(value, as.character)
+  if (nrow(value) != 2L || anyNA(value) ||
+      any(!nzchar(as.matrix(value))) ||
+      any(as.matrix(value) != trimws(as.matrix(value)))) {
+    stop("Identity map must contain two complete exact mapping rows",
+         call. = FALSE)
+  }
+  if (!all(value$Schema == "gemodelr-benchmark-identity-map-v1")) {
+    stop("Identity map schema is not supported", call. = FALSE)
+  }
+  if (anyDuplicated(value$`Rule-Id`) ||
+      !identical(
+        value$`Rule-Id`, c("package-mixed-case", "package-upper-case")
+      )) {
+    stop("Identity map rules are missing, extra, duplicate, or unordered",
+         call. = FALSE)
+  }
+  exact = data.frame(
+    `Rule-Id` = c("package-mixed-case", "package-upper-case"),
+    Predecessor = c("tabloToR", "TABLOTOR"),
+    Current = c("GEModelR", "GEMODELR"),
+    Canonical = c(
+      "<<PACKAGE-IDENTITY-MIXED>>", "<<PACKAGE-IDENTITY-UPPER>>"
+    ),
+    stringsAsFactors = FALSE, check.names = FALSE
+  )
+  for (field in names(exact)) {
+    if (!identical(value[[field]], exact[[field]])) {
+      stop("Identity map contains an unreviewed identity literal",
+           call. = FALSE)
+    }
+  }
+  occurrences = suppressWarnings(as.integer(value$`Expected-Occurrences`))
+  if (anyNA(occurrences) ||
+      !identical(as.character(occurrences), value$`Expected-Occurrences`) ||
+      any(occurrences < 1L)) {
+    stop("Identity map expected occurrences are malformed", call. = FALSE)
+  }
+  fingerprints = value$`Normalized-Source-Fingerprint`
+  if (length(unique(fingerprints)) != 1L ||
+      !grepl("^[0-9a-f]{32}$", fingerprints[[1L]])) {
+    stop("Identity map source fingerprint is malformed", call. = FALSE)
+  }
+  if (!all(value$`Review-State` == "reviewed")) {
+    stop("Identity map contains an unreviewed mapping row", call. = FALSE)
+  }
+  invisible(value)
+}
+
+phase02_read_identity_text = function(path) {
+  size = file.info(path)$size
+  if (!is.finite(size) || size > 5 * 1024^2) {
+    stop("Identity source input exceeds the per-file size bound",
+         call. = FALSE)
+  }
+  rawToChar(readBin(path, "raw", n = size))
+}
+
+phase02_literal_count = function(text, literal) {
+  matches = gregexpr(literal, text, fixed = TRUE)[[1L]]
+  if (length(matches) == 1L && matches[[1L]] == -1L) 0L else length(matches)
+}
+
+phase02_canonicalize_identity_text = function(text, map) {
+  phase02_validate_identity_map(map)
+  for (index in seq_len(nrow(map))) {
+    text = gsub(
+      map[index, "Predecessor"], map[index, "Canonical"], text,
+      fixed = TRUE
+    )
+    text = gsub(
+      map[index, "Current"], map[index, "Canonical"], text,
+      fixed = TRUE
+    )
+  }
+  text
+}
+
+phase02_identity_source_state = function(root, map) {
+  phase02_validate_identity_map(map)
+  root = normalizePath(root, mustWork = TRUE)
+  relative = phase02_identity_source_files(root)
+  if (!length(relative)) {
+    stop("Identity source scope is empty", call. = FALSE)
+  }
+  text = vapply(
+    file.path(root, relative), phase02_read_identity_text, character(1)
+  )
+  occurrences = vapply(seq_len(nrow(map)), function(index) {
+    sum(vapply(
+      text, phase02_literal_count, integer(1),
+      literal = map[index, "Predecessor"]
+    )) + sum(vapply(
+      text, phase02_literal_count, integer(1),
+      literal = map[index, "Current"]
+    ))
+  }, integer(1))
+  expected = as.integer(map$`Expected-Occurrences`)
+  if (!identical(unname(occurrences), unname(expected))) {
+    details = paste(
+      paste0(map$`Rule-Id`, "=", occurrences, "/", expected),
+      collapse = ","
+    )
+    stop(
+      sprintf("Identity mapping row is stale or count drifted: %s", details),
+      call. = FALSE
+    )
+  }
+
+  normalized_hashes = vapply(seq_along(relative), function(index) {
+    path = tempfile("phase02-normalized-source-")
+    on.exit(unlink(path), add = TRUE)
+    connection = file(path, open = "wb")
+    writeBin(
+      charToRaw(phase02_canonicalize_identity_text(text[[index]], map)),
+      connection
+    )
+    close(connection)
+    phase02_hash_file(path)
+  }, character(1))
+  normalized_fingerprint = phase02_signature(as.list(stats::setNames(
+    normalized_hashes, relative
+  )))
+  raw_fingerprint = phase02_source_fingerprint(root)
+  list(
+    files = relative,
+    occurrences = stats::setNames(occurrences, map$`Rule-Id`),
+    normalized_fingerprint = normalized_fingerprint,
+    raw_fingerprint = raw_fingerprint
+  )
+}
+
+phase02_validate_identity_source = function(root, map) {
+  state = phase02_identity_source_state(root, map)
+  expected = unique(map$`Normalized-Source-Fingerprint`)
+  if (!identical(state$normalized_fingerprint, expected)) {
+    stop(
+      sprintf(
+        "Identity-normalized source fingerprint drifted: expected %s, got %s",
+        expected, state$normalized_fingerprint
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(state)
+}
+
+phase02_load_identity_map = function(
+    path = phase02_identity_map_path(),
+    root = phase02_repository_root(),
+    validate_source = TRUE) {
+  if (!file.exists(path) || dir.exists(path)) {
+    stop("Identity map is missing", call. = FALSE)
+  }
+  value = tryCatch(
+    read.dcf(path),
+    error = function(error) {
+      stop(sprintf("Identity map is invalid: %s", conditionMessage(error)),
+           call. = FALSE)
+    }
+  )
+  value = as.data.frame(
+    value, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  phase02_validate_identity_map(value)
+  if (isTRUE(validate_source)) {
+    phase02_validate_identity_source(root, value)
+  }
+  value
 }
 
 phase02_tolerances = function() {
@@ -506,9 +712,11 @@ phase02_render_diff = function(comparison) {
     "|---|---|---|---|---|", rows)
 }
 
-phase02_generate_proposal = function(output,
-                                      canonical_dir = phase02_canonical_dir()) {
-  root = phase02_repository_root()
+phase02_generate_proposal = function(
+    output,
+    canonical_dir = phase02_canonical_dir(),
+    root = phase02_repository_root()) {
+  root = normalizePath(root, mustWork = TRUE)
   canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
   output = phase02_normalize_proposal_dir(output, canonical_dir)
   if (!dir.exists(output) &&
@@ -566,6 +774,156 @@ phase02_generate_proposal = function(output,
   )
 }
 
+phase02_accepted_canonical_hash = function(canonical_dir) {
+  path = file.path(canonical_dir, "ACCEPTANCE.md")
+  if (!file.exists(path) || dir.exists(path)) {
+    stop("Canonical Phase 02 acceptance evidence is missing", call. = FALSE)
+  }
+  lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+  prefix = "- **New-Canonical-Hash:** `"
+  matches = lines[startsWith(lines, prefix)]
+  if (length(matches) != 1L) {
+    stop("Canonical Phase 02 acceptance hash is missing or duplicate",
+         call. = FALSE)
+  }
+  value = substring(matches, nchar(prefix) + 1L, nchar(matches) - 1L)
+  if (!grepl("^[0-9a-f]{32}$", value)) {
+    stop("Canonical Phase 02 acceptance hash is malformed", call. = FALSE)
+  }
+  value
+}
+
+phase02_validate_canonical_evidence = function(canonical_dir) {
+  expected = phase02_accepted_canonical_hash(canonical_dir)
+  observed = phase02_artifact_hash(canonical_dir)
+  if (!identical(observed, expected)) {
+    stop(
+      sprintf(
+        "Canonical Phase 02 evidence drifted: expected %s, got %s",
+        expected, observed
+      ),
+      call. = FALSE
+    )
+  }
+  invisible(observed)
+}
+
+phase02_read_fingerprint_record = function(path) {
+  value = tryCatch(
+    read.dcf(path),
+    error = function(error) {
+      stop(sprintf("Baseline fingerprint DCF is invalid: %s",
+                   conditionMessage(error)), call. = FALSE)
+    }
+  )
+  if (nrow(value) != 1L || anyNA(value) || any(!nzchar(value))) {
+    stop("Baseline fingerprint DCF must contain one complete record",
+         call. = FALSE)
+  }
+  value[1L, ]
+}
+
+phase02_compare_migration_artifacts = function(
+    canonical_dir, observed_dir, map, source_state = NULL) {
+  phase02_validate_identity_map(map)
+  canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
+  observed_dir = normalizePath(observed_dir, mustWork = TRUE)
+  phase02_validate_canonical_evidence(canonical_dir)
+
+  for (artifact in c("expectations.csv", "tolerances.csv")) {
+    expected = phase02_hash_file(file.path(canonical_dir, artifact))
+    observed = phase02_hash_file(file.path(observed_dir, artifact))
+    if (is.na(expected) || is.na(observed) || !identical(observed, expected)) {
+      stop(
+        sprintf("Canonical numerical artifact drifted: %s", artifact),
+        call. = FALSE
+      )
+    }
+  }
+
+  canonical = phase02_read_fingerprint_record(
+    file.path(canonical_dir, "fingerprints.dcf")
+  )
+  observed = phase02_read_fingerprint_record(
+    file.path(observed_dir, "fingerprints.dcf")
+  )
+  if (!identical(names(observed), names(canonical))) {
+    stop("A non-identity baseline field was added or removed", call. = FALSE)
+  }
+  identity_fields = c(
+    "Source-Fingerprint", "Package-Name", "Package-Signature"
+  )
+  protected = setdiff(names(canonical), identity_fields)
+  drift = protected[observed[protected] != canonical[protected]]
+  if (length(drift)) {
+    stop(
+      sprintf(
+        "A non-identity baseline field drifted: %s",
+        paste(drift, collapse = ",")
+      ),
+      call. = FALSE
+    )
+  }
+
+  package_rule = map[map$`Rule-Id` == "package-mixed-case", , drop = FALSE]
+  if (!identical(unname(canonical[["Package-Name"]]),
+                 package_rule$Predecessor) ||
+      !unname(observed[["Package-Name"]]) %in%
+        c(package_rule$Predecessor, package_rule$Current)) {
+    stop("Package identity is not an exact reviewed substitution",
+         call. = FALSE)
+  }
+  if (!is.null(source_state) &&
+      !identical(
+        unname(observed[["Source-Fingerprint"]]),
+        source_state$raw_fingerprint
+      )) {
+    stop("Observed source fingerprint does not match the checked source",
+         call. = FALSE)
+  }
+  for (record in list(canonical, observed)) {
+    expected_signature = phase02_signature(list(
+      package = unname(record[["Package-Name"]]),
+      version = unname(record[["Package-Version"]]),
+      source = unname(record[["Source-Fingerprint"]])
+    ))
+    if (!identical(unname(record[["Package-Signature"]]),
+                   expected_signature)) {
+      stop("Package signature is inconsistent with its identity fields",
+           call. = FALSE)
+    }
+  }
+  invisible(TRUE)
+}
+
+phase02_check_migration_source = function(
+    root = phase02_repository_root(),
+    canonical_dir = phase02_canonical_dir(root),
+    map_path = phase02_identity_map_path(root)) {
+  root = normalizePath(root, mustWork = TRUE)
+  canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
+  map = phase02_load_identity_map(
+    map_path, root = root, validate_source = TRUE
+  )
+  source_state = phase02_validate_identity_source(root, map)
+  proposal = tempfile("phase02-migration-source-check-")
+  on.exit(unlink(proposal, recursive = TRUE, force = TRUE), add = TRUE)
+  generated = phase02_generate_proposal(
+    proposal, canonical_dir = canonical_dir, root = root
+  )
+  phase02_compare_migration_artifacts(
+    canonical_dir, generated$output, map, source_state = source_state
+  )
+  list(
+    clean = TRUE,
+    normalized_source_fingerprint =
+      source_state$normalized_fingerprint,
+    raw_source_fingerprint = source_state$raw_fingerprint,
+    accepted_canonical_hash =
+      phase02_accepted_canonical_hash(canonical_dir)
+  )
+}
+
 phase02_check_baselines = function(canonical_dir = phase02_canonical_dir()) {
   canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
   proposal = tempfile("phase02-baseline-check-")
@@ -583,6 +941,10 @@ phase02_refresh_usage = function() {
     "  rtk Rscript --vanilla tools/refresh_phase02_baselines.R",
     "--output=<proposal-dir>",
     "  rtk Rscript --vanilla tools/refresh_phase02_baselines.R --check",
+    paste(
+      "  rtk Rscript --vanilla tools/refresh_phase02_baselines.R",
+      "--check-migration-source"
+    ),
     sep = "\n"
   )
 }
@@ -602,12 +964,17 @@ phase02_refresh_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
     cat(phase02_refresh_usage(), "\n")
     return(invisible(0L))
   }
-  allowed = startsWith(arguments, "--output=") | arguments == "--check"
+  allowed = startsWith(arguments, "--output=") |
+    arguments %in% c("--check", "--check-migration-source")
   if (any(!allowed)) stop("Unknown refresh argument", call. = FALSE)
   check = "--check" %in% arguments
+  migration_check = "--check-migration-source" %in% arguments
   output = phase02_cli_value(arguments, "--output")
-  if (check && !is.null(output)) {
-    stop("--check cannot be combined with --output", call. = FALSE)
+  if (sum(c(check, migration_check, !is.null(output))) != 1L) {
+    stop(
+      "Choose exactly one of --check, --check-migration-source, or --output",
+      call. = FALSE
+    )
   }
   if (check) {
     result = phase02_check_baselines()
@@ -616,6 +983,19 @@ phase02_refresh_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
       stop("Canonical Phase 02 baselines are stale or corrupt",
            call. = FALSE)
     }
+  } else if (migration_check) {
+    result = phase02_check_migration_source()
+    cat("Phase 02 migration source gate: PASS\n")
+    cat(sprintf(
+      "Identity-normalized-source-fingerprint: %s\n",
+      result$normalized_source_fingerprint
+    ))
+    cat(sprintf(
+      "Raw-source-fingerprint: %s\n", result$raw_source_fingerprint
+    ))
+    cat(sprintf(
+      "Accepted-canonical-hash: %s\n", result$accepted_canonical_hash
+    ))
   } else {
     result = phase02_generate_proposal(output)
     cat(sprintf("Proposal: %s\n", result$output))
