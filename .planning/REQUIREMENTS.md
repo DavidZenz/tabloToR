@@ -27,8 +27,8 @@
 
 ### Package Migration and API
 
-- [ ] **MIGR-01**: Package metadata, namespace, native initialization/registration symbols, private wrappers, options, diagnostics, benchmark signatures, tests, and documentation consistently use the GEModelR identity.
-- [ ] **MIGR-02**: Package renaming does not alter solver algorithms or numerical defaults in the same change set.
+- [x] **MIGR-01**: Package metadata, namespace, native initialization/registration symbols, private wrappers, options, diagnostics, benchmark signatures, tests, and documentation consistently use the GEModelR identity.
+- [x] **MIGR-02**: Package renaming does not alter solver algorithms or numerical defaults in the same change set.
 - [ ] **API-01**: GEModelR exports a deliberate documented public API instead of `exportPattern("^[[:alpha:]]+")`.
 - [ ] **API-02**: Backend selection and capability checks use an explicit internal dispatch contract while preserving the R reference implementations.
 
@@ -84,8 +84,8 @@
 | NUM-01 | Phase 2 | Complete |
 | NUM-02 | Phase 2 | Complete |
 | NUM-03 | Phase 6 | Pending |
-| MIGR-01 | Phase 3 | Pending |
-| MIGR-02 | Phase 3 | Pending |
+| MIGR-01 | Phase 3 | Complete |
+| MIGR-02 | Phase 3 | Complete |
 | API-01 | Phase 4 | Pending |
 | API-02 | Phase 4 | Pending |
 | PORT-01 | Phase 5 | Pending |

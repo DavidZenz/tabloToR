@@ -177,9 +177,15 @@ status: complete
 - **Fix:** Added explicit source-tree availability skips while retaining full source-tree execution.
 - **Committed in:** `c6f6390`
 
+**5. [Rule 3 - Blocking] Reconciled progress after the state updater skipped an unscoped phase**
+- **Found during:** Plan close-out
+- **Issue:** `state.update-progress` left global progress and velocity fields stale because the phase scope is unscoped.
+- **Fix:** Reconciled 19 of 29 completed plans, 66% progress, Phase 03 totals, and recent trend while preserving SDK-updated position and session fields.
+- **Committed in:** plan tracking commit
+
 ---
 
-**Total deviations:** 5 total: 1 user-approved adjustment and 4 auto-fixes (2 correctness bugs, 1 missing critical evidence check, 1 blocking tooling workaround).
+**Total deviations:** 6 total: 1 user-approved adjustment and 5 auto-fixes (2 correctness bugs, 1 missing critical evidence check, 2 blocking tooling/workflow fixes).
 **Impact on plan:** All changes preserve the intended bridge and numerical boundaries. No solver algorithm, default, ordering, tolerance, or residual behavior changed.
 
 ## Issues Encountered
