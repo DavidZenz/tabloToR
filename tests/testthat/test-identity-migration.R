@@ -141,7 +141,7 @@ test_that("numerical identity contracts and five assumptions stay frozen", {
   )
   for (id in expected) {
     location = grep(paste0('id: "', id, '"'), lines, fixed = TRUE)
-    expect_length(location, 1L, info = id)
+    expect_length(location, 1L)
     expect_match(lines[[location + 1L]], "status: flagged-unverified",
                  fixed = TRUE, info = id)
   }

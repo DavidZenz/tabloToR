@@ -1,0 +1,2 @@
+"path","category","expected_count","literal_or_line_digest","file_digest","rationale"
+"tests/testthat/baselines/phase02/fingerprints.dcf","immutable-historical-evidence","1","d2da02c476352ad1d352a71438644014ad2ac87b899b1477ab73435d96e4ec85","49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0","Accepted predecessor package identity in immutable Phase 02 fingerprints"
