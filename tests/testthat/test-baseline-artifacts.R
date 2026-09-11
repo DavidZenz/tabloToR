@@ -642,6 +642,42 @@ test_that("migration check is read-only and independent of acceptance", {
   expect_false(exists("phase02_accept_proposal", envir = refresh,
                       inherits = FALSE))
 })
+test_that("accepted Phase 2 bytes have independent SHA-256 evidence", {
+  phase02_require_source_tree()
+  tool_path = phase02_cli_path("check_identity_migration.R")
+  tool = new.env(parent = globalenv())
+  sys.source(tool_path, envir = tool)
+  root = tool$identity_repository_root()
+  registry = tool$identity_load_historical_registry(root = root)
+  immutable = registry[startsWith(registry$Category, "immutable-"), ,
+                       drop = FALSE]
+
+  expect_identical(
+    immutable$`Record-Id`,
+    c(
+      "phase02-expectations", "phase02-tolerances",
+      "phase02-fingerprints", "phase02-acceptance",
+      "gtap12a-cpp-results"
+    )
+  )
+  expect_identical(
+    immutable$`Byte-Digest`,
+    c(
+      "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+      "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+      "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+      "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113",
+      "a4eb96dd86ad2ee4ead588fe7b275e7f5916f5de6bd1d59ba0587f9cec3b48ca"
+    )
+  )
+  expect_true(all(vapply(seq_len(nrow(immutable)), function(index) {
+    identical(
+      tool$identity_hash_file(file.path(root, immutable$Path[[index]])),
+      immutable$`Byte-Digest`[[index]]
+    )
+  }, logical(1))))
+})
+
 
 test_that("acceptance publication is locked and rolls back atomically", {
   phase02_require_source_tree()
