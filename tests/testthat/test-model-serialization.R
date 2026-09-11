@@ -84,11 +84,12 @@ test_that("unsupported package lineage fails before receiver mutation", {
 
 test_that("migration source gate narrows only reviewed serialization source", {
   root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
-  tool = new.env(parent = globalenv())
-  sys.source(
-    file.path(root, "inst", "tools", "refresh_phase02_baselines.R"),
-    envir = tool
+  tool_path = file.path(
+    root, "inst", "tools", "refresh_phase02_baselines.R"
   )
+  testthat::skip_if_not(file.exists(tool_path), "source-tree gate unavailable")
+  tool = new.env(parent = globalenv())
+  sys.source(tool_path, envir = tool)
   map = tool$phase02_load_identity_map(root = root)
   protected = tool$phase02_protected_numerical_source_files()
   expect_identical(

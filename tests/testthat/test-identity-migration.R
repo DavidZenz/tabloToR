@@ -92,6 +92,11 @@ test_that("historical old-identity records reject broad or stale entries", {
   allowlist = tool$identity_read_historical_allowlist(
     tool$identity_historical_allowlist_path(root)
   )
+  expected = tool$identity_expected_historical_allowlist()
+  expect_identical(
+    allowlist[c("path", "category")],
+    expected
+  )
   expect_silent(
     tool$identity_validate_historical_allowlist(allowlist, root, registry)
   )
@@ -153,7 +158,9 @@ predecessorBridgeToolPath = function() {
     testthat::test_path("..", "..", "tools", "check_predecessor_bridge.R")
   )
   hits = candidates[file.exists(candidates)]
-  if (!length(hits)) return(candidates[[1L]])
+  if (!length(hits)) {
+    testthat::skip("predecessor bridge tool requires the source tree")
+  }
   normalizePath(hits[[1L]], mustWork = TRUE)
 }
 

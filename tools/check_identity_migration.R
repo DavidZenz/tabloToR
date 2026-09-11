@@ -281,6 +281,28 @@ identity_historical_allowlist_fields = function() {
   )
 }
 
+identity_expected_historical_allowlist = function() {
+  data.frame(
+    path = c(
+      "tests/testthat/baselines/phase02/fingerprints.dcf",
+      "inst/migration/predecessor-fingerprints.dcf",
+      "tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds",
+      "tests/testthat/test-identity-migration.R",
+      "tests/testthat/test-model-serialization.R",
+      "tools/check_predecessor_bridge.R"
+    ),
+    category = c(
+      "immutable-historical-evidence",
+      "predecessor-lineage-registry",
+      "predecessor-logical-state-fixture",
+      "migration-regression-test",
+      "migration-regression-test",
+      "migration-verification-tool"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
 identity_read_historical_allowlist = function(path) {
   value = tryCatch(
     read.csv(
@@ -298,7 +320,61 @@ identity_read_historical_allowlist = function(path) {
   value
 }
 
+identity_rds_occurrence_records = function(value, path = "payload") {
+  records = character()
+  visit = function(item, location) {
+    if (is.list(item)) {
+      labels = names(item)
+      for (index in seq_along(item)) {
+        label = if (!is.null(labels) && nzchar(labels[[index]])) {
+          paste0(location, "$", labels[[index]])
+        } else {
+          paste0(location, "[[", index, "]]")
+        }
+        visit(item[[index]], label)
+      }
+      return(invisible(NULL))
+    }
+    if (!is.character(item)) return(invisible(NULL))
+    for (index in seq_along(item)) {
+      matches = gregexpr(
+        "tabloToR", item[[index]], ignore.case = TRUE, perl = TRUE
+      )[[1L]]
+      count = if (length(matches) == 1L && matches[[1L]] == -1L) {
+        0L
+      } else {
+        length(matches)
+      }
+      if (count) {
+        record = paste0(
+          location, "[[", index, "]]:", item[[index]], "\n"
+        )
+        records <<- c(records, rep(record, count))
+      }
+    }
+    invisible(NULL)
+  }
+  visit(value, path)
+  records
+}
+
 identity_historical_line_state = function(path) {
+  if (identical(tolower(tools::file_ext(path)), "rds")) {
+    value = tryCatch(
+      readRDS(path),
+      error = function(error) identity_abort(
+        "HISTORICAL_ALLOWLIST_RDS_INVALID", conditionMessage(error)
+      )
+    )
+    records = identity_rds_occurrence_records(value)
+    return(list(
+      count = as.integer(length(records)),
+      line_digest = identity_hash_raw(charToRaw(paste0(
+        records, collapse = ""
+      ))),
+      file_digest = identity_hash_file(path)
+    ))
+  }
   lines = readLines(path, warn = FALSE, encoding = "UTF-8")
   counts = vapply(lines, function(line) {
     matches = gregexpr("tabloToR", line, ignore.case = TRUE, perl = TRUE)[[1L]]
@@ -326,15 +402,11 @@ identity_validate_historical_allowlist = function(value, root, registry) {
   if (anyDuplicated(value$path)) {
     identity_abort("HISTORICAL_ALLOWLIST_DUPLICATE")
   }
-  if (nrow(value) != 1L ||
-      !identical(
-        value$path,
-        "tests/testthat/baselines/phase02/fingerprints.dcf"
-      )) {
+  expected = identity_expected_historical_allowlist()
+  if (!identical(
+    value[c("path", "category")], expected
+  )) {
     identity_abort("HISTORICAL_ALLOWLIST_RECORDS")
-  }
-  if (!all(value$category == "immutable-historical-evidence")) {
-    identity_abort("HISTORICAL_ALLOWLIST_CATEGORY")
   }
   count = suppressWarnings(as.integer(value$expected_count))
   if (anyNA(count) || !identical(as.character(count), value$expected_count) ||
@@ -346,7 +418,9 @@ identity_validate_historical_allowlist = function(value, root, registry) {
     identity_abort("HISTORICAL_ALLOWLIST_DIGEST")
   }
   immutable_paths = registry$Path[startsWith(registry$Category, "immutable-")]
-  if (any(!value$path %in% immutable_paths)) {
+  immutable_rows =
+    value$category == "immutable-historical-evidence"
+  if (any(!value$path[immutable_rows] %in% immutable_paths)) {
     identity_abort("HISTORICAL_ALLOWLIST_STALE")
   }
 
@@ -455,7 +529,11 @@ identity_check_historical = function(
       registry$Category == "protected-source-region"
     )),
     historical_occurrences = as.integer(sum(
-      as.integer(allowlist$expected_count)
+      as.integer(
+        allowlist$expected_count[
+          allowlist$category == "immutable-historical-evidence"
+        ]
+      )
     )),
     registry = registry
   )

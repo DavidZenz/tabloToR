@@ -7,16 +7,16 @@ Source-File-Count: 99
 Source-Fingerprint: 7b1abea84896dbca82b7b288c2a7f517
 Source-Locator-Type: unresolved
 Source-Locator: unresolved
-Source-Immutable-Id: unresolved
+Source-Immutable-Id: ea71afd98b4f165525b9bc0b853e25d4e8998cd8
 Fixture-Path: tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds
 Fixture-Digest-Algorithm: sha256
-Fixture-Digest: pending-task-2
+Fixture-Digest: 578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b
 Tablo-Path: tests/testthat/fixtures/three-region.tab
 Tablo-Digest-Algorithm: sha256
-Tablo-Digest: pending-task-2
-Data-Fingerprint: pending-task-2
-Install-Command: pending-task-2
-Conversion-Command: pending-task-2
+Tablo-Digest: 9324e4f86938deb3283f61b28aec05a47425127dd9890a18e819ef1e6801a38b
+Data-Fingerprint: d7979ebd02d9f381f10852d93ffa143c
+Install-Command: R CMD INSTALL --library="$TABLOTOR_BRIDGE_LIB" "$TABLOTOR_BRIDGE_SOURCE"
+Conversion-Command: R --vanilla -q -e 'library(tabloToR, lib.loc = Sys.getenv("TABLOTOR_BRIDGE_LIB")); model = readRDS(Sys.getenv("TABLOTOR_RAW_RDS")); model$saveState(Sys.getenv("TABLOTOR_LOGICAL_STATE"))'
 Lineage-Review-State: reviewed
 Reachability-Review-State: unresolved
 Rationale: Exact predecessor package lineage for the pre-rename schema-1 bridge; stable user reachability requires Plan 03-03 approval.
