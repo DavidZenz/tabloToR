@@ -146,3 +146,34 @@ test_that("numerical identity contracts and five assumptions stay frozen", {
                  fixed = TRUE, info = id)
   }
 })
+
+predecessorBridgeToolPath = function() {
+  candidates = c(
+    file.path("tools", "check_predecessor_bridge.R"),
+    testthat::test_path("..", "..", "tools", "check_predecessor_bridge.R")
+  )
+  hits = candidates[file.exists(candidates)]
+  if (!length(hits)) return(candidates[[1L]])
+  normalizePath(hits[[1L]], mustWork = TRUE)
+}
+
+loadPredecessorBridgeTool = function() {
+  environment = new.env(parent = globalenv())
+  sys.source(predecessorBridgeToolPath(), envir = environment)
+  environment
+}
+
+test_that("predecessor bridge reproduces exact installed-source evidence", {
+  tool = loadPredecessorBridgeTool()
+  result = tool$bridge_verify_local()
+
+  expect_true(result$clean)
+  expect_identical(result$package_name, "tabloToR")
+  expect_identical(result$package_version, "0.1.0")
+  expect_match(result$source_fingerprint, "^[0-9a-f]{32}$")
+  expect_match(result$fixture_digest, "^[0-9a-f]{64}$")
+  expect_identical(result$reproduced_digest, result$fixture_digest)
+  expect_true(result$bytes_identical)
+  expect_true(result$content_identical)
+  expect_true(result$commands_exact)
+})

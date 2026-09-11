@@ -540,3 +540,60 @@ test_that("logical state rebuilds the declared legacy runtime", {
   )))
   expect_true(all(is.finite(restored$solution)))
 })
+
+test_that("genuine predecessor fixture enforces lineage and content integrity", {
+  fixture = testthat::test_path(
+    "fixtures", "serialization", "tabloToR-schema1-lineage.rds"
+  )
+  expect_true(file.exists(fixture))
+  if (!file.exists(fixture)) return(invisible())
+
+  registry = .serialization_package_lineage_registry()
+  payload = readRDS(fixture)
+  expect_identical(names(payload), serializationPayloadFields())
+  expect_identical(
+    payload$package_lineage,
+    list(
+      name = "tabloToR",
+      version = "0.1.0",
+      source_fingerprint = unname(registry$`Source-Fingerprint`)
+    )
+  )
+  expect_identical(
+    payload$source$data_fingerprint,
+    unname(registry$`Data-Fingerprint`)
+  )
+
+  receiver = GEModel$new()
+  returned = receiver$loadState(fixture)
+  expect_identical(returned, receiver)
+  expect_identical(receiver$loadedEngine, "sparse")
+  expect_identical(receiver$sourceData, payload$source)
+
+  rejected = list()
+  rejected$duplicate = payload
+  names(rejected$duplicate$package_lineage)[[3L]] = "name"
+
+  rejected$non_scalar = payload
+  rejected$non_scalar$package_lineage$version = c("0.1.0", "0.1.0")
+
+  rejected$stale = payload
+  rejected$stale$package_lineage$version = "0.0.9"
+
+  rejected$unknown = payload
+  rejected$unknown$package_lineage$source_fingerprint = paste(
+    rep("f", 32L), collapse = ""
+  )
+
+  rejected$content_altered = payload
+  rejected$content_altered$source$loaded_data$basedata$stock[[1L]] =
+    rejected$content_altered$source$loaded_data$basedata$stock[[1L]] + 1
+
+  for (name in names(rejected)) {
+    expectSerializationRejectedWithoutMutation(
+      rejected[[name]],
+      pattern = "package lineage|fingerprint mismatch",
+      info = name
+    )
+  }
+})
