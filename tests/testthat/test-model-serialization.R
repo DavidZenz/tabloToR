@@ -1,3 +1,80 @@
+if (!exists("GEModel", inherits = TRUE)) {
+  serialization_source_root = normalizePath(
+    testthat::test_path("..", ".."), mustWork = TRUE
+  )
+  serialization_r_files = sort(list.files(
+    file.path(serialization_source_root, "R"),
+    pattern = "\\.R$", full.names = TRUE
+  ))
+  for (serialization_r_file in serialization_r_files) {
+    sys.source(serialization_r_file, envir = .GlobalEnv)
+  }
+}
+
+test_that("saveState writes mandatory reviewed predecessor package lineage", {
+  registry = .serialization_package_lineage_registry()
+  expect_identical(nrow(registry), 1L)
+  expect_identical(registry$`Package-Name`, "tabloToR")
+  expect_identical(registry$`Package-Version`, "0.1.0")
+  expect_identical(registry$`Lineage-Review-State`, "reviewed")
+  expect_match(
+    registry$`Source-Fingerprint`, "^[0-9a-f]{32}$"
+  )
+
+  model = make_three_region_model("sparse")
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  model$saveState(state_file)
+  payload = readRDS(state_file)
+
+  expect_identical(names(payload), serializationPayloadFields())
+  expect_identical(
+    payload$package_lineage,
+    list(
+      name = unname(registry$`Package-Name`),
+      version = unname(registry$`Package-Version`),
+      source_fingerprint = unname(registry$`Source-Fingerprint`)
+    )
+  )
+})
+
+test_that("unsupported package lineage fails before receiver mutation", {
+  model = make_three_region_model("sparse")
+  payload = .build_logical_state_payload(model)
+  unsupported = list()
+
+  unsupported$missing = payload[names(payload) != "package_lineage"]
+
+  unsupported$malformed = payload
+  unsupported$malformed$package_lineage = "tabloToR"
+
+  unsupported$missing_field = payload
+  unsupported$missing_field$package_lineage$source_fingerprint = NULL
+
+  unsupported$unknown_field = payload
+  unsupported$unknown_field$package_lineage$unexpected = TRUE
+
+  unsupported$non_scalar_name = payload
+  unsupported$non_scalar_name$package_lineage$name = c(
+    "tabloToR", "tabloToR"
+  )
+
+  unsupported$unknown_source = payload
+  unsupported$unknown_source$package_lineage$source_fingerprint = paste(
+    rep("0", 32L), collapse = ""
+  )
+
+  unsupported$unallowlisted_package = payload
+  unsupported$unallowlisted_package$package_lineage$name = "GEModelR"
+
+  for (name in names(unsupported)) {
+    expectSerializationRejectedWithoutMutation(
+      unsupported[[name]], pattern = "package lineage|top-level",
+      info = name
+    )
+  }
+})
+
 test_that("accepted logical state round trips through the versioned payload", {
   model = make_three_region_model("sparse")
   model$setMemoryBudget(128 * 1024^2)
