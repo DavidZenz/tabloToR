@@ -116,42 +116,54 @@ Plans:
   3. Pre/post-rename compatibility fixtures produce equivalent solutions, outputs, diagnostics, and serialization results.
   4. Users have exact installation and script migration instructions, including the fate of `tabloToR::` calls and old option names.
 
-**Plans**: 12 plans
+**Plans**: 1/12 plans executed
 
 **Wave 1**
-- [ ] 03-01-PLAN.md — Adapt the predecessor baseline checker and freeze immutable Phase 2 evidence (depends on Phase 2)
+
+- [x] 03-01-PLAN.md — Adapt the predecessor baseline checker and freeze immutable Phase 2 evidence (depends on Phase 2)
 
 **Wave 2**
+
 - [ ] 03-02-PLAN.md — Create the tagged predecessor bridge and genuine fingerprinted fixture (depends on 03-01)
 
 **Wave 3**
+
 - [ ] 03-03-PLAN.md — Obtain blocking human approval of a reachable immutable predecessor bridge (depends on 03-02)
 
 **Wave 4**
+
 - [ ] 03-04-PLAN.md — Apply the atomic load-critical Package, namespace, native, wrapper, and launcher switch (depends on 03-03)
 
 **Wave 5**
+
 - [ ] 03-05-PLAN.md — Migrate current package and documentation identity (depends on 03-04)
 
 **Wave 6**
+
 - [ ] 03-06-PLAN.md — Migrate runtime options, private hooks, attributes, and diagnostics (depends on 03-05)
 
 **Wave 7**
+
 - [ ] 03-07-PLAN.md — Validate predecessor lineage and normalize current logical state without mutating approved inputs (depends on 03-06)
 
 **Wave 8**
+
 - [ ] 03-08-PLAN.md — Migrate active benchmark and baseline producers (depends on 03-07)
 
 **Wave 9**
+
 - [ ] 03-09-PLAN.md — Migrate test helpers and native solver tests (depends on 03-08)
 
 **Wave 10**
+
 - [ ] 03-10-PLAN.md — Classify old-token hits and migrate provenance, tooling, and historical maps (depends on 03-09)
 
 **Wave 11**
+
 - [ ] 03-11-PLAN.md — Complete non-load-critical identity cleanup and exhaustive audit (depends on 03-10)
 
 **Wave 12**
+
 - [ ] 03-12-PLAN.md — Qualify clean tracked source, archive, installation, fresh public/native workflow, full suite, and immutable evidence (depends on 03-11)
 
 ### Phase 4: Public API and Solver Boundaries
@@ -217,7 +229,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
 | 2. Compatibility and Numerical Baseline | 6/6 | Complete    | 2026-09-09 |
-| 3. GEModelR Identity Migration | 0/TBD | Not started | - |
+| 3. GEModelR Identity Migration | 1/12 | In Progress|  |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |
 | 6. Documentation and Release Qualification | 0/TBD | Not started | - |
