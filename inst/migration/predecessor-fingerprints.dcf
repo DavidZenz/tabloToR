@@ -1,0 +1,22 @@
+Schema: gemodelr-predecessor-lineage-v1
+Record-Id: tablotr-0.1.0-bridge
+Package-Name: tabloToR
+Package-Version: 0.1.0
+Source-Scope: Git-tracked regular files under DESCRIPTION, NAMESPACE, R, src, inst, tests/testthat, and tools; exclude only inst/migration/predecessor-fingerprints.dcf and tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds; C-byte radix path order; MD5 over path-NUL-file-MD5 records
+Source-File-Count: 99
+Source-Fingerprint: 7b1abea84896dbca82b7b288c2a7f517
+Source-Locator-Type: unresolved
+Source-Locator: unresolved
+Source-Immutable-Id: unresolved
+Fixture-Path: tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds
+Fixture-Digest-Algorithm: sha256
+Fixture-Digest: pending-task-2
+Tablo-Path: tests/testthat/fixtures/three-region.tab
+Tablo-Digest-Algorithm: sha256
+Tablo-Digest: pending-task-2
+Data-Fingerprint: pending-task-2
+Install-Command: pending-task-2
+Conversion-Command: pending-task-2
+Lineage-Review-State: reviewed
+Reachability-Review-State: unresolved
+Rationale: Exact predecessor package lineage for the pre-rename schema-1 bridge; stable user reachability requires Plan 03-03 approval.

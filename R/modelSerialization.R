@@ -2,6 +2,215 @@
 
 .serialization_schema = "gemodel-logical-state"
 .serialization_schema_version = 1L
+.serialization_lineage_registry_fields = function() {
+  c(
+    "Schema", "Record-Id", "Package-Name", "Package-Version",
+    "Source-Scope", "Source-File-Count", "Source-Fingerprint",
+    "Source-Locator-Type", "Source-Locator", "Source-Immutable-Id",
+    "Fixture-Path", "Fixture-Digest-Algorithm", "Fixture-Digest",
+    "Tablo-Path", "Tablo-Digest-Algorithm", "Tablo-Digest",
+    "Data-Fingerprint", "Install-Command", "Conversion-Command",
+    "Lineage-Review-State", "Reachability-Review-State", "Rationale"
+  )
+}
+.serialization_source_path = function(relative) {
+  if (!is.character(relative) || length(relative) != 1L ||
+      is.na(relative) || !nzchar(relative)) {
+    return(character())
+  }
+  current = normalizePath(getwd(), mustWork = TRUE)
+  roots = character()
+  repeat {
+    roots = c(roots, current)
+    parent = dirname(current)
+    if (identical(parent, current)) break
+    current = parent
+  }
+  candidates = file.path(roots, relative)
+  matches = candidates[
+    file.exists(candidates) & !dir.exists(candidates)
+  ]
+  if (!length(matches)) return(character())
+  normalizePath(matches[[1L]], mustWork = TRUE)
+}
+
+
+.serialization_current_package_metadata = function() {
+  package_environment = environment(.serialization_current_package_metadata)
+  package_name = tryCatch(
+    getNamespaceName(package_environment),
+    error = function(error) character()
+  )
+  package_version = if (length(package_name) == 1L &&
+                        !is.na(package_name) && nzchar(package_name)) {
+    tryCatch(
+      as.character(getNamespaceVersion(package_name)),
+      error = function(error) character()
+    )
+  } else character()
+
+  if (length(package_name) != 1L || is.na(package_name) ||
+      !nzchar(package_name) || length(package_version) != 1L ||
+      is.na(package_version) || !nzchar(package_version)) {
+    description_candidates = .serialization_source_path("DESCRIPTION")
+    if (!length(description_candidates)) {
+      .serialization_stop("current package metadata is unavailable")
+    }
+    description = tryCatch(
+      read.dcf(description_candidates[[1L]], fields = c(
+        "Package", "Version"
+      )),
+      error = function(error) {
+        .serialization_stop(sprintf(
+          "current package metadata is invalid: %s",
+          conditionMessage(error)
+        ))
+      }
+    )
+    package_name = unname(description[1L, "Package"])
+    package_version = unname(description[1L, "Version"])
+  }
+
+  values = c(name = package_name, version = package_version)
+  if (!is.character(values) || length(values) != 2L ||
+      anyNA(values) || any(!nzchar(values)) ||
+      any(values != trimws(values))) {
+    .serialization_stop("current package metadata must be exact scalars")
+  }
+  as.list(values)
+}
+
+.serialization_lineage_registry_path = function(package_name = NULL) {
+  installed_path = character()
+  if (is.character(package_name) && length(package_name) == 1L &&
+      !is.na(package_name) && nzchar(package_name)) {
+    installed_path = system.file(
+      "migration", "predecessor-fingerprints.dcf",
+      package = package_name
+    )
+  }
+  source_path = .serialization_source_path(file.path(
+    "inst", "migration", "predecessor-fingerprints.dcf"
+  ))
+  candidates = c(installed_path, source_path)
+  candidates = candidates[
+    nzchar(candidates) & file.exists(candidates) & !dir.exists(candidates)
+  ]
+  if (!length(candidates)) {
+    .serialization_stop("package lineage registry is unavailable")
+  }
+  normalizePath(candidates[[1L]], mustWork = TRUE)
+}
+
+.serialization_package_lineage_registry = function(path = NULL) {
+  metadata = .serialization_current_package_metadata()
+  if (is.null(path)) {
+    path = .serialization_lineage_registry_path(metadata$name)
+  }
+  value = tryCatch(
+    read.dcf(path),
+    error = function(error) {
+      .serialization_stop(sprintf(
+        "package lineage registry is invalid: %s",
+        conditionMessage(error)
+      ))
+    }
+  )
+  value = as.data.frame(
+    value, stringsAsFactors = FALSE, check.names = FALSE
+  )
+  expected = .serialization_lineage_registry_fields()
+  if (!identical(names(value), expected) || nrow(value) != 1L) {
+    .serialization_stop(
+      "package lineage registry does not match the strict schema"
+    )
+  }
+  value[] = lapply(value, as.character)
+  if (anyNA(value) || any(!nzchar(as.matrix(value))) ||
+      any(as.matrix(value) != trimws(as.matrix(value)))) {
+    .serialization_stop(
+      "package lineage registry must contain exact non-empty values"
+    )
+  }
+  if (!identical(
+    unname(value[["Schema"]]), "gemodelr-predecessor-lineage-v1"
+  )) {
+    .serialization_stop("package lineage registry schema is unsupported")
+  }
+  if (anyDuplicated(value[["Record-Id"]]) ||
+      anyDuplicated(paste(
+        value[["Package-Name"]], value[["Package-Version"]],
+        value[["Source-Fingerprint"]], sep = "\r"
+      ))) {
+    .serialization_stop("package lineage registry contains duplicates")
+  }
+  source_counts = suppressWarnings(as.integer(
+    value[["Source-File-Count"]]
+  ))
+  if (anyNA(source_counts) || any(source_counts < 1L) ||
+      any(as.character(source_counts) !=
+          value[["Source-File-Count"]])) {
+    .serialization_stop("package lineage source count is malformed")
+  }
+  if (any(!grepl(
+    "^[0-9a-f]{32}$", value[["Source-Fingerprint"]]
+  ))) {
+    .serialization_stop("package lineage source fingerprint is malformed")
+  }
+  if (any(value[["Lineage-Review-State"]] != "reviewed")) {
+    .serialization_stop("package lineage is not reviewed")
+  }
+  value
+}
+
+.serialization_current_package_lineage = function() {
+  metadata = .serialization_current_package_metadata()
+  registry = .serialization_package_lineage_registry()
+  matches = registry[["Package-Name"]] == metadata$name &
+    registry[["Package-Version"]] == metadata$version
+  if (sum(matches) != 1L) {
+    .serialization_stop(
+      "current package name and version have no reviewed lineage"
+    )
+  }
+  record = registry[matches, , drop = FALSE]
+  list(
+    name = metadata$name,
+    version = metadata$version,
+    source_fingerprint = unname(record[["Source-Fingerprint"]])
+  )
+}
+
+.serialization_validate_package_lineage = function(lineage) {
+  if (!is.list(lineage) || is.object(lineage)) {
+    .serialization_stop("package lineage must be an unclassed list")
+  }
+  fields = c("name", "version", "source_fingerprint")
+  .serialization_validate_names(lineage, fields, "package lineage")
+  values = lineage[fields]
+  valid_scalars = vapply(values, function(value) {
+    is.character(value) && length(value) == 1L &&
+      !is.na(value) && nzchar(value) && identical(value, trimws(value))
+  }, logical(1))
+  if (!all(valid_scalars)) {
+    .serialization_stop(
+      "package lineage fields must be exact non-empty character scalars"
+    )
+  }
+  if (!grepl("^[0-9a-f]{32}$", lineage$source_fingerprint)) {
+    .serialization_stop("package lineage source fingerprint is malformed")
+  }
+
+  registry = .serialization_package_lineage_registry()
+  matches = registry[["Package-Name"]] == lineage$name &
+    registry[["Package-Version"]] == lineage$version &
+    registry[["Source-Fingerprint"]] == lineage$source_fingerprint
+  if (sum(matches) != 1L) {
+    .serialization_stop("package lineage is not allowlisted")
+  }
+  invisible(lineage)
+}
+
 
 .serialization_max_bytes = function() {
   value = getOption("tabloToR.serialization.max_bytes", 256 * 1024^2)
@@ -240,6 +449,7 @@
   payload = list(
     schema = .serialization_schema,
     schema_version = .serialization_schema_version,
+    package_lineage = .serialization_current_package_lineage(),
     source = source[source_fields],
     engine = model$loadedEngine,
     levels = levels,
@@ -267,7 +477,8 @@
     .serialization_stop("top level must be an unclassed list")
   }
   expected = c(
-    "schema", "schema_version", "source", "engine", "levels",
+    "schema", "schema_version", "package_lineage", "source",
+    "engine", "levels",
     "closure", "shocks", "accepted", "memory_budget", "diagnostics"
   )
   .serialization_validate_names(payload, expected, "top-level")
@@ -279,6 +490,7 @@
       !identical(payload$schema_version, .serialization_schema_version)) {
     .serialization_stop("schema version is unsupported")
   }
+  .serialization_validate_package_lineage(payload$package_lineage)
   if (!is.character(payload$engine) || length(payload$engine) != 1L ||
       is.na(payload$engine) ||
       !payload$engine %in% c("legacy", "sparse")) {

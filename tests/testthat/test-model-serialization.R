@@ -10,6 +10,13 @@ if (!exists("GEModel", inherits = TRUE)) {
     sys.source(serialization_r_file, envir = .GlobalEnv)
   }
 }
+serializationPayloadFields = function() {
+  c(
+    "schema", "schema_version", "package_lineage", "source",
+    "engine", "levels", "closure", "shocks", "accepted",
+    "memory_budget", "diagnostics"
+  )
+}
 
 test_that("saveState writes mandatory reviewed predecessor package lineage", {
   registry = .serialization_package_lineage_registry()
@@ -73,6 +80,56 @@ test_that("unsupported package lineage fails before receiver mutation", {
       info = name
     )
   }
+})
+
+test_that("migration source gate narrows only reviewed serialization source", {
+  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  tool = new.env(parent = globalenv())
+  sys.source(
+    file.path(root, "inst", "tools", "refresh_phase02_baselines.R"),
+    envir = tool
+  )
+  map = tool$phase02_load_identity_map(root = root)
+  protected = tool$phase02_protected_numerical_source_files()
+  expect_identical(
+    unique(map$`Reviewed-Non-Numerical-Exclusions`),
+    "R/modelSerialization.R"
+  )
+  expect_setequal(
+    intersect(tool$phase02_identity_source_files(root), protected),
+    protected
+  )
+  expect_false(
+    "R/modelSerialization.R" %in%
+      tool$phase02_identity_source_files(root)
+  )
+
+  source = tempfile("phase02-serialization-migration-")
+  on.exit(unlink(source, recursive = TRUE, force = TRUE), add = TRUE)
+  relative = c(
+    tool$phase02_identity_source_files(root),
+    tool$phase02_identity_reviewed_exclusions()
+  )
+  for (path in relative) {
+    target = file.path(source, path)
+    dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+    expect_true(file.copy(file.path(root, path), target))
+  }
+  expect_silent(tool$phase02_validate_identity_source(source, map))
+
+  serialization_path = file.path(source, "R", "modelSerialization.R")
+  write(
+    "# reviewed non-numerical serialization migration",
+    serialization_path, append = TRUE
+  )
+  expect_silent(tool$phase02_validate_identity_source(source, map))
+
+  protected_path = file.path(source, protected[[1L]])
+  write("# forbidden numerical drift", protected_path, append = TRUE)
+  expect_error(
+    tool$phase02_validate_identity_source(source, map),
+    "source fingerprint"
+  )
 })
 
 test_that("accepted logical state round trips through the versioned payload", {

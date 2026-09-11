@@ -231,8 +231,32 @@ phase02_identity_source_files = function(root) {
     )
   )
   relative = unique(c(phase02_source_files(root), r_files))
+  reviewed_exclusions = phase02_identity_reviewed_exclusions()
+  relative = setdiff(relative, reviewed_exclusions)
+  protected = phase02_protected_numerical_source_files()
+  missing_protected = setdiff(protected, relative)
+  if (length(missing_protected)) {
+    stop(
+      sprintf(
+        "Protected numerical source is missing: %s",
+        paste(missing_protected, collapse = ",")
+      ),
+      call. = FALSE
+    )
+  }
   relative = relative[order(tolower(relative), relative, method = "radix")]
   relative[file.exists(file.path(root, relative))]
+}
+
+phase02_identity_reviewed_exclusions = function() {
+  "R/modelSerialization.R"
+}
+
+phase02_protected_numerical_source_files = function() {
+  c(
+    "R/GEModel.R", "R/sparseElimination.R", "R/sparseSolver.R",
+    "R/sparseSchurComplement.R"
+  )
 }
 
 phase02_source_fingerprint = function(root) {
@@ -250,7 +274,8 @@ phase02_source_fingerprint = function(root) {
 phase02_identity_map_fields = function() {
   c(
     "Schema", "Rule-Id", "Predecessor", "Current", "Canonical",
-    "Expected-Occurrences", "Normalized-Source-Fingerprint", "Review-State"
+    "Expected-Occurrences", "Normalized-Source-Fingerprint",
+    "Reviewed-Non-Numerical-Exclusions", "Review-State"
   )
 }
 
@@ -305,6 +330,17 @@ phase02_validate_identity_map = function(value) {
   if (length(unique(fingerprints)) != 1L ||
       !grepl("^[0-9a-f]{32}$", fingerprints[[1L]])) {
     stop("Identity map source fingerprint is malformed", call. = FALSE)
+  }
+  exclusions = value$`Reviewed-Non-Numerical-Exclusions`
+  expected_exclusions = paste(
+    phase02_identity_reviewed_exclusions(), collapse = ";"
+  )
+  if (length(unique(exclusions)) != 1L ||
+      !identical(exclusions[[1L]], expected_exclusions)) {
+    stop(
+      "Identity map contains an unreviewed source exclusion",
+      call. = FALSE
+    )
   }
   if (!all(value$`Review-State` == "reviewed")) {
     stop("Identity map contains an unreviewed mapping row", call. = FALSE)
