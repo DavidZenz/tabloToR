@@ -17,7 +17,7 @@
 - [x] **COMP-01**: Existing users can perform the documented `GEModel$new()`, `loadTablo()`, `loadData()`, closure/shock, `solveModel()`, and output workflow under GEModelR.
 - [x] **COMP-02**: Omitted engine/backend arguments preserve the legacy engine and Matrix sparse backend defaults already protected by tests.
 - [x] **COMP-03**: Supported model fields, method signatures, closure/shock semantics, output names, compact/full output behavior, and serialization behavior are documented and regression-tested.
-- [ ] **COMP-04**: The rename provides explicit installation and namespace migration instructions for scripts using `tabloToR::`.
+- [x] **COMP-04**: The rename provides explicit installation and namespace migration instructions for scripts using `tabloToR::`.
 
 ### Numerical Integrity
 
@@ -80,7 +80,7 @@
 | COMP-01 | Phase 2 | Complete |
 | COMP-02 | Phase 2 | Complete |
 | COMP-03 | Phase 2 | Complete |
-| COMP-04 | Phase 3 | Pending |
+| COMP-04 | Phase 3 | Complete |
 | NUM-01 | Phase 2 | Complete |
 | NUM-02 | Phase 2 | Complete |
 | NUM-03 | Phase 6 | Pending |
