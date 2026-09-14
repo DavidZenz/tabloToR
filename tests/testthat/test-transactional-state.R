@@ -378,3 +378,99 @@ test_that("post retry API and internal helper are tiered explicitly", {
   expect_equal(nrow(retry_helper), 1L)
   expect_identical(retry_helper$tier, "internal")
 })
+
+test_that("public option replacement registry is exact and NULL-aware", {
+  expected = expectedPublicOptionReplacements()
+  expect_identical(.identity_public_option_replacements, expected)
+
+  registry = read.dcf(optionReplacementRegistryPath())
+  expect_identical(
+    colnames(registry), c("Schema", "Old-Option", "Replacement")
+  )
+  expect_identical(nrow(registry), 12L)
+  expect_true(all(
+    registry[, "Schema"] == "gemodelr-option-replacements-v1"
+  ))
+  registered = stats::setNames(
+    registry[, "Replacement"], registry[, "Old-Option"]
+  )
+  expect_identical(registered, expected)
+
+  old_key = names(expected)[[1L]]
+  explicit_null = stats::setNames(list(NULL), old_key)
+  expect_error(
+    .identity_guard_old_options(old_key, .options = explicit_null),
+    paste0(old_key, ".*", expected[[old_key]], ".*MIGRATION.md")
+  )
+})
+
+test_that("non-serialization predecessor options fail at local consumers", {
+  replacements = expectedPublicOptionReplacements()
+
+  modelOperation = function(old_key, operation) {
+    model = make_three_region_model()
+    set_three_region_shocks(model, "preferred", c(1, 2, -1))
+    before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() operation(model), before,
+      function() transactionalModelSnapshot(
+        model, include_diagnostics = FALSE
+      )
+    )
+  }
+
+  modelOperation(
+    "tabloToR.sparse.lu_order",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "Matrix", reduction = "off"
+    )
+  )
+  modelOperation(
+    "tabloToR.sparse.structured_residual_tolerance",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "Matrix", reduction = "off"
+    )
+  )
+  modelOperation(
+    "tabloToR.sparse.schur_cpp_threads",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "StructuredSchurFGMRESCpp", reduction = "off"
+    )
+  )
+
+  expectOldPublicOptionRejected(
+    "tabloToR.sparse.suite_sparse_ordering",
+    replacements[["tabloToR.sparse.suite_sparse_ordering"]],
+    function() sparse_suite_sparse_solver(
+      Matrix::Diagonal(1L), 1
+    )
+  )
+
+  schur_keys = c(
+    "tabloToR.sparse.schur_max_iterations",
+    "tabloToR.sparse.schur_panel_size",
+    "tabloToR.sparse.schur_region_batch_size",
+    "tabloToR.sparse.schur_restart",
+    "tabloToR.sparse.schur_tolerance"
+  )
+  for (old_key in schur_keys) {
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() sparse_exact_structured_solve(
+        Matrix::Diagonal(1L), 1, list(), reduced_solver = "schur"
+      )
+    )
+  }
+
+  old_key = "tabloToR.sparse.schur_refinement_iterations"
+  expectOldPublicOptionRejected(
+    old_key, replacements[[old_key]],
+    function() sparse_exact_schur_solve(
+      Matrix::Diagonal(1L), 1, 0L, 0L, 1L, 1L
+    )
+  )
+})
