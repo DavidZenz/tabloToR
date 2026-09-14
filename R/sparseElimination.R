@@ -337,8 +337,17 @@ sparse_exact_structured_solve = function(A, rhs, partition,
                                          lu_order = 3L,
                                          pivot_tolerance = 1e-12,
                                          reduced_solver = c("btf", "schur")) {
-  compiled = sparse_elimination_cpp()
   reduced_solver = match.arg(reduced_solver)
+  if (identical(reduced_solver, "schur")) {
+    .identity_guard_old_options(c(
+      "tabloToR.sparse.schur_region_batch_size",
+      "tabloToR.sparse.schur_panel_size",
+      "tabloToR.sparse.schur_restart",
+      "tabloToR.sparse.schur_max_iterations",
+      "tabloToR.sparse.schur_tolerance"
+    ))
+  }
+  compiled = sparse_elimination_cpp()
   rhs = as.numeric(rhs)
   if (length(rhs) != nrow(A) || nrow(A) != ncol(A)) {
     stop("Structured sparse solve received incompatible dimensions",
@@ -474,11 +483,11 @@ sparse_exact_structured_solve = function(A, rhs, partition,
       external$commodity_count, external$region_count,
       external$global_group,
       lu_order = lu_order,
-      region_batch_size = getOption("tabloToR.sparse.schur_region_batch_size", 8L),
-      panel_size = getOption("tabloToR.sparse.schur_panel_size", 64L),
-      restart = getOption("tabloToR.sparse.schur_restart", 80L),
-      max_iterations = getOption("tabloToR.sparse.schur_max_iterations", 500L),
-      tolerance = getOption("tabloToR.sparse.schur_tolerance", 2e-7),
+      region_batch_size = getOption("GEModelR.sparse.schur_region_batch_size", 8L),
+      panel_size = getOption("GEModelR.sparse.schur_panel_size", 64L),
+      restart = getOption("GEModelR.sparse.schur_restart", 80L),
+      max_iterations = getOption("GEModelR.sparse.schur_max_iterations", 500L),
+      tolerance = getOption("GEModelR.sparse.schur_tolerance", 2e-7),
       true_residual_frequency = getOption(
         "tabloToR.sparse.schur_true_residual_frequency", 1L
       )

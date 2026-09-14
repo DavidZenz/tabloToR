@@ -122,7 +122,7 @@ test_that("C++ residual rejection cannot publish its structural cache", {
         diagnostics = TRUE, backend = "StructuredSchurFGMRESCpp"
       ),
       sparse_gtap_elimination_partition = partition,
-      .package = "tabloToR"
+      .package = "GEModelR"
     ),
     "injected residual failure"
   )
@@ -268,7 +268,7 @@ test_that("C++ post failures and retries retain native backend provenance", {
           backend = "StructuredSchurFGMRESCpp"
         ),
         sparse_gtap_elimination_partition = partition,
-        .package = "tabloToR"
+        .package = "GEModelR"
       ),
       paste("injected", phase, "failure"),
       info = phase

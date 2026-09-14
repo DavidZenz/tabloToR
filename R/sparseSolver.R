@@ -1424,7 +1424,18 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
   if (length(rhs) != nrow(A) || anyNA(rhs) || any(!is.finite(rhs))) {
     stop("Sparse system received an invalid right-hand side", call. = FALSE)
   }
+  if (backend == "Matrix") {
+    .identity_guard_old_options("tabloToR.sparse.lu_order")
+  }
   if (!any(rhs != 0)) return(numeric(ncol(A)))
+  if (backend == "Matrix") {
+    lu_order = getOption("GEModelR.sparse.lu_order", 3L)
+    lu_order = suppressWarnings(as.integer(lu_order)[1L])
+    if (is.na(lu_order) || lu_order < 0L || lu_order > 3L) {
+      stop("GEModelR.sparse.lu_order must be an integer from 0 to 3",
+           call. = FALSE)
+    }
+  }
   reduced = if (reduction == "off") {
     list(A = A, rhs = rhs, stages = list())
   } else {
@@ -1433,12 +1444,6 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
   if (!nrow(reduced$A)) {
     reduced_solution = numeric()
   } else if (backend == "Matrix") {
-    lu_order = getOption("tabloToR.sparse.lu_order", 3L)
-    lu_order = suppressWarnings(as.integer(lu_order)[1L])
-    if (is.na(lu_order) || lu_order < 0L || lu_order > 3L) {
-      stop("tabloToR.sparse.lu_order must be an integer from 0 to 3",
-           call. = FALSE)
-    }
     factor = tryCatch(
       Matrix::lu(Matrix::drop0(reduced$A), order = lu_order),
       error = function(error) {
@@ -1446,7 +1451,7 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
           paste(
             "Sparse LU factorization failed (ordering %s): %s.",
             "Try a different fill-reducing ordering with",
-            "options(tabloToR.sparse.lu_order = 1L/2L/3L),",
+            "options(GEModelR.sparse.lu_order = 1L/2L/3L),",
             "or reduce the model before factorization."
           ),
           lu_order, conditionMessage(error)
@@ -2124,6 +2129,19 @@ sparse_check_budget = function(estimate, budget) {
                                  reduction, measure = FALSE,
                                  structured_partition = NULL,
                                  candidate_transform = NULL) {
+  structured_backend = backend %in% c(
+    "StructuredSchur", "StructuredSchurFGMRES"
+  )
+  if (structured_backend) {
+    .identity_guard_old_options("tabloToR.sparse.lu_order")
+    structured_lu_order = getOption("GEModelR.sparse.lu_order", 3L)
+  }
+  .identity_guard_old_options(
+    "tabloToR.sparse.structured_residual_tolerance"
+  )
+  residual_tolerance = getOption(
+    "GEModelR.sparse.structured_residual_tolerance", 2e-7
+  )
   if (isTRUE(measure)) {
     before_bytes = sparse_gc_bytes()
     matrix_start = proc.time()[[3L]]
@@ -2148,7 +2166,7 @@ sparse_check_budget = function(estimate, budget) {
     }
     exact_result = sparse_exact_structured_solve(
       coefficient_matrix, emitted$rhs, structured_partition,
-      lu_order = getOption("tabloToR.sparse.lu_order", 3L),
+      lu_order = structured_lu_order,
       pivot_tolerance = getOption(
         "tabloToR.sparse.elimination_pivot_tolerance", 1e-12
       ),
@@ -2199,9 +2217,6 @@ sparse_check_budget = function(estimate, budget) {
     }
     candidate = candidate_transform(candidate)
   }
-  residual_tolerance = getOption(
-    "tabloToR.sparse.structured_residual_tolerance", 2e-7
-  )
   .transaction_fault("finiteness")
   .transaction_fault("residual")
   accepted = .sparse_accept_candidate(

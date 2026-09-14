@@ -82,7 +82,7 @@ Category: protected-numerical-source
 Path: R/sparseElimination.R
 Region: identity-normalized-whole-file
 Digest-Algorithm: sha256
-Byte-Digest: 23326bf35ec25b7078b6cc6ca7919c9b64e845a7ff1142d894e62c5b75f8cb48
+Byte-Digest: ffdb279979c01314aa2d3b25858434f088ed91f098505ad82915b15581d656ab
 Identity-Mode: exact-map-v1
 Predecessor-Identity: tabloToR
 Review-State: reviewed
@@ -95,7 +95,7 @@ Category: protected-numerical-source
 Path: R/sparseSolver.R
 Region: identity-normalized-whole-file
 Digest-Algorithm: sha256
-Byte-Digest: a25b5aa2ca8bdf0debab61c37aaf1230bf1304dd3a3d849bdc304f6f5f3b9ab6
+Byte-Digest: 804fb1bc5abd905ee008753d822a4038fc57ce1fc069a7cf9773ed94e3947355
 Identity-Mode: exact-map-v1
 Predecessor-Identity: tabloToR
 Review-State: reviewed
@@ -108,7 +108,7 @@ Category: protected-numerical-source
 Path: R/sparseSchurComplement.R
 Region: identity-normalized-whole-file
 Digest-Algorithm: sha256
-Byte-Digest: 0b340f08bb21bc92a5625a8070c096604acc0cde9cde46caf21587cba0103f2e
+Byte-Digest: 4ab962642fc2f5b7aca01c7da117ee760f5637e8aa11a0df502e68496fe97ffa
 Identity-Mode: exact-map-v1
 Predecessor-Identity: tabloToR
 Review-State: reviewed

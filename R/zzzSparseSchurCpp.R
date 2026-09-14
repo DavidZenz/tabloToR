@@ -310,6 +310,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   lu_order = suppressWarnings(as.integer(lu_order)[1L])
   region_batch_size = suppressWarnings(as.integer(region_batch_size)[1L])
   panel_size = suppressWarnings(as.integer(panel_size)[1L])
+  .identity_guard_old_options("tabloToR.sparse.schur_cpp_threads")
   threads = suppressWarnings(as.integer(getOption(
     "GEModelR.sparse.schur_cpp_threads", 1L
   ))[1L])
@@ -588,6 +589,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       dimensions, backend, reduction, memory_budget
     ))
   }
+  .identity_guard_old_options("tabloToR.sparse.schur_cpp_threads")
   threads = getOption("GEModelR.sparse.schur_cpp_threads", 1L)
   capabilities = .sparse_schur_cpp_runtime$require(
     expected_abi = 1L, threads = threads

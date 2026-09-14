@@ -13,6 +13,9 @@ sparse_suite_sparse_available = function() {
 }
 
 sparse_suite_sparse_ordering = function() {
+  .identity_guard_old_options(
+    "tabloToR.sparse.suite_sparse_ordering"
+  )
   ordering = tolower(as.character(getOption(
     "GEModelR.sparse.suite_sparse_ordering", "amd"
   ))[1L])
@@ -86,6 +89,7 @@ sparse_suite_sparse_cpp = paste(c(
 sparse_suite_sparse_solver = local({
   compiled_solver = NULL
   function(A, rhs) {
+    ordering = sparse_suite_sparse_ordering()
     if (!sparse_suite_sparse_available()) {
       stop(
         paste(
@@ -129,7 +133,7 @@ sparse_suite_sparse_solver = local({
       )
     }
     as.numeric(compiled_solver(
-      A, as.numeric(rhs), as.integer(sparse_suite_sparse_ordering())
+      A, as.numeric(rhs), as.integer(ordering)
     ))
   }
 })

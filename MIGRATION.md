@@ -84,6 +84,10 @@ Replace each supported public option exactly. A predecessor option is rejected
 when its relevant operation runs; GEModelR does not silently honor it and does
 not perform a package-startup scan.
 
+Each rejection names the predecessor key, its exact GEModelR replacement, and
+this guide. The same twelve-row contract is installed at
+`migration/option-replacements.dcf`.
+
 | Before | After |
 |---|---|
 | `tabloToR.sparse.lu_order` | `GEModelR.sparse.lu_order` |
