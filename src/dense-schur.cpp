@@ -40,8 +40,8 @@ static void tablo_dense_lu_finalizer(SEXP pointer_sexp) {
   }
 }
 
-// [[Rcpp::export(name = ".tabloToR_dense_lu_factor")]]
-SEXP tabloToR_dense_lu_factor(Rcpp::NumericMatrix matrix) {
+// [[Rcpp::export(name = ".GEModelR_dense_lu_factor")]]
+SEXP GEModelR_dense_lu_factor(Rcpp::NumericMatrix matrix) {
   if (matrix.nrow() < 1 || matrix.nrow() != matrix.ncol()) {
     Rcpp::stop("Dense LU factor requires a non-empty square matrix");
   }
@@ -65,13 +65,13 @@ SEXP tabloToR_dense_lu_factor(Rcpp::NumericMatrix matrix) {
   SEXP pointer = PROTECT(R_MakeExternalPtr(factor, R_NilValue, R_NilValue));
   R_RegisterCFinalizerEx(pointer, tablo_dense_lu_finalizer, TRUE);
   Rf_setAttrib(pointer, R_ClassSymbol,
-               Rcpp::CharacterVector::create("tabloToR_dense_lu"));
+               Rcpp::CharacterVector::create("GEModelR_dense_lu"));
   UNPROTECT(1);
   return pointer;
 }
 
-// [[Rcpp::export(name = ".tabloToR_dense_lu_solve")]]
-SEXP tabloToR_dense_lu_solve(SEXP pointer_sexp, SEXP rhs_sexp) {
+// [[Rcpp::export(name = ".GEModelR_dense_lu_solve")]]
+SEXP GEModelR_dense_lu_solve(SEXP pointer_sexp, SEXP rhs_sexp) {
   TabloDenseLU *factor = tablo_dense_lu_get(pointer_sexp);
   if (!Rf_isReal(rhs_sexp) && !Rf_isInteger(rhs_sexp)) {
     Rcpp::stop("Dense LU rhs must be numeric");
@@ -111,8 +111,8 @@ SEXP tabloToR_dense_lu_solve(SEXP pointer_sexp, SEXP rhs_sexp) {
   return rhs;
 }
 
-// [[Rcpp::export(name = ".tabloToR_dense_lu_release")]]
-void tabloToR_dense_lu_release(SEXP pointer_sexp) {
+// [[Rcpp::export(name = ".GEModelR_dense_lu_release")]]
+void GEModelR_dense_lu_release(SEXP pointer_sexp) {
   if (TYPEOF(pointer_sexp) != EXTPTRSXP) return;
   tablo_dense_lu_finalizer(pointer_sexp);
 }

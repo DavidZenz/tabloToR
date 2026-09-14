@@ -1,4 +1,4 @@
-Package: tabloToR
+Package: GEModelR
 Type: Package
 Title: TABLO models in R with legacy and sparse solvers
 Version: 0.1.0
@@ -36,4 +36,4 @@ Config/Attribution-Evidence:
     R/processTablo.R::processTablo;
     R/sparseCompiler.R::sparse_compile_spec;
     R/sparseSolver.R::sparse_solve_model;
-    src/sparse-schur.cpp::tabloToR_schur_accumulate_global
+    src/sparse-schur.cpp::GEModelR_schur_accumulate_global

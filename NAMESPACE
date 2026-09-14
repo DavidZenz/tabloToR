@@ -1,4 +1,4 @@
-useDynLib(tabloToR, .registration=TRUE)
+useDynLib(GEModelR, .registration=TRUE)
 importFrom(Rcpp, evalCpp)
 exportPattern("^[[:alpha:]]+")
 importFrom(methods, new)

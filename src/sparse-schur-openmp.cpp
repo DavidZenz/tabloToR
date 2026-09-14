@@ -146,8 +146,8 @@ static bool tablo_parallel_solve(const TabloSparseLUView &factor,
   return true;
 }
 
-// [[Rcpp::export(name = ".tabloToR_schur_accumulate_batch_parallel")]]
-Rcpp::List tabloToR_schur_accumulate_batch_parallel(
+// [[Rcpp::export(name = ".GEModelR_schur_accumulate_batch_parallel")]]
+Rcpp::List GEModelR_schur_accumulate_batch_parallel(
     Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks,
     SEXP direct_external_sexp, Rcpp::List regional_positions_sexp,
     Rcpp::IntegerVector global_positions_sexp,

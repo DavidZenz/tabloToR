@@ -9,16 +9,16 @@
 .sparse_schur_cpp_runtime$acceptance_history = list()
 
 .sparse_schur_cpp_symbols = c(
-  "_tabloToR_tabloToR_schur_cpp_capabilities",
-  "_tabloToR_tabloToR_sparse_lu_solve",
-  "_tabloToR_tabloToR_sparse_pattern_hash",
-  "_tabloToR_tabloToR_schur_accumulate_global",
-  "_tabloToR_tabloToR_schur_accumulate_batch",
-  "_tabloToR_tabloToR_dense_lu_factor",
-  "_tabloToR_tabloToR_dense_lu_solve",
-  "_tabloToR_tabloToR_dense_lu_release",
-  "_tabloToR_tabloToR_eliminate_blocks",
-  "_tabloToR_tabloToR_reconstruct_blocks"
+  "_GEModelR_GEModelR_schur_cpp_capabilities",
+  "_GEModelR_GEModelR_sparse_lu_solve",
+  "_GEModelR_GEModelR_sparse_pattern_hash",
+  "_GEModelR_GEModelR_schur_accumulate_global",
+  "_GEModelR_GEModelR_schur_accumulate_batch",
+  "_GEModelR_GEModelR_dense_lu_factor",
+  "_GEModelR_GEModelR_dense_lu_solve",
+  "_GEModelR_GEModelR_dense_lu_release",
+  "_GEModelR_GEModelR_eliminate_blocks",
+  "_GEModelR_GEModelR_reconstruct_blocks"
 )
 
 .sparse_schur_cpp_reset = function() {
@@ -43,20 +43,20 @@
   } else {
     missing = .sparse_schur_cpp_symbols[!vapply(
       .sparse_schur_cpp_symbols,
-      is.loaded, logical(1), PACKAGE = "tabloToR"
+      is.loaded, logical(1), PACKAGE = "GEModelR"
     )]
     if (length(missing)) {
       fail(sprintf("registered native routine is missing: %s", missing[[1L]]))
     }
     wrappers = list(
-      .tabloToR_schur_cpp_capabilities = 0L,
-      .tabloToR_sparse_lu_solve = 2L,
-      .tabloToR_sparse_pattern_hash = 1L,
-      .tabloToR_schur_accumulate_global = 7L,
-      .tabloToR_schur_accumulate_batch = 9L,
-      .tabloToR_dense_lu_factor = 1L,
-      .tabloToR_dense_lu_solve = 2L,
-      .tabloToR_dense_lu_release = 1L
+      .GEModelR_schur_cpp_capabilities = 0L,
+      .GEModelR_sparse_lu_solve = 2L,
+      .GEModelR_sparse_pattern_hash = 1L,
+      .GEModelR_schur_accumulate_global = 7L,
+      .GEModelR_schur_accumulate_batch = 9L,
+      .GEModelR_dense_lu_factor = 1L,
+      .GEModelR_dense_lu_solve = 2L,
+      .GEModelR_dense_lu_release = 1L
     )
     for (name in names(wrappers)) {
       fun = get0(name, mode = "function", inherits = TRUE)
@@ -65,7 +65,7 @@
       }
     }
     capabilities = tryCatch(
-      .tabloToR_schur_cpp_capabilities(),
+      .GEModelR_schur_cpp_capabilities(),
       error = function(error) fail(conditionMessage(error))
     )
     required = c("abi", "matrix_contract", "lapack", "openmp",
@@ -94,7 +94,7 @@
       )
       factor = Matrix::lu(A, order = 1L)
       rhs = c(5, 6)
-      native = as.numeric(.tabloToR_sparse_lu_solve(factor, rhs))
+      native = as.numeric(.GEModelR_sparse_lu_solve(factor, rhs))
       reference = as.numeric(Matrix::solve(factor, rhs))
       isTRUE(max(abs(native - reference)) <= 1e-12)
     }, error = function(error) error)
@@ -147,7 +147,7 @@ sparse_set_closure_state = function(model, exogenous_variables) {
   }
   if (is.null(state$.solver_cache)) state$.solver_cache = list()
   key = "StructuredSchurFGMRESCpp"
-  pattern_hash = as.character(.tabloToR_sparse_pattern_hash(A))
+  pattern_hash = as.character(.GEModelR_sparse_pattern_hash(A))
   index_key = .sparse_schur_cpp_runtime$index_key
   previous = state$.solver_cache[[key]]
   reasons = character()
@@ -212,7 +212,7 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 .sparse_cpp_dense_factor = function(matrix, name) {
   started = proc.time()[[3L]]
   pointer = tryCatch(
-    .tabloToR_dense_lu_factor(as.matrix(matrix)),
+    .GEModelR_dense_lu_factor(as.matrix(matrix)),
     error = function(error) {
       stop(sprintf("Dense factorization failed for %s: %s",
                    name, conditionMessage(error)), call. = FALSE)
@@ -228,7 +228,7 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 .sparse_cpp_release_live_factors = function() {
   factors = .sparse_schur_cpp_runtime$live_dense_factors
   if (length(factors)) for (factor in factors) {
-    try(.tabloToR_dense_lu_release(factor), silent = TRUE)
+    try(.GEModelR_dense_lu_release(factor), silent = TRUE)
   }
   .sparse_schur_cpp_runtime$live_dense_factors = list()
   invisible(NULL)
@@ -236,9 +236,9 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 
 .sparse_exact_schur_solve_factor_reference = sparse_exact_schur_solve_factor
 sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
-  if (inherits(factor, "tabloToR_dense_lu")) {
+  if (inherits(factor, "GEModelR_dense_lu")) {
     result = tryCatch(
-      .tabloToR_dense_lu_solve(factor, rhs),
+      .GEModelR_dense_lu_solve(factor, rhs),
       error = function(error) error
     )
     if (inherits(result, "error")) {
@@ -255,7 +255,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   if (isTRUE(.sparse_schur_cpp_runtime$active) &&
       methods::is(factor, "sparseLU")) {
     result = tryCatch(
-      .tabloToR_sparse_lu_solve(factor, rhs),
+      .GEModelR_sparse_lu_solve(factor, rhs),
       error = function(error) error
     )
     if (inherits(result, "error")) {
@@ -311,7 +311,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   region_batch_size = suppressWarnings(as.integer(region_batch_size)[1L])
   panel_size = suppressWarnings(as.integer(panel_size)[1L])
   threads = suppressWarnings(as.integer(getOption(
-    "tabloToR.sparse.schur_cpp_threads", 1L
+    "GEModelR.sparse.schur_cpp_threads", 1L
   ))[1L])
   if (is.na(lu_order) || lu_order < 0L || lu_order > 3L ||
       is.na(region_batch_size) || region_batch_size < 1L ||
@@ -380,7 +380,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     length.out = length(external_rows_by_group[[region_count + 1L]])
   )
   native_start = proc.time()[[3L]]
-  global_result = .tabloToR_schur_accumulate_global(
+  global_result = .GEModelR_schur_accumulate_global(
     local_factors, left, right, D, region_positions,
     as.integer(global_position), panel_size
   )
@@ -392,7 +392,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     batch = seq.int(
       batch_start, min(region_count, batch_start + region_batch_size - 1L)
     )
-    result = .tabloToR_schur_accumulate_batch(
+    result = .GEModelR_schur_accumulate_batch(
       local_factors, left, right, D, region_positions,
       as.integer(global_position), as.integer(batch), panel_size, threads
     )
@@ -588,7 +588,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       dimensions, backend, reduction, memory_budget
     ))
   }
-  threads = getOption("tabloToR.sparse.schur_cpp_threads", 1L)
+  threads = getOption("GEModelR.sparse.schur_cpp_threads", 1L)
   capabilities = .sparse_schur_cpp_runtime$require(
     expected_abi = 1L, threads = threads
   )

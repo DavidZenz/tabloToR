@@ -14,7 +14,7 @@ sparse_suite_sparse_available = function() {
 
 sparse_suite_sparse_ordering = function() {
   ordering = tolower(as.character(getOption(
-    "tabloToR.sparse.suite_sparse_ordering", "amd"
+    "GEModelR.sparse.suite_sparse_ordering", "amd"
   ))[1L])
   values = c(
     cholmod = 0L,
@@ -29,7 +29,7 @@ sparse_suite_sparse_ordering = function() {
       !(ordering %in% names(values)) || ordering == "given") {
     stop(
       paste(
-        "tabloToR.sparse.suite_sparse_ordering must be one of",
+        "GEModelR.sparse.suite_sparse_ordering must be one of",
         "cholmod, amd, metis, best, natural"
       ),
       call. = FALSE
@@ -42,7 +42,7 @@ sparse_suite_sparse_cpp = paste(c(
   '#include <Rcpp.h>',
   '#include <umfpack.h>',
   '// [[Rcpp::export]]',
-  'Rcpp::NumericVector tabloToR_umfpack_solve(',
+  'Rcpp::NumericVector GEModelR_umfpack_solve(',
   '    Rcpp::S4 A, Rcpp::NumericVector rhs, int ordering) {',
   '  Rcpp::IntegerVector p = A.slot("p");',
   '  Rcpp::IntegerVector i = A.slot("i");',
@@ -125,7 +125,7 @@ sparse_suite_sparse_solver = local({
         showOutput = FALSE
       )
       compiled_solver = get(
-        "tabloToR_umfpack_solve", envir = environment()
+        "GEModelR_umfpack_solve", envir = environment()
       )
     }
     as.numeric(compiled_solver(

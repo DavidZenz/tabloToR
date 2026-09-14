@@ -10,8 +10,8 @@
 
 #include "tablo-sparse-lu.h"
 
-// [[Rcpp::export(name = ".tabloToR_schur_cpp_capabilities")]]
-Rcpp::List tabloToR_schur_cpp_capabilities() {
+// [[Rcpp::export(name = ".GEModelR_schur_cpp_capabilities")]]
+Rcpp::List GEModelR_schur_cpp_capabilities() {
 #ifdef _OPENMP
   const bool openmp = true;
   const int max_threads = omp_get_max_threads();
@@ -32,8 +32,8 @@ Rcpp::List tabloToR_schur_cpp_capabilities() {
   );
 }
 
-// [[Rcpp::export(name = ".tabloToR_sparse_lu_solve")]]
-SEXP tabloToR_sparse_lu_solve(SEXP factor_sexp, SEXP rhs_sexp) {
+// [[Rcpp::export(name = ".GEModelR_sparse_lu_solve")]]
+SEXP GEModelR_sparse_lu_solve(SEXP factor_sexp, SEXP rhs_sexp) {
   TabloSparseLUView factor = tablo_sparse_lu_view(factor_sexp, "factor");
   if (!Rf_isReal(rhs_sexp) && !Rf_isInteger(rhs_sexp)) {
     Rcpp::stop("Sparse LU rhs must be numeric");
@@ -64,8 +64,8 @@ static inline void tablo_hash_mix(std::uint64_t &hash, std::uint64_t value) {
   hash *= UINT64_C(1099511628211);
 }
 
-// [[Rcpp::export(name = ".tabloToR_sparse_pattern_hash")]]
-Rcpp::CharacterVector tabloToR_sparse_pattern_hash(SEXP matrix_sexp) {
+// [[Rcpp::export(name = ".GEModelR_sparse_pattern_hash")]]
+Rcpp::CharacterVector GEModelR_sparse_pattern_hash(SEXP matrix_sexp) {
   TabloCscView matrix = tablo_csc_view(matrix_sexp, "matrix");
   std::uint64_t first = UINT64_C(1469598103934665603);
   std::uint64_t second = UINT64_C(7809847782465536322);

@@ -152,8 +152,8 @@ static void tablo_validate_schur_inputs(
   }
 }
 
-// [[Rcpp::export(name = ".tabloToR_schur_accumulate_global")]]
-Rcpp::List tabloToR_schur_accumulate_global(
+// [[Rcpp::export(name = ".GEModelR_schur_accumulate_global")]]
+Rcpp::List GEModelR_schur_accumulate_global(
     Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks,
     SEXP direct_external_sexp, Rcpp::List regional_positions_sexp,
     Rcpp::IntegerVector global_positions_sexp, int panel_size) {
@@ -264,8 +264,8 @@ Rcpp::List tabloToR_schur_accumulate_global(
   );
 }
 
-// [[Rcpp::export(name = ".tabloToR_schur_accumulate_batch")]]
-Rcpp::List tabloToR_schur_accumulate_batch(
+// [[Rcpp::export(name = ".GEModelR_schur_accumulate_batch")]]
+Rcpp::List GEModelR_schur_accumulate_batch(
     Rcpp::List factors, Rcpp::List left_blocks, Rcpp::List right_blocks,
     SEXP direct_external_sexp, Rcpp::List regional_positions_sexp,
     Rcpp::IntegerVector global_positions_sexp,
