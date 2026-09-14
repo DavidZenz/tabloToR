@@ -18,5 +18,5 @@ Data-Fingerprint: d7979ebd02d9f381f10852d93ffa143c
 Install-Command: R CMD INSTALL --library="$TABLOTOR_BRIDGE_LIB" "$TABLOTOR_BRIDGE_SOURCE"
 Conversion-Command: R --vanilla -q -e 'library(tabloToR, lib.loc = Sys.getenv("TABLOTOR_BRIDGE_LIB")); model = readRDS(Sys.getenv("TABLOTOR_RAW_RDS")); model$saveState(Sys.getenv("TABLOTOR_LOGICAL_STATE"))'
 Lineage-Review-State: reviewed
-Reachability-Review-State: unresolved
+Reachability-Review-State: approved
 Rationale: Exact predecessor package lineage for the pre-rename schema-1 bridge; stable user reachability requires Plan 03-03 approval.
