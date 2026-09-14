@@ -5,8 +5,8 @@ Package-Version: 0.1.0
 Source-Scope: Git-tracked regular files under DESCRIPTION, NAMESPACE, R, src, inst, tests/testthat, and tools; exclude only inst/migration/predecessor-fingerprints.dcf and tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds; C-byte radix path order; MD5 over path-NUL-file-MD5 records
 Source-File-Count: 99
 Source-Fingerprint: 7b1abea84896dbca82b7b288c2a7f517
-Source-Locator-Type: unresolved
-Source-Locator: unresolved
+Source-Locator-Type: git-commit
+Source-Locator: ssh://git@ssh.github.com:443/DavidZenz/tabloToR.git
 Source-Immutable-Id: ea71afd98b4f165525b9bc0b853e25d4e8998cd8
 Fixture-Path: tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds
 Fixture-Digest-Algorithm: sha256
