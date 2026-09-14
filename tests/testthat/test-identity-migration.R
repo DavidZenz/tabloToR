@@ -350,6 +350,19 @@ test_that("retained predecessor identity is categorized for the exact audit", {
   for (path in owned) {
     expect_true(any(grepl(paste0("| `", path, "` |"), rows, fixed = TRUE)))
   }
+  token = paste0("tablo", "ToR")
+  for (path in owned) {
+    row = rows[grepl(paste0("| `", path, "` |"), rows, fixed = TRUE)]
+    fields = trimws(strsplit(row, "|", fixed = TRUE)[[1L]])
+    expected = as.integer(fields[[4L]])
+    components = strsplit(path, "/", fixed = TRUE)[[1L]]
+    text = do.call(identityDocumentationText, as.list(components))
+    hits = gregexpr(token, text, ignore.case = TRUE, perl = TRUE)[[1L]]
+    observed = if (identical(hits, -1L)) 0L else length(hits)
+    expect_identical(observed, expected, info = path)
+  }
+
+
   expect_true(any(grepl("upstream-attribution", rows, fixed = TRUE)))
   expect_true(any(grepl("migration-instruction", rows, fixed = TRUE)))
   expect_true(any(grepl("old-option-replacement", rows, fixed = TRUE)))

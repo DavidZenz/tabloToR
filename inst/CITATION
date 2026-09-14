@@ -1,4 +1,4 @@
-citHeader("To cite tabloToR and its reviewed predecessor basis in publications use:")
+citHeader("To cite GEModelR and its reviewed predecessor basis in publications use:")
 
 bibentry(
   bibtype = "Manual",
@@ -9,7 +9,7 @@ bibentry(
     "; reviewed current-work author: David Zenz; attribution evidence: ",
     "R/sparseCompiler.R::sparse_compile_spec; ",
     "R/sparseSolver.R::sparse_solve_model; ",
-    "src/sparse-schur.cpp::tabloToR_schur_accumulate_global"
+    "src/sparse-schur.cpp::GEModelR_schur_accumulate_global"
   )
 )
 
@@ -31,7 +31,7 @@ bibentry(
 )
 
 citFooter(paste(
-  "The package remains tabloToR in this release boundary.",
-  "The GEModelR successor identity is independently selected but not applied here,",
-  "and the package license remains pending the dependency compatibility audit."
+  "The current package identity is GEModelR.",
+  "The separately cited tabloToR baseline remains credited as predecessor source,",
+  "and public release remains blocked pending the dependency compatibility audit."
 ))

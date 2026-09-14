@@ -1,6 +1,7 @@
-# Package `tabloToR`
+# GEModelR
 
-A package that can interpret GEMPACK-style TABLO models in R and solve them
+GEModelR interprets GEMPACK-style TABLO models in R and solves them through the
+established `GEModel` workflow.
 
 ## Provenance and redistribution status
 
@@ -13,10 +14,10 @@ reviewed post-baseline sparse and native solver work. The upstream baseline has
 an accepted public-domain/CC0 basis; it is credited here even though CC0 does
 not require attribution.
 
-The current public redistribution remains blocked. The complete Phase 1 release
-is integrated and the dependency compatibility audit needed to finalize the
-package license remains pending. The package is still named `tabloToR`; this
-notice neither performs the GEModelR rename nor authorizes publication.
+The current package identity is `GEModelR`. Public redistribution remains
+blocked: the dependency compatibility audit needed to finalize the package
+license is still pending. The identity migration does not authorize
+publication.
 
 The evidence-to-role mapping is in
 [`docs/provenance/ATTRIBUTION.md`](docs/provenance/ATTRIBUTION.md), the accepted
@@ -34,17 +35,24 @@ Reviewed attribution evidence keys:
 - `R/sparseSolver.R::sparse_solve_model`
 - `src/sparse-schur.cpp::tabloToR_schur_accumulate_global`
 
-# To install, you can try the following: 
+## Migrating from the predecessor package
 
-```R
-install.packages('devtools')
-devtools::install_git('https://github.com/mivanic/tabloToR.git')
+[Migrate from `tabloToR`](MIGRATION.md) for exact library, namespace,
+dependency, `renv`, runtime-option, installation, and saved-state instructions.
+GEModelR is an immediate replacement and does not provide a compatibility shim.
+
+## Installation
+
+From a local GEModelR checkout:
+
+```sh
+R CMD INSTALL .
 ```
 
-# To perform a simulation, you can try the following:
+## Running a simulation
 
-```R
-model = tabloToR::GEModel$new()
+```r
+model = GEModelR::GEModel$new()
 
 # You need to have the model, such as gtap.tab 
 model$loadTablo('gtap.tab')
@@ -136,7 +144,7 @@ model$data$ev
 The legacy solver remains the default. For large, unaggregated GTAP runs, opt into the integer-indexed sparse engine after loading the TABLO recipe and HAR data:
 
 ```r
-model <- tabloToR::GEModel$new()
+model <- GEModelR::GEModel$new()
 model$loadTablo("gtapv7.tab")
 
 model$setClosure(c("tm", "tms", "qo", "pop"))
@@ -173,7 +181,7 @@ Use `model$setMemoryBudget(bytes)` or `memory_budget = bytes` to make the solver
 The sparse path uses Matrix sparse LU with fill-reducing ordering by default. For systems where SuperLU runs out of fill workspace, use the optional SuiteSparse/UMFPACK backend:
 
 ```r
-options(tabloToR.sparse.suite_sparse_ordering = "amd")
+options(GEModelR.sparse.suite_sparse_ordering = "amd")
 model$solveModel(engine = "sparse", backend = "SuiteSparse")
 ```
 
@@ -199,14 +207,14 @@ When the remaining BTF block is numerically difficult, use the matrix-free regio
 model$solveModel(engine = "sparse", backend = "StructuredSchurFGMRES", iter = 1, steps = 1, diagnostics = TRUE)
 ```
 
-It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(tabloToR.sparse.structured_residual_tolerance = 1e-7, tabloToR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune tabloToR.sparse.schur_region_batch_size, tabloToR.sparse.schur_panel_size, tabloToR.sparse.schur_restart, and tabloToR.sparse.schur_max_iterations, and tabloToR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
+It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(GEModelR.sparse.structured_residual_tolerance = 1e-7, GEModelR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune GEModelR.sparse.schur_region_batch_size, GEModelR.sparse.schur_panel_size, GEModelR.sparse.schur_restart, GEModelR.sparse.schur_max_iterations, and GEModelR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
 
 ## Experimental native structured backend
 
 The C++ acceleration remains opt-in while the R implementation is the correctness reference. It preserves the exact matrix-free operator and uses native sparse triangular solves, fused Schur accumulation, and LAPACK only for dense regional and global factors:
 
 ```r
-options(tabloToR.sparse.schur_cpp_threads = 4L)
+options(GEModelR.sparse.schur_cpp_threads = 4L)
 model$solveModel(
   engine = "sparse",
   backend = "StructuredSchurFGMRESCpp",

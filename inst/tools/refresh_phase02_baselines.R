@@ -218,6 +218,7 @@ phase02_source_files = function(root) {
     ))
   )
   relative = unique(c(fixed, recursive))
+  relative = setdiff(relative, "inst/compatibility/MANIFEST.md")
   relative = relative[order(tolower(relative), relative, method = "radix")]
   relative[file.exists(file.path(root, relative))]
 }
