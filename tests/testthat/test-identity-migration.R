@@ -184,3 +184,177 @@ test_that("predecessor bridge reproduces exact installed-source evidence", {
   expect_true(result$content_identical)
   expect_true(result$commands_exact)
 })
+identityDocumentationPath = function(...) {
+  relative = file.path(...)
+  candidates = c(relative, testthat::test_path("..", "..", relative))
+  hit = candidates[file.exists(candidates)]
+  if (!length(hit)) {
+    stop("Missing identity documentation artifact: ", relative)
+  }
+  normalizePath(hit[[1L]], mustWork = TRUE)
+}
+
+identityDocumentationText = function(...) {
+  paste(
+    readLines(identityDocumentationPath(...), warn = FALSE,
+              encoding = "UTF-8"),
+    collapse = "\n"
+  )
+}
+
+test_that("current documentation and compatibility surfaces use GEModelR", {
+  readme = identityDocumentationText("README.md")
+  migration = identityDocumentationText("MIGRATION.md")
+  main = identityDocumentationText("R", "main.R")
+  citation = identityDocumentationText("inst", "CITATION")
+  manifest = identityDocumentationText(
+    "inst", "compatibility", "MANIFEST.md"
+  )
+  contract = utils::read.csv(
+    identityDocumentationPath(
+      "inst", "compatibility", "GEModel-contract.csv"
+    ),
+    check.names = FALSE, stringsAsFactors = FALSE
+  )
+
+  expect_match(readme, "^# GEModelR")
+  expect_match(readme, "\\[Migrate from `tabloToR`\\]\\(MIGRATION.md\\)")
+  expect_match(readme, "GEModelR::GEModel\\$new\\(\\)")
+  expect_match(main, "GEModelR = function", fixed = TRUE)
+  expect_false(grepl("tabloToR = function", main, fixed = TRUE))
+  expect_match(citation, "To cite GEModelR", fixed = TRUE)
+  expect_match(citation, "tabloToR upstream source baseline", fixed = TRUE)
+  expect_match(manifest, "Current package identity: `GEModelR`", fixed = TRUE)
+
+  expect_identical(nrow(contract), 234L)
+  expect_identical(sum(contract$kind == "export"), 171L)
+  expect_true(all(c(
+    "GEModelR_eliminate_blocks", "GEModelR_reconstruct_blocks"
+  ) %in% contract$name))
+  expect_false(any(c(
+    "tabloToR_eliminate_blocks", "tabloToR_reconstruct_blocks"
+  ) %in% contract$name))
+
+  methods = contract[contract$kind == "method", c("name", "signature")]
+  expect_identical(methods$name, c(
+    "estimateMemory", "generateSolution", "loadData", "loadTablo",
+    "setClosure", "setMemoryBudget", "setShocks", "solveModel",
+    "retryPostsim", "saveState", "loadState"
+  ))
+  expect_identical(
+    methods$signature[methods$name == "solveModel"],
+    paste0(
+      "iter,steps,engine,postsim,diagnostics,output,variables,dimensions,",
+      "backend,reduction,memory_budget"
+    )
+  )
+})
+
+test_that("migration guide gives exact immediate-replacement instructions", {
+  migration = identityDocumentationText("MIGRATION.md")
+
+  replacements = c(
+    "library(tabloToR)" = "library(GEModelR)",
+    "require(tabloToR)" = "require(GEModelR)",
+    "tabloToR::" = "GEModelR::",
+    "Imports: tabloToR" = "Imports: GEModelR",
+    "Depends: tabloToR" = "Depends: GEModelR",
+    "Suggests: tabloToR" = "Suggests: GEModelR",
+    "Enhances: tabloToR" = "Enhances: GEModelR"
+  )
+  for (old in names(replacements)) {
+    expect_match(migration, old, fixed = TRUE, info = old)
+    expect_match(migration, replacements[[old]], fixed = TRUE, info = old)
+  }
+
+  expect_match(migration, "R CMD INSTALL .", fixed = TRUE)
+  expect_match(
+    migration,
+    "ssh://git@ssh.github.com:443/DavidZenz/tabloToR.git",
+    fixed = TRUE
+  )
+  expect_match(
+    migration,
+    "ea71afd98b4f165525b9bc0b853e25d4e8998cd8",
+    fixed = TRUE
+  )
+  expect_match(
+    migration,
+    paste0(
+      "R CMD INSTALL --library=\"$TABLOTOR_BRIDGE_LIB\" ",
+      "\"$TABLOTOR_BRIDGE_SOURCE\""
+    ),
+    fixed = TRUE
+  )
+  expect_match(
+    migration,
+    paste0(
+      "library(tabloToR, ",
+      "lib.loc = Sys.getenv(\"TABLOTOR_BRIDGE_LIB\")); ",
+      "model = readRDS(Sys.getenv(\"TABLOTOR_RAW_RDS\")); ",
+      "model$saveState(Sys.getenv(\"TABLOTOR_LOGICAL_STATE\"))"
+    ),
+    fixed = TRUE
+  )
+
+  reinstall = regexpr("renv::install\\(\"\\.\"\\)", migration)[[1L]]
+  snapshot = regexpr("renv::snapshot\\(\\)", migration)[[1L]]
+  expect_gt(reinstall, 0L)
+  expect_gt(snapshot, reinstall)
+  expect_match(migration, "Do not edit `renv.lock` manually", fixed = TRUE)
+  expect_match(migration, "raw `saveRDS(model)` ReferenceClass", fixed = TRUE)
+  expect_match(migration, "before upgrading", fixed = TRUE)
+  expect_match(migration, "does not provide a `tabloToR` shim", fixed = TRUE)
+  expect_match(migration, "does not scan options at startup", fixed = TRUE)
+})
+
+test_that("all twelve public option replacements are documented exactly", {
+  migration = identityDocumentationText("MIGRATION.md")
+  suffixes = c(
+    "sparse.lu_order",
+    "sparse.suite_sparse_ordering",
+    "sparse.structured_residual_tolerance",
+    "sparse.schur_tolerance",
+    "sparse.schur_region_batch_size",
+    "sparse.schur_panel_size",
+    "sparse.schur_restart",
+    "sparse.schur_max_iterations",
+    "sparse.schur_refinement_iterations",
+    "sparse.schur_cpp_threads",
+    "serialization.max_bytes",
+    "serialization.max_elements"
+  )
+
+  for (suffix in suffixes) {
+    expect_match(
+      migration, paste0("tabloToR.", suffix), fixed = TRUE, info = suffix
+    )
+    expect_match(
+      migration, paste0("GEModelR.", suffix), fixed = TRUE, info = suffix
+    )
+  }
+})
+
+test_that("retained predecessor identity is categorized for the exact audit", {
+  manifest = readLines(
+    identityDocumentationPath("inst", "compatibility", "MANIFEST.md"),
+    warn = FALSE, encoding = "UTF-8"
+  )
+  rows = grep("^\\| `[^`]+` \\|", manifest, value = TRUE)
+  expect_length(rows, 4L)
+
+  owned = c(
+    "README.md", "MIGRATION.md", "inst/CITATION",
+    "tests/testthat/test-identity-migration.R"
+  )
+  for (path in owned) {
+    expect_true(any(grepl(paste0("| `", path, "` |"), rows, fixed = TRUE)))
+  }
+  expect_true(any(grepl("upstream-attribution", rows, fixed = TRUE)))
+  expect_true(any(grepl("migration-instruction", rows, fixed = TRUE)))
+  expect_true(any(grepl("old-option-replacement", rows, fixed = TRUE)))
+
+  expect_false(file.exists(identityDocumentationPath("R", "main.R")) &&
+               grepl("tabloToR", identityDocumentationText("R", "main.R"),
+                     fixed = TRUE))
+})
