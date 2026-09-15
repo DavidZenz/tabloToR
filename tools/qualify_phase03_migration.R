@@ -526,7 +526,7 @@ qualification_write_fresh_script = function(path) {
     "stopifnot(identical(package_path, file.path(isolated, 'GEModelR')))",
     "other = setdiff(.libPaths(), isolated)",
     "stopifnot(!any(dir.exists(file.path(other, 'GEModelR'))))",
-    "stopifnot(identical(getNamespaceName(asNamespace('GEModelR')), 'GEModelR'))",
+    "stopifnot(identical(unname(getNamespaceName(asNamespace('GEModelR'))), 'GEModelR'))",
     "dll = getLoadedDLLs()[['GEModelR']]",
     "stopifnot(!is.null(dll))",
     "dll_path = normalizePath(dll[['path']], winslash = '/', mustWork = TRUE)",

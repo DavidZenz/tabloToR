@@ -198,3 +198,17 @@ test_that("native registration contract remains exact", {
   )
   expect_identical(tool$qualification_native_contract(), expected)
 })
+
+test_that("fresh workflow compares scalar installed namespace identity", {
+  tool = loadQualificationHarness()
+  script = tempfile("qualification-fresh-", fileext = ".R")
+  on.exit(unlink(script, force = TRUE), add = TRUE)
+  tool$qualification_write_fresh_script(script)
+  lines = readLines(script, warn = FALSE)
+
+  expect_true(any(grepl(
+    "identical(unname(getNamespaceName(asNamespace('GEModelR'))), 'GEModelR')",
+    lines,
+    fixed = TRUE
+  )))
+})
