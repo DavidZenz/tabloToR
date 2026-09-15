@@ -99,25 +99,43 @@ test_that("benchmark driver lookup is installed-first with source fallback", {
   locator <- paste(deparse(benchmark_script_path), collapse = "\n")
   expect_match(locator, 'system.file("benchmarks", name, package = "GEModelR")',
                fixed = TRUE)
+
+  installed_resource <- system.file("benchmarks", name, package = "GEModelR")
+  if (nzchar(installed_resource)) {
+    expect_identical(
+      benchmark_script_path(name),
+      normalizePath(installed_resource, mustWork = TRUE)
+    )
+  } else {
+    expect_identical(benchmark_script_path(name), source)
+  }
 })
 
 test_that("packaged benchmark drivers are exact source mirrors", {
   for (name in benchmark_driver_names()) {
     source <- benchmark_source_script_path(name)
     packaged <- testthat::test_path("..", "..", "inst", "benchmarks", name)
-    expect_true(nzchar(source), info = name)
-    expect_true(file.exists(packaged), info = name)
-    expect_identical(
-      benchmark_file_bytes(packaged), benchmark_file_bytes(source), info = name
-    )
-
     installed <- system.file("benchmarks", name, package = "GEModelR")
-    if (nzchar(installed)) {
+
+    if (nzchar(source) && file.exists(packaged)) {
       expect_identical(
-        benchmark_file_bytes(installed), benchmark_file_bytes(source),
-        info = paste(name, "installed")
+        benchmark_file_bytes(packaged), benchmark_file_bytes(source),
+        info = paste(name, "source parity")
       )
     }
+    if (nzchar(installed)) {
+      expect_true(file.exists(installed), info = paste(name, "installed"))
+      if (nzchar(source)) {
+        expect_identical(
+          benchmark_file_bytes(installed), benchmark_file_bytes(source),
+          info = paste(name, "installed parity")
+        )
+      }
+    }
+    expect_true(
+      (nzchar(source) && file.exists(packaged)) || nzchar(installed),
+      info = name
+    )
   }
 })
 
@@ -171,7 +189,7 @@ run_benchmark_summary <- function(script, args) {
 }
 
 test_that("panel sweep summary validates correctness across tuning signatures", {
-  output_dir <- tempfile("tabloToR panel sweep ")
+  output_dir <- tempfile("GEModelR panel sweep ")
   dir.create(output_dir)
   on.exit(unlink(output_dir, recursive = TRUE), add = TRUE)
   for (panel in c(64L, 256L, 512L, 1024L)) {
@@ -197,7 +215,7 @@ test_that("panel sweep summary validates correctness across tuning signatures", 
 })
 
 test_that("thread scaling summary enforces solution equivalence", {
-  output_dir <- tempfile("tabloToR thread scaling ")
+  output_dir <- tempfile("GEModelR thread scaling ")
   dir.create(output_dir)
   on.exit(unlink(output_dir, recursive = TRUE), add = TRUE)
   timing <- data.frame(

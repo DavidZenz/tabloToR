@@ -67,10 +67,13 @@ model_config <- list(
   closure = benchmark_hash_object(sort(as.character(closure))),
   shocks_file = benchmark_hash_file(shocks_file),
   shocks = benchmark_hash_object(shocks),
-  package_version = as.character(utils::packageVersion("tabloToR")),
+  package_name = "GEModelR",
+  package_version = as.character(utils::packageVersion("GEModelR")),
   installed_package_signature = benchmark_hash_tree(
-    system.file(package = "tabloToR")
+    system.file(package = "GEModelR")
   ),
+  option_prefix = "GEModelR.",
+  native_routine_prefix = ".GEModelR_",
   r_version = R.version.string,
   matrix_version = as.character(utils::packageVersion("Matrix")),
   rcpp_version = as.character(utils::packageVersion("Rcpp")),
@@ -94,8 +97,11 @@ metadata <- list(
   model_signature = model_signature,
   git_commit = tryCatch(system2("git", c("rev-parse", "HEAD"), stdout = TRUE)[1L],
                         error = function(error) NA_character_),
+  package_name = pair_config$package_name,
   package_version = pair_config$package_version,
   installed_package_signature = pair_config$installed_package_signature,
+  option_prefix = pair_config$option_prefix,
+  native_routine_prefix = pair_config$native_routine_prefix,
   r_version = R.version$major, matrix_version = pair_config$matrix_version,
   platform = R.version$platform, backend = backend, threads = threads,
   iter = iter, steps = paste(steps, collapse = ","), postsim = postsim,
@@ -112,9 +118,9 @@ tryCatch({
     stop("HARr is required for GTAP benchmarks", call. = FALSE)
   }
   options(
-    tabloToR.sparse.schur_panel_size = panel_size,
-    tabloToR.sparse.schur_region_batch_size = batch_size,
-    tabloToR.sparse.schur_cpp_threads = threads
+    GEModelR.sparse.schur_panel_size = panel_size,
+    GEModelR.sparse.schur_region_batch_size = batch_size,
+    GEModelR.sparse.schur_cpp_threads = threads
   )
   read_started <- proc.time()[[3L]]
   inputs <- list(
@@ -123,7 +129,7 @@ tryCatch({
     gtapparm = HARr::read_har(parameter_path)
   )
   metrics$read_seconds <- proc.time()[[3L]] - read_started
-  model <- tabloToR::GEModel$new()
+  model <- GEModelR::GEModel$new()
   load_tablo_started <- proc.time()[[3L]]
   model$loadTablo(tablo_path)
   metrics$load_tablo_seconds <- proc.time()[[3L]] - load_tablo_started

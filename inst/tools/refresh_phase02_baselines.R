@@ -163,8 +163,8 @@ phase02_runtime_environment = function(root) {
   }
   description = read.dcf(file.path(root, "DESCRIPTION"))[1L, ]
   package = unname(description[["Package"]])
-  if (!package %in% c("tabloToR", "GEModelR")) {
-    stop("The package identity is not covered by the migration map",
+  if (!identical(package, "GEModelR")) {
+    stop("The active baseline checker requires package GEModelR",
          call. = FALSE)
   }
   loaded_from_root = FALSE
