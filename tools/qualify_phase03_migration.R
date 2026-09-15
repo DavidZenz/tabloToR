@@ -486,6 +486,13 @@ qualification_shell = function(parts) {
   paste(vapply(parts, shQuote, character(1)), collapse = " ")
 }
 
+qualification_r_string = function(value) {
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    qualification_abort("QUALIFICATION_R_STRING_INVALID")
+  }
+  encodeString(value, quote = "\"", justify = "none")
+}
+
 qualification_extract_shell = function(export, source, verification) {
   paste(
     qualification_shell(c(
@@ -572,6 +579,20 @@ qualification_write_fresh_script = function(path) {
   )
   writeLines(lines, path, useBytes = TRUE)
   invisible(path)
+}
+
+qualification_suite_expression = function(library, source) {
+  library = qualification_r_string(library)
+  tests = qualification_r_string(file.path(source, "tests", "testthat"))
+  paste0(
+    "library(testthat); library(GEModelR, lib.loc=", library,
+    "); result = testthat::test_dir(", tests,
+    ", reporter='summary', stop_on_failure=TRUE, stop_on_warning=FALSE, ",
+    "package='GEModelR', load_package='installed'); ",
+    "stopifnot(!any(vapply(result, function(x) length(x$results) && ",
+    "any(vapply(x$results, inherits, logical(1), 'expectation_failure')), ",
+    "logical(1))))"
+  )
 }
 
 qualification_assert_output = function(output, patterns, stage) {
@@ -932,15 +953,7 @@ qualification_execute = function(root = qualification_repository_root()) {
     ), root_digest
   )
 
-  suite_expression = paste0(
-    "library(testthat); library(GEModelR, lib.loc=", dQuote(library),
-    "); result = testthat::test_dir(", dQuote(file.path(source, "tests", "testthat")),
-    ", reporter='summary', stop_on_failure=TRUE, stop_on_warning=FALSE, ",
-    "package='GEModelR', load_package='installed'); ",
-    "stopifnot(!any(vapply(result, function(x) length(x$results) && ",
-    "any(vapply(x$results, inherits, logical(1), 'expectation_failure')), ",
-    "logical(1))))"
-  )
+  suite_expression = qualification_suite_expression(library, source)
   suite_result = qualification_run_command(
     "full-suite", qualification_r("R"),
     c("--vanilla", "-q", "-e", shQuote(suite_expression)),

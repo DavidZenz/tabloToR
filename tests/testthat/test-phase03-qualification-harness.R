@@ -221,3 +221,30 @@ test_that("fresh workflow compares scalar installed namespace identity", {
     fixed = TRUE
   )))
 })
+
+test_that("full-suite expression uses parse-safe ASCII string delimiters", {
+  tool = loadQualificationHarness()
+  old_options = options(useFancyQuotes = TRUE)
+  on.exit(options(old_options), add = TRUE)
+  library = file.path("/tmp", "qualification library \"quoted\"")
+  source = file.path("/tmp", "qualification source")
+
+  expression = tool$qualification_suite_expression(library, source)
+
+  expect_silent(parse(text = expression))
+  expect_match(
+    expression,
+    paste0("lib.loc=", encodeString(library, quote = "\"")),
+    fixed = TRUE
+  )
+  expect_match(
+    expression,
+    encodeString(file.path(source, "tests", "testthat"), quote = "\""),
+    fixed = TRUE
+  )
+  expect_false(grepl(
+    "dQuote",
+    paste(deparse(body(tool$qualification_suite_expression)), collapse = "\n"),
+    fixed = TRUE
+  ))
+})
