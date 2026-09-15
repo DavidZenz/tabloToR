@@ -131,6 +131,17 @@ qualification_temporary_parent = function() {
   normalizePath(writable[[1L]], winslash = "/", mustWork = TRUE)
 }
 
+qualification_latest_root = function(paths) {
+  paths = as.character(paths)
+  paths = paths[dir.exists(paths)]
+  if (!length(paths)) return(character())
+  modified = file.info(paths)$mtime
+  if (all(is.na(modified))) {
+    qualification_abort("QUALIFICATION_TEMP_ROOT_TIME_UNAVAILABLE")
+  }
+  paths[[which.max(modified)]]
+}
+
 qualification_status_path = function(line) {
   value = if (nchar(line) >= 4L) substr(line, 4L, nchar(line)) else ""
   if (grepl(" -> ", value, fixed = TRUE)) {
@@ -802,9 +813,7 @@ qualification_execute = function(root = qualification_repository_root()) {
   check_result = qualification_run_command(
     "check", qualification_r("R"),
     c("CMD", "check", "--no-manual", shQuote(package_archive)),
-    directory = check,
-    environment = c("LC_ALL=C", "LANG=C"),
-    log_directory = logs
+    directory = check, log_directory = logs
   )
   qualification_require_digest(
     qualification_hash_file(package_archive), archive_digest,
@@ -1205,7 +1214,7 @@ qualification_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
           pattern = "^GEModelR-phase03-qualification-",
           full.names = TRUE
         )
-        roots = roots[dir.exists(roots)]
+        roots = qualification_latest_root(roots)
         if (length(roots)) {
           message("Qualification root retained: ", tail(roots, 1L))
         }

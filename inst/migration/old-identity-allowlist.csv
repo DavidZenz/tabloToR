@@ -116,4 +116,4 @@
 "tests/testthat/test-transactional-state.R","old-option-replacement","11","c76298c96cdb7c4a217f1dda56078b8d790e1ed9911b1fb21c38e8ea186b5acd","","Exact predecessor option key retained only to reject it and name its replacement"
 "tools/check_identity_migration.R","migration-instruction","5","983f1d35c82ce62dc43fd4fb888ba8037d3dbd8f73652f001e8a34953a5b6f9e","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
 "tools/check_predecessor_bridge.R","reviewed-serialization-fingerprint","14","2cad2211726129b1b19f274d55a4de5563c66a95b9357b4638ffd563ea5bcbd7","","Reviewed predecessor lineage, fixture, locator, or serialization fingerprint"
-"tools/qualify_phase03_migration.R","migration-instruction","1","8e99a1111b76853aceba4d569a0081613839b755803954c45bd798d849eb3b49","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
+"tools/qualify_phase03_migration.R","migration-instruction","1","526f94a0a08efbb40398ab45f85e37e93d8c7d0b4b24b653952b495cea1c029b","","Explicit predecessor-to-GEModelR migration instruction or audit contract"

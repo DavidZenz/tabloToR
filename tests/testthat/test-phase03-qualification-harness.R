@@ -91,6 +91,20 @@ test_that("qualification failures retain roots outside the R session tempdir", {
   expect_false(startsWith(parent, paste0(normalizePath(tempdir()), "/")))
 })
 
+test_that("failure reporting selects the newest retained qualification root", {
+  tool = loadQualificationHarness()
+  root = tempfile("qualification-root-order-")
+  old = file.path(root, "old")
+  current = file.path(root, "current")
+  dir.create(old, recursive = TRUE)
+  dir.create(current)
+  on.exit(unlink(root, recursive = TRUE, force = TRUE), add = TRUE)
+  Sys.setFileTime(old, Sys.time() - 60)
+  Sys.setFileTime(current, Sys.time())
+
+  expect_identical(tool$qualification_latest_root(c(old, current)), current)
+})
+
 test_that("export extraction is independently digest-verified", {
   tool = loadQualificationHarness()
   export = file.path("root", "git-export.tar")
