@@ -14,3 +14,12 @@
   identity/source-path failures assigned to Plan 03-09. The 03-07 focused
   serialization/identity suite passes, as do the approved-digest,
   migration-source, and historical-only gates.
+
+## 03-08
+
+- The plan's archive builds and installs successfully, and the installed
+  benchmark resources remove both prior benchmark-harness failures. The full
+  `R CMD check --no-manual` remains nonzero on 16 unrelated installed-suite
+  failures in source-only baseline/documentation/bridge paths, stale native
+  test identities, and transactional source reads. Those files are outside
+  Plan 03-08 and remain assigned to Plan 03-09 and later phase qualification.

@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-07-PLAN.md
-last_updated: "2026-09-15T07:56:05.065Z"
+stopped_at: Completed 03-08-PLAN.md
+last_updated: "2026-09-15T08:22:51.826Z"
 last_activity: 2026-09-15
-last_activity_desc: Completed Phase 03 Plan 07
-state_head: 9a95fbee4d5068f92b4e13a63e8713f79c11bf3b
+last_activity_desc: Completed Phase 03 Plan 08
+state_head: 348b26a67e9fdf7c51490d20faf738594c3dff39
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 29
-  completed_plans: 24
+  completed_plans: 25
 milestone_name: milestone
 ---
 
@@ -29,19 +29,19 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 8 of 12
+Plan: 9 of 12
 Status: Ready to execute
-Last activity: 2026-09-15 — Completed Phase 03 Plan 07
+Last activity: 2026-09-15 — Completed Phase 03 Plan 08
 
-Progress: [████████░░] 83%
+Progress: [█████████░] 86%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 24
-- Average duration: 230 min (checkpoint wait included)
-- Total execution time: 5518 min (checkpoint wait included)
+- Total plans completed: 25
+- Average duration: 221 min (checkpoint wait included)
+- Total execution time: 5537 min (checkpoint wait included)
 
 **By Phase:**
 
@@ -49,12 +49,12 @@ Progress: [████████░░] 83%
 |-------|-------|-------|----------|
 | 01 | 11 | - | - |
 | 02 | 6 | - | - |
-| 03 | 7 | 41h5m | 5h52m |
+| 03 | 8 | 41h24m | 5h11m |
 
 **Recent Trend:**
 
-- Last 5 plans: 03-03 (26min), 03-04 (1h1m including checkpoint wait), 03-05 (25min), 03-06 (15h16m including checkpoint wait), 03-07 (37min)
-- Trend: Phase 03 now has exact current/approved-predecessor logical-state lineage and immutable digest gates; Plan 03-08 is next
+- Last 5 plans: 03-04 (1h1m including checkpoint wait), 03-05 (25min), 03-06 (15h16m including checkpoint wait), 03-07 (37min), 03-08 (19min)
+- Trend: Active benchmark producers and installed resources now use GEModelR with exact source parity; Plan 03-09 is next
 
 **Per-Plan Metrics:**
 
@@ -73,6 +73,7 @@ Progress: [████████░░] 83%
 | Phase 03 P05 | 25min | 1 tasks | 9 files |
 | Phase 03 P06 | 15h16m including checkpoint wait | 2 tasks | 15 files |
 | Phase 03 P07 | 37min | 1 tasks | 13 files |
+| Phase 03 P08 | 19min | 1 tasks | 13 files |
 
 ## Accumulated Context
 
@@ -124,6 +125,10 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Represent current lineage with the exact installed GEModelR name/version and the reviewed source-lineage fingerprint anchored by the immutable predecessor registry.
 - [Phase 03]: Accept predecessor payloads only on an exact reviewed-and-reachability-approved registry match, then normalize only the isolated payload used for reconstruction.
 - [Phase 03]: Guard both serialization limits at saveState/loadState boundaries by resolving predecessor keys from the central twelve-option registry.
+- [Phase 03]: Use installed-first GEModelR benchmark resource lookup and consult the source tree only when no installed resource exists.
+- [Phase 03]: Emit package_name, option_prefix, and native_routine_prefix as stable benchmark identity fields while preserving non-identity signature inputs.
+- [Phase 03]: Require GEModelR in the active Phase 2 checker while retaining predecessor literals only in exact reviewed identity-map validation.
+- [Phase 03]: Keep unrelated installed-suite repairs in Plan 03-09 and later qualification while proving the installed benchmark slice independently.
 
 ### Pending Todos
 
@@ -145,6 +150,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T07:56:05.016Z
-Stopped at: Completed 03-07-PLAN.md
+Last session: 2026-09-15T08:22:51.777Z
+Stopped at: Completed 03-08-PLAN.md
 Resume file: None
