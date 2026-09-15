@@ -82,6 +82,23 @@ test_that("command failures are never converted into passing stages", {
   )
 })
 
+test_that("qualification failures retain roots outside the R session tempdir", {
+  tool = loadQualificationHarness()
+  parent = tool$qualification_temporary_parent()
+
+  expect_true(dir.exists(parent))
+  expect_equal(unname(file.access(parent, mode = 2L)), 0)
+  expect_false(startsWith(parent, paste0(normalizePath(tempdir()), "/")))
+})
+
+test_that("export comparison uses GNU tar's supported exact compare mode", {
+  tool = loadQualificationHarness()
+  implementation = paste(deparse(body(tool$qualification_execute)), collapse = "\n")
+
+  expect_match(implementation, '"--compare"', fixed = TRUE)
+  expect_false(grepl('"--ignore-time"', implementation, fixed = TRUE))
+})
+
 test_that("check NOTE drift fails outside the exact reviewed allowlist", {
   tool = loadQualificationHarness()
   allowlist = tool$qualification_reviewed_note_allowlist()

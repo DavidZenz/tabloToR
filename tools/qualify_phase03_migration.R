@@ -121,6 +121,16 @@ qualification_r = function(name = c("R", "Rscript")) {
   normalizePath(path, winslash = "/", mustWork = TRUE)
 }
 
+qualification_temporary_parent = function() {
+  candidates = unique(c(Sys.getenv("TMPDIR", unset = ""), "/tmp"))
+  candidates = candidates[nzchar(candidates) & dir.exists(candidates)]
+  writable = candidates[file.access(candidates, mode = 2L) == 0L]
+  if (!length(writable)) {
+    qualification_abort("QUALIFICATION_TEMP_PARENT_UNAVAILABLE")
+  }
+  normalizePath(writable[[1L]], winslash = "/", mustWork = TRUE)
+}
+
 qualification_status_path = function(line) {
   value = if (nchar(line) >= 4L) substr(line, 4L, nchar(line)) else ""
   if (grepl(" -> ", value, fixed = TRUE)) {
@@ -604,7 +614,10 @@ qualification_execute = function(root = qualification_repository_root()) {
   head = head[[1L]]
   root_digest = qualification_hash_raw(charToRaw(head))
 
-  temporary_root = tempfile("GEModelR-phase03-qualification-")
+  temporary_root = tempfile(
+    "GEModelR-phase03-qualification-",
+    tmpdir = qualification_temporary_parent()
+  )
   if (!dir.create(temporary_root, recursive = TRUE, showWarnings = FALSE)) {
     qualification_abort("QUALIFICATION_TEMP_ROOT_FAILED")
   }
@@ -667,7 +680,7 @@ qualification_execute = function(root = qualification_repository_root()) {
     qualification_shell(c("/usr/bin/tar", "-xf", export, "-C", source)),
     "&&",
     qualification_shell(c(
-      "/usr/bin/tar", "--compare", "--ignore-time",
+      "/usr/bin/tar", "--compare",
       paste0("--file=", export), paste0("--directory=", source)
     ))
   )
