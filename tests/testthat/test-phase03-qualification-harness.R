@@ -91,12 +91,21 @@ test_that("qualification failures retain roots outside the R session tempdir", {
   expect_false(startsWith(parent, paste0(normalizePath(tempdir()), "/")))
 })
 
-test_that("export comparison uses GNU tar's supported exact compare mode", {
+test_that("export extraction is independently digest-verified", {
   tool = loadQualificationHarness()
-  implementation = paste(deparse(body(tool$qualification_execute)), collapse = "\n")
+  export = file.path("root", "git-export.tar")
+  command = tool$qualification_extract_shell(export, "source", "verification")
+  implementation = paste(
+    deparse(body(tool$qualification_execute)), collapse = "\n"
+  )
 
-  expect_match(implementation, '"--compare"', fixed = TRUE)
-  expect_false(grepl('"--ignore-time"', implementation, fixed = TRUE))
+  expect_equal(
+    length(strsplit(command, shQuote(export), fixed = TRUE)[[1L]]) - 1L,
+    2L
+  )
+  expect_match(command, shQuote("source"), fixed = TRUE)
+  expect_match(command, shQuote("verification"), fixed = TRUE)
+  expect_match(implementation, '"extracted-tree"', fixed = TRUE)
 })
 
 test_that("check NOTE drift fails outside the exact reviewed allowlist", {

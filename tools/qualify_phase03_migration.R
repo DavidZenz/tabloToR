@@ -475,6 +475,19 @@ qualification_shell = function(parts) {
   paste(vapply(parts, shQuote, character(1)), collapse = " ")
 }
 
+qualification_extract_shell = function(export, source, verification) {
+  paste(
+    qualification_shell(c(
+      "/usr/bin/tar", "-xf", export, "-C", source, "--same-permissions"
+    )),
+    "&&",
+    qualification_shell(c(
+      "/usr/bin/tar", "-xf", export, "-C", verification,
+      "--same-permissions"
+    ))
+  )
+}
+
 qualification_isolated_environment = function(library) {
   ambient = normalizePath(.libPaths(), winslash = "/", mustWork = TRUE)
   ambient = ambient[!vapply(ambient, function(path) {
@@ -635,11 +648,15 @@ qualification_execute = function(root = qualification_repository_root()) {
   check = file.path(temporary_root, "check")
   library = file.path(temporary_root, "library")
   archive_audit = file.path(temporary_root, "archive-audit")
+  extraction_verification = file.path(
+    temporary_root, "extraction-verification"
+  )
   dir.create(logs, recursive = TRUE)
   dir.create(source)
   dir.create(check)
   dir.create(library)
   dir.create(archive_audit)
+  dir.create(extraction_verification)
   export = file.path(temporary_root, "git-export.tar")
   stages = qualification_empty_stages()
 
@@ -676,19 +693,19 @@ qualification_execute = function(root = qualification_repository_root()) {
     paste0("git archive HEAD sha256=", export_digest), root_digest
   )
 
-  extract_shell = paste(
-    qualification_shell(c("/usr/bin/tar", "-xf", export, "-C", source)),
-    "&&",
-    qualification_shell(c(
-      "/usr/bin/tar", "--compare",
-      paste0("--file=", export), paste0("--directory=", source)
-    ))
+  extract_shell = qualification_extract_shell(
+    export, source, extraction_verification
   )
   extract_result = qualification_run_command(
     "extract", "/bin/sh", c("-c", shQuote(extract_shell)),
     log_directory = logs
   )
   extracted_digest = qualification_hash_tree(source)
+  verification_digest = qualification_hash_tree(extraction_verification)
+  qualification_require_digest(
+    extracted_digest, verification_digest, "extracted-tree"
+  )
+  unlink(extraction_verification, recursive = TRUE, force = TRUE)
   stages = qualification_append_stage(
     stages, "extract", extracted_digest, extract_result, export,
     paste0("exact export extracted tree sha256=", extracted_digest),
@@ -1182,7 +1199,8 @@ qualification_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
       error = function(error) {
         message(conditionMessage(error))
         roots = list.files(
-          tempdir(), pattern = "^GEModelR-phase03-qualification-",
+          qualification_temporary_parent(),
+          pattern = "^GEModelR-phase03-qualification-",
           full.names = TRUE
         )
         roots = roots[dir.exists(roots)]
