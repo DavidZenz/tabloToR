@@ -514,7 +514,7 @@ qualification_isolated_environment = function(library) {
 
 qualification_write_fresh_script = function(path) {
   contract = qualification_native_contract()
-  names_text = paste(sprintf("%s", dQuote(names(contract))), collapse = ", ")
+  names_text = paste(encodeString(names(contract), quote = "\""), collapse = ", ")
   arities_text = paste(unname(contract), collapse = ", ")
   lines = c(
     "args = commandArgs(trailingOnly = TRUE)",

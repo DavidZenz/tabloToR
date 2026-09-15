@@ -206,6 +206,7 @@ test_that("fresh workflow compares scalar installed namespace identity", {
   tool$qualification_write_fresh_script(script)
   lines = readLines(script, warn = FALSE)
 
+  expect_silent(parse(file = script))
   expect_true(any(grepl(
     "identical(unname(getNamespaceName(asNamespace('GEModelR'))), 'GEModelR')",
     lines,
