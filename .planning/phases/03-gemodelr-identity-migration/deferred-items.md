@@ -23,3 +23,11 @@
   failures in source-only baseline/documentation/bridge paths, stale native
   test identities, and transactional source reads. Those files are outside
   Plan 03-08 and remain assigned to Plan 03-09 and later phase qualification.
+
+## 03-09
+
+- The full installed archive check now reports 10 failures instead of 16; all
+  six stale public/native producer failures assigned to Plan 03-09 are fixed.
+  The remaining failures are source-only baseline, documentation, predecessor
+  bridge, and transactional test paths assigned to later phase qualification.
+  The Phase 2 fingerprint-protected serialization helper remains source-only;
