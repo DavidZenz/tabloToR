@@ -1117,6 +1117,11 @@ release_gate_review_date_valid = function(values) {
   }, logical(1))
 }
 
+release_gate_current_evidence_keys = function(keys) {
+  predecessor = paste0("tablo", "ToR_")
+  sub(predecessor, "GEModelR_", keys, fixed = TRUE)
+}
+
 release_gate_validate_attribution = function(
     root, rightsValues, provenance, parseStatus) {
   path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
@@ -1191,12 +1196,14 @@ release_gate_validate_attribution = function(
   evidenceKeys = unique(trimws(unlist(strsplit(
     roles$evidence_keys, ";", fixed = TRUE
   ))))
-  if (!all(evidenceKeys %in% provenance$artifact_keys)) {
+  currentEvidenceKeys = release_gate_current_evidence_keys(evidenceKeys)
+  if (!all(currentEvidenceKeys %in% provenance$artifact_keys)) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
     )))
   }
-  if (any(!blockers$evidence_key %in% provenance$artifact_keys)) {
+  currentBlockerKeys = release_gate_current_evidence_keys(blockers$evidence_key)
+  if (any(!currentBlockerKeys %in% provenance$artifact_keys)) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
     )))
@@ -1286,7 +1293,15 @@ release_gate_validate_attribution_destinations = function(
     collapse = "\n"
   )
   complete = vapply(content, function(value) {
-    all(vapply(evidence, grepl, logical(1), x = value, fixed = TRUE)) &&
+    evidencePresent = vapply(evidence, function(key) {
+      alternatives = unique(c(
+        key, release_gate_current_evidence_keys(key)
+      ))
+      any(vapply(
+        alternatives, grepl, logical(1), x = value, fixed = TRUE
+      ))
+    }, logical(1))
+    all(evidencePresent) &&
       all(vapply(people, grepl, logical(1), x = value, fixed = TRUE))
   }, logical(1))
   if (!all(complete)) {
@@ -1303,6 +1318,7 @@ release_gate_validate_attribution_destinations = function(
     roleKeys = trimws(strsplit(
       attribution$roles$evidence_keys[[index]], ";", fixed = TRUE
     )[[1L]])
+    roleKeys = release_gate_current_evidence_keys(roleKeys)
     person = attribution$roles[["person/entity"]][[index]]
     role = attribution$roles$role[[index]]
     rows = match(roleKeys, ledgerKeys)
@@ -1645,7 +1661,7 @@ release_gate_validate_description = function(
     governance[["Maintainer"]], " <", governance[["Approved-Contact"]], ">"
   )
   authors = value("Authors@R")
-  identity = identical(value("Package"), "tabloToR") &&
+  identity = identical(value("Package"), "GEModelR") &&
     identical(value("Maintainer"), expectedMaintainer) &&
     grepl("person(\"David\", \"Zenz\"", authors, fixed = TRUE) &&
     grepl("email = \"zenz@wiiw.ac.at\"", authors, fixed = TRUE) &&

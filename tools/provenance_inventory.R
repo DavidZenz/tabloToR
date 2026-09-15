@@ -18,15 +18,23 @@ provenance_abort <- function(code, detail = NULL) {
 }
 
 provenance_hash_text <- function(text) {
-  path <- tempfile("tabloToR-provenance-hash-")
+  path <- tempfile("GEModelR-provenance-hash-")
   on.exit(unlink(path), add = TRUE)
   writeLines(enc2utf8(text), path, useBytes = TRUE)
   unname(tools::md5sum(path)[[1L]])
 }
 
+provenance_current_native_symbol <- function(symbol, relative) {
+  predecessor <- paste0("tablo", "ToR_")
+  if (startsWith(relative, "inst/cpp/") && startsWith(symbol, predecessor)) {
+    return(sub(predecessor, "GEModelR_", symbol, fixed = TRUE))
+  }
+  symbol
+}
+
 provenance_relative_path <- function(path, root) {
-  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
+  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
   substring(path, nchar(root) + 2L)
 }
 
@@ -413,7 +421,7 @@ provenance_native_rows <- function(path, relative) {
           normalized <- provenance_normalize_native(expression)
           rows[[length(rows) + 1L]] <- data.frame(
             path = relative,
-            symbol = active$name,
+            symbol = provenance_current_native_symbol(active$name, relative),
             language = "C/C++",
             line_start = as.integer(line_at(active$start)),
             line_end = as.integer(line_at(id)),

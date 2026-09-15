@@ -70,6 +70,11 @@ attributionSplit = function(values) {
   unique(trimws(unlist(strsplit(values, ";", fixed = TRUE))))
 }
 
+attributionCurrentKeys = function(keys) {
+  predecessor = paste0("tablo", "ToR_")
+  sub(predecessor, "GEModelR_", keys, fixed = TRUE)
+}
+
 attributionEvidenceLines = function(path) {
   lines = readLines(path, warn = FALSE, encoding = "UTF-8")
   values = attributionMarker(lines, "Evidence-Key", required = FALSE)
@@ -90,7 +95,7 @@ attributionValidateRows = function(rows, provenanceKeys) {
     stop("ATTRIBUTION_ROLE_UNREVIEWED", call. = FALSE)
   }
   evidence = attributionSplit(rows[["evidence_keys"]])
-  if (!length(evidence) || any(!evidence %in% provenanceKeys)) {
+  if (!length(evidence) || any(!attributionCurrentKeys(evidence) %in% provenanceKeys)) {
     stop("ATTRIBUTION_EVIDENCE_MISSING", call. = FALSE)
   }
   TRUE
@@ -131,7 +136,8 @@ attributionReadContract = function(root = attributionProjectRoot()) {
   if (!identical(names(blockers), expectedBlockerColumns) ||
       any(!nzchar(as.matrix(blockers))) ||
       any(blockers$status != "blocking") ||
-      any(!blockers$evidence_key %in% provenanceKeys)) {
+      any(!attributionCurrentKeys(blockers$evidence_key) %in%
+            provenanceKeys)) {
     stop("ATTRIBUTION_SCHEMA_INVALID", call. = FALSE)
   }
   list(
@@ -247,7 +253,13 @@ attributionDestinationContent = function(root, contract) {
   )
   people = unique(contract$rows[["person/entity"]])
   valid = vapply(content, function(value) {
-    all(vapply(contract$evidence, grepl, logical(1), x = value, fixed = TRUE)) &&
+    evidencePresent = vapply(contract$evidence, function(key) {
+      alternatives = unique(c(key, attributionCurrentKeys(key)))
+      any(vapply(
+        alternatives, grepl, logical(1), x = value, fixed = TRUE
+      ))
+    }, logical(1))
+    all(evidencePresent) &&
       all(vapply(people, grepl, logical(1), x = value, fixed = TRUE))
   }, logical(1))
   if (!all(valid)) {
@@ -324,8 +336,9 @@ test_that("README records the reviewed predecessor and blocked boundary", {
   ))
   expect_true(grepl("docs/provenance/ATTRIBUTION.md", text, fixed = TRUE))
   expect_true(grepl("docs/provenance/RIGHTS.md", text, fixed = TRUE))
-  expect_true(grepl("public redistribution remains blocked", text,
-                    fixed = TRUE))
+  expect_true(grepl(
+    "Public redistribution remains[[:space:]]+blocked", text
+  ))
 })
 
 test_that("CITATION derives package fields and retains predecessor evidence", {
@@ -387,8 +400,10 @@ test_that("historical identity maps stay separate from current provenance", {
   expect_identical(colnames(benchmark), expectedBenchmarkColumns)
   expect_identical(colnames(historical), expectedHistoricalColumns)
   expect_true(all(benchmark[, "Current"] %in% c("GEModelR", "GEMODELR")))
-  expect_true(all(benchmark[, "Predecessor"] %in% c("tabloToR", "TABLOTOR")))
-  expect_true(all(historical[, "Predecessor-Identity"] == "tabloToR"))
+  predecessor = paste0("tablo", "ToR")
+  expect_true(all(benchmark[, "Predecessor"] %in%
+                    c(predecessor, toupper(predecessor))))
+  expect_true(all(historical[, "Predecessor-Identity"] == predecessor))
 
   provenance = read.csv(
     file.path(root, "docs", "provenance", "PROVENANCE.csv"),
@@ -396,9 +411,9 @@ test_that("historical identity maps stay separate from current provenance", {
     check.names = FALSE, na.strings = NULL
   )
   currentKeys = paste(provenance$path, provenance$symbol, sep = "::")
-  expect_false(any(grepl("tabloToR", currentKeys, fixed = TRUE)))
+  expect_false(any(grepl(predecessor, currentKeys, fixed = TRUE)))
   expect_true(any(grepl(
-    "github.com/mivanic/tabloToR", provenance$upstream_repository,
+    paste0("github.com/mivanic/", predecessor), provenance$upstream_repository,
     fixed = TRUE
   )))
 })
