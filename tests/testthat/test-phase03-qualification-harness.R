@@ -7,7 +7,7 @@ qualificationHarnessPath = function() {
   )
   hits = candidates[file.exists(candidates)]
   if (!length(hits)) {
-    stop("Phase 03 qualification harness is missing", call. = FALSE)
+    testthat::skip("Phase 03 qualification harness requires the source tree")
   }
   normalizePath(hits[[1L]], mustWork = TRUE)
 }

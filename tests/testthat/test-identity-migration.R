@@ -25,6 +25,11 @@ write_identity_dcf = function(value, path) {
 }
 
 test_that("approved serialization evidence starts with exact digests", {
+  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  testthat::skip_if_not(
+    file.exists(file.path(root, "tools", "check_predecessor_bridge.R")),
+    "predecessor digest audit requires the source tree"
+  )
   expectApprovedSerializationEvidence()
 })
 
@@ -190,7 +195,7 @@ identityDocumentationPath = function(...) {
   candidates = c(relative, testthat::test_path("..", "..", relative))
   hit = candidates[file.exists(candidates)]
   if (!length(hit)) {
-    stop("Missing identity documentation artifact: ", relative)
+    testthat::skip("identity documentation audit requires the source tree")
   }
   normalizePath(hit[[1L]], mustWork = TRUE)
 }

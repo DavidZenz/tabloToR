@@ -492,6 +492,9 @@ test_that("private hooks attributes and diagnostics use GEModelR identity", {
     "tests/testthat/test-transactional-state.R",
     "tests/testthat/test-baseline-artifacts.R"
   ))
+  testthat::skip_if_not(
+    all(file.exists(paths)), "private identity audit requires the source tree"
+  )
   source_text = paste(vapply(paths, function(path) {
     paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
   }, character(1)), collapse = "\n")

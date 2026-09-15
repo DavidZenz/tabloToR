@@ -802,7 +802,9 @@ qualification_execute = function(root = qualification_repository_root()) {
   check_result = qualification_run_command(
     "check", qualification_r("R"),
     c("CMD", "check", "--no-manual", shQuote(package_archive)),
-    directory = check, log_directory = logs
+    directory = check,
+    environment = c("LC_ALL=C", "LANG=C"),
+    log_directory = logs
   )
   qualification_require_digest(
     qualification_hash_file(package_archive), archive_digest,
