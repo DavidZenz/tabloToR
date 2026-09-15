@@ -1,5 +1,5 @@
 test_that("bounded OpenMP Schur batches match serial execution", {
-  capabilities <- .tabloToR_schur_cpp_capabilities()
+  capabilities <- .GEModelR_schur_cpp_capabilities()
   skip_if_not(isTRUE(capabilities$openmp))
   fixture <- make_cpp_schur_fixture()
   local <- which(fixture$row_group == 0L)
@@ -21,11 +21,11 @@ test_that("bounded OpenMP Schur batches match serial execution", {
   external_global <- sum(vapply(regions, length, integer(1))) +
     seq_along(global)
 
-  serial <- .tabloToR_schur_accumulate_batch_serial(
+  serial <- .GEModelR_schur_accumulate_batch_serial(
     list(factor), list(L), list(R), D, external_regions,
     external_global, 1:2, 2L, 1L
   )
-  parallel <- .tabloToR_schur_accumulate_batch(
+  parallel <- .GEModelR_schur_accumulate_batch(
     list(factor), list(L), list(R), D, external_regions,
     external_global, 1:2, 2L, 2L
   )

@@ -15,7 +15,7 @@ test_that("public native backend is opt-in and numerically equivalent", {
       output = "compact"
     ),
     sparse_gtap_elimination_partition = partition,
-    .package = "tabloToR"
+    .package = "GEModelR"
   )
   testthat::with_mocked_bindings(
     candidate$solveModel(
@@ -24,7 +24,7 @@ test_that("public native backend is opt-in and numerically equivalent", {
       output = "compact"
     ),
     sparse_gtap_elimination_partition = partition,
-    .package = "tabloToR"
+    .package = "GEModelR"
   )
 
   expect_equal(candidate$solution, reference$solution, tolerance = 1e-8)

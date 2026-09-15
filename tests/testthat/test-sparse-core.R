@@ -573,9 +573,9 @@ test_that("vectorized and scalar emitters agree", {
   vectorized <- sparse_emit_system(
     model$sparseState, model$sparseIndex, shocks
   )
-  previous <- getOption("tabloToR.sparse.vectorized")
-  options(tabloToR.sparse.vectorized = FALSE)
-  on.exit(options(tabloToR.sparse.vectorized = previous), add = TRUE)
+  previous <- getOption("GEModelR.sparse.vectorized")
+  options(GEModelR.sparse.vectorized = FALSE)
+  on.exit(options(GEModelR.sparse.vectorized = previous), add = TRUE)
   scalar <- sparse_emit_system(
     model$sparseState, model$sparseIndex, shocks
   )

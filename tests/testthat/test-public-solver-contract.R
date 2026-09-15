@@ -37,8 +37,8 @@ test_that("native backend preflight fails closed before solving", {
 })
 
 test_that("private native wrappers do not expand the exported namespace", {
-  exported <- getNamespaceExports("tabloToR")
-  expect_false(any(startsWith(exported, ".tabloToR_")))
+  exported <- getNamespaceExports("GEModelR")
+  expect_false(any(startsWith(exported, ".GEModelR_")))
   expect_true(all(c("GEModel", "solve_sparse_system",
                     "sparse_exact_schur_solve") %in% exported))
 })

@@ -17,7 +17,7 @@ test_that("GEModelR registers the exact Schur native routines and arities", {
     }, integer(1)),
     expected
   )
-  expect_false(any(startsWith(names(routines), "_tabloToR_")))
+  expect_length(routines, 11L)
 })
 
 test_that("native Schur blocks match an independent exact oracle", {
@@ -42,11 +42,11 @@ test_that("native Schur blocks match an independent exact oracle", {
   external_global <- sum(vapply(regions, length, integer(1))) +
     seq_along(global)
 
-  native_global <- .tabloToR_schur_accumulate_global(
+  native_global <- .GEModelR_schur_accumulate_global(
     list(factor), list(L), list(R), D,
     external_regions, external_global, 2L
   )
-  native_batch <- .tabloToR_schur_accumulate_batch(
+  native_batch <- .GEModelR_schur_accumulate_batch(
     list(factor), list(L), list(R), D,
     external_regions, external_global, 1:2, 2L, 1L
   )
