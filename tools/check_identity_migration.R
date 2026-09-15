@@ -742,7 +742,8 @@ identity_occurrence_category = function(path, line, position) {
     "tests/testthat/test-identity-migration.R",
     "tests/testthat/test-baseline-artifacts.R",
     "tests/testthat/test-benchmark-harness.R",
-    "tools/check_identity_migration.R"
+    "tools/check_identity_migration.R",
+    "tools/qualify_phase03_migration.R"
   )) {
     return("migration-instruction")
   }
