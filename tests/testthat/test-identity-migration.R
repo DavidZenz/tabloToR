@@ -375,3 +375,69 @@ test_that("retained predecessor identity is categorized for the exact audit", {
                grepl("tabloToR", identityDocumentationText("R", "main.R"),
                      fixed = TRUE))
 })
+test_that("tracked identity inventory uses the exact five-category contract", {
+  tool = load_identity_migration_tool()
+  categories = c(
+    "upstream-attribution",
+    "migration-instruction",
+    "immutable-historical-evidence",
+    "old-option-replacement",
+    "reviewed-serialization-fingerprint"
+  )
+
+  expect_identical(tool$identity_occurrence_categories(), categories)
+  allowlist = tool$identity_read_historical_allowlist(
+    tool$identity_historical_allowlist_path()
+  )
+  expect_true(all(allowlist$category %in% categories))
+  expect_true(all(categories %in% allowlist$category))
+
+  result = tool$identity_check_occurrences(mode = "tracked-source")
+  expect_true(result$clean)
+  expect_identical(result$unexpected_occurrences, 0L)
+  expect_gt(result$allowlisted_occurrences, 0L)
+  expect_gt(result$active_occurrences, 0L)
+})
+
+test_that("occurrence allowlist rejects active, broad, duplicate, and stale rows", {
+  tool = load_identity_migration_tool()
+  root = tool$identity_repository_root()
+  allowlist = tool$identity_read_historical_allowlist(
+    tool$identity_historical_allowlist_path(root)
+  )
+
+  expect_silent(tool$identity_validate_occurrence_allowlist(
+    allowlist, root = root, mode = "tracked-source"
+  ))
+
+  invalid = list(
+    duplicate = rbind(allowlist, allowlist[1L, , drop = FALSE]),
+    broad = transform(
+      allowlist, path = replace(path, 1L, "benchmarks/*")
+    ),
+    category = transform(
+      allowlist, category = replace(category, 1L, "active-package")
+    ),
+    count = transform(
+      allowlist, expected_count = replace(expected_count, 1L, "999")
+    ),
+    line_digest = transform(
+      allowlist,
+      literal_or_line_digest = replace(
+        literal_or_line_digest, 1L, paste(rep("0", 64L), collapse = "")
+      )
+    ),
+    stale = transform(
+      allowlist, path = replace(path, 1L, "DESCRIPTION")
+    )
+  )
+  for (name in names(invalid)) {
+    expect_error(
+      tool$identity_validate_occurrence_allowlist(
+        invalid[[name]], root = root, mode = "tracked-source"
+      ),
+      "UNEXPECTED_OLD_IDENTITY_",
+      info = name
+    )
+  }
+})
