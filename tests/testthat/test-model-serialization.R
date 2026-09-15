@@ -632,12 +632,13 @@ test_that("serialization predecessor options fail at save and load boundaries", 
   receiver = GEModel$new()
   receiver$closure = "receiver-sentinel"
   receiver_before = serializationReceiverSnapshot(receiver)
-  replacements = c(
-    "tabloToR.serialization.max_bytes" =
-      "GEModelR.serialization.max_bytes",
-    "tabloToR.serialization.max_elements" =
-      "GEModelR.serialization.max_elements"
+  current = c(
+    "GEModelR.serialization.max_bytes",
+    "GEModelR.serialization.max_elements"
   )
+  replacements = .identity_public_option_replacements[
+    .identity_public_option_replacements %in% current
+  ]
   for (old_key in names(replacements)) {
     expectOldPublicOptionRejected(
       old_key, replacements[[old_key]],

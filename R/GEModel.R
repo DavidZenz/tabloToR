@@ -159,8 +159,8 @@ GEModel = setRefClass(
       .retry_postsim_from_record(.self, diagnostics = diagnostics)
     },
     saveState = function(file) {
-      if (!is.character(file) || length(file) != 1L || is.na(file) ||
-          !nzchar(file)) {
+      if ({ .serialization_guard_old_options(); !is.character(file) } ||
+          length(file) != 1L || is.na(file) || !nzchar(file)) {
         stop("file must be one non-empty path", call. = FALSE)
       }
       payload = .build_logical_state_payload(.self)
@@ -168,9 +168,9 @@ GEModel = setRefClass(
       invisible(.self)
     },
     loadState = function(file) {
-      if (!is.character(file) || length(file) != 1L || is.na(file) ||
-          !nzchar(file) || !file.exists(file) ||
-          !file_test("-f", file)) {
+      if ({ .serialization_guard_old_options(); !is.character(file) } ||
+          length(file) != 1L || is.na(file) || !nzchar(file) ||
+          !file.exists(file) || !file_test("-f", file)) {
         stop("file must identify one existing logical-state payload",
              call. = FALSE)
       }

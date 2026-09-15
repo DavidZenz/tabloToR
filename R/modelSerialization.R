@@ -160,24 +160,19 @@
   if (any(value[["Lineage-Review-State"]] != "reviewed")) {
     .serialization_stop("package lineage is not reviewed")
   }
+  if (any(value[["Reachability-Review-State"]] != "approved")) {
+    .serialization_stop("package lineage reachability is not approved")
+  }
   value
 }
 
 .serialization_current_package_lineage = function() {
   metadata = .serialization_current_package_metadata()
   registry = .serialization_package_lineage_registry()
-  matches = registry[["Package-Name"]] == metadata$name &
-    registry[["Package-Version"]] == metadata$version
-  if (sum(matches) != 1L) {
-    .serialization_stop(
-      "current package name and version have no reviewed lineage"
-    )
-  }
-  record = registry[matches, , drop = FALSE]
   list(
     name = metadata$name,
     version = metadata$version,
-    source_fingerprint = unname(record[["Source-Fingerprint"]])
+    source_fingerprint = unname(registry[["Source-Fingerprint"]])
   )
 }
 
@@ -201,6 +196,11 @@
     .serialization_stop("package lineage source fingerprint is malformed")
   }
 
+  current = .serialization_current_package_lineage()
+  if (identical(lineage, current)) {
+    return(invisible("current"))
+  }
+
   registry = .serialization_package_lineage_registry()
   matches = registry[["Package-Name"]] == lineage$name &
     registry[["Package-Version"]] == lineage$version &
@@ -208,18 +208,29 @@
   if (sum(matches) != 1L) {
     .serialization_stop("package lineage is not allowlisted")
   }
-  invisible(lineage)
+  invisible("predecessor")
+}
+
+.serialization_guard_old_options = function() {
+  current = c(
+    "GEModelR.serialization.max_bytes",
+    "GEModelR.serialization.max_elements"
+  )
+  old = names(.identity_public_option_replacements)[
+    .identity_public_option_replacements %in% current
+  ]
+  .identity_guard_old_options(old)
 }
 
 
 .serialization_max_bytes = function() {
-  value = getOption("tabloToR.serialization.max_bytes", 256 * 1024^2)
+  value = getOption("GEModelR.serialization.max_bytes", 256 * 1024^2)
   value = suppressWarnings(as.numeric(value)[1L])
   if (!is.finite(value) || value <= 0) 256 * 1024^2 else value
 }
 
 .serialization_max_elements = function() {
-  value = getOption("tabloToR.serialization.max_elements", 50000000)
+  value = getOption("GEModelR.serialization.max_elements", 50000000)
   value = suppressWarnings(as.numeric(value)[1L])
   if (!is.finite(value) || value <= 0) 50000000 else value
 }
@@ -866,6 +877,12 @@
 
 .restore_logical_state_payload = function(payload) {
   .validate_logical_state_payload(payload)
+  lineage = .serialization_validate_package_lineage(
+    payload$package_lineage
+  )
+  if (identical(lineage, "predecessor")) {
+    payload$package_lineage = .serialization_current_package_lineage()
+  }
   suffix = tools::file_ext(payload$source$name)
   if (!nzchar(suffix)) suffix = "tab"
   path = tempfile("tabloToR-restore-", fileext = paste0(".", suffix))

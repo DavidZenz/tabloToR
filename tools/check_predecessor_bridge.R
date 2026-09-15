@@ -586,6 +586,10 @@ bridge_usage = function() {
       "  rtk Rscript --vanilla tools/check_predecessor_bridge.R",
       "--verify-reachable"
     ),
+    paste(
+      "  rtk Rscript --vanilla tools/check_predecessor_bridge.R",
+      "--verify-approved-digests"
+    ),
     sep = "\n"
   )
 }
@@ -618,7 +622,39 @@ bridge_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
     cat("Conversion-Command:\n", result$conversion_command, "\n")
     return(invisible(0L))
   }
+  if (identical(arguments, "--verify-approved-digests")) {
+    result = bridge_verify_approved_digests()
+    cat("Approved predecessor evidence digests: PASS\n")
+    cat(sprintf("Registry-SHA256: %s\n", result$registry_digest))
+    cat(sprintf("Fixture-SHA256: %s\n", result$fixture_digest))
+    return(invisible(0L))
+  }
   bridge_abort("BRIDGE_ARGUMENT_INVALID")
+}
+
+bridge_verify_approved_digests = function(root = bridge_repository_root()) {
+  expected = c(
+    registry =
+      "d1f21078810e2531069080904b9370d39e2ed43c1c68906982fd6ed7ab0fad84",
+    fixture =
+      "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b"
+  )
+  registry_path = bridge_registry_path(root)
+  registry_digest = bridge_hash_file(registry_path, "sha256")
+  if (!identical(registry_digest, unname(expected[["registry"]]))) {
+    bridge_abort("BRIDGE_APPROVED_REGISTRY_DIGEST_DRIFT")
+  }
+  registry = bridge_read_registry(registry_path, root = root)
+  fixture_path = bridge_resolve_path(root, registry[["Fixture-Path"]])
+  fixture_digest = bridge_hash_file(fixture_path, "sha256")
+  if (!identical(fixture_digest, unname(expected[["fixture"]])) ||
+      !identical(fixture_digest, unname(registry[["Fixture-Digest"]]))) {
+    bridge_abort("BRIDGE_APPROVED_FIXTURE_DIGEST_DRIFT")
+  }
+  list(
+    registry_digest = registry_digest,
+    fixture_digest = fixture_digest
+  )
 }
 
 if (sys.nframe() == 0L) bridge_main()

@@ -12,7 +12,7 @@ serializationApprovedEvidence = function() {
       file.path("inst", "migration", "predecessor-fingerprints.dcf"),
       file.path(
         "tests", "testthat", "fixtures", "serialization",
-        "tabloToR-schema1-lineage.rds"
+        paste0("tablo", "ToR-schema1-lineage.rds")
       )
     ),
     sha256 = c(

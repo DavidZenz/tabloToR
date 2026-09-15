@@ -8,6 +8,8 @@ schema identifier `gemodel-logical-state` and schema version 1. Its top-level
 allowlist is:
 
 - `schema` and `schema_version`;
+- `package_lineage`, containing exact package name, version, and source-lineage
+  fingerprint scalars;
 - `source`, containing the TABLO name, exact source bytes, source fingerprint,
   logical input data, and input-data fingerprint;
 - `engine`, mutable `levels`, `closure`, and normalized `shocks`;
@@ -23,7 +25,7 @@ rejects non-regular or empty files and checks the compressed input file-size
 limit before RDS decoding. This pre-decode limit does not bound the in-memory
 size of highly compressible RDS content: base R must expand the object before
 package validation can inspect it. The decoded envelope is then checked for
-exact schema and field allowlists, primitive types, permitted attributes,
+exact schema, lineage, and field allowlists, primitive types, permitted attributes,
 dimensions,
 finiteness, element and byte limits, and both source fingerprints before an
 isolated replacement model is constructed. Reconstruction uses the public
@@ -31,6 +33,16 @@ isolated replacement model is constructed. Reconstruction uses the public
 identity, level names and dimensions, accepted solution size, and output
 allowlists against that reconstructed model. An existing receiver is not
 mutated unless every validation and reconstruction step completes.
+
+Current files must carry the exact installed package name and version plus the
+reviewed source-lineage fingerprint. The only predecessor accepted is the exact
+tagged predecessor package name, version, and fingerprint in
+`migration/predecessor-fingerprints.dcf`, whose lineage must be reviewed and
+whose reachability must be approved. Missing, untagged, malformed, stale, or
+unallowlisted lineage is rejected before receiver mutation. An accepted
+predecessor payload is normalized only in the isolated restore candidate;
+subsequent `saveState()` output carries current package lineage and must be
+written to a new trusted-local file during migration.
 
 ## Deliberately excluded runtime state
 
@@ -52,9 +64,12 @@ The default maximum logical payload and compressed input file size is 256 MiB
 and the default per-value element limit is 50 million. After decoding, the same
 byte limit is enforced against both the reserialized logical payload and its R
 object size. Maintainers may lower these limits with
-`options(tabloToR.serialization.max_bytes = ...)` and
-`options(tabloToR.serialization.max_elements = ...)` for constrained local
+`options(GEModelR.serialization.max_bytes = ...)` and
+`options(GEModelR.serialization.max_elements = ...)` for constrained local
 workflows.
+The predecessor option keys are rejected at both `saveState()` and
+`loadState()` before output or receiver mutation, with the exact replacement
+key and `MIGRATION.md` in the error.
 
 ## Compatibility-only raw object persistence
 
@@ -64,3 +79,4 @@ environments and generated functions, can be much larger than logical state,
 and is not a stable portable or cross-version contract. It must not be used to
 deserialize arbitrary untrusted reference objects and does not redefine the
 supported `gemodel-logical-state` schema.
+`loadState()` does not accept a raw ReferenceClass RDS.

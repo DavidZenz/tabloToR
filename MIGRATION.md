@@ -143,11 +143,17 @@ model$loadState("model-logical-state.rds")
 ```
 
 GEModelR accepts predecessor `gemodel-logical-state` version `1L` only when the
-state is tagged with a reviewed, allowlisted predecessor source fingerprint and
+state is tagged with the reviewed and reachability-approved predecessor version
+`0.1.0` lineage and exact source fingerprint
+`7b1abea84896dbca82b7b288c2a7f517`, and
 all existing TABLO, model, payload, type, dimension, finiteness, and size checks
 pass. It rejects untagged or unallowlisted predecessor states. Accepted
 predecessor identity is normalized in memory, and subsequent `saveState()` calls
-write only GEModelR identity.
+write only the exact current GEModelR name and version. Preserve the approved
+registry and predecessor fixture byte-for-byte, and write converted or
+round-tripped output only to a new trusted-local path. Any approved-input digest
+change requires renewed predecessor reproduction, reachability verification,
+and human approval.
 
 ## Compatibility boundary
 
