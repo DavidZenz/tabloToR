@@ -207,6 +207,14 @@ test_that("fresh workflow compares scalar installed namespace identity", {
   lines = readLines(script, warn = FALSE)
 
   expect_silent(parse(file = script))
+  arity_line = lines[startsWith(lines, "expected_arities = ")]
+  arity_environment = new.env(parent = baseenv())
+  eval(parse(text = arity_line), envir = arity_environment)
+  expect_identical(
+    arity_environment$expected_arities,
+    unname(tool$qualification_native_contract())
+  )
+  expect_type(arity_environment$expected_arities, "integer")
   expect_true(any(grepl(
     "identical(unname(getNamespaceName(asNamespace('GEModelR'))), 'GEModelR')",
     lines,
