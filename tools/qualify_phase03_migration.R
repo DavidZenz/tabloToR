@@ -486,13 +486,6 @@ qualification_shell = function(parts) {
   paste(vapply(parts, shQuote, character(1)), collapse = " ")
 }
 
-qualification_r_string = function(value) {
-  if (!is.character(value) || length(value) != 1L || is.na(value)) {
-    qualification_abort("QUALIFICATION_R_STRING_INVALID")
-  }
-  encodeString(value, quote = "\"", justify = "none")
-}
-
 qualification_extract_shell = function(export, source, verification) {
   paste(
     qualification_shell(c(
@@ -579,6 +572,13 @@ qualification_write_fresh_script = function(path) {
   )
   writeLines(lines, path, useBytes = TRUE)
   invisible(path)
+}
+
+qualification_r_string = function(value) {
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    qualification_abort("QUALIFICATION_R_STRING_INVALID")
+  }
+  encodeString(value, quote = "\"", justify = "none")
 }
 
 qualification_suite_expression = function(library, source) {
