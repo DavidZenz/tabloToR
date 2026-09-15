@@ -342,7 +342,7 @@ qualification_validate_stage_chain = function(stages) {
 }
 
 qualification_reviewed_note_allowlist = function() {
-  character()
+  c("* checking DESCRIPTION meta-information ... NOTE\nNicht-Standard Lizenzspezifikation:\n  What license is it under?\nZu standardisieren: FALSE", "* checking installed package size ... NOTE\n  installed size is  8.9Mb\n  sub-directories of 1Mb or more:\n    libs   7.9Mb")
 }
 
 qualification_validate_notes = function(

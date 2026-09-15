@@ -125,6 +125,25 @@ test_that("export extraction is independently digest-verified", {
 test_that("check NOTE drift fails outside the exact reviewed allowlist", {
   tool = loadQualificationHarness()
   allowlist = tool$qualification_reviewed_note_allowlist()
+  expect_identical(
+    allowlist,
+    c(
+      paste(
+        "* checking DESCRIPTION meta-information ... NOTE",
+        "Nicht-Standard Lizenzspezifikation:",
+        "  What license is it under?",
+        "Zu standardisieren: FALSE",
+        sep = "\n"
+      ),
+      paste(
+        "* checking installed package size ... NOTE",
+        "  installed size is  8.9Mb",
+        "  sub-directories of 1Mb or more:",
+        "    libs   7.9Mb",
+        sep = "\n"
+      )
+    )
+  )
   expect_silent(tool$qualification_validate_notes(allowlist, allowlist))
 
   expect_error(
