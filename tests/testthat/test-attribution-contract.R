@@ -272,9 +272,9 @@ attributionCitationRecords = function(path, meta) {
   environment$records
 }
 
-test_that("DESCRIPTION applies only reviewed roles without renaming or licensing", {
+test_that("DESCRIPTION applies the reviewed current identity without licensing", {
   description = read.dcf(attributionPath("DESCRIPTION"))
-  expect_identical(unname(description[[1L, "Package"]]), "tabloToR")
+  expect_identical(unname(description[[1L, "Package"]]), "GEModelR")
   expect_identical(
     unname(description[[1L, "Maintainer"]]),
     "David Zenz <zenz@wiiw.ac.at>"
@@ -363,4 +363,42 @@ test_that("all six attribution destinations have exact key parity", {
     attributionDestinationContent(root, stale),
     "ATTRIBUTION_DESTINATION_MISMATCH", fixed = TRUE
   )
+})
+
+test_that("historical identity maps stay separate from current provenance", {
+  root = attributionProjectRoot()
+  benchmark = read.dcf(file.path(
+    root, "inst", "migration", "benchmark-identity-map.dcf"
+  ))
+  historical = read.dcf(file.path(
+    root, "inst", "migration", "historical-evidence.dcf"
+  ))
+  expectedBenchmarkColumns = c(
+    "Schema", "Rule-Id", "Predecessor", "Current", "Canonical",
+    "Expected-Occurrences", "Normalized-Source-Fingerprint",
+    "Reviewed-Non-Numerical-Exclusions", "Review-State"
+  )
+  expectedHistoricalColumns = c(
+    "Schema", "Record-Id", "Category", "Path", "Region",
+    "Digest-Algorithm", "Byte-Digest", "Identity-Mode",
+    "Predecessor-Identity", "Review-State", "Contract-State", "Rationale"
+  )
+
+  expect_identical(colnames(benchmark), expectedBenchmarkColumns)
+  expect_identical(colnames(historical), expectedHistoricalColumns)
+  expect_true(all(benchmark[, "Current"] %in% c("GEModelR", "GEMODELR")))
+  expect_true(all(benchmark[, "Predecessor"] %in% c("tabloToR", "TABLOTOR")))
+  expect_true(all(historical[, "Predecessor-Identity"] == "tabloToR"))
+
+  provenance = read.csv(
+    file.path(root, "docs", "provenance", "PROVENANCE.csv"),
+    stringsAsFactors = FALSE, colClasses = "character",
+    check.names = FALSE, na.strings = NULL
+  )
+  currentKeys = paste(provenance$path, provenance$symbol, sep = "::")
+  expect_false(any(grepl("tabloToR", currentKeys, fixed = TRUE)))
+  expect_true(any(grepl(
+    "github.com/mivanic/tabloToR", provenance$upstream_repository,
+    fixed = TRUE
+  )))
 })

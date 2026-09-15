@@ -29,7 +29,7 @@ provenance_load_tool <- function() {
 }
 
 provenance_fixture <- function() {
-  root <- tempfile("tabloToR-provenance-")
+  root <- tempfile("GEModelR-provenance-")
   dir.create(file.path(root, "R"), recursive = TRUE)
   dir.create(file.path(root, "src"), recursive = TRUE)
   dir.create(file.path(root, "tests", "hidden"), recursive = TRUE)
@@ -149,7 +149,7 @@ provenance_parse_hash_review <- function(path) {
 
 test_that("empty source roots fail closed with an exact reason", {
   tool <- provenance_load_tool()
-  root <- tempfile("tabloToR-empty-provenance-")
+  root <- tempfile("GEModelR-empty-provenance-")
   dir.create(root)
   on.exit(unlink(root, recursive = TRUE), add = TRUE)
 
@@ -687,4 +687,28 @@ test_that("accepted Phase 02 inventory review matches canonical fresh rows", {
     ))[[1L]]),
     "0bbefa5482fa04fa9da15eb300e612d0"
   )
+})
+
+test_that("checked-in provenance keys use the current GEModelR identity", {
+  tool <- provenance_load_tool()
+  root <- dirname(dirname(provenance_script_path()))
+  expected <- tool$provenance_read_csv(
+    file.path(root, "docs", "provenance", "EXPECTED-KEYS.csv"),
+    c("path", "symbol")
+  )
+  ledger <- tool$provenance_read_csv(
+    file.path(root, "docs", "provenance", "PROVENANCE.csv"),
+    tool$provenance_columns
+  )
+  fresh <- tool$provenance_collect_sources(root, include_git = TRUE)
+
+  expect_identical(provenance_keys(expected), provenance_keys(fresh))
+  expect_identical(provenance_keys(ledger), provenance_keys(fresh))
+  expect_false(any(grepl(
+    "tabloToR", provenance_keys(expected), fixed = TRUE
+  )))
+  expect_true(any(grepl(
+    "github.com/mivanic/tabloToR", ledger$upstream_repository,
+    fixed = TRUE
+  )))
 })

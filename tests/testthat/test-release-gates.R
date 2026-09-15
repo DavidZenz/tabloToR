@@ -1353,7 +1353,7 @@ writeIntegratedSourceEvidence = function(root) {
       "}"
     ),
     "src/sparse-schur.cpp" = c(
-      "int tabloToR_schur_accumulate_global(int value) {",
+      "int GEModelR_schur_accumulate_global(int value) {",
       "  return value;",
       "}"
     )
@@ -1533,7 +1533,7 @@ writeIntegratedDestinations = function(root, evidence) {
     "Attribution-Role: Maros Ivanic|cph,ctb"
   )
   description = c(
-    "Package: tabloToR",
+    "Package: GEModelR",
     "Type: Package",
     "Title: Synthetic Integrated Release Fixture",
     "Version: 0.0.1",
