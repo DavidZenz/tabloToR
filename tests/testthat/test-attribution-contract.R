@@ -71,8 +71,8 @@ attributionSplit = function(values) {
 }
 
 attributionCurrentKeys = function(keys) {
-  predecessor = paste0("tablo", "ToR_")
-  sub(predecessor, "GEModelR_", keys, fixed = TRUE)
+  # Staged attribution must use exact current evidence keys.
+  keys
 }
 
 attributionEvidenceLines = function(path) {

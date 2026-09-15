@@ -15,7 +15,7 @@ Evidence-Key: R/GEModel.R::GEModel$solveModel
 Evidence-Key: R/processTablo.R::processTablo
 Evidence-Key: R/sparseCompiler.R::sparse_compile_spec
 Evidence-Key: R/sparseSolver.R::sparse_solve_model
-Evidence-Key: src/sparse-schur.cpp::tabloToR_schur_accumulate_global
+Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
 
 ## Reviewed contributors
 

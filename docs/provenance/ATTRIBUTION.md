@@ -5,7 +5,7 @@
 Attribution-Schema-Version: 1
 Inventory-Path: docs/provenance/PROVENANCE.csv
 Inventory-Row-Count: 290
-Inventory-Snapshot-MD5: beb815ac197df211aae204ed6870afee
+Inventory-Snapshot-MD5: f05d6c33a370088911ace211c9de20a4
 Inventory-Review-Path: docs/provenance/INVENTORY-REVIEW.csv
 Inventory-Review-MD5: f19029655d4e6d366901296ee771e2c3
 Upstream-Repository: https://github.com/mivanic/tabloToR
@@ -22,8 +22,8 @@ A changed inventory requires a fresh attribution review.
 
 | person/entity | role | evidence_keys | rights_basis | destination | reviewer | review_date | status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| David Zenz | aut | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::tabloToR_schur_accumulate_global | Reviewed independent post-baseline authorship; original-code licensing remains provisional pending the dependency compatibility audit | DESCRIPTION; CONTRIBUTORS.md; NEWS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
-| David Zenz | cph | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::tabloToR_schur_accumulate_global | Reviewed copyright holder for the cited independent post-baseline expression; this does not finalize the package license | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
+| David Zenz | aut | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed independent post-baseline authorship; original-code licensing remains provisional pending the dependency compatibility audit | DESCRIPTION; CONTRIBUTORS.md; NEWS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
+| David Zenz | cph | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed copyright holder for the cited independent post-baseline expression; this does not finalize the package license | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
 | David Zenz | cre | R/sparseSolver.R::sparse_solve_model | Reviewed substantive contribution plus the approved maintainer identity in GOVERNANCE.md | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
 | Maros Ivanic | aut | R/GEModel.R::GEModel$loadTablo; R/GEModel.R::GEModel$solveModel; R/processTablo.R::processTablo | Reviewed upstream authorship under the accepted public-domain/CC0 response for the audited baseline | DESCRIPTION; README.md; inst/CITATION; docs/provenance/PROVENANCE.csv; CONTRIBUTORS.md; NEWS.md | David Zenz | 2026-08-25 | reviewed |
 

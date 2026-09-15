@@ -13,7 +13,7 @@ finalized; categories use only the reviewed audit vocabulary.
 
 | Path | Categories | Expected occurrences | Rationale |
 |---|---|---:|---|
-| `README.md` | upstream-attribution, migration-instruction | 5 | Exact upstream repository, audited commit, historical native evidence key, and migration route |
+| `README.md` | upstream-attribution, migration-instruction | 4 | Exact upstream repository, audited commit, and migration route |
 | `MIGRATION.md` | upstream-attribution, migration-instruction, old-option-replacement | 41 | Exact mechanical replacements and approved immutable saved-state bridge |
 | `inst/CITATION` | upstream-attribution | 3 | Truthful separately cited predecessor source |
 | `tests/testthat/test-identity-migration.R` | migration-instruction, old-option-replacement | 23 | Regression assertions for exact predecessor-to-current replacements |

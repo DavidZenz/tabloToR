@@ -3,7 +3,7 @@ phase02_tool_path = function(name) {
   if (file.exists(source_candidate)) {
     return(normalizePath(source_candidate, mustWork = TRUE))
   }
-  installed_candidate = system.file("tools", name, package = "tabloToR")
+  installed_candidate = system.file("tools", name, package = "GEModelR")
   normalizePath(installed_candidate, mustWork = TRUE)
 }
 

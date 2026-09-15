@@ -1118,8 +1118,8 @@ release_gate_review_date_valid = function(values) {
 }
 
 release_gate_current_evidence_keys = function(keys) {
-  predecessor = paste0("tablo", "ToR_")
-  sub(predecessor, "GEModelR_", keys, fixed = TRUE)
+  # Staged attribution must use exact current evidence keys.
+  keys
 }
 
 release_gate_validate_attribution = function(

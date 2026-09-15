@@ -1,5 +1,5 @@
-#ifndef TABLOTOR_SPARSE_LU_H
-#define TABLOTOR_SPARSE_LU_H
+#ifndef GEMODELR_SPARSE_LU_H
+#define GEMODELR_SPARSE_LU_H
 
 #include <Rcpp.h>
 

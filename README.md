@@ -33,7 +33,7 @@ Reviewed attribution evidence keys:
 - `R/processTablo.R::processTablo`
 - `R/sparseCompiler.R::sparse_compile_spec`
 - `R/sparseSolver.R::sparse_solve_model`
-- `src/sparse-schur.cpp::tabloToR_schur_accumulate_global`
+- `src/sparse-schur.cpp::GEModelR_schur_accumulate_global`
 
 ## Migrating from the predecessor package
 

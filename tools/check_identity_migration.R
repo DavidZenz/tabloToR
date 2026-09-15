@@ -630,6 +630,32 @@ identity_rds_occurrence_records = function(value, path = "payload") {
 }
 
 identity_active_owner = function(path, line, position) {
+  old_name = identity_old_token()
+  retained_upstream = (
+    path == "CONTRIBUTORS.md" &&
+    identical(
+      line,
+      paste0(
+        "Maros Ivanic authored the upstream `", old_name,
+        "` baseline, including the reviewed"
+      )
+    )
+  ) || (
+    path == "NEWS.md" &&
+    identical(line, paste0(
+      "- Credited Maros Ivanic for the upstream `", old_name,
+      "` baseline under the reviewed"
+    ))
+  )
+  if (retained_upstream) return(NA_character_)
+  token_end = position + nchar(old_name) - 1L
+  after = if (token_end < nchar(line)) {
+    substr(line, token_end + 1L, token_end + 1L)
+  } else {
+    ""
+  }
+  if (path %in% c("README.md", "docs/provenance/ATTRIBUTION.md") &&
+      identical(after, "_")) return("03-11")
   plan11 = c(
     ".gitignore", "CONTRIBUTORS.md", "NEWS.md",
     "docs/release/RELEASE-GATES.md",
@@ -723,6 +749,7 @@ identity_occurrence_category = function(path, line, position) {
   if (grepl("^docs/provenance/", path) ||
       path %in% c(
         "DESCRIPTION", "inst/CITATION",
+        "CONTRIBUTORS.md", "NEWS.md",
         "tests/testthat/test-attribution-contract.R",
         "tests/testthat/test-release-gates.R"
       )) {
