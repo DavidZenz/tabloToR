@@ -227,9 +227,9 @@ test_that("full-suite expression uses parse-safe ASCII string delimiters", {
   old_options = options(useFancyQuotes = TRUE)
   on.exit(options(old_options), add = TRUE)
   library = file.path("/tmp", "qualification library \"quoted\"")
-  source = file.path("/tmp", "qualification source")
+  tests = file.path("/tmp", "qualification check", "tests", "testthat")
 
-  expression = tool$qualification_suite_expression(library, source)
+  expression = tool$qualification_suite_expression(library, tests)
 
   expect_silent(parse(text = expression))
   expect_match(
@@ -239,7 +239,7 @@ test_that("full-suite expression uses parse-safe ASCII string delimiters", {
   )
   expect_match(
     expression,
-    encodeString(file.path(source, "tests", "testthat"), quote = "\""),
+    encodeString(tests, quote = "\""),
     fixed = TRUE
   )
   expect_false(grepl(
@@ -247,4 +247,17 @@ test_that("full-suite expression uses parse-safe ASCII string delimiters", {
     paste(deparse(body(tool$qualification_suite_expression)), collapse = "\n"),
     fixed = TRUE
   ))
+  implementation = paste(
+    deparse(body(tool$qualification_execute)), collapse = "\n"
+  )
+  expect_match(
+    implementation,
+    'file.path(check_root, "tests", "testthat")',
+    fixed = TRUE
+  )
+  expect_match(
+    implementation,
+    "qualification_suite_expression\\(library,\\s*check_tests\\)"
+  )
+  expect_match(implementation, "directory = check_root", fixed = TRUE)
 })

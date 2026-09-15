@@ -581,9 +581,9 @@ qualification_r_string = function(value) {
   encodeString(value, quote = "\"", justify = "none")
 }
 
-qualification_suite_expression = function(library, source) {
+qualification_suite_expression = function(library, test_directory) {
   library = qualification_r_string(library)
-  tests = qualification_r_string(file.path(source, "tests", "testthat"))
+  tests = qualification_r_string(test_directory)
   paste0(
     "library(testthat); library(GEModelR, lib.loc=", library,
     "); result = testthat::test_dir(", tests,
@@ -846,6 +846,11 @@ qualification_execute = function(root = qualification_repository_root()) {
   if (length(check_logs) != 1L) {
     qualification_abort("QUALIFICATION_CHECK_LOG_CARDINALITY")
   }
+  check_root = dirname(check_logs[[1L]])
+  check_tests = file.path(check_root, "tests", "testthat")
+  if (!dir.exists(check_tests)) {
+    qualification_abort("QUALIFICATION_CHECK_TESTS_MISSING")
+  }
   check_lines = readLines(check_logs[[1L]], warn = FALSE, encoding = "UTF-8")
   findings = qualification_extract_check_findings(check_lines, temporary_root)
   if (length(findings$errors)) {
@@ -953,11 +958,11 @@ qualification_execute = function(root = qualification_repository_root()) {
     ), root_digest
   )
 
-  suite_expression = qualification_suite_expression(library, source)
+  suite_expression = qualification_suite_expression(library, check_tests)
   suite_result = qualification_run_command(
     "full-suite", qualification_r("R"),
     c("--vanilla", "-q", "-e", shQuote(suite_expression)),
-    directory = source,
+    directory = check_root,
     environment = qualification_isolated_environment(library),
     log_directory = logs
   )
@@ -965,8 +970,8 @@ qualification_execute = function(root = qualification_repository_root()) {
     c(installation_digest, suite_result$log_digest), collapse = "\n"
   )))
   stages = qualification_append_stage(
-    stages, "full-suite", suite_digest, suite_result, source,
-    "full testthat source suite against isolated installed GEModelR passed",
+    stages, "full-suite", suite_digest, suite_result, check_tests,
+    "full R CMD check test copy against isolated installed GEModelR passed",
     root_digest
   )
 
