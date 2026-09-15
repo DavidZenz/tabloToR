@@ -474,3 +474,64 @@ test_that("non-serialization predecessor options fail at local consumers", {
     )
   )
 })
+
+test_that("private hooks attributes and diagnostics use GEModelR identity", {
+  root = normalizePath(
+    testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE
+  )
+  paths = file.path(root, c(
+    "R/GEModel.R",
+    "R/sparseElimination.R",
+    "R/sparseSolver.R",
+    "R/sparseSchurComplement.R",
+    "R/sparseSuiteSparse.R",
+    "R/zzzSparseSchurCpp.R",
+    "R/zzzzSparseSchurOpenMP.R",
+    "inst/tools/accept_phase02_baselines.R",
+    "tests/testthat/helper-transactional-state.R",
+    "tests/testthat/test-transactional-state.R",
+    "tests/testthat/test-baseline-artifacts.R"
+  ))
+  source_text = paste(vapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  }, character(1)), collapse = "\n")
+  private_suffixes = c(
+    ".legacy.transaction.working",
+    ".transaction.fault",
+    ".accepted_numerical_state",
+    ".sparse.sum_vectorized_limit",
+    ".sparse.vectorized",
+    ".sparse.elimination_pivot_tolerance",
+    ".sparse.schur_validation_chunk_size",
+    ".sparse.schur_progress",
+    ".sparse.schur_true_residual_frequency",
+    ".phase02.acceptance.fault",
+    "_dense_qr_factor"
+  )
+  predecessor = paste0(paste0("tablo", "ToR"), private_suffixes)
+  current = paste0("GEModelR", private_suffixes)
+
+  expect_false(any(vapply(
+    predecessor, grepl, logical(1), x = source_text, fixed = TRUE
+  )))
+  expect_true(all(vapply(
+    current, grepl, logical(1), x = source_text, fixed = TRUE
+  )))
+
+  phases = character()
+  withr::local_options(
+    GEModelR.transaction.fault = function(phase, context) {
+      phases <<- c(phases, phase)
+      invisible(NULL)
+    }
+  )
+  .transaction_fault("identity-probe")
+  expect_identical(phases, "identity-probe")
+
+  factor = sparse_dense_factor(diag(c(2, 3)), name = "identity probe")
+  expect_s3_class(factor, "GEModelR_dense_qr_factor")
+  expect_equal(
+    as.numeric(sparse_exact_schur_solve_factor(factor, c(4, 9))),
+    c(2, 3), tolerance = 1e-12
+  )
+})
