@@ -1,3 +1,24 @@
+test_that("GEModelR registers the exact LU native routines and arities", {
+  routines <- getDLLRegisteredRoutines(
+    getLoadedDLLs()[["GEModelR"]]
+  )$.Call
+  expected <- c(
+    `_GEModelR_GEModelR_dense_lu_factor` = 1L,
+    `_GEModelR_GEModelR_dense_lu_solve` = 2L,
+    `_GEModelR_GEModelR_dense_lu_release` = 1L,
+    `_GEModelR_GEModelR_sparse_lu_solve` = 2L,
+    `_GEModelR_GEModelR_sparse_pattern_hash` = 1L
+  )
+
+  expect_identical(
+    vapply(routines[names(expected)], function(routine) {
+      routine$numParameters
+    }, integer(1)),
+    expected
+  )
+  expect_false(any(startsWith(names(routines), "_tabloToR_")))
+})
+
 test_that("private native sparseLU solves match Matrix", {
   skip_if_not_installed("Matrix")
   set.seed(17)

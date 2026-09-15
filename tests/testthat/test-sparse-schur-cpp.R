@@ -1,3 +1,25 @@
+test_that("GEModelR registers the exact Schur native routines and arities", {
+  routines <- getDLLRegisteredRoutines(
+    getLoadedDLLs()[["GEModelR"]]
+  )$.Call
+  expected <- c(
+    `_GEModelR_GEModelR_eliminate_blocks` = 6L,
+    `_GEModelR_GEModelR_reconstruct_blocks` = 7L,
+    `_GEModelR_GEModelR_schur_cpp_capabilities` = 0L,
+    `_GEModelR_GEModelR_schur_accumulate_batch_parallel` = 9L,
+    `_GEModelR_GEModelR_schur_accumulate_global` = 7L,
+    `_GEModelR_GEModelR_schur_accumulate_batch` = 9L
+  )
+
+  expect_identical(
+    vapply(routines[names(expected)], function(routine) {
+      routine$numParameters
+    }, integer(1)),
+    expected
+  )
+  expect_false(any(startsWith(names(routines), "_tabloToR_")))
+})
+
 test_that("native Schur blocks match an independent exact oracle", {
   fixture <- make_cpp_schur_fixture()
   A <- fixture$A
