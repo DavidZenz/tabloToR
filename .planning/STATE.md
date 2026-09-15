@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-09-PLAN.md
-last_updated: "2026-09-15T08:44:21.419Z"
+stopped_at: Completed 03-10-PLAN.md
+last_updated: "2026-09-15T12:01:50.976Z"
 last_activity: 2026-09-15
 last_activity_desc: Completed Phase 03 Plan 08
-state_head: df52048fe1148d28ea795eb2b292c694562e4497
+state_head: 879a8040354dfa5954ecda1d46d825e8e9342717
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 29
-  completed_plans: 26
+  completed_plans: 27
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 10 of 12
+Plan: 11 of 12
 Status: Ready to execute
 Last activity: 2026-09-15 — Completed Phase 03 Plan 08
 
@@ -75,6 +75,7 @@ Progress: [█████████░] 86%
 | Phase 03 P07 | 37min | 1 tasks | 13 files |
 | Phase 03 P08 | 19min | 1 tasks | 13 files |
 | Phase 03 P09 | 16min | 1 tasks | 6 files |
+| Phase 03 P10 | 25min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -132,6 +133,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Keep unrelated installed-suite repairs in Plan 03-09 and later qualification while proving the installed benchmark slice independently.
 - [Phase 03]: Validate all eleven GEModelR native registrations through exact symbol names, arities, and routine count without adding predecessor literals.
 - [Phase 03]: Keep the Phase 2 fingerprint-protected serialization helper semantics unchanged and defer installed source-path qualification rather than weaken the migration baseline.
+- [Phase 03]: Represent the staged inst/cpp mirror under exact GEModelR provenance keys while Plan 03-11 retains source-byte ownership.
+- [Phase 03]: Use only the exact predecessor-native-key to GEModelR-native-key mapping during staged attribution migration.
+- [Phase 03]: Keep accepted Phase 2 review hashes historical and validate mapped current keys independently.
 
 ### Pending Todos
 
@@ -153,6 +157,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T08:44:21.364Z
-Stopped at: Completed 03-09-PLAN.md
+Last session: 2026-09-15T12:01:50.929Z
+Stopped at: Completed 03-10-PLAN.md
 Resume file: None
