@@ -393,7 +393,22 @@ test_that("tracked identity inventory uses the exact five-category contract", {
   expect_true(result$clean)
   expect_identical(result$unexpected_occurrences, 0L)
   expect_gt(result$allowlisted_occurrences, 0L)
-  expect_gt(result$active_occurrences, 0L)
+  expect_identical(result$active_occurrences, 0L)
+})
+
+test_that("installed sparse elimination mirror has exact current identity", {
+  installed = readLines(
+    identityDocumentationPath("inst", "cpp", "sparse-elimination.cpp"),
+    warn = FALSE, encoding = "UTF-8"
+  )
+  active = readLines(
+    identityDocumentationPath("src", "sparse-elimination.cpp"),
+    warn = FALSE, encoding = "UTF-8"
+  )
+
+  expect_identical(installed, active)
+  expect_true(any(grepl("GEModelR_eliminate_blocks", installed, fixed = TRUE)))
+  expect_true(any(grepl("GEModelR_reconstruct_blocks", installed, fixed = TRUE)))
 })
 
 test_that("occurrence allowlist rejects active, broad, duplicate, and stale rows", {
