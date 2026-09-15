@@ -238,7 +238,7 @@ phase02_acceptance_record = function(reviewer, reason, proposal_hash,
 }
 
 phase02_acceptance_fault = function(phase) {
-  hook = getOption("tabloToR.phase02.acceptance.fault")
+  hook = getOption("GEModelR.phase02.acceptance.fault")
   if (is.function(hook)) hook(phase)
   invisible(NULL)
 }

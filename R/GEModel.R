@@ -293,13 +293,13 @@ GEModel = setRefClass(
         ))
       }
 
-      if (!isTRUE(getOption("tabloToR.legacy.transaction.working"))) {
+      if (!isTRUE(getOption("GEModelR.legacy.transaction.working"))) {
         old_transaction_option = getOption(
-          "tabloToR.legacy.transaction.working"
+          "GEModelR.legacy.transaction.working"
         )
-        options(tabloToR.legacy.transaction.working = TRUE)
+        options(GEModelR.legacy.transaction.working = TRUE)
         on.exit(options(
-          tabloToR.legacy.transaction.working = old_transaction_option
+          GEModelR.legacy.transaction.working = old_transaction_option
         ), add = TRUE)
         tryCatch({
           working = .self$copy(shallow = FALSE)

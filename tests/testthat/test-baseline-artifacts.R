@@ -704,7 +704,7 @@ test_that("acceptance publication is locked and rolls back atomically", {
   unlink(lock, recursive = TRUE, force = TRUE)
 
   withr::local_options(
-    tabloToR.phase02.acceptance.fault = function(phase) {
+    GEModelR.phase02.acceptance.fault = function(phase) {
       if (identical(phase, "after-canonical-backup")) {
         stop("injected publication failure", call. = FALSE)
       }

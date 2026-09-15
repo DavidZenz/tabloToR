@@ -61,7 +61,7 @@ test_that("accepted sparse solve commits exactly once", {
 })
 
 test_that("transaction commit seam remains internal", {
-  exported = getNamespaceExports("tabloToR")
+  exported = getNamespaceExports("GEModelR")
   expect_true(exists(".commit_accepted_state", mode = "function"))
   expect_false(".commit_accepted_state" %in% exported)
 
@@ -347,7 +347,7 @@ test_that("a later numerical failure preserves an older retry record", {
 })
 
 test_that("post retry API and internal helper are tiered explicitly", {
-  exported = getNamespaceExports("tabloToR")
+  exported = getNamespaceExports("GEModelR")
   expect_true("retryPostsim" %in% GEModel$methods())
   expect_identical(
     names(formals(GEModel$methods("retryPostsim"))),

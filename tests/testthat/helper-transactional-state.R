@@ -39,9 +39,9 @@ expectTransactionalStateIdentical = function(before, model,
 }
 
 localTransactionFault = function(callback, env = parent.frame()) {
-  old = getOption("tabloToR.transaction.fault")
-  options(tabloToR.transaction.fault = callback)
-  withr::defer(options(tabloToR.transaction.fault = old), envir = env)
+  old = getOption("GEModelR.transaction.fault")
+  options(GEModelR.transaction.fault = callback)
+  withr::defer(options(GEModelR.transaction.fault = old), envir = env)
   invisible(callback)
 }
 

@@ -11,7 +11,7 @@ sparse_make_state = function(data) {
 }
 
 .transaction_fault = function(phase, context = list()) {
-  hook = getOption("tabloToR.transaction.fault")
+  hook = getOption("GEModelR.transaction.fault")
   if (!is.function(hook)) return(invisible(NULL))
   tryCatch(
     hook(phase, context),
@@ -168,7 +168,7 @@ sparse_make_state = function(data) {
     ))
     invisible(model)
   }, error = function(error) {
-    attr(error, "tabloToR.accepted_numerical_state") = TRUE
+    attr(error, "GEModelR.accepted_numerical_state") = TRUE
     model$lastDiagnostics = .postsim_failure_diagnostics(record, error)
     stop(error)
   })
@@ -1037,10 +1037,10 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
       stop("Sparse vectorized sum exceeds R vector length limit",
            call. = FALSE)
     }
-    vector_limit = getOption("tabloToR.sparse.sum_vectorized_limit", 1e6)
+    vector_limit = getOption("GEModelR.sparse.sum_vectorized_limit", 1e6)
     if (!is.numeric(vector_limit) || length(vector_limit) != 1L ||
         !is.finite(vector_limit) || vector_limit < 1) {
-      stop("tabloToR.sparse.sum_vectorized_limit must be positive",
+      stop("GEModelR.sparse.sum_vectorized_limit must be positive",
            call. = FALSE)
     }
     if (expanded_n > vector_limit) {
@@ -1307,7 +1307,7 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
 }
 
 sparse_emit_system = function(state, index, shocks) {
-  if (isTRUE(getOption("tabloToR.sparse.vectorized", TRUE))) {
+  if (isTRUE(getOption("GEModelR.sparse.vectorized", TRUE))) {
     return(sparse_emit_system_vectorized(state, index, shocks))
   }
   sparse_emit_system_scalar(state, index, shocks)
@@ -2168,7 +2168,7 @@ sparse_check_budget = function(estimate, budget) {
       coefficient_matrix, emitted$rhs, structured_partition,
       lu_order = structured_lu_order,
       pivot_tolerance = getOption(
-        "tabloToR.sparse.elimination_pivot_tolerance", 1e-12
+        "GEModelR.sparse.elimination_pivot_tolerance", 1e-12
       ),
       reduced_solver = if (identical(backend, "StructuredSchurFGMRES")) {
         "schur"
@@ -2544,7 +2544,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       memory_budget = memory_budget
     ),
     error = function(error) {
-      if (isTRUE(attr(error, "tabloToR.accepted_numerical_state"))) {
+      if (isTRUE(attr(error, "GEModelR.accepted_numerical_state"))) {
         stop(error)
       }
       model$lastDiagnostics = .transaction_failure_diagnostics(

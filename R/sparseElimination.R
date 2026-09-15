@@ -489,7 +489,7 @@ sparse_exact_structured_solve = function(A, rhs, partition,
       max_iterations = getOption("GEModelR.sparse.schur_max_iterations", 500L),
       tolerance = getOption("GEModelR.sparse.schur_tolerance", 2e-7),
       true_residual_frequency = getOption(
-        "tabloToR.sparse.schur_true_residual_frequency", 1L
+        "GEModelR.sparse.schur_true_residual_frequency", 1L
       )
     )
     if (!isTRUE(reduced_result$converged)) {

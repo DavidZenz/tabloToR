@@ -142,7 +142,7 @@ sparse_dense_factor = function(block, order = 3L, name = "block") {
            call. = FALSE)
     }
     return(structure(list(qr = factor),
-                     class = "tabloToR_dense_qr_factor"))
+                     class = "GEModelR_dense_qr_factor"))
   }
   factor = tryCatch(
     Matrix::lu(block, order = order),
@@ -157,7 +157,7 @@ sparse_dense_factor = function(block, order = 3L, name = "block") {
 
 sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   result = tryCatch(
-    if (inherits(factor, "tabloToR_dense_qr_factor")) {
+    if (inherits(factor, "GEModelR_dense_qr_factor")) {
       qr.coef(factor[["qr"]], rhs)
     } else Matrix::solve(factor, rhs),
     error = function(error) error
@@ -205,10 +205,10 @@ sparse_exact_schur_validate_partition = function(A, row_group, column_group,
          call. = FALSE)
   }
   validation_chunk_size = suppressWarnings(as.integer(getOption(
-    "tabloToR.sparse.schur_validation_chunk_size", 4096L
+    "GEModelR.sparse.schur_validation_chunk_size", 4096L
   ))[1L])
   if (is.na(validation_chunk_size) || validation_chunk_size < 1L) {
-    stop("tabloToR.sparse.schur_validation_chunk_size must be positive",
+    stop("GEModelR.sparse.schur_validation_chunk_size must be positive",
          call. = FALSE)
   }
   for (first_column in seq.int(1L, n, by = validation_chunk_size)) {
@@ -451,7 +451,7 @@ sparse_exact_schur_build = function(
     rm(batch_blocks, batch_region_global, batch_global_region,
        target_positions, target_groups, target_local)
     gc(verbose = FALSE)
-    if (isTRUE(getOption("tabloToR.sparse.schur_progress", FALSE))) {
+    if (isTRUE(getOption("GEModelR.sparse.schur_progress", FALSE))) {
       cat("Schur regional batch ", batch_start, "-", batch_end,
           "/", region_count, "\n", sep = "")
     }
