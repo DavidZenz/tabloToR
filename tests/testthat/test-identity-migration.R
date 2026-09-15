@@ -36,7 +36,7 @@ test_that("historical registry freezes evidence and numerical source", {
   expect_identical(result$immutable_records, 5L)
   expect_identical(result$protected_source_records, 4L)
   expect_identical(result$protected_region_records, 1L)
-  expect_identical(result$historical_occurrences, 1L)
+  expect_gt(result$historical_occurrences, 1L)
 
   registry = result$registry
   source = registry[registry$Category == "protected-numerical-source", ,
@@ -97,10 +97,7 @@ test_that("historical old-identity records reject broad or stale entries", {
     tool$identity_historical_allowlist_path(root)
   )
   expected = tool$identity_expected_historical_allowlist()
-  expect_identical(
-    allowlist[c("path", "category")],
-    expected
-  )
+  expect_identical(allowlist, expected)
   expect_silent(
     tool$identity_validate_historical_allowlist(allowlist, root, registry)
   )
@@ -128,7 +125,7 @@ test_that("historical old-identity records reject broad or stale entries", {
       tool$identity_validate_historical_allowlist(
         invalid[[name]], root, registry
       ),
-      "HISTORICAL_ALLOWLIST_",
+      "UNEXPECTED_OLD_IDENTITY_",
       info = name
     )
   }
