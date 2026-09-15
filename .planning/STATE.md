@@ -4,11 +4,11 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-10-PLAN.md
-last_updated: "2026-09-15T12:01:50.976Z"
+stopped_at: Completed 03-11-PLAN.md
+last_updated: "2026-09-15T12:35:33.894Z"
 last_activity: 2026-09-15
 last_activity_desc: Completed Phase 03 Plan 08
-state_head: 879a8040354dfa5954ecda1d46d825e8e9342717
+state_head: bded795ca86c2dfe5a0c770ffe7f5fda19becbad
 progress:
   total_phases: 7
   completed_phases: 2
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 11 of 12
+Plan: 12 of 12
 Status: Ready to execute
 Last activity: 2026-09-15 — Completed Phase 03 Plan 08
 
@@ -76,6 +76,7 @@ Progress: [█████████░] 86%
 | Phase 03 P08 | 19min | 1 tasks | 13 files |
 | Phase 03 P09 | 16min | 1 tasks | 6 files |
 | Phase 03 P10 | 25min | 2 tasks | 11 files |
+| Phase 03 P11 | 32min | 1 tasks | 17 files |
 
 ## Accumulated Context
 
@@ -136,6 +137,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Represent the staged inst/cpp mirror under exact GEModelR provenance keys while Plan 03-11 retains source-byte ownership.
 - [Phase 03]: Use only the exact predecessor-native-key to GEModelR-native-key mapping during staged attribution migration.
 - [Phase 03]: Keep accepted Phase 2 review hashes historical and validate mapped current keys independently.
+- [Phase 03]: Require exact GEModelR evidence keys in all staged attribution destinations; predecessor-native keys remain valid only as reviewed historical or migration evidence.
 
 ### Pending Todos
 
@@ -157,6 +159,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-15T12:01:50.929Z
-Stopped at: Completed 03-10-PLAN.md
+Last session: 2026-09-15T12:35:33.732Z
+Stopped at: Completed 03-11-PLAN.md
 Resume file: None
