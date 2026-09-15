@@ -322,7 +322,7 @@ runStructuredBackend = function(backend) {
       diagnostics = TRUE, backend = backend, output = "compact"
     ),
     sparse_gtap_elimination_partition = phase02StructuredPartition,
-    .package = "tabloToR"
+    .package = "GEModelR"
   )
   system_solution = unname(model$solution)
   if (length(index$column_order)) {

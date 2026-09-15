@@ -65,7 +65,7 @@ test_that("bad finite candidates are rejected before state mutation", {
 test_that("candidate acceptance stays outside broad alphabetic exports", {
   expect_false(
     any(c(".sparse_accept_candidate", ".sparse_solve_one_step_impl") %in%
-          getNamespaceExports("tabloToR"))
+          getNamespaceExports("GEModelR"))
   )
   expect_false(
     "candidate_transform" %in% names(formals(sparse_solve_one_step))
@@ -230,11 +230,11 @@ test_that("optional OpenMP path matches serial native accumulation", {
   external_global = sum(vapply(regions, length, integer(1))) +
     seq_along(global)
 
-  serial = .tabloToR_schur_accumulate_batch_serial(
+  serial = .GEModelR_schur_accumulate_batch_serial(
     list(factor), list(L), list(R), D, external_regions,
     external_global, 1:2, 2L, 1L
   )
-  parallel = .tabloToR_schur_accumulate_batch(
+  parallel = .GEModelR_schur_accumulate_batch(
     list(factor), list(L), list(R), D, external_regions,
     external_global, 1:2, 2L, 2L
   )
