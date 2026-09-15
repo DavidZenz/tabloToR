@@ -24,6 +24,10 @@ write_identity_dcf = function(value, path) {
   invisible(path)
 }
 
+test_that("approved serialization evidence starts with exact digests", {
+  expectApprovedSerializationEvidence()
+})
+
 test_that("historical registry freezes evidence and numerical source", {
   tool = load_identity_migration_tool()
   result = tool$identity_check_historical()

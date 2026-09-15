@@ -18,12 +18,13 @@ serializationPayloadFields = function() {
   )
 }
 
-test_that("saveState writes mandatory reviewed predecessor package lineage", {
+test_that("saveState writes exact current GEModelR package lineage", {
   registry = .serialization_package_lineage_registry()
   expect_identical(nrow(registry), 1L)
   expect_identical(registry$`Package-Name`, "tabloToR")
   expect_identical(registry$`Package-Version`, "0.1.0")
   expect_identical(registry$`Lineage-Review-State`, "reviewed")
+  expect_identical(registry$`Reachability-Review-State`, "approved")
   expect_match(
     registry$`Source-Fingerprint`, "^[0-9a-f]{32}$"
   )
@@ -38,8 +39,8 @@ test_that("saveState writes mandatory reviewed predecessor package lineage", {
   expect_identical(
     payload$package_lineage,
     list(
-      name = unname(registry$`Package-Name`),
-      version = unname(registry$`Package-Version`),
+      name = "GEModelR",
+      version = "0.1.0",
       source_fingerprint = unname(registry$`Source-Fingerprint`)
     )
   )
@@ -72,7 +73,15 @@ test_that("unsupported package lineage fails before receiver mutation", {
   )
 
   unsupported$unallowlisted_package = payload
-  unsupported$unallowlisted_package$package_lineage$name = "GEModelR"
+  unsupported$unallowlisted_package$package_lineage$name = "unknownPackage"
+
+  unsupported$stale_current = payload
+  unsupported$stale_current$package_lineage$version = "0.0.9"
+
+  unsupported$forged_current = payload
+  unsupported$forged_current$package_lineage$source_fingerprint = paste(
+    rep("f", 32L), collapse = ""
+  )
 
   for (name in names(unsupported)) {
     expectSerializationRejectedWithoutMutation(
@@ -243,7 +252,7 @@ test_that("serialization entry points and helpers have explicit contract rows", 
 
   expect_identical(actual, expected)
   expect_false(any(expected$name[expected$kind == "internal"] %in%
-                     getNamespaceExports("tabloToR")))
+                     getNamespaceExports("GEModelR")))
 })
 
 test_that("serialization policy documents portable and compatibility-only forms", {
@@ -369,12 +378,12 @@ test_that("serialization limits reject oversized artifacts and values", {
   receiver$closure = "receiver-sentinel"
   before = serializationReceiverSnapshot(receiver)
   withr::local_options(
-    tabloToR.serialization.max_bytes = file.info(state_file)$size - 1
+    GEModelR.serialization.max_bytes = file.info(state_file)$size - 1
   )
   expect_error(receiver$loadState(state_file), "size limit")
   expect_identical(serializationReceiverSnapshot(receiver), before)
 
-  withr::local_options(tabloToR.serialization.max_elements = 2)
+  withr::local_options(GEModelR.serialization.max_elements = 2)
   expect_error(
     .validate_logical_state_payload(payload),
     "element limit"
@@ -400,7 +409,7 @@ test_that("compressed RDS expansion is rejected after trusted-local decode", {
   receiver = GEModel$new()
   receiver$closure = "receiver-sentinel"
   before = serializationReceiverSnapshot(receiver)
-  withr::local_options(tabloToR.serialization.max_bytes = limit)
+  withr::local_options(GEModelR.serialization.max_bytes = limit)
   expect_error(receiver$loadState(state_file), "payload exceeds.*size limit")
   expect_identical(serializationReceiverSnapshot(receiver), before)
 })
@@ -571,6 +580,16 @@ test_that("genuine predecessor fixture enforces lineage and content integrity", 
   expect_identical(receiver$loadedEngine, "sparse")
   expect_identical(receiver$sourceData, payload$source)
 
+  normalized_file = tempfile(fileext = ".rds")
+  on.exit(unlink(normalized_file), add = TRUE)
+  receiver$saveState(normalized_file)
+  normalized = readRDS(normalized_file)
+  expect_identical(
+    normalized$package_lineage,
+    .serialization_current_package_lineage()
+  )
+  expect_identical(normalized$package_lineage$name, "GEModelR")
+
   rejected = list()
   rejected$duplicate = payload
   names(rejected$duplicate$package_lineage)[[3L]] = "name"
@@ -597,4 +616,64 @@ test_that("genuine predecessor fixture enforces lineage and content integrity", 
       info = name
     )
   }
+})
+
+test_that("serialization predecessor options fail at save and load boundaries", {
+  model = make_three_region_model("sparse")
+  input_file = tempfile(fileext = ".rds")
+  output_file = tempfile(fileext = ".rds")
+  on.exit(unlink(c(input_file, output_file)), add = TRUE)
+  model$saveState(input_file)
+  writeBin(charToRaw("save-sentinel"), output_file)
+  output_before = readBin(
+    output_file, "raw", n = as.integer(file.info(output_file)$size)
+  )
+
+  receiver = GEModel$new()
+  receiver$closure = "receiver-sentinel"
+  receiver_before = serializationReceiverSnapshot(receiver)
+  replacements = c(
+    "tabloToR.serialization.max_bytes" =
+      "GEModelR.serialization.max_bytes",
+    "tabloToR.serialization.max_elements" =
+      "GEModelR.serialization.max_elements"
+  )
+  for (old_key in names(replacements)) {
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() model$saveState(output_file)
+    )
+    expect_identical(
+      readBin(output_file, "raw", n = length(output_before)),
+      output_before,
+      info = old_key
+    )
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() receiver$loadState(input_file),
+      before = receiver_before,
+      snapshot = function() serializationReceiverSnapshot(receiver)
+    )
+  }
+})
+
+test_that("raw ReferenceClass RDS is rejected without receiver mutation", {
+  raw_file = tempfile(fileext = ".rds")
+  on.exit(unlink(raw_file), add = TRUE)
+  saveRDS(make_three_region_model("sparse"), raw_file, version = 3L)
+
+  receiver = GEModel$new()
+  receiver$closure = "receiver-sentinel"
+  before = serialize(
+    serializationReceiverSnapshot(receiver), NULL, version = 3L
+  )
+  expect_error(receiver$loadState(raw_file), "top level")
+  after = serialize(
+    serializationReceiverSnapshot(receiver), NULL, version = 3L
+  )
+  expect_identical(after, before)
+})
+
+test_that("approved serialization evidence remains byte-identical", {
+  expectApprovedSerializationEvidence()
 })

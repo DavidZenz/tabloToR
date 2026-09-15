@@ -1,7 +1,7 @@
 compatibilityManifestPath = function() {
   installed = system.file(
     "compatibility", "GEModel-contract.csv",
-    package = "tabloToR"
+    package = "GEModelR"
   )
   source = testthat::test_path(
     "..", "..", "inst", "compatibility", "GEModel-contract.csv"
@@ -58,7 +58,7 @@ loadCompatibilityManifest = function(path = compatibilityManifestPath()) {
 observedCompatibilitySurface = function() {
   exports = grep(
     "^[[:alpha:]]",
-    getNamespaceExports("tabloToR"),
+    getNamespaceExports("GEModelR"),
     value = TRUE
   )
   inherited = methods::getRefClass("envRefClass")$methods()

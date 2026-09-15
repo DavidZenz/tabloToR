@@ -1,7 +1,47 @@
 serializationPayloadFields = function() {
   c(
-    "schema", "schema_version", "source", "engine", "levels",
-    "closure", "shocks", "accepted", "memory_budget", "diagnostics"
+    "schema", "schema_version", "package_lineage", "source",
+    "engine", "levels", "closure", "shocks", "accepted",
+    "memory_budget", "diagnostics"
+  )
+}
+
+serializationApprovedEvidence = function() {
+  data.frame(
+    path = c(
+      file.path("inst", "migration", "predecessor-fingerprints.dcf"),
+      file.path(
+        "tests", "testthat", "fixtures", "serialization",
+        "tabloToR-schema1-lineage.rds"
+      )
+    ),
+    sha256 = c(
+      "d1f21078810e2531069080904b9370d39e2ed43c1c68906982fd6ed7ab0fad84",
+      "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b"
+    ),
+    stringsAsFactors = FALSE
+  )
+}
+
+serializationApprovedEvidenceDigests = function() {
+  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  tool_path = file.path(root, "tools", "check_predecessor_bridge.R")
+  if (!file.exists(tool_path)) {
+    stop("Predecessor bridge digest tool is unavailable", call. = FALSE)
+  }
+  tool = new.env(parent = globalenv())
+  sys.source(tool_path, envir = tool)
+  evidence = serializationApprovedEvidence()
+  stats::setNames(vapply(evidence$path, function(relative) {
+    tool$bridge_hash_file(file.path(root, relative), "sha256")
+  }, character(1)), evidence$path)
+}
+
+expectApprovedSerializationEvidence = function() {
+  evidence = serializationApprovedEvidence()
+  testthat::expect_identical(
+    unname(serializationApprovedEvidenceDigests()),
+    evidence$sha256
   )
 }
 
@@ -70,7 +110,7 @@ serializationPolicyPath = function() {
   )
   if (file.exists(source_path)) return(source_path)
   installed_path = system.file(
-    "compatibility", "SERIALIZATION.md", package = "tabloToR"
+    "compatibility", "SERIALIZATION.md", package = "GEModelR"
   )
   if (!nzchar(installed_path)) {
     stop("Installed serialization policy is unavailable", call. = FALSE)
@@ -114,8 +154,8 @@ runSerializationRejectionFreshProcess = function(state_files) {
     "r_files = sort(list.files(file.path(package_root, 'R'), pattern = '\\\\.R$', full.names = TRUE))",
     "for (path in r_files) sys.source(path, envir = .GlobalEnv)",
     "if (!length(r_files)) {",
-    "  library(tabloToR)",
-    "  GEModel = get('GEModel', envir = asNamespace('tabloToR'))",
+    "  library(GEModelR)",
+    "  GEModel = get('GEModel', envir = asNamespace('GEModelR'))",
     "}",
     "results = lapply(state_files, function(state_file) {",
     "  model = GEModel$new()",
@@ -161,8 +201,8 @@ runSerializationFreshProcess = function(state_file) {
     "r_files = sort(list.files(file.path(package_root, 'R'), pattern = '\\\\.R$', full.names = TRUE))",
     "for (path in r_files) sys.source(path, envir = .GlobalEnv)",
     "if (!length(r_files)) {",
-    "  library(tabloToR)",
-    "  package_namespace = asNamespace('tabloToR')",
+    "  library(GEModelR)",
+    "  package_namespace = asNamespace('GEModelR')",
     "  GEModel = get('GEModel', envir = package_namespace)",
     "  sparse_state_data = get('sparse_state_data', envir = package_namespace)",
     "  .serialization_strip_runtime = get('.serialization_strip_runtime', envir = package_namespace)",

@@ -15,7 +15,7 @@ three_region_provenance_path = function() {
 three_region_workflows_path = function() {
   installed = system.file(
     "compatibility", "WORKFLOWS.md",
-    package = "tabloToR"
+    package = "GEModelR"
   )
   source = testthat::test_path(
     "..", "..", "inst", "compatibility", "WORKFLOWS.md"
