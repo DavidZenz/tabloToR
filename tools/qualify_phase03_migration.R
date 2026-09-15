@@ -608,6 +608,13 @@ qualification_assert_output = function(output, patterns, stage) {
   invisible(TRUE)
 }
 
+qualification_phase02_migration_arguments = function(source) {
+  c(
+    "--vanilla", file.path(source, "tools", "refresh_phase02_baselines.R"),
+    "--check-migration-source"
+  )
+}
+
 qualification_manifest_frame = function(
     stages, head, export_digest, extracted_digest, archive_digest,
     installation_digest, root, cleanup) {
@@ -1021,9 +1028,15 @@ qualification_execute = function(root = qualification_repository_root()) {
 
   phase02_original_result = qualification_run_command(
     "phase02-original", qualification_r("Rscript"),
-    c("--vanilla", file.path(source, "tools", "refresh_phase02_baselines.R"),
-      "--check"),
+    qualification_phase02_migration_arguments(source),
     directory = source, log_directory = logs
+  )
+  qualification_assert_output(
+    phase02_original_result$output,
+    c("Phase 02 migration source gate: PASS",
+      "Identity-normalized-source-fingerprint:",
+      "Accepted-canonical-hash:"),
+    "phase02-original"
   )
   phase02_original_digest = qualification_hash_raw(charToRaw(paste(
     c(source_identity_digest, phase02_original_result$log_digest),
@@ -1032,13 +1045,15 @@ qualification_execute = function(root = qualification_repository_root()) {
   stages = qualification_append_stage(
     stages, "phase02-original", phase02_original_digest,
     phase02_original_result, source,
-    "original proposal-only Phase 2 read-only gate passed", root_digest
+    paste(
+      "migration-aware Phase 2 read-only replay passed; canonical numerical",
+      "artifacts and accepted hash exact"
+    ), root_digest
   )
 
   phase02_migration_result = qualification_run_command(
     "phase02-migration", qualification_r("Rscript"),
-    c("--vanilla", file.path(source, "tools", "refresh_phase02_baselines.R"),
-      "--check-migration-source"),
+    qualification_phase02_migration_arguments(source),
     directory = source, log_directory = logs
   )
   qualification_assert_output(

@@ -261,3 +261,97 @@ test_that("full-suite expression uses parse-safe ASCII string delimiters", {
   )
   expect_match(implementation, "directory = check_root", fixed = TRUE)
 })
+
+test_that("Phase 2 qualification accepts only reviewed identity migration", {
+  tool = loadQualificationHarness()
+  source = dirname(dirname(qualificationHarnessPath()))
+  refresh = new.env(parent = globalenv())
+  sys.source(
+    file.path(source, "inst", "tools", "refresh_phase02_baselines.R"),
+    envir = refresh
+  )
+  map = refresh$phase02_load_identity_map(root = source)
+  source_state = refresh$phase02_validate_identity_source(source, map)
+  canonical = refresh$phase02_canonical_dir(source)
+
+  arguments = tool$qualification_phase02_migration_arguments(source)
+  expect_identical(tail(arguments, 1L), "--check-migration-source")
+  expect_false("--check" %in% arguments)
+
+  set_fingerprint_field = function(lines, field, value) {
+    prefix = paste0(field, ": ")
+    index = which(startsWith(lines, prefix))
+    stopifnot(length(index) == 1L)
+    lines[[index]] = paste0(prefix, value)
+    lines
+  }
+  canonical_fingerprints = read.dcf(
+    file.path(canonical, "fingerprints.dcf")
+  )
+  make_observed = function() {
+    observed = tempfile("phase03-phase02-migration-")
+    dir.create(observed)
+    stable = refresh$phase02_stable_artifact_names()
+    stopifnot(all(file.copy(
+      file.path(canonical, stable), file.path(observed, stable)
+    )))
+    fingerprint_path = file.path(observed, "fingerprints.dcf")
+    lines = readLines(fingerprint_path, warn = FALSE)
+    lines = set_fingerprint_field(lines, "Package-Name", "GEModelR")
+    lines = set_fingerprint_field(
+      lines, "Source-Fingerprint", source_state$raw_fingerprint
+    )
+    lines = set_fingerprint_field(
+      lines, "Package-Signature", refresh$phase02_signature(list(
+        package = "GEModelR",
+        version = unname(canonical_fingerprints[1L, "Package-Version"]),
+        source = source_state$raw_fingerprint
+      ))
+    )
+    writeLines(lines, fingerprint_path, useBytes = TRUE)
+    observed
+  }
+
+  observed = make_observed()
+  on.exit(unlink(observed, recursive = TRUE, force = TRUE), add = TRUE)
+  expect_silent(refresh$phase02_compare_migration_artifacts(
+    canonical, observed, map, source_state = source_state
+  ))
+
+  expectations = read.csv(
+    file.path(observed, "expectations.csv"), stringsAsFactors = FALSE,
+    check.names = FALSE
+  )
+  expectations$value[[1L]] = "numerical drift"
+  write.csv(
+    expectations, file.path(observed, "expectations.csv"),
+    row.names = FALSE, quote = TRUE
+  )
+  expect_error(
+    refresh$phase02_compare_migration_artifacts(
+      canonical, observed, map, source_state = source_state
+    ),
+    "Canonical numerical artifact drifted"
+  )
+
+  unlink(observed, recursive = TRUE, force = TRUE)
+  observed = make_observed()
+  fingerprint_path = file.path(observed, "fingerprints.dcf")
+  lines = readLines(fingerprint_path, warn = FALSE)
+  drift = paste(rep("0", 32L), collapse = "")
+  lines = set_fingerprint_field(lines, "Source-Fingerprint", drift)
+  lines = set_fingerprint_field(
+    lines, "Package-Signature", refresh$phase02_signature(list(
+      package = "GEModelR",
+      version = unname(canonical_fingerprints[1L, "Package-Version"]),
+      source = drift
+    ))
+  )
+  writeLines(lines, fingerprint_path, useBytes = TRUE)
+  expect_error(
+    refresh$phase02_compare_migration_artifacts(
+      canonical, observed, map, source_state = source_state
+    ),
+    "Observed source fingerprint does not match the checked source"
+  )
+})
