@@ -30,6 +30,7 @@ test_that("qualification stages form the exact digest-linked chain", {
 
   broken = stages
   broken$parent_digest[[4L]] = paste(rep("0", 64L), collapse = "")
+  broken$input_digest[[4L]] = broken$parent_digest[[4L]]
   expect_error(
     tool$qualification_validate_stage_chain(broken),
     "QUALIFICATION_STAGE_PARENT_MISMATCH"
