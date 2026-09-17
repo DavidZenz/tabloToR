@@ -181,3 +181,158 @@ test_that("original gate ignores source identity and rejects combined CLI modes"
     expect_true(!is.null(attr(output, "status")), info = name)
   }
 })
+
+
+test_that("original gate rejects missing malformed and self-consistent forgeries", {
+  root = phase02_original_source_root()
+  refresh = load_phase02_original_tool(root)
+  canonical = refresh$phase02_canonical_dir(root)
+  registry = file.path(root, "inst", "migration", "historical-evidence.dcf")
+  stable = c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md")
+
+  copy_artifacts = function(destination) {
+    dir.create(destination, recursive = TRUE, showWarnings = FALSE)
+    expect_true(all(file.copy(
+      file.path(canonical, stable), file.path(destination, stable)
+    )))
+    destination
+  }
+  check = function(artifact_dir, registry_path = registry) {
+    refresh$phase02_check_original_artifacts(
+      root = root, canonical_dir = artifact_dir,
+      registry_path = registry_path
+    )
+  }
+
+  for (name in stable) {
+    missing = copy_artifacts(tempfile(paste0("phase02-original-missing-", name, "-")))
+    unlink(file.path(missing, name))
+    expect_error(
+      check(missing), "PHASE02_ORIGINAL_ARTIFACT_GATE", info = name
+    )
+  }
+
+  malformed_fingerprint = copy_artifacts(
+    tempfile("phase02-original-malformed-fingerprint-")
+  )
+  writeLines(c("not: valid", "broken"),
+             file.path(malformed_fingerprint, "fingerprints.dcf"),
+             useBytes = TRUE)
+  expect_error(
+    check(malformed_fingerprint), "PHASE02_ORIGINAL_ARTIFACT_GATE"
+  )
+
+  malformed_acceptance = copy_artifacts(
+    tempfile("phase02-original-malformed-acceptance-")
+  )
+  writeLines(c("not: valid", "broken"),
+             file.path(malformed_acceptance, "ACCEPTANCE.md"),
+             useBytes = TRUE)
+  expect_error(
+    check(malformed_acceptance), "PHASE02_ORIGINAL_ARTIFACT_GATE"
+  )
+
+  altered = copy_artifacts(tempfile("phase02-original-self-consistent-"))
+  expectations = file.path(altered, "expectations.csv")
+  writeBin(
+    c(readBin(expectations, "raw", n = file.info(expectations)$size),
+      as.raw(0L)),
+    expectations
+  )
+  new_canonical_hash = refresh$phase02_artifact_hash(altered)
+  acceptance = file.path(altered, "ACCEPTANCE.md")
+  acceptance_lines = readLines(acceptance, warn = FALSE)
+  acceptance_index = grep(
+    "- **New-Canonical-Hash:**", acceptance_lines, fixed = TRUE
+  )
+  stopifnot(length(acceptance_index) == 1L)
+  acceptance_lines[[acceptance_index]] = paste0(
+    "- **New-Canonical-Hash:** ", intToUtf8(96L),
+    new_canonical_hash, intToUtf8(96L)
+  )
+  writeLines(acceptance_lines, acceptance, useBytes = TRUE)
+  new_expectations_digest = refresh$phase02_original_sha256_file(expectations)
+  new_acceptance_digest = refresh$phase02_original_sha256_file(acceptance)
+
+  registry_record = as.data.frame(read.dcf(registry), stringsAsFactors = FALSE, check.names = FALSE)
+  old_expectations_digest = registry_record[
+    registry_record[["Record-Id"]] == "phase02-expectations", "Byte-Digest"
+  ]
+  old_acceptance_digest = registry_record[
+    registry_record[["Record-Id"]] == "phase02-acceptance", "Byte-Digest"
+  ]
+  forged_registry = tempfile("phase02-original-self-consistent-registry-")
+  registry_lines = readLines(registry, warn = FALSE)
+  replace_once = function(lines, old, new) {
+    index = grep(old, lines, fixed = TRUE)
+    stopifnot(length(index) == 1L)
+    lines[[index]] = sub(old, new, lines[[index]], fixed = TRUE)
+    lines
+  }
+  registry_lines = replace_once(
+    registry_lines, old_expectations_digest, new_expectations_digest
+  )
+  registry_lines = replace_once(
+    registry_lines, old_acceptance_digest, new_acceptance_digest
+  )
+  writeLines(registry_lines, forged_registry, useBytes = TRUE)
+  expect_error(
+    check(altered, forged_registry),
+    "PHASE02_ORIGINAL_ARTIFACT_GATE"
+  )
+})
+
+
+test_that("protected source drift fails migration while original bytes still pass", {
+  root = phase02_original_source_root()
+  refresh = load_phase02_original_tool(root)
+  canonical = refresh$phase02_canonical_dir(root)
+  registry = file.path(root, "inst", "migration", "historical-evidence.dcf")
+  map = refresh$phase02_load_identity_map(root = root)
+
+  copy_tree = function(destination, relative) {
+    for (path in relative) {
+      target = file.path(destination, path)
+      dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+      expect_true(file.copy(file.path(root, path), target))
+    }
+    destination
+  }
+  source = tempfile("phase02-original-source-copy-")
+  relative = unique(c(
+    refresh$phase02_identity_source_files(root),
+    file.path("tests", "testthat", "fixtures",
+              c("three-region.tab", "PROVENANCE.md")),
+    file.path("benchmarks", "GTAP12A_CPP_RESULTS.md")
+  ))
+  copy_tree(source, relative)
+  canonical_copy = tempfile("phase02-original-canonical-copy-")
+  dir.create(canonical_copy)
+  stable = c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md")
+  expect_true(all(file.copy(
+    file.path(canonical, stable), file.path(canonical_copy, stable)
+  )))
+  registry_copy = tempfile("phase02-original-registry-copy-")
+  expect_true(file.copy(registry, registry_copy))
+
+
+  solver = file.path(source, "R", "sparseSolver.R")
+  solver_text = rawToChar(
+    readBin(solver, "raw", n = file.info(solver)$size)
+  )
+  old = "residual_norm / max(1, rhs_norm)"
+  new = "residual_norm / max(2, rhs_norm)"
+  stopifnot(grepl(old, solver_text, fixed = TRUE))
+  solver_text = sub(old, new, solver_text, fixed = TRUE)
+  connection = file(solver, open = "wb")
+  writeBin(charToRaw(solver_text), connection)
+  close(connection)
+  expect_error(
+    refresh$phase02_validate_identity_source(source, map),
+    "source fingerprint|mapping row"
+  )
+  expect_silent(refresh$phase02_check_original_artifacts(
+    root = source, canonical_dir = canonical_copy,
+    registry_path = registry_copy
+  ))
+})

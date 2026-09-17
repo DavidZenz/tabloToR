@@ -250,8 +250,8 @@ qualification_required_stages = function() {
     "clean-state", "git-export", "extract", "source-identity", "build",
     "archive-identity", "check", "install", "install-identity",
     "fresh-workflow", "full-suite", "predecessor-digests",
-    "historical-evidence", "phase02-original", "phase02-migration",
-    "release-blockers", "repository-readonly"
+    "historical-evidence", "phase02-original", "serialization-bugfix",
+    "phase02-migration", "release-blockers", "repository-readonly"
   )
 }
 
@@ -271,6 +271,7 @@ qualification_stage_parents = function() {
     "predecessor-digests" = "source-identity",
     "historical-evidence" = "source-identity",
     "phase02-original" = "source-identity",
+    "serialization-bugfix" = "source-identity",
     "phase02-migration" = "source-identity",
     "release-blockers" = "source-identity",
     "repository-readonly" = "clean-state"
@@ -499,7 +500,12 @@ qualification_extract_shell = function(export, source, verification) {
   )
 }
 
-qualification_isolated_environment = function(library) {
+qualification_isolated_environment = function(
+    library, gap_test_library = library) {
+  library = normalizePath(library, winslash = "/", mustWork = TRUE)
+  gap_test_library = normalizePath(
+    gap_test_library, winslash = "/", mustWork = TRUE
+  )
   ambient = normalizePath(.libPaths(), winslash = "/", mustWork = TRUE)
   ambient = ambient[!vapply(ambient, function(path) {
     dir.exists(file.path(path, "GEModelR"))
@@ -507,6 +513,7 @@ qualification_isolated_environment = function(library) {
   c(
     paste0("R_LIBS_USER=", library),
     paste0("R_LIBS_SITE=", paste(ambient, collapse = .Platform$path.sep)),
+    paste0("GEModelR_GAP_TEST_LIBRARY=", gap_test_library),
     "R_ENVIRON_USER=/dev/null",
     "R_PROFILE_USER=/dev/null"
   )
@@ -592,6 +599,17 @@ qualification_suite_expression = function(library, test_directory) {
     "stopifnot(!any(vapply(result, function(x) length(x$results) && ",
     "any(vapply(x$results, inherits, logical(1), 'expectation_failure')), ",
     "logical(1))))"
+  )
+}
+
+qualification_required_full_suite_tests = function() {
+  file.path(
+    "tests", "testthat",
+    c(
+      "test-installed-benchmark-execution.R",
+      "test-benchmark-correctness-gate.R",
+      "test-serialization-leaf-types.R"
+    )
   )
 }
 
@@ -866,6 +884,16 @@ qualification_execute = function(root = qualification_repository_root()) {
   if (!dir.exists(check_tests)) {
     qualification_abort("QUALIFICATION_CHECK_TESTS_MISSING")
   }
+  required_suite_tests = file.path(
+    check_root, qualification_required_full_suite_tests()
+  )
+  missing_suite_tests = required_suite_tests[!file.exists(required_suite_tests)]
+  if (length(missing_suite_tests)) {
+    qualification_abort(
+      "QUALIFICATION_GAP_TESTS_MISSING",
+      paste(missing_suite_tests, collapse = ",")
+    )
+  }
   check_lines = readLines(check_logs[[1L]], warn = FALSE, encoding = "UTF-8")
   findings = qualification_extract_check_findings(check_lines, temporary_root)
   if (length(findings$errors)) {
@@ -951,7 +979,9 @@ qualification_execute = function(root = qualification_repository_root()) {
     "fresh-workflow", qualification_r("Rscript"),
     c("--vanilla", shQuote(fresh_script), shQuote(library), shQuote(source),
       shQuote(fresh_result_path)),
-    environment = qualification_isolated_environment(library),
+    environment = qualification_isolated_environment(
+      library, gap_test_library = library
+    ),
     log_directory = logs
   )
   fresh = readRDS(fresh_result_path)
@@ -978,7 +1008,9 @@ qualification_execute = function(root = qualification_repository_root()) {
     "full-suite", qualification_r("R"),
     c("--vanilla", "-q", "-e", shQuote(suite_expression)),
     directory = check_root,
-    environment = qualification_isolated_environment(library),
+    environment = qualification_isolated_environment(
+      library, gap_test_library = library
+    ),
     log_directory = logs
   )
   suite_digest = qualification_hash_raw(charToRaw(paste(
@@ -1063,6 +1095,39 @@ qualification_execute = function(root = qualification_repository_root()) {
     root_digest
   )
 
+  serialization_bugfix_result = qualification_run_command(
+    "serialization-bugfix", qualification_r("Rscript"),
+    c(
+      "--vanilla",
+      file.path(source, "tools", "check_serialization_bugfix.R"),
+      "--verify-approved"
+    ),
+    directory = source, log_directory = logs
+  )
+  qualification_assert_output(
+    serialization_bugfix_result$output,
+    c(
+      "Serialization BUGFIX gate: PASS",
+      "Change-Kind: BUGFIX",
+      "Before-SHA256:",
+      "After-SHA256:"
+    ),
+    "serialization-bugfix"
+  )
+  serialization_bugfix_digest = qualification_hash_raw(charToRaw(paste(
+    c(
+      source_identity_digest, serialization_bugfix_result$command,
+      serialization_bugfix_result$log_digest
+    ),
+    collapse = intToUtf8(10L)
+  )))
+  stages = qualification_append_stage(
+    stages, "serialization-bugfix", serialization_bugfix_digest,
+    serialization_bugfix_result, source,
+    "approved serialization BUGFIX before/after digest pair verified",
+    root_digest
+  )
+
   phase02_migration_result = qualification_run_command(
     "phase02-migration", qualification_r("Rscript"),
     qualification_phase02_migration_arguments(source),
@@ -1075,8 +1140,12 @@ qualification_execute = function(root = qualification_repository_root()) {
       "Accepted-canonical-hash:"),
     "phase02-migration"
   )
+
   phase02_migration_digest = qualification_hash_raw(charToRaw(paste(
-    c(source_identity_digest, phase02_migration_result$log_digest),
+    c(
+      source_identity_digest, phase02_migration_result$command,
+      phase02_migration_result$log_digest
+    ),
     collapse = "\n"
   )))
   stages = qualification_append_stage(
@@ -1178,6 +1247,7 @@ qualification_expect_failure = function(expression, pattern) {
 
 qualification_self_test = function() {
   stages = qualification_example_stages()
+  stopifnot(length(qualification_required_stages()) == 18L)
   broken = stages
   broken$parent_digest[[4L]] = paste(rep("0", 64L), collapse = "")
   broken$input_digest[[4L]] = broken$parent_digest[[4L]]

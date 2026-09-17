@@ -475,3 +475,36 @@ test_that("qualification suite propagates the isolated gap-test library", {
   expect_match(implementation, "qualification_required_full_suite_tests",
                fixed = TRUE)
 })
+
+
+test_that("serialization stage dispatch accepts only the BUGFIX fixture contract", {
+  tool = loadQualificationHarness()
+  root = tempfile("qualification-serialization-fixture-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE, force = TRUE), add = TRUE)
+  script = file.path(root, "check_serialization_bugfix.R")
+  writeLines(
+    c(
+      "cat(\"Serialization BUGFIX gate: PASS\")",
+      "cat(\"Change-Kind: BUGFIX\")",
+      "cat(\"Before-SHA256: before\")",
+      "cat(\"After-SHA256: after\")"
+    ),
+    script, useBytes = TRUE
+  )
+  result = tool$qualification_run_command(
+    "serialization-bugfix", file.path(R.home("bin"), "Rscript"),
+    c("--vanilla", shQuote(script)), log_directory = root
+  )
+  expect_identical(result$status, 0L)
+  expect_silent(tool$qualification_assert_output(
+    result$output,
+    c(
+      "Serialization BUGFIX gate: PASS",
+      "Change-Kind: BUGFIX",
+      "Before-SHA256:",
+      "After-SHA256:"
+    ),
+    "serialization-bugfix"
+  ))
+})
