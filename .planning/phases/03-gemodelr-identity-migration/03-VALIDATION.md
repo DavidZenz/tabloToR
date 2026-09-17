@@ -89,3 +89,36 @@ Wave 0 is not complete because execution-created tests, fixtures, registries, cl
 - [ ] Set wave_0_complete and nyquist_compliant true only after execution evidence satisfies every gate.
 
 **Approval:** pending execution
+
+## Append-only Phase03 gap-closure map — 2026-09-17
+
+This map supplements, and does not supersede, executed 03-01 through 03-12 plans/summaries or the earlier validation rows. All entries below are planned/pending, not verified; existing Nyquist/status flags are unchanged. Only the five verified blockers are repaired. Execute with `$gsd-execute-phase 03 --gaps-only`; the orchestrator owns subsequent tracking, review, commit and final verification.
+
+| Task | Wave | Verified blocker / finding | Automated evidence contract | Status |
+|---|---|---|---|---|
+| 03-13-01 | 13 | Gap1 / CR-01 installed child | test-installed-benchmark-execution: installed fresh-process non-summary sweep, small redistributable RDS input | pending |
+| 03-13-02 | 13 | Gap1 / CR-01 installed resources | test-installed-benchmark-execution + test-benchmark-harness: real one-thread scaling, five installed resources, negative missing/malformed inputs | pending |
+| 03-14-01 | 14 | Gap5 / CR-05 fail-open correctness | test-benchmark-correctness-gate: real installed CLI requires CSV plus nonempty uniquely keyed solution RDS sets | pending |
+| 03-14-02 | 14 | Gap5 / CR-05 pairing and numeric boundaries | test-benchmark-correctness-gate: absent/unequal/duplicate/reordered/signature/shape/dimname/nonfinite cases and explicit MIGR-02 adjacency/empty/ordering regressions | pending |
+| 03-15-01 | 13 | Gap4 / CR-04 protected BUGFIX proposal | test-serialization-bugfix-review + check_serialization_bugfix.R --proposal: exact temporary two-predicate delta, genuine predecessor success, current rejection and nonmutation | pending |
+| 03-15-02 | 13 | Gap4 / CR-04 approval gate | proposal validator checks exact source/patch digests; blocking-human review records reviewer and UTC before application | blocked on explicit approval |
+| 03-16-01 | 14 | Gap4 / CR-04 exact reconstructed leaves | test-serialization-leaf-types + --verify-approved: public loadState rejects logical-for-double before receiver mutation, applies only approved patch | pending after 03-15 approval |
+| 03-16-02 | 14 | Gap4 / CR-04 transactional coverage | test-serialization-leaf-types: integer/logical/wrong-class failures, complete receiver nonmutation, current/compact/legacy/genuine predecessor positives | pending |
+| 03-17-01 | 13 | Gap2 / CR-02 independent original authority | test-phase02-original-gate: --check-original-artifacts fixed immutable digests/read-only PASS, distinct original-stage dispatch | pending |
+| 03-17-02 | 13 | Gap2 / CR-02 independent failure + source-suite/lifecycle wiring | test-phase02-original-gate + test-phase03-qualification-harness: independent failures and all 18 stages; before reseal run focused source gate `rtk R --vanilla -q -e 'stopifnot(file.exists("DESCRIPTION"), dir.exists("R"), dir.exists("src")); testthat::test_local(filter="baseline-artifacts", reporter="summary", stop_on_failure=TRUE)'`, executing BOTH proposal/check (213–216) and locale-independent source-ordering (459–462) regressions; ordering uses independently enumerated sorted logical relative paths and current-file hashing, not a hardcoded raw fingerprint or production-helper oracle; predecessor drift is intentional, separate immutable-original and migration-normalized numerical/source gates both pass without skips or canonical refresh; accepted hash f6f2297a6ab257c9737a64354c82d7f1 remains unchanged | pending |
+| 03-18-01 | 13 | Gap3 / CR-03 noncircular workflow proposal | test-workflow-identity-policy: concrete path/line-hash/count policy through real temporary summary/state/review/report lifecycle; source/novel-line rejection | pending |
+| 03-18-02 | 13 | Gap3 / CR-03 policy approval gate | policy validator checks candidate SHA-256; blocking-human review approves only enumerated paths and exact lines | blocked on explicit approval |
+| 03-19-01 | 15 | Gap3 / CR-03 active final-tree audit | test-phase03-identity-reseal: approved policy pinned in auditor, strict exact rows elsewhere, --check-final-tree read-only lifecycle and --verify-qualification-transcript integrity | pending after 03-18 approval |
+| 03-19-02 | 15 | Gap3 / CR-03 exact inventory reseal approval | outside-repository candidate CSV diff and digest validation; blocking-human review of before/candidate/policy hashes | blocked on explicit approval |
+| 03-19-03 | 15 | Gap3 / CR-03 reviewed reseal application | apply approved bytes only; tracked/historical/original/predecessor/BUGFIX audits and --check-final-tree all pass | pending after 03-19-02 approval |
+| 03-20-01 | 16 | All five gaps / integrated qualification | actual clean-HEAD --execute; 18 ordered real stages; fast --verify-qualification-transcript checks captured manifest/status/digest contracts | pending |
+| 03-20-02 | 16 | Gap3 / CR-03 durable evidence handoff | historical-HEAD summary plus --check-final-tree; orchestrator repeats final read-only gate only after all durable review/verification/tracking writes | pending |
+| Orchestrator final gate | after all durable writes | Gap3 / CR-03 final current tracked audit | rtk Rscript --vanilla tools/seal_phase03_identity.R --check-final-tree; stdout/external log only, never a tracked self-referential seal | pending; phase cannot seal before PASS |
+
+Dependency/ownership contract: wave13 plans 03-13/15/17/18 have disjoint write sets and depend on executed 03-12; wave14 03-14 depends on 03-13 and 03-16 on approved 03-15; wave15 03-19 depends on all repair/policy predecessors; wave16 03-20 depends on 03-19 and is execution/evidence only. All qualification checker changes occur in 03-17, before the reviewed 03-19 inventory reseal. No source edits occur during 03-20 qualification. Each new plan leads with a tracer and contains 2–3 tasks.
+
+Scope and authority: COMP-04, MIGR-01 and MIGR-02 appear in every new plan. Canonical accepted hash `f6f2297a6ab257c9737a64354c82d7f1`, schema1, genuine predecessor fixture, exact public workflow/defaults and numerical evidence authority remain unchanged; no canonical refresh/accept/relabel is authorized. The source-coverage audit and explicit flagged assumptions are in 03-20-PLAN.md. COMP-04/MIGR-01 spec-less unclassified probes remain flagged-unverified, not silently resolved. MIGR-02 adjacency/empty/ordering require the concrete 03-14 regression evidence before resolution.
+
+WR-01 remains advisory for later Phase5. Phase03 qualification is restricted to the reviewed current host and the two exact approved NOTE blocks: license “What license is it under?” and German installed-size total8.9Mb/libs7.9Mb, preserving recorded NOTE digests. Any changed locale/text/size/category requires a new blocking-human checkpoint; no broader authorization is inferred.
+
+Release remains blocked independently by `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED`. No release/publish, new research, optional coverage artifacts, changes to original executed plans/summaries, or edits to unrelated dirty artifacts are authorized by this map.

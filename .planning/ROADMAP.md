@@ -116,7 +116,7 @@ Plans:
   3. Pre/post-rename compatibility fixtures produce equivalent solutions, outputs, diagnostics, and serialization results.
   4. Users have exact installation and script migration instructions, including the fate of `tabloToR::` calls and old option names.
 
-**Plans**: 12/12 plans executed
+**Plans**: 12/20 plans executed; eight append-only gap-closure plans independently checked and ready to execute
 
 **Wave 1**
 
@@ -165,6 +165,28 @@ Plans:
 **Wave 12**
 
 - [x] 03-12-PLAN.md — Qualify clean tracked source, archive, installation, fresh public/native workflow, full suite, and immutable evidence (depends on 03-11)
+
+**Wave 13** *(gap closure; depends on executed 03-12)*
+
+- [ ] 03-13-PLAN.md — Install the benchmark child and exercise real installed sweep/scaling runs
+- [ ] 03-15-PLAN.md — Propose and obtain explicit approval for the fingerprint-protected serialization bugfix
+- [ ] 03-17-PLAN.md — Separate original-artifact and migration-source gates and repair both stale source-baseline tests
+- [ ] 03-18-PLAN.md — Propose and review the narrowly scoped, noncircular workflow-evidence identity policy
+
+**Wave 14** *(gap closure; blocked on respective Wave 13 prerequisites)*
+
+- [ ] 03-14-PLAN.md — Require complete, uniquely keyed, finite benchmark solution comparisons (depends on 03-13)
+- [ ] 03-16-PLAN.md — Apply only the approved exact-type serialization fix and verify transactional restoration (depends on 03-15)
+
+**Wave 15** *(gap closure; blocked on all repair/policy prerequisites)*
+
+- [ ] 03-19-PLAN.md — Review and apply the exact identity inventory reseal and post-evidence audit lifecycle (depends on 03-13 through 03-18)
+
+**Wave 16** *(gap closure; blocked on reviewed reseal)*
+
+- [ ] 03-20-PLAN.md — Run the clean-HEAD 18-stage qualification and require the post-verifier final-tree audit (depends on 03-19)
+
+Gap execution: `$gsd-execute-phase 03 --gaps-only`. Approval checkpoints in 03-15, 03-18 and 03-19 remain mandatory. Canonical numerical/predecessor evidence stays immutable; the exact current-host NOTE policy and both independent release blockers remain in force. Planning verification is not phase completion.
 
 ### Phase 4: Public API and Solver Boundaries
 
@@ -229,7 +251,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
 | 2. Compatibility and Numerical Baseline | 6/6 | Complete    | 2026-09-09 |
-| 3. GEModelR Identity Migration | 12/12 | In Progress|  |
+| 3. GEModelR Identity Migration | 12/20 | Gap closure planned | - |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |
 | 6. Documentation and Release Qualification | 0/TBD | Not started | - |
