@@ -202,19 +202,55 @@ test_that("stable fingerprints and volatile run metadata are separated", {
   )
 })
 
+
 test_that("proposal and check modes cannot mutate accepted canonical artifacts", {
   phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  root = refresh$phase02_repository_root()
   canonical = refresh$phase02_canonical_dir()
-  before = refresh$phase02_artifact_hash(canonical)
+  tracked = c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md")
+  before = vapply(
+    tracked,
+    function(name) refresh$phase02_hash_file(file.path(canonical, name)),
+    character(1)
+  )
   proposal = tempfile("phase02-proposal-immutable-")
 
   refresh$phase02_generate_proposal(proposal)
-  clean = refresh$phase02_check_baselines()
+  clean = refresh$phase02_check_baselines(canonical_dir = canonical)
 
-  expect_true(clean$clean)
-  expect_match(clean$diff, "No stable baseline changes", fixed = TRUE)
-  expect_identical(before, refresh$phase02_artifact_hash(canonical))
+  expect_false(clean$clean)
+  changed = refresh$phase02_diff_frame(canonical, proposal)
+  changed = changed[changed$status != "unchanged", , drop = FALSE]
+  expect_equal(nrow(changed), 3L)
+  expect_identical(sort(unique(changed$artifact)), "fingerprints.dcf")
+  expect_setequal(
+    changed$key,
+    c("Source-Fingerprint", "Package-Name", "Package-Signature")
+  )
+  expect_true(all(changed$status == "changed"))
+
+  original = refresh$phase02_check_original_artifacts(
+    root = root, canonical_dir = canonical,
+    registry_path = file.path(root, "inst", "migration",
+                               "historical-evidence.dcf")
+  )
+  expect_true(original$clean)
+  expect_true(original$original_acceptance_verified)
+  expect_silent(refresh$phase02_check_migration_source(
+    root = root, canonical_dir = canonical,
+    map_path = file.path(root, "inst", "migration",
+                         "benchmark-identity-map.dcf")
+  ))
+  expect_identical(
+    before,
+    vapply(
+      tracked,
+      function(name) refresh$phase02_hash_file(file.path(canonical, name)),
+      character(1)
+    )
+  )
+
   expect_error(
     refresh$phase02_generate_proposal(canonical),
     "canonical baseline"
@@ -445,19 +481,55 @@ test_that("canonical acceptance is complete and bound to accepted artifacts", {
   )
 })
 
+
 test_that("source fingerprint ordering is locale independent", {
   phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
-  files = refresh$phase02_source_files(refresh$phase02_repository_root())
-  expected = unique(files)
-  expected = expected[order(
-    tolower(expected), expected, method = "radix"
-  )]
+  root = refresh$phase02_repository_root()
 
-  expect_identical(files, expected)
+  independent_source_files = function(root) {
+    fixed = c("DESCRIPTION", "NAMESPACE")
+    recursive = c(
+      list.files(file.path(root, "R"), pattern = "\\.R$",
+                 recursive = TRUE, full.names = FALSE),
+      file.path("src", list.files(
+        file.path(root, "src"), pattern = "\\.(c|cc|cpp|h|hpp)$",
+        recursive = TRUE, full.names = FALSE
+      )),
+      file.path("inst", "compatibility", list.files(
+        file.path(root, "inst", "compatibility"),
+        recursive = TRUE, full.names = FALSE
+      )),
+      file.path("tests", "testthat", "fixtures",
+                c("three-region.tab", "PROVENANCE.md")),
+      file.path("tests", "testthat", c(
+        "helper-compatibility.R", "helper-three-region.R",
+        "helper-numerical-baseline.R", "helper-transactional-state.R",
+        "helper-serialization.R"
+      ))
+    )
+    relative = unique(c(fixed, recursive))
+    relative = chartr("\\", "/", relative)
+    relative = setdiff(relative, "inst/compatibility/MANIFEST.md")
+    relative = unique(relative)
+    relative = relative[file.exists(file.path(root, relative))]
+    relative[order(tolower(relative), relative, method = "radix")]
+  }
+
+  expected = independent_source_files(root)
+  observed = refresh$phase02_source_files(root)
+  expect_identical(observed, expected)
+
+  paths = file.path(root, expected)
+  hashes = unname(tools::md5sum(paths))
+  frame = as.list(stats::setNames(hashes, expected))
+  raw = capture.output(dput(frame, control = c("keepNA", "keepInteger")))
+  digest_path = tempfile("phase02-independent-fingerprint-")
+  writeLines(raw, digest_path, useBytes = TRUE)
+  expected_fingerprint = unname(tools::md5sum(digest_path))
   expect_identical(
-    refresh$phase02_source_fingerprint(refresh$phase02_repository_root()),
-    "f57c39e0bdd3020b48a602773c580a8d"
+    refresh$phase02_source_fingerprint(root),
+    expected_fingerprint
   )
 })
 

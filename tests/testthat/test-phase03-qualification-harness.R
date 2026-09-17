@@ -355,3 +355,123 @@ test_that("Phase 2 qualification accepts only reviewed identity migration", {
     "Observed source fingerprint does not match the checked source"
   )
 })
+
+
+test_that("stage runners enforce their own failures and output contracts", {
+  tool = loadQualificationHarness()
+  root = tempfile("qualification-stage-contract-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE, force = TRUE), add = TRUE)
+
+  for (stage in c("phase02-original", "phase02-migration")) {
+    expect_error(
+      tool$qualification_run_command(
+        stage = stage, command = "/bin/sh",
+        arguments = c("-c", shQuote("exit 17")),
+        directory = root, log_directory = root
+      ),
+      paste0("QUALIFICATION_COMMAND_FAILED.*", stage)
+    )
+  }
+
+  original_output = c(
+    "Phase 02 original artifact gate: PASS",
+    "Accepted-canonical-hash: f6f2297a6ab257c9737a64354c82d7f1",
+    "Original-artifacts-verified: 4",
+    "Original-acceptance-verified: true"
+  )
+  migration_output = c(
+    "Phase 02 migration source gate: PASS",
+    "Identity-normalized-source-fingerprint:",
+    "Accepted-canonical-hash:"
+  )
+  expect_silent(tool$qualification_assert_output(
+    original_output, original_output[-1L], "phase02-original"
+  ))
+  expect_silent(tool$qualification_assert_output(
+    migration_output, migration_output[-1L], "phase02-migration"
+  ))
+  expect_error(
+    tool$qualification_assert_output(
+      migration_output, original_output[-1L], "phase02-original"
+    ),
+    "QUALIFICATION_STAGE_OUTPUT_MISMATCH"
+  )
+  expect_error(
+    tool$qualification_assert_output(
+      original_output, migration_output[-1L], "phase02-migration"
+    ),
+    "QUALIFICATION_STAGE_OUTPUT_MISMATCH"
+  )
+})
+
+test_that("serialization bugfix stage is digest-linked and distinct", {
+  tool = loadQualificationHarness()
+  stages = tool$qualification_required_stages()
+  parents = tool$qualification_stage_parents()
+
+  expect_length(stages, 18L)
+  expect_identical(parents[["serialization-bugfix"]], "source-identity")
+  expect_true(
+    match("serialization-bugfix", stages) >
+      match("phase02-original", stages)
+  )
+
+  implementation = paste(
+    deparse(body(tool$qualification_execute)), collapse = "\n"
+  )
+  expect_match(implementation, "check_serialization_bugfix.R", fixed = TRUE)
+  expect_match(implementation, "--verify-approved", fixed = TRUE)
+
+  expect_silent(tool$qualification_assert_output(
+    c(
+      "Serialization BUGFIX gate: PASS",
+      "Change-Kind: BUGFIX",
+      "Before-SHA256: before",
+      "After-SHA256: after"
+    ),
+    c("Serialization BUGFIX gate: PASS", "Change-Kind: BUGFIX",
+      "Before-SHA256:", "After-SHA256:"),
+    "serialization-bugfix"
+  ))
+  expect_error(
+    tool$qualification_assert_output(
+      c("Serialization BUGFIX gate: PASS", "Change-Kind: PASS"),
+      c("Serialization BUGFIX gate: PASS", "Change-Kind: BUGFIX"),
+      "serialization-bugfix"
+    ),
+    "QUALIFICATION_STAGE_OUTPUT_MISMATCH"
+  )
+})
+
+test_that("qualification suite propagates the isolated gap-test library", {
+  tool = loadQualificationHarness()
+  library = tempfile("qualification-gap-library-")
+  dir.create(library)
+  on.exit(unlink(library, recursive = TRUE, force = TRUE), add = TRUE)
+
+  environment = tool$qualification_isolated_environment(library)
+  gap = environment[startsWith(environment, "GEModelR_GAP_TEST_LIBRARY=")]
+  expect_length(gap, 1L)
+  expect_identical(
+    gap,
+    paste0("GEModelR_GAP_TEST_LIBRARY=",
+           normalizePath(library, winslash = "/", mustWork = TRUE))
+  )
+  expect_identical(
+    tool$qualification_required_full_suite_tests(),
+    file.path(
+      "tests", "testthat",
+      c(
+        "test-installed-benchmark-execution.R",
+        "test-benchmark-correctness-gate.R",
+        "test-serialization-leaf-types.R"
+      )
+    )
+  )
+  implementation = paste(
+    deparse(body(tool$qualification_execute)), collapse = "\n"
+  )
+  expect_match(implementation, "qualification_required_full_suite_tests",
+               fixed = TRUE)
+})

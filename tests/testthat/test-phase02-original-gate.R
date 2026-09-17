@@ -90,3 +90,94 @@ test_that("qualification routes original and migration through distinct flags", 
   expect_false("--check-original-artifacts" %in% migration)
   expect_false(identical(original, migration))
 })
+
+
+test_that("original artifact gate rejects canonical and registry tampering", {
+  root = phase02_original_source_root()
+  refresh = load_phase02_original_tool(root)
+  canonical = refresh$phase02_canonical_dir(root)
+  registry = file.path(root, "inst", "migration", "historical-evidence.dcf")
+  stable = c(refresh$phase02_stable_artifact_names(), "ACCEPTANCE.md")
+
+  copy_artifacts = function(destination) {
+    dir.create(destination, recursive = TRUE, showWarnings = FALSE)
+    expect_true(all(file.copy(
+      file.path(canonical, stable), file.path(destination, stable)
+    )))
+    destination
+  }
+  copy_registry = function(destination) {
+    stopifnot(file.copy(registry, destination))
+    destination
+  }
+  check = function(artifact_dir, registry_path = registry) {
+    refresh$phase02_check_original_artifacts(
+      root = root, canonical_dir = artifact_dir,
+      registry_path = registry_path
+    )
+  }
+
+  for (name in stable) {
+    tampered = tempfile(paste0("phase02-original-tampered-", name, "-"))
+    copy_artifacts(tampered)
+    path = file.path(tampered, name)
+    writeBin(
+      c(readBin(path, "raw", n = file.info(path)$size), as.raw(0L)),
+      path
+    )
+    expect_error(check(tampered), "PHASE02_ORIGINAL_ARTIFACT_GATE", info = name)
+  }
+
+  duplicate_registry = tempfile("phase02-original-duplicate-registry-")
+  duplicate_lines = readLines(registry, warn = FALSE)
+  writeLines(c(duplicate_lines, duplicate_lines[seq_len(8L)]),
+             duplicate_registry, useBytes = TRUE)
+  tampered = copy_artifacts(tempfile("phase02-original-duplicate-"))
+  expect_error(
+    check(tampered, duplicate_registry),
+    "PHASE02_ORIGINAL_ARTIFACT_GATE"
+  )
+
+  forged_registry = tempfile("phase02-original-forged-registry-")
+  forged_lines = readLines(registry, warn = FALSE)
+  forged_lines[grep("^Byte-Digest:", forged_lines)[1L]] =
+    paste0("Byte-Digest: ", paste(rep("0", 64L), collapse = ""))
+  writeLines(forged_lines, forged_registry, useBytes = TRUE)
+  tampered = copy_artifacts(tempfile("phase02-original-forged-"))
+  expect_error(
+    check(tampered, forged_registry),
+    "PHASE02_ORIGINAL_ARTIFACT_GATE"
+  )
+})
+
+test_that("original gate ignores source identity and rejects combined CLI modes", {
+  root = phase02_original_source_root()
+  refresh = load_phase02_original_tool(root)
+  canonical = refresh$phase02_canonical_dir(root)
+  registry = file.path(root, "inst", "migration", "historical-evidence.dcf")
+
+  refresh$phase02_source_fingerprint = function(...) {
+    stop("original gate must not read current source fingerprint", call. = FALSE)
+  }
+  refresh$phase02_generate_proposal = function(...) {
+    stop("original gate must not generate a proposal", call. = FALSE)
+  }
+  expect_silent(refresh$phase02_check_original_artifacts(
+    root = root, canonical_dir = canonical, registry_path = registry
+  ))
+
+  script = file.path(root, "tools", "refresh_phase02_baselines.R")
+  cases = list(
+    duplicate = c("--check-original-artifacts", "--check-original-artifacts"),
+    combined = c("--check-original-artifacts", "--check-migration-source"),
+    unknown = "--check-original-artefacts"
+  )
+  for (name in names(cases)) {
+    output = system2(
+      file.path(R.home("bin"), "Rscript"),
+      c("--vanilla", shQuote(script), cases[[name]]),
+      stdout = TRUE, stderr = TRUE
+    )
+    expect_true(!is.null(attr(output, "status")), info = name)
+  }
+})
