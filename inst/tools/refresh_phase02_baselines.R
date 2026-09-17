@@ -845,6 +845,255 @@ phase02_validate_canonical_evidence = function(canonical_dir) {
   invisible(observed)
 }
 
+phase02_original_abort = function(code, detail = NULL) {
+  message = c("PHASE02_ORIGINAL_ARTIFACT_GATE", code)
+  if (!is.null(detail) && length(detail) && nzchar(as.character(detail))) {
+    message = c(message, as.character(detail))
+  }
+  stop(paste(message, collapse = " "), call. = FALSE)
+}
+
+phase02_original_expected_canonical_hash = function() {
+  "f6f2297a6ab257c9737a64354c82d7f1"
+}
+
+phase02_original_expected_registry = function() {
+  value = data.frame(
+    rep("gemodelr-historical-evidence-v1", 4L),
+    c("phase02-expectations", "phase02-tolerances",
+      "phase02-fingerprints", "phase02-acceptance"),
+    rep("immutable-phase02-evidence", 4L),
+    c(
+      "tests/testthat/baselines/phase02/expectations.csv",
+      "tests/testthat/baselines/phase02/tolerances.csv",
+      "tests/testthat/baselines/phase02/fingerprints.dcf",
+      "tests/testthat/baselines/phase02/ACCEPTANCE.md"
+    ),
+    rep("whole-file", 4L), rep("sha256", 4L),
+    c(
+      "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+      "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+      "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+      "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113"
+    ),
+    rep("raw", 4L), rep("tabloToR", 4L), rep("reviewed", 4L),
+    rep("locked", 4L),
+    c(
+      "Accepted Phase 02 numerical expectations remain predecessor evidence.",
+      "Accepted Phase 02 numerical tolerances remain predecessor evidence.",
+      "Accepted Phase 02 package and source fingerprints remain predecessor evidence.",
+      "Human-reviewed Phase 02 acceptance remains byte-identical."
+    ),
+    stringsAsFactors = FALSE
+  )
+  names(value) = c(
+    "Schema", "Record-Id", "Category", "Path", "Region",
+    "Digest-Algorithm", "Byte-Digest", "Identity-Mode",
+    "Predecessor-Identity", "Review-State", "Contract-State", "Rationale"
+  )
+  value
+}
+
+phase02_original_expected_fingerprint = function() {
+  value = data.frame(
+    "phase02-baseline-fingerprints-v1",
+    "tests/testthat/fixtures/three-region.tab",
+    "15e0bfa34b066974f6541f7a78ddfc1c",
+    "tests/testthat/fixtures/PROVENANCE.md",
+    "e8364f418968fdd23d3788e654536e62",
+    "aeda841525d36024d54788705d49ed2a",
+    paste(
+      "DESCRIPTION; NAMESPACE; R/*.R; src/*.{c,cc,cpp,h,hpp};",
+      "inst/compatibility/*; approved Phase 02 fixture/helper files;",
+      "generated baselines and proposals excluded"
+    ),
+    "21", "f57c39e0bdd3020b48a602773c580a8d", "tabloToR", "0.1.0",
+    "e21c5c3dd162c549ad53321a93ba9375",
+    "0a8f374c483973543ea78866b4cf8f9f",
+    "6734d2e6010c7e80327c78b69506d755",
+    "ff7e849992ff1b9ab15d503c4abd0cad",
+    "benchmarks/GTAP12A_CPP_RESULTS.md",
+    "9e0f560768c971761af0cba850742a55", "false",
+    stringsAsFactors = FALSE
+  )
+  names(value) = c(
+    "Schema", "Fixture-Path", "Fixture-MD5", "Fixture-Provenance-Path",
+    "Fixture-Provenance-MD5", "Fixture-Input-Signature", "Source-Scope",
+    "Source-File-Count", "Source-Fingerprint", "Package-Name",
+    "Package-Version", "Package-Signature", "Model-Signature",
+    "Expectations-MD5", "Tolerances-MD5", "External-Evidence-Path",
+    "External-Evidence-MD5", "External-Inputs-Committed"
+  )
+  value
+}
+
+phase02_original_sha256_file = function(path) {
+  info = file.info(path)
+  if (!nrow(info) || is.na(info$size[[1L]]) || info$size[[1L]] < 1L ||
+      info$size[[1L]] > 50 * 1024^2 ||
+      !isTRUE(file_test("-f", path))) {
+    phase02_original_abort("FILE_INVALID", path)
+  }
+  connection = file(path, open = "rb")
+  on.exit(close(connection), add = TRUE)
+  value = readBin(connection, "raw", n = as.integer(info$size[[1L]]))
+  if (requireNamespace("openssl", quietly = TRUE)) {
+    return(unclass(as.character(openssl::sha256(value))))
+  }
+  if (requireNamespace("digest", quietly = TRUE)) {
+    return(digest::digest(value, algo = "sha256", serialize = FALSE))
+  }
+  phase02_original_abort("SHA256_UNAVAILABLE")
+}
+
+phase02_original_read_registry = function(registry_path) {
+  if (!file.exists(registry_path) || dir.exists(registry_path)) {
+    phase02_original_abort("REGISTRY_MISSING", registry_path)
+  }
+  value = tryCatch(
+    read.dcf(registry_path),
+    error = function(error) phase02_original_abort(
+      "REGISTRY_INVALID", conditionMessage(error)
+    )
+  )
+  value = as.data.frame(value, stringsAsFactors = FALSE, check.names = FALSE)
+  value[] = lapply(value, as.character)
+  expected = phase02_original_expected_registry()
+  expected_ids = c(
+    "phase02-expectations", "phase02-tolerances", "phase02-fingerprints",
+    "phase02-acceptance", "gtap12a-cpp-results", "protected-gemodel",
+    "protected-sparse-elimination", "protected-sparse-solver",
+    "protected-sparse-schur-complement", "gemodel-warning-region"
+  )
+  expected_digests = c(
+    "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+    "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+    "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+    "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113",
+    "a4eb96dd86ad2ee4ead588fe7b275e7f5916f5de6bd1d59ba0587f9cec3b48ca",
+    "763f486451c306fa4b049a0479e1cf337250b86383d0fd1f736e1fc86954fb99",
+    "ffdb279979c01314aa2d3b25858434f088ed91f098505ad82915b15581d656ab",
+    "804fb1bc5abd905ee008753d822a4038fc57ce1fc069a7cf9773ed94e3947355",
+    "4ab962642fc2f5b7aca01c7da117ee760f5637e8aa11a0df502e68496fe97ffa",
+    "38d1805ecb032fc5e88b46d5bf505c8a2196edb15824f53a64774855a68a423f"
+  )
+  if (!identical(names(value), names(expected)) || nrow(value) != 10L ||
+      anyDuplicated(value[["Record-Id"]]) ||
+      !identical(value[["Record-Id"]], expected_ids) ||
+      !identical(value[["Byte-Digest"]], expected_digests) ||
+      !all(value[["Schema"]] == "gemodelr-historical-evidence-v1") ||
+      !all(value[["Digest-Algorithm"]] == "sha256") ||
+      !all(value[["Predecessor-Identity"]] == "tabloToR") ||
+      !all(value[["Review-State"]] == "reviewed") ||
+      !all(value[["Contract-State"]] == "locked") ||
+      !identical(value[seq_len(4L), , drop = FALSE], expected)) {
+    phase02_original_abort("REGISTRY_METADATA_DRIFT")
+  }
+  value
+}
+
+phase02_original_read_fingerprint = function(path) {
+  value = tryCatch(
+    read.dcf(path),
+    error = function(error) phase02_original_abort(
+      "FINGERPRINT_INVALID", conditionMessage(error)
+    )
+  )
+  value = as.data.frame(value, stringsAsFactors = FALSE, check.names = FALSE)
+  value[] = lapply(value, as.character)
+  expected = phase02_original_expected_fingerprint()
+  if (!identical(value, expected)) {
+    phase02_original_abort("FINGERPRINT_METADATA_DRIFT")
+  }
+  value[1L, ]
+}
+
+phase02_check_original_artifacts = function(
+    root = phase02_repository_root(), canonical_dir = NULL,
+    registry_path = NULL) {
+  if (!dir.exists(root)) phase02_original_abort("ROOT_MISSING", root)
+  root = normalizePath(root, mustWork = TRUE)
+  if (is.null(canonical_dir)) canonical_dir = phase02_canonical_dir(root)
+  if (is.null(registry_path)) {
+    registry_path = file.path(root, "inst", "migration",
+                              "historical-evidence.dcf")
+  }
+  if (!dir.exists(canonical_dir)) {
+    phase02_original_abort("CANONICAL_DIRECTORY_MISSING", canonical_dir)
+  }
+  canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
+  registry = phase02_original_read_registry(registry_path)
+  canonical_hash = phase02_original_expected_canonical_hash()
+
+  immutable = registry[startsWith(registry[["Category"]], "immutable-"), ,
+                       drop = FALSE]
+  if (nrow(immutable) != 5L) {
+    phase02_original_abort("REGISTRY_IMMUTABLE_CARDINALITY")
+  }
+  for (index in seq_len(nrow(immutable))) {
+    path = if (identical(immutable[["Record-Id"]][[index]],
+                         "gtap12a-cpp-results")) {
+      file.path(root, immutable[["Path"]][[index]])
+    } else {
+      file.path(canonical_dir, basename(immutable[["Path"]][[index]]))
+    }
+    observed = phase02_original_sha256_file(path)
+    if (!identical(observed, immutable[["Byte-Digest"]][[index]])) {
+      phase02_original_abort(
+        "IMMUTABLE_DIGEST_DRIFT", immutable[["Record-Id"]][[index]]
+      )
+    }
+  }
+
+  stable_hash = tryCatch(
+    phase02_artifact_hash(canonical_dir),
+    error = function(error) phase02_original_abort(
+      "CANONICAL_ARTIFACT_INVALID", conditionMessage(error)
+    )
+  )
+  if (!identical(stable_hash, canonical_hash)) {
+    phase02_original_abort("CANONICAL_ARTIFACT_HASH_DRIFT")
+  }
+  acceptance_hash = tryCatch(
+    phase02_accepted_canonical_hash(canonical_dir),
+    error = function(error) phase02_original_abort(
+      "ACCEPTANCE_INVALID", conditionMessage(error)
+    )
+  )
+  if (!identical(acceptance_hash, canonical_hash)) {
+    phase02_original_abort("ACCEPTED_HASH_DRIFT")
+  }
+
+  fingerprints = phase02_original_read_fingerprint(
+    file.path(canonical_dir, "fingerprints.dcf")
+  )
+  references = c(
+    "Fixture-MD5" = file.path(root, "tests", "testthat", "fixtures",
+                               "three-region.tab"),
+    "Fixture-Provenance-MD5" = file.path(
+      root, "tests", "testthat", "fixtures", "PROVENANCE.md"
+    ),
+    "External-Evidence-MD5" = file.path(
+      root, fingerprints[["External-Evidence-Path"]]
+    )
+  )
+  for (field in names(references)) {
+    observed = phase02_hash_file(references[[field]])
+    if (!identical(observed, unname(fingerprints[[field]]))) {
+      phase02_original_abort("FINGERPRINT_REFERENCE_DRIFT", field)
+    }
+  }
+
+  list(
+    clean = TRUE,
+    accepted_canonical_hash = canonical_hash,
+    original_artifacts_verified = 4L,
+    original_acceptance_verified = TRUE,
+    canonical_artifact_hash = stable_hash,
+    registry_path = normalizePath(registry_path, mustWork = TRUE)
+  )
+}
+
 phase02_read_fingerprint_record = function(path) {
   value = tryCatch(
     read.dcf(path),
@@ -982,6 +1231,10 @@ phase02_refresh_usage = function() {
       "  rtk Rscript --vanilla tools/refresh_phase02_baselines.R",
       "--check-migration-source"
     ),
+    paste(
+      "  rtk Rscript --vanilla tools/refresh_phase02_baselines.R",
+      "--check-original-artifacts"
+    ),
     sep = "\n"
   )
 }
@@ -1002,14 +1255,24 @@ phase02_refresh_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
     return(invisible(0L))
   }
   allowed = startsWith(arguments, "--output=") |
-    arguments %in% c("--check", "--check-migration-source")
+    arguments %in% c(
+      "--check", "--check-migration-source", "--check-original-artifacts"
+    )
   if (any(!allowed)) stop("Unknown refresh argument", call. = FALSE)
   check = "--check" %in% arguments
   migration_check = "--check-migration-source" %in% arguments
+  original_check = "--check-original-artifacts" %in% arguments
   output = phase02_cli_value(arguments, "--output")
-  if (sum(c(check, migration_check, !is.null(output))) != 1L) {
+  modes = arguments[arguments %in% c(
+    "--check", "--check-migration-source", "--check-original-artifacts"
+  )]
+  if (length(modes) != 1L || anyDuplicated(modes) ||
+      sum(c(check, migration_check, original_check, !is.null(output))) != 1L) {
     stop(
-      "Choose exactly one of --check, --check-migration-source, or --output",
+      paste(
+        "Choose exactly one of --check, --check-migration-source,",
+        "--check-original-artifacts, or --output"
+      ),
       call. = FALSE
     )
   }
@@ -1032,6 +1295,20 @@ phase02_refresh_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
     ))
     cat(sprintf(
       "Accepted-canonical-hash: %s\n", result$accepted_canonical_hash
+    ))
+  } else if (original_check) {
+    result = phase02_check_original_artifacts()
+    cat("Phase 02 original artifact gate: PASS\n")
+    cat(sprintf(
+      "Accepted-canonical-hash: %s\n", result$accepted_canonical_hash
+    ))
+    cat(sprintf(
+      "Original-artifacts-verified: %s\n",
+      result$original_artifacts_verified
+    ))
+    cat(sprintf(
+      "Original-acceptance-verified: %s\n",
+      tolower(as.character(result$original_acceptance_verified))
     ))
   } else {
     result = phase02_generate_proposal(output)

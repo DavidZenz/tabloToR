@@ -615,6 +615,14 @@ qualification_phase02_migration_arguments = function(source) {
   )
 }
 
+
+qualification_phase02_original_arguments = function(source) {
+  c(
+    "--vanilla", file.path(source, "tools", "refresh_phase02_baselines.R"),
+    "--check-original-artifacts"
+  )
+}
+
 qualification_manifest_frame = function(
     stages, head, export_digest, extracted_digest, archive_digest,
     installation_digest, root, cleanup) {
@@ -1028,27 +1036,31 @@ qualification_execute = function(root = qualification_repository_root()) {
 
   phase02_original_result = qualification_run_command(
     "phase02-original", qualification_r("Rscript"),
-    qualification_phase02_migration_arguments(source),
+    qualification_phase02_original_arguments(source),
     directory = source, log_directory = logs
   )
   qualification_assert_output(
     phase02_original_result$output,
-    c("Phase 02 migration source gate: PASS",
-      "Identity-normalized-source-fingerprint:",
-      "Accepted-canonical-hash:"),
+    c(
+      "Phase 02 original artifact gate: PASS",
+      "Accepted-canonical-hash: f6f2297a6ab257c9737a64354c82d7f1",
+      "Original-artifacts-verified: 4",
+      "Original-acceptance-verified: true"
+    ),
     "phase02-original"
   )
   phase02_original_digest = qualification_hash_raw(charToRaw(paste(
-    c(source_identity_digest, phase02_original_result$log_digest),
+    c(
+      source_identity_digest, phase02_original_result$command,
+      phase02_original_result$log_digest
+    ),
     collapse = "\n"
   )))
   stages = qualification_append_stage(
     stages, "phase02-original", phase02_original_digest,
     phase02_original_result, source,
-    paste(
-      "migration-aware Phase 2 read-only replay passed; canonical numerical",
-      "artifacts and accepted hash exact"
-    ), root_digest
+    "immutable original Phase 2 artifacts and accepted hash exact",
+    root_digest
   )
 
   phase02_migration_result = qualification_run_command(
