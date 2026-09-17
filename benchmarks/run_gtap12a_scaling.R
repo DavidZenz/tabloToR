@@ -18,7 +18,7 @@ warmups <- benchmark_integer(benchmark_get_arg(args, "--warmups"), 1L, 0L)
 repetitions <- benchmark_integer(benchmark_get_arg(args, "--repetitions"), 3L, 1L)
 summarize_only <- benchmark_flag(args, "--summarize-only", FALSE)
 resume <- benchmark_flag(args, "--resume", FALSE)
-forward_names <- c("--data-dir", "--tablo", "--closure-file", "--shocks-file",
+forward_names <- c("--data-dir", "--tablo", "--input-rds", "--closure-file", "--shocks-file",
                    "--iter", "--steps", "--postsim", "--memory-budget",
                    "--panel-size", "--region-batch-size")
 forward <- unlist(lapply(forward_names, function(name) {

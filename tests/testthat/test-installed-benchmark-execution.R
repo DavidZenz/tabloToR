@@ -124,6 +124,35 @@ benchmark_gap_three_region_files = function(root) {
   ), shocks, version = 3L)
   list(input = input, closure = closure, shocks = shocks)
 }
+benchmark_gap_native_files = function(root) {
+  tablo = file.path(root, "native.tab")
+  writeLines(c(
+    "set comm (c1,c2);",
+    "set acts (a1);",
+    "set reg (r1,r2);",
+    "variable (all,c,comm)(all,a,acts)(all,r,reg)(change) qfd(c,a,r);",
+    "variable (all,c,comm)(all,r,reg)(all,s,reg)(change) qxs(c,r,s);",
+    "variable (all,c,comm)(all,r,reg)(change) p(c,r);",
+    "variable (all,r,reg)(change) y(r);",
+    "variable (change) z;",
+    "variable (all,c,comm)(all,a,acts)(all,r,reg) pfd(c,a,r);",
+    "variable (all,c,comm)(all,r,reg)(all,s,reg) pfx(c,r,s);",
+    "variable (all,c,comm)(all,r,reg) a(c,r);",
+    "variable (all,r,reg) b(r);",
+    "variable d;",
+    "equation e_qfd (all,c,comm)(all,a,acts)(all,r,reg) qfd(c,a,r) = pfd(c,a,r);",
+    "equation e_qxs (all,c,comm)(all,r,reg)(all,s,reg) qxs(c,r,s) = pfx(c,r,s);",
+    "equation ep (all,c,comm)(all,r,reg) p(c,r) = a(c,r);",
+    "equation ey (all,r,reg) y(r) = b(r);",
+    "equation ez z = d;"
+  ), tablo)
+  closure = file.path(root, "native-closure.rds")
+  saveRDS(c("pfd", "pfx", "a", "b", "d"), closure, version = 3L)
+  shocks = file.path(root, "native-shocks.rds")
+  saveRDS(setNames(1, "d[]"), shocks, version = 3L)
+  list(tablo = tablo, closure = closure, shocks = shocks)
+}
+
 
 benchmark_gap_metric = function(frame, name) {
   value = frame$value[frame$metric == name]
@@ -224,9 +253,10 @@ test_that("installed scaling executes native child and fails closed", {
   state = benchmark_gap_build_install()
   on.exit(unlink(state$root, recursive = TRUE, force = TRUE), add = TRUE)
   inputs = benchmark_gap_three_region_files(state$root)
-  tablo = file.path(
-    state$source_root, "tests", "testthat", "fixtures", "three-region.tab"
-  )
+  native = benchmark_gap_native_files(state$root)
+  tablo = native$tablo
+  inputs$closure = native$closure
+  inputs$shocks = native$shocks
   scaling_output = file.path(state$output_dir, "scaling")
   scaling_args = c(
     paste0("--data-dir=", scaling_output),
@@ -234,7 +264,7 @@ test_that("installed scaling executes native child and fails closed", {
     paste0("--input-rds=", inputs$input),
     paste0("--closure-file=", inputs$closure),
     paste0("--shocks-file=", inputs$shocks),
-    "--threads=1", "--iter=1", "--steps=1", "--postsim=false",
+    "--threads=1", "--iter=1", "--steps=1",
     "--panel-size=64", "--region-batch-size=8", "--warmups=0",
     "--repetitions=1", paste0("--output-dir=", scaling_output)
   )
@@ -302,7 +332,7 @@ test_that("installed scaling executes native child and fails closed", {
       paste0("--input-rds=", invalid),
       paste0("--closure-file=", inputs$closure),
       paste0("--shocks-file=", inputs$shocks),
-      "--threads=1", "--iter=1", "--steps=1", "--postsim=false",
+      "--threads=1", "--iter=1", "--steps=1",
       "--panel-size=64", "--region-batch-size=8", "--warmups=0",
       "--repetitions=1", paste0("--output-dir=", invalid_output)
     )
