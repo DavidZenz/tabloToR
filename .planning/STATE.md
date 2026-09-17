@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-13-PLAN.md
-last_updated: "2026-09-17T19:22:29.105Z"
+stopped_at: Completed 03-17-PLAN.md
+last_updated: "2026-09-17T20:34:37.800Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 03 execution resumed (wave continue)
-state_head: 78e4ca397ac5955e85904137118020029a1808a6
+state_head: c277d71013ab5aacbe016d44ab031db74443bdff
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 37
-  completed_plans: 30
+  completed_plans: 31
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 2 of 20
+Plan: 3 of 20
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 03 execution resumed (wave continue)
 
@@ -60,6 +60,7 @@ Progress: [████████░░] 78% (29/37 current milestone plans ex
 | Phase 03 P11 | 32min | 1 tasks | 17 files |
 | Phase 03 P12 | 2h09m | 2 tasks | 2 files |
 | Phase 03 P13 | 7h 13m | 2 tasks | 8 files |
+| Phase 03-gemodelr-identity-migration P17 | 65min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Use the reviewed --check-migration-source mode for final Phase 2 replay because predecessor-only --check intentionally reports the completed package identity migration as stale.
 - [Phase 03]: Installed benchmark subprocesses resolve only from isolated package resources; optional plain-list input RDS preserves the existing HAR workflow and defaults.
 - [Phase 03]: Native scaling coverage uses a temporary GTAP-shaped fixture while reusing the redistributable input RDS, so repository fixtures and solver code remain unchanged.
+- [Phase 03]: Use a separately pinned read-only original-artifact authority and keep current-source numerical migration checks on their own stage.
+- [Phase 03]: Parent the serialization BUGFIX stage to source-identity and require its distinct BUGFIX/PASS output contract.
+- [Phase 03]: Propagate GEModelR_GAP_TEST_LIBRARY to the isolated full-suite process and require the 03-13, 03-14, and 03-16 gap tests.
 
 ### Pending Todos
 
@@ -151,6 +155,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-17T19:22:29.050Z
-Stopped at: Completed 03-13-PLAN.md
+Last session: 2026-09-17T20:34:37.749Z
+Stopped at: Completed 03-17-PLAN.md
 Resume file: None
