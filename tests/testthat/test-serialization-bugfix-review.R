@@ -68,5 +68,5 @@ test_that("BUGFIX review records reject scope, digest and approval drift", {
     "Reviewer: pending",
     "Reviewed-UTC: pending"
   ), path)
-  expect_error(tool$serialization_bugfix_validate_record(path), "path|scope|commit|digest")
+  expect_error(tool$serialization_bugfix_validate_record(path), "path|scope|commit|digest|root")
 })
