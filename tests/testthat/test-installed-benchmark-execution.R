@@ -94,14 +94,18 @@ benchmark_gap_script = function(state, name) {
   normalizePath(path, winslash = "/", mustWork = TRUE)
 }
 
-benchmark_gap_run_script = function(state, name, arguments) {
+benchmark_gap_run_path = function(state, path, arguments) {
   benchmark_gap_process(
     file.path(R.home("bin"), "Rscript"),
-    c("--vanilla", shQuote(benchmark_gap_script(state, name)),
+    c("--vanilla", shQuote(path),
       vapply(arguments, shQuote, character(1))),
     directory = state$workdir,
     environment = state$environment
   )
+}
+
+benchmark_gap_run_script = function(state, name, arguments) {
+  benchmark_gap_run_path(state, benchmark_gap_script(state, name), arguments)
 }
 
 benchmark_gap_hash_file = function(path) {
@@ -214,4 +218,115 @@ test_that("installed sweep executes the packaged child with RDS input", {
     )
   )
   testthat::expect_false(identical(invalid_result$status, 0L))
+})
+
+test_that("installed scaling executes native child and fails closed", {
+  state = benchmark_gap_build_install()
+  on.exit(unlink(state$root, recursive = TRUE, force = TRUE), add = TRUE)
+  inputs = benchmark_gap_three_region_files(state$root)
+  tablo = file.path(
+    state$source_root, "tests", "testthat", "fixtures", "three-region.tab"
+  )
+  scaling_output = file.path(state$output_dir, "scaling")
+  scaling_args = c(
+    paste0("--data-dir=", scaling_output),
+    paste0("--tablo=", tablo),
+    paste0("--input-rds=", inputs$input),
+    paste0("--closure-file=", inputs$closure),
+    paste0("--shocks-file=", inputs$shocks),
+    "--threads=1", "--iter=1", "--steps=1", "--postsim=false",
+    "--panel-size=64", "--region-batch-size=8", "--warmups=0",
+    "--repetitions=1", paste0("--output-dir=", scaling_output)
+  )
+  result = benchmark_gap_run_script(
+    state, "run_gtap12a_scaling.R", scaling_args
+  )
+  testthat::expect_equal(
+    result$status, 0L,
+    info = paste(c("Installed scaling output:", result$output), collapse = "\n")
+  )
+  if (!identical(result$status, 0L)) return(invisible(NULL))
+
+  csv_path = file.path(scaling_output, "t1-measured-01.csv")
+  solution_path = file.path(scaling_output, "t1-measured-01.rds")
+  summary_path = file.path(scaling_output, "scaling-summary.csv")
+  testthat::expect_true(file.exists(csv_path))
+  testthat::expect_true(file.exists(solution_path))
+  testthat::expect_true(file.exists(summary_path))
+
+  frame = read.csv(csv_path, stringsAsFactors = FALSE)
+  solution = readRDS(solution_path)
+  summary = read.csv(summary_path, stringsAsFactors = FALSE)
+  testthat::expect_identical(unique(frame$status), "completed")
+  testthat::expect_identical(unique(frame$package_name), "GEModelR")
+  testthat::expect_identical(unique(frame$option_prefix), "GEModelR.")
+  testthat::expect_identical(
+    unique(frame$native_routine_prefix), ".GEModelR_"
+  )
+  testthat::expect_identical(
+    unique(frame$backend), "StructuredSchurFGMRESCpp"
+  )
+  testthat::expect_identical(as.integer(unique(frame$threads)), 1L)
+  testthat::expect_true(
+    any(frame$metric == "diagnostics.schur_build.native_schur_build_seconds")
+  )
+  testthat::expect_identical(solution$schema_version, 2L)
+  testthat::expect_identical(solution$repetition, 1L)
+  testthat::expect_identical(solution$warmup, FALSE)
+  testthat::expect_identical(solution$run_id, unique(frame$run_id))
+  testthat::expect_identical(
+    solution$pair_signature, unique(frame$pair_signature)
+  )
+  testthat::expect_identical(
+    solution$run_signature, unique(frame$run_signature)
+  )
+  testthat::expect_identical(
+    solution$model_signature, unique(frame$model_signature)
+  )
+  testthat::expect_true(
+    length(solution$solution) > 0L && all(is.finite(solution$solution))
+  )
+  testthat::expect_true(nrow(summary) == 1L)
+  testthat::expect_true(
+    is.finite(summary$max_abs_solution_difference[[1L]]) &&
+      summary$max_abs_solution_difference[[1L]] == 0
+  )
+
+  invalid = file.path(state$root, "invalid-scaling-input.rds")
+  saveRDS("not a loadData input list", invalid, version = 3L)
+  invalid_output = file.path(state$output_dir, "invalid-scaling")
+  invalid_result = benchmark_gap_run_script(
+    state, "run_gtap12a_scaling.R", c(
+      paste0("--data-dir=", invalid_output),
+      paste0("--tablo=", tablo),
+      paste0("--input-rds=", invalid),
+      paste0("--closure-file=", inputs$closure),
+      paste0("--shocks-file=", inputs$shocks),
+      "--threads=1", "--iter=1", "--steps=1", "--postsim=false",
+      "--panel-size=64", "--region-batch-size=8", "--warmups=0",
+      "--repetitions=1", paste0("--output-dir=", invalid_output)
+    )
+  )
+  testthat::expect_false(identical(invalid_result$status, 0L))
+
+  resource_root = file.path(state$root, "resource-copies")
+  dir.create(resource_root)
+  config = benchmark_gap_script(state, "benchmark_config.R")
+  scaling = benchmark_gap_script(state, "run_gtap12a_scaling.R")
+  child = benchmark_gap_script(state, "benchmark_gtap12a_run.R")
+  missing_child_root = file.path(resource_root, "missing-child")
+  dir.create(missing_child_root)
+  file.copy(c(config, scaling), missing_child_root)
+  missing_child_result = benchmark_gap_run_path(
+    state, file.path(missing_child_root, "run_gtap12a_scaling.R"), scaling_args
+  )
+  testthat::expect_false(identical(missing_child_result$status, 0L))
+
+  missing_config_root = file.path(resource_root, "missing-config")
+  dir.create(missing_config_root)
+  file.copy(c(scaling, child), missing_config_root)
+  missing_config_result = benchmark_gap_run_path(
+    state, file.path(missing_config_root, "run_gtap12a_scaling.R"), scaling_args
+  )
+  testthat::expect_false(identical(missing_config_result$status, 0L))
 })

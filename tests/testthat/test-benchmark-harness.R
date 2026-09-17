@@ -1,7 +1,8 @@
 benchmark_driver_names <- function() {
   c(
     "benchmark_config.R", "run_gtap12a_sweep.R",
-    "run_gtap12a_scaling.R", "check_benchmark_gate.R"
+    "run_gtap12a_scaling.R", "benchmark_gtap12a_run.R",
+    "check_benchmark_gate.R"
   )
 }
 
