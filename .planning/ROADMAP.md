@@ -116,7 +116,7 @@ Plans:
   3. Pre/post-rename compatibility fixtures produce equivalent solutions, outputs, diagnostics, and serialization results.
   4. Users have exact installation and script migration instructions, including the fate of `tabloToR::` calls and old option names.
 
-**Plans**: 15/20 plans executed; eight append-only gap-closure plans independently checked and ready to execute
+**Plans**: 16/20 plans executed; eight append-only gap-closure plans independently checked and ready to execute
 
 **Wave 1**
 
@@ -171,7 +171,7 @@ Plans:
 - [x] 03-13-PLAN.md — Install the benchmark child and exercise real installed sweep/scaling runs
 - [x] 03-15-PLAN.md — Propose and obtain explicit approval for the fingerprint-protected serialization bugfix
 - [x] 03-17-PLAN.md — Separate original-artifact and migration-source gates and repair both stale source-baseline tests
-- [ ] 03-18-PLAN.md — Propose and review the narrowly scoped, noncircular workflow-evidence identity policy
+- [x] 03-18-PLAN.md — Propose and review the narrowly scoped, noncircular workflow-evidence identity policy
 
 **Wave 14** *(gap closure; blocked on respective Wave 13 prerequisites)*
 
@@ -251,7 +251,7 @@ Gap execution: `$gsd-execute-phase 03 --gaps-only`. Approval checkpoints in 03-1
 |-------|----------------|--------|-----------|
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
 | 2. Compatibility and Numerical Baseline | 6/6 | Complete    | 2026-09-09 |
-| 3. GEModelR Identity Migration | 15/20 | In Progress|  |
+| 3. GEModelR Identity Migration | 16/20 | In Progress|  |
 | 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |
 | 6. Documentation and Release Qualification | 0/TBD | Not started | - |
