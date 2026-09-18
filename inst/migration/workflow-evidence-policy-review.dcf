@@ -1,0 +1,7 @@
+Schema: gemodelr-workflow-identity-policy-review-v1
+Policy-SHA256: 882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e
+Review-State: proposed
+Reviewer: pending
+Reviewed-UTC: pending
+Scope: Exact UTF-8 trailing-LF line hashes in twelve enumerated workflow evidence paths; migration-instruction category only; orchestrator and verifier owners only.
+Rationale: Permit reviewed evidence handoff writes without changing the active five-category tracked-source auditor; approval must precede any 03-19 activation.

@@ -35,15 +35,18 @@ workflowPolicyTree = function(tool) {
   dir.create(file.path(root, "tools"), recursive = TRUE)
   dir.create(file.path(root, "docs", "migration"), recursive = TRUE)
 
-  predecessor = file.path(
+  registry_path = file.path(
     tool$workflow_identity_repository_root(),
     "inst", "migration", "predecessor-fingerprints.dcf"
   )
   file.copy(
-    predecessor,
+    registry_path,
     file.path(root, "inst", "migration", "predecessor-fingerprints.dcf"),
     overwrite = TRUE
   )
+
+  predecessor_package = tool$workflow_identity_old_token(root)
+  metadata_line = paste0("Predecessor-package: ", predecessor_package)
 
   paths = c(
     ".planning/STATE.md",
@@ -56,14 +59,14 @@ workflowPolicyTree = function(tool) {
     )
   )
   contents = c(
-    "Predecessor-package: tabloToR",
+    metadata_line,
     "Reviewed migration evidence",
-    "Predecessor-package: tabloToR",
+    metadata_line,
     "Reviewed verifier evidence",
     rep("", 8L)
   )
   for (index in seq_len(4L)) {
-    path = file.path(root, strsplit(paths[[index]], "/", fixed = TRUE)[[1L]])
+    path = file.path(root, paths[[index]])
     writeLines(contents[[index]], path, useBytes = TRUE)
   }
 
@@ -75,7 +78,7 @@ workflowPolicyTree = function(tool) {
       tool$workflow_identity_hash_line(contents[[2L]]),
       tool$workflow_identity_hash_line(contents[[3L]]),
       tool$workflow_identity_hash_line(contents[[4L]]),
-      rep(tool$workflow_identity_hash_line("Predecessor-package: tabloToR"), 8L)
+      rep(tool$workflow_identity_hash_line(metadata_line), 8L)
     ),
     max_count = rep("1", length(paths)),
     owner = c("orchestrator", "orchestrator", "verifier", "verifier",
@@ -103,7 +106,7 @@ test_that("checked-in workflow policy is a proposed exact-line contract", {
   )
   expect_identical(
     result$policy$PredecessorPackage,
-    "tabloToR"
+    tool$workflow_identity_old_token()
   )
 
   dcf = tool$workflow_identity_read_review()
@@ -117,6 +120,8 @@ test_that("checked-in workflow policy is a proposed exact-line contract", {
 test_that("a real evidence lifecycle permits movement but rejects new identity", {
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
+  predecessor_package = tool$workflow_identity_old_token(tree$root)
+  metadata_line = paste0("Predecessor-package: ", predecessor_package)
   on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
 
   expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
@@ -129,7 +134,7 @@ test_that("a real evidence lifecycle permits movement but rejects new identity",
   expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
 
   writeLines(
-    c(readLines(state, encoding = "UTF-8"), "Unreviewed tabloToR evidence"),
+    c(readLines(state, encoding = "UTF-8"), paste0("Unreviewed ", predecessor_package, " evidence")),
     state, useBytes = TRUE
   )
   expect_error(
@@ -141,14 +146,14 @@ test_that("a real evidence lifecycle permits movement but rejects new identity",
     tree$root, ".planning", "phases", "03-gemodelr-identity-migration",
     "03-13-SUMMARY.md"
   )
-  writeLines("Predecessor-package: tabloToR", summary, useBytes = TRUE)
+  writeLines(metadata_line, summary, useBytes = TRUE)
   unlink(state)
-  writeLines("Predecessor-package: tabloToR", state, useBytes = TRUE)
+  writeLines(metadata_line, state, useBytes = TRUE)
   expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
 
   writeLines(
     c(readLines(summary, encoding = "UTF-8"),
-      "Predecessor-package: tabloToR"),
+      metadata_line),
     summary, useBytes = TRUE
   )
   expect_error(
@@ -160,6 +165,8 @@ test_that("a real evidence lifecycle permits movement but rejects new identity",
 test_that("policy rejects source, arbitrary planning, and symlink paths", {
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
+  predecessor_package = tool$workflow_identity_old_token(tree$root)
+  metadata_line = paste0("Predecessor-package: ", predecessor_package)
   on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
 
   mutate_policy = function(path) {
@@ -186,7 +193,7 @@ test_that("policy rejects source, arbitrary planning, and symlink paths", {
   )
 
   outside = tempfile("workflow-policy-outside-")
-  writeLines("Predecessor-package: tabloToR", outside, useBytes = TRUE)
+  writeLines(metadata_line, outside, useBytes = TRUE)
   state = file.path(tree$root, ".planning", "STATE.md")
   unlink(state)
   expect_true(file.symlink(outside, state))
@@ -200,12 +207,14 @@ test_that("policy rejects source, arbitrary planning, and symlink paths", {
 test_that("fenced executable evidence cannot use a metadata allowance", {
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
+  predecessor_package = tool$workflow_identity_old_token(tree$root)
+  metadata_line = paste0("Predecessor-package: ", predecessor_package)
   on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
 
   state = file.path(tree$root, ".planning", "STATE.md")
   writeLines(c(
     "```",
-    "Predecessor-package: tabloToR",
+    metadata_line,
     "```"
   ), state, useBytes = TRUE)
   expect_error(
