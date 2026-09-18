@@ -90,15 +90,15 @@ workflowPolicyTree = function(tool) {
   list(root = root, policy = policy_path, paths = paths, policy_value = policy)
 }
 
-test_that("checked-in workflow policy is a proposed exact-line contract", {
+test_that("checked-in workflow policy is an approved exact-line contract", {
   tool = loadWorkflowIdentityPolicyTool()
 
   expect_silent(tool$workflow_identity_validate_policy())
   result = tool$workflow_identity_check_lines()
   expect_true(result$clean)
-  expect_identical(result$policy$ReviewState, "proposed")
-  expect_identical(result$policy$Reviewer, "pending")
-  expect_identical(result$policy$ReviewedUTC, "pending")
+  expect_identical(result$policy$ReviewState, "approved")
+  expect_identical(result$policy$Reviewer, "David Zenz")
+  expect_identical(result$policy$ReviewedUTC, "2026-09-18T09:59:34Z")
   expect_match(result$policy$PolicySHA256, "^[0-9a-f]{64}$")
   expect_identical(
     result$policy$PathCount,
@@ -111,9 +111,9 @@ test_that("checked-in workflow policy is a proposed exact-line contract", {
 
   dcf = tool$workflow_identity_read_review()
   expect_identical(dcf$`Schema`, "gemodelr-workflow-identity-policy-review-v1")
-  expect_identical(dcf$`Review-State`, "proposed")
-  expect_identical(dcf$Reviewer, "pending")
-  expect_identical(dcf$`Reviewed-UTC`, "pending")
+  expect_identical(dcf$`Review-State`, "approved")
+  expect_identical(dcf$Reviewer, "David Zenz")
+  expect_identical(dcf$`Reviewed-UTC`, "2026-09-18T09:59:34Z")
   expect_identical(dcf$`Policy-SHA256`, result$policy$PolicySHA256)
 })
 
