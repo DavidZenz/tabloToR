@@ -8,6 +8,6 @@ After-SHA256: 957f15724e76cbd9c43132b224f0e8e4ae9a1e1f68206a8c7af2fadc2d55da1a
 Patch-Path: inst/migration/serialization-bugfix.patch
 Patch-SHA256: 8f1d219330e374ae30746c8732e572f82ae0809bbea57b9d5d259bd30afb305a
 Allowed-Functions: .serialization_validate_structure;validate_projection
-Review-State: proposed
-Reviewer: pending
-Reviewed-UTC: pending
+Review-State: approved
+Reviewer: David Zenz
+Reviewed-UTC: 2026-09-18T09:12:51Z

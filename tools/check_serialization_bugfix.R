@@ -563,8 +563,10 @@ serialization_bugfix_verify_delta = function(
   )
   current = serialization_bugfix_read_raw(source_path, "current serialization source")
   if (identical(mode, "proposal")) {
-    if (!identical(record[["Review-State"]], "proposed")) {
-      serialization_bugfix_stop("proposal mode requires Review-State=proposed")
+    if (!record[["Review-State"]] %in% c("proposed", "approved")) {
+      serialization_bugfix_stop(
+        "proposal mode requires a proposed or approved review record"
+      )
     }
     if (!identical(current, before)) {
       serialization_bugfix_stop(
