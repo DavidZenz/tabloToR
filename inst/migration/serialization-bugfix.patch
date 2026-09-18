@@ -1,33 +1,121 @@
 --- a/R/modelSerialization.R
 +++ b/R/modelSerialization.R
-@@ -660,12 +660,8 @@
+@@ -414,6 +414,21 @@
+   value
+ }
+ 
++.serialization_promote_reconstructed_fields = function(value, fields) {
++  if (!is.list(value) || !length(fields)) return(value)
++  fields = intersect(fields, names(value))
++  for (field in fields) {
++    leaf = value[[field]]
++    if (is.logical(leaf) || is.integer(leaf)) {
++      leaf_attributes = attributes(leaf)
++      leaf = as.double(leaf)
++      attributes(leaf) = leaf_attributes
++      value[[field]] = leaf
++    }
++  }
++  value
++}
++
+ .serialization_model_shocks = function(model) {
+   explicit = model$explicitShocks
+   if (is.list(explicit) && length(explicit$labels)) {
+@@ -660,19 +675,23 @@
      }
      return(invisible(TRUE))
    }
--  numeric_template = is.numeric(template) || is.logical(template)
--  numeric_value = is.numeric(value) || is.logical(value)
--  if ((numeric_template && !numeric_value) ||
--      (!numeric_template &&
--       (!identical(typeof(value), typeof(template)) ||
--        !identical(class(value), class(template))))) {
-+  if (!identical(typeof(value), typeof(template)) ||
-+      !identical(class(value), class(template))) {
+-  if (!identical(typeof(value), typeof(template)) ||
+-      !identical(class(value), class(template))) {
++  expected_template = template
++  if (isTRUE(allow_dimension_drop) &&
++      is.null(dim(value)) && !is.null(dim(template))) {
++    expected_template = as.vector(template)
++    names(expected_template) = names(template)
++  }
++  if (!identical(typeof(value), typeof(expected_template)) ||
++      !identical(class(value), class(expected_template))) {
      .serialization_stop(sprintf(
        "%s type does not match the reconstructed model", path
      ))
-@@ -817,12 +813,9 @@
-       .serialization_validate_structure(value, template, path)
-       return(invisible(TRUE))
+   }
+-  dimensions_match = identical(dim(value), dim(template)) &&
+-    identical(dimnames(value), dimnames(template))
+-  dropped_dimensions = isTRUE(allow_dimension_drop) &&
+-    is.null(dim(value)) && !is.null(dim(template))
+-  if (!identical(length(value), length(template)) ||
+-      !identical(names(value), names(template)) ||
+-      (!dimensions_match && !dropped_dimensions)) {
++  dimensions_match = identical(dim(value), dim(expected_template)) &&
++    identical(dimnames(value), dimnames(expected_template))
++  if (!identical(length(value), length(expected_template)) ||
++      !identical(names(value), names(expected_template)) ||
++      !dimensions_match) {
+     .serialization_stop(sprintf(
+       "%s dimensions do not match the reconstructed model", path
+     ))
+@@ -692,6 +711,34 @@
+     function(variable) as.character(variable$name)[1L],
+     character(1)
+   ))
++  reconstructed_updates = c(
++    restored[["sparseSpec"]][["updates"]],
++    restored[["sparseSpec"]][["simulation_updates"]],
++    restored[["sparseSpec"]][["formula_initialization_updates"]],
++    restored[["sparseSpec"]][["post_updates"]]
++  )
++  reconstructed_update_fields = if (length(reconstructed_updates)) {
++    vapply(
++      reconstructed_updates,
++      function(update) as.character(
++        update[["target"]][["name"]]
++      )[1L],
++      character(1)
++    )
++  } else character()
++  reconstructed_numeric_fields = if (
++    length(payload[["accepted"]][["solution"]])
++  ) {
++    fields = available_variables
++    if (identical(payload[["engine"]], "legacy") ||
++        isTRUE(payload[["diagnostics"]][["post_simulation_retained"]])) {
++      fields = c(fields, reconstructed_update_fields)
++    }
++    unique(fields)
++  } else character()
++  rebuilt_levels = .serialization_promote_reconstructed_fields(
++    rebuilt_levels, reconstructed_numeric_fields
++  )
+   if (identical(payload$engine, "sparse")) {
+     .serialization_validate_structure(
+       payload$levels, rebuilt_levels, "levels"
+@@ -714,7 +761,7 @@
+       )
+     } else character()
+     dimension_dropping_fields = unique(c(
+-      available_variables, update_fields
++      available_variables, reconstructed_update_fields
+     ))
+     for (field in names(rebuilt_levels)) {
+       .serialization_validate_structure(
+@@ -822,10 +869,18 @@
      }
--    numeric_template = is.numeric(template) || is.logical(template)
--    numeric_value = is.numeric(value) || is.logical(value)
--    if ((numeric_template && !numeric_value) ||
--        (!numeric_template &&
--         (!identical(typeof(value), typeof(template)) ||
--          !identical(class(value), class(template))))) {
-+    expected_template = template
-+    if (!identical(typeof(value), typeof(expected_template)) ||
-+        !identical(class(value), class(expected_template))) {
+     value_dimensions = dim(value)
+     template_dimensions = dim(template)
++    names_match = if (is.null(names(template))) {
++      is.null(names(value))
++    } else {
++      !is.null(names(value)) &&
++        length(names(value)) == length(value) &&
++        !anyDuplicated(names(value)) &&
++        all(names(value) %in% names(template))
++    }
+     if (is.null(value_dimensions) ||
+         length(value_dimensions) != length(template_dimensions) ||
+         any(value_dimensions > template_dimensions) ||
+-        !identical(names(value), names(template))) {
++        !names_match) {
        .serialization_stop(sprintf(
-         "%s type does not match the reconstructed model", path
+         "%s dimensions do not match the reconstructed model", path
        ))

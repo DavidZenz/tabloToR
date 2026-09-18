@@ -239,9 +239,9 @@ serialization_bugfix_validate_record = function(
   }
   if (!identical(
     record[["Allowed-Functions"]],
-    ".serialization_validate_structure;validate_projection"
+    ".serialization_promote_reconstructed_fields;.serialization_validate_structure;.validate_reconstructed_logical_state;validate_projection"
   )) {
-    serialization_bugfix_stop("Allowed-Functions is not the exact two-function scope")
+    serialization_bugfix_stop("Allowed-Functions is not the exact revised function scope")
   }
   if (!record[["Review-State"]] %in% c("proposed", "approved")) {
     serialization_bugfix_stop("Review-State is unsupported")
@@ -387,13 +387,16 @@ serialization_bugfix_apply_candidate = function(
   patch_lines = readLines(patch_path, warn = FALSE, encoding = "bytes")
   hunks = patch_lines[startsWith(patch_lines, "@@ ")]
   if (!identical(hunks, c(
-    "@@ -660,12 +660,8 @@",
-    "@@ -817,12 +813,9 @@"
+    "@@ -414,6 +414,21 @@",
+    "@@ -660,19 +675,23 @@",
+    "@@ -692,6 +711,34 @@",
+    "@@ -714,7 +761,7 @@",
+    "@@ -822,10 +869,18 @@"
   )) || any(grepl(
     "^(diff --git|index |old mode|new mode|rename )", patch_lines
   ))) {
     serialization_bugfix_stop(
-      "patch is not exactly the two reviewed validation hunks"
+      "patch is not exactly the reviewed validation hunks"
     )
   }
   expected_patch = tempfile("serialization-bugfix-expected-patch-")

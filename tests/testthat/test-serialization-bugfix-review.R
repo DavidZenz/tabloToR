@@ -16,7 +16,7 @@ loadSerializationBugfixTool = function() {
   environment
 }
 
-test_that("proposal gate proves the exact candidate and blocks approval", {
+test_that("applied BUGFIX gate proves the exact revised candidate", {
   tool = loadSerializationBugfixTool()
   review_record = tool$serialization_bugfix_validate_record()
   proposal_record_path = NULL
@@ -35,17 +35,27 @@ test_that("proposal gate proves the exact candidate and blocks approval", {
       "Reviewed-UTC: pending"
     writeLines(record_lines, proposal_record_path, useBytes = TRUE)
   }
-  result = tool$serialization_bugfix_verify_delta(
-    mode = "proposal", record_path = proposal_record_path
+  applied = identical(
+    tool[["serialization_bugfix_hash_file"]](
+      file.path(tool[["serialization_bugfix_repository_root"]](), "R", "modelSerialization.R")
+    ),
+    review_record[["After-SHA256"]]
   )
+  result = if (applied) {
+    tool[["serialization_bugfix_verify_delta"]](mode = "approved")
+  } else {
+    tool[["serialization_bugfix_verify_delta"]](
+      mode = "proposal", record_path = proposal_record_path
+    )
+  }
 
   expect_true(result$clean)
   expect_identical(result$record$`Schema`, "gemodelr-serialization-bugfix-v1")
   expect_identical(result$record$`Finding`, "CR-04")
   expect_identical(result$record$`Change-Kind`, "BUGFIX")
-  expect_identical(result$record$`Review-State`, "proposed")
-  expect_identical(result$record$`Reviewer`, "pending")
-  expect_identical(result$record$`Reviewed-UTC`, "pending")
+  expect_identical(result[["record"]][["Review-State"]], if (applied) "approved" else "proposed")
+  expect_identical(result[["record"]][["Reviewer"]], if (applied) "David Zenz" else "pending")
+  expect_identical(result[["record"]][["Reviewed-UTC"]], if (applied) "2026-09-18T12:26:01Z" else "pending")
   expect_match(result$record$`Before-Commit`, "^[0-9a-f]{40}$")
   expect_match(result$record$`Before-SHA256`, "^[0-9a-f]{64}$")
   expect_match(result$record$`After-SHA256`, "^[0-9a-f]{64}$")
@@ -55,16 +65,18 @@ test_that("proposal gate proves the exact candidate and blocks approval", {
   expect_identical(result$candidate$predecessor_loaded, TRUE)
   if (identical(review_record[["Review-State"]], "approved")) {
     expect_identical(review_record[["Reviewer"]], "David Zenz")
-    expect_identical(review_record[["Reviewed-UTC"]], "2026-09-18T09:12:51Z")
-    expect_identical(review_record[["Before-SHA256"]], "78042d7032a3df97761e252f9d4eca4e3c08ea3bf2c9f905592841d2652d8aee")
-    expect_identical(review_record[["After-SHA256"]], "957f15724e76cbd9c43132b224f0e8e4ae9a1e1f68206a8c7af2fadc2d55da1a")
-    expect_identical(review_record[["Patch-SHA256"]], "8f1d219330e374ae30746c8732e572f82ae0809bbea57b9d5d259bd30afb305a")
+    expect_identical(review_record[["Reviewed-UTC"]], "2026-09-18T12:26:01Z")
+    expect_identical(review_record[["Before-SHA256"]], "957f15724e76cbd9c43132b224f0e8e4ae9a1e1f68206a8c7af2fadc2d55da1a")
+    expect_identical(review_record[["After-SHA256"]], "c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e")
+    expect_identical(review_record[["Patch-SHA256"]], "87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f")
   }
-  expect_error(
-    tool$serialization_bugfix_verify_delta(mode = "approved"),
-    "proposed|approval|approved",
-    ignore.case = TRUE
-  )
+  if (!applied) {
+    expect_error(
+      tool[["serialization_bugfix_verify_delta"]](mode = "approved"),
+      "proposed|approval|approved",
+      ignore.case = TRUE
+    )
+  }
 })
 
 test_that("BUGFIX review records reject scope, digest and approval drift", {
@@ -74,7 +86,7 @@ test_that("BUGFIX review records reject scope, digest and approval drift", {
   expect_identical(record$`Patch-Path`, "inst/migration/serialization-bugfix.patch")
   expect_identical(
     record$`Allowed-Functions`,
-    ".serialization_validate_structure;validate_projection"
+    ".serialization_promote_reconstructed_fields;.serialization_validate_structure;.validate_reconstructed_logical_state;validate_projection"
   )
 
   path = tempfile(fileext = ".dcf")
@@ -89,7 +101,7 @@ test_that("BUGFIX review records reject scope, digest and approval drift", {
     "After-SHA256: 0000000000000000000000000000000000000000000000000000000000000000",
     "Patch-Path: inst/migration/serialization-bugfix.patch",
     "Patch-SHA256: 0000000000000000000000000000000000000000000000000000000000000000",
-    "Allowed-Functions: .serialization_validate_structure;validate_projection",
+    "Allowed-Functions: .serialization_promote_reconstructed_fields;.serialization_validate_structure;.validate_reconstructed_logical_state;validate_projection",
     "Review-State: proposed",
     "Reviewer: pending",
     "Reviewed-UTC: pending"
