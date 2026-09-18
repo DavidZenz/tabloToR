@@ -435,7 +435,8 @@ benchmark_gate_validate_solution_artifacts = function(solution_files, records,
     value$warmup = warmup
     solutions[[key]] = value
   }
-  missing = setdiff(names(records), names(solutions))
+  measured_names = names(records)[!vapply(records, function(record) record$warmup, logical(1))]
+  missing = setdiff(measured_names, names(solutions))
   if (length(missing)) {
     benchmark_gate_fail(sprintf(
       "Missing solution artifact for CSV run(s): %s", paste(missing, collapse = ", ")
