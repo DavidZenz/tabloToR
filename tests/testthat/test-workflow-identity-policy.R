@@ -1,0 +1,237 @@
+workflowIdentityPolicyToolPath = function() {
+  candidates = c(
+    file.path("tools", "check_workflow_identity_policy.R"),
+    testthat::test_path(
+      "..", "..", "tools", "check_workflow_identity_policy.R"
+    )
+  )
+  hits = candidates[file.exists(candidates)]
+  if (!length(hits)) {
+    stop("workflow identity policy tooling is unavailable", call. = FALSE)
+  }
+  normalizePath(hits[[1L]], mustWork = TRUE)
+}
+
+loadWorkflowIdentityPolicyTool = function() {
+  environment = new.env(parent = globalenv())
+  sys.source(workflowIdentityPolicyToolPath(), envir = environment)
+  environment
+}
+
+workflowPolicyWrite = function(value, path) {
+  write.csv(
+    value, path, row.names = FALSE, quote = TRUE, na = "",
+    fileEncoding = "UTF-8"
+  )
+  path
+}
+
+workflowPolicyTree = function(tool) {
+  root = tempfile("workflow-identity-policy-")
+  dir.create(root, recursive = TRUE)
+  dir.create(file.path(root, ".planning", "phases", 
+                       "03-gemodelr-identity-migration"), recursive = TRUE)
+  dir.create(file.path(root, "inst", "migration"), recursive = TRUE)
+  dir.create(file.path(root, "tools"), recursive = TRUE)
+  dir.create(file.path(root, "docs", "migration"), recursive = TRUE)
+
+  predecessor = file.path(
+    tool$workflow_identity_repository_root(),
+    "inst", "migration", "predecessor-fingerprints.dcf"
+  )
+  file.copy(
+    predecessor,
+    file.path(root, "inst", "migration", "predecessor-fingerprints.dcf"),
+    overwrite = TRUE
+  )
+
+  paths = c(
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-VALIDATION.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-REVIEW.md",
+    file.path(
+      ".planning/phases/03-gemodelr-identity-migration",
+      paste0(sprintf("03-%02d", 13:20), "-SUMMARY.md")
+    )
+  )
+  contents = c(
+    "Predecessor-package: tabloToR",
+    "Reviewed migration evidence",
+    "Predecessor-package: tabloToR",
+    "Reviewed verifier evidence",
+    rep("", 8L)
+  )
+  for (index in seq_len(4L)) {
+    path = file.path(root, strsplit(paths[[index]], "/", fixed = TRUE)[[1L]])
+    writeLines(contents[[index]], path, useBytes = TRUE)
+  }
+
+  policy = data.frame(
+    path = paths,
+    category = rep("migration-instruction", length(paths)),
+    allowed_line_sha256 = c(
+      tool$workflow_identity_hash_line(contents[[1L]]),
+      tool$workflow_identity_hash_line(contents[[2L]]),
+      tool$workflow_identity_hash_line(contents[[3L]]),
+      tool$workflow_identity_hash_line(contents[[4L]]),
+      rep(tool$workflow_identity_hash_line("Predecessor-package: tabloToR"), 8L)
+    ),
+    max_count = rep("1", length(paths)),
+    owner = c("orchestrator", "orchestrator", "verifier", "verifier",
+              rep("orchestrator", 8L)),
+    stringsAsFactors = FALSE
+  )
+  policy_path = file.path(root, "workflow-evidence-policy.csv")
+  workflowPolicyWrite(policy, policy_path)
+  list(root = root, policy = policy_path, paths = paths, policy_value = policy)
+}
+
+test_that("checked-in workflow policy is a proposed exact-line contract", {
+  tool = loadWorkflowIdentityPolicyTool()
+
+  expect_silent(tool$workflow_identity_validate_policy())
+  result = tool$workflow_identity_check_lines()
+  expect_true(result$clean)
+  expect_identical(result$policy$ReviewState, "proposed")
+  expect_identical(result$policy$Reviewer, "pending")
+  expect_identical(result$policy$ReviewedUTC, "pending")
+  expect_match(result$policy$PolicySHA256, "^[0-9a-f]{64}$")
+  expect_identical(
+    result$policy$PathCount,
+    length(tool$workflow_identity_allowed_paths())
+  )
+  expect_identical(
+    result$policy$PredecessorPackage,
+    "tabloToR"
+  )
+
+  dcf = tool$workflow_identity_read_review()
+  expect_identical(dcf$`Schema`, "gemodelr-workflow-identity-policy-review-v1")
+  expect_identical(dcf$`Review-State`, "proposed")
+  expect_identical(dcf$Reviewer, "pending")
+  expect_identical(dcf$`Reviewed-UTC`, "pending")
+  expect_identical(dcf$`Policy-SHA256`, result$policy$PolicySHA256)
+})
+
+test_that("a real evidence lifecycle permits movement but rejects new identity", {
+  tool = loadWorkflowIdentityPolicyTool()
+  tree = workflowPolicyTree(tool)
+  on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
+
+  expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
+
+  state = file.path(tree$root, ".planning", "STATE.md")
+  writeLines(
+    c("Non-token executor evidence", readLines(state, encoding = "UTF-8")),
+    state, useBytes = TRUE
+  )
+  expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
+
+  writeLines(
+    c(readLines(state, encoding = "UTF-8"), "Unreviewed tabloToR evidence"),
+    state, useBytes = TRUE
+  )
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, tree$policy),
+    "UNKNOWN|UNAPPROVED|LINE"
+  )
+
+  summary = file.path(
+    tree$root, ".planning", "phases", "03-gemodelr-identity-migration",
+    "03-13-SUMMARY.md"
+  )
+  writeLines("Predecessor-package: tabloToR", summary, useBytes = TRUE)
+  unlink(state)
+  writeLines("Predecessor-package: tabloToR", state, useBytes = TRUE)
+  expect_silent(tool$workflow_identity_check_lines(tree$root, tree$policy))
+
+  writeLines(
+    c(readLines(summary, encoding = "UTF-8"),
+      "Predecessor-package: tabloToR"),
+    summary, useBytes = TRUE
+  )
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, tree$policy),
+    "COUNT|BOUND|OVER"
+  )
+})
+
+test_that("policy rejects source, arbitrary planning, and symlink paths", {
+  tool = loadWorkflowIdentityPolicyTool()
+  tree = workflowPolicyTree(tool)
+  on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
+
+  mutate_policy = function(path) {
+    changed = read.csv(tree$policy, stringsAsFactors = FALSE,
+                       check.names = FALSE)
+    changed$path[[1L]] = path
+    candidate = tempfile("workflow-policy-mutated-", fileext = ".csv")
+    workflowPolicyWrite(changed, candidate)
+    candidate
+  }
+
+  source_policy = mutate_policy("R/modelSerialization.R")
+  on.exit(unlink(source_policy), add = TRUE)
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, source_policy),
+    "PATH|SCOPE|ELIGIBLE"
+  )
+
+  planning_policy = mutate_policy(".planning/arbitrary.md")
+  on.exit(unlink(planning_policy), add = TRUE)
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, planning_policy),
+    "PATH|SCOPE|ELIGIBLE"
+  )
+
+  outside = tempfile("workflow-policy-outside-")
+  writeLines("Predecessor-package: tabloToR", outside, useBytes = TRUE)
+  state = file.path(tree$root, ".planning", "STATE.md")
+  unlink(state)
+  expect_true(file.symlink(outside, state))
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, tree$policy),
+    "ESCAPE|SYMLINK|PATH"
+  )
+  unlink(outside)
+})
+
+test_that("fenced executable evidence cannot use a metadata allowance", {
+  tool = loadWorkflowIdentityPolicyTool()
+  tree = workflowPolicyTree(tool)
+  on.exit(unlink(tree$root, recursive = TRUE, force = TRUE), add = TRUE)
+
+  state = file.path(tree$root, ".planning", "STATE.md")
+  writeLines(c(
+    "```",
+    "Predecessor-package: tabloToR",
+    "```"
+  ), state, useBytes = TRUE)
+  expect_error(
+    tool$workflow_identity_check_lines(tree$root, tree$policy),
+    "FENCE|CODE|EXECUTABLE"
+  )
+})
+
+test_that("the proposal does not alter the five-category tracked-source gate", {
+  tool = loadWorkflowIdentityPolicyTool()
+  identity_path = file.path(
+    tool$workflow_identity_repository_root(), "tools", 
+    "check_identity_migration.R"
+  )
+  before = readBin(identity_path, "raw", file.info(identity_path)$size)
+  identity_tool = new.env(parent = globalenv())
+  sys.source(identity_path, envir = identity_tool)
+  expect_identical(
+    identity_tool$identity_occurrence_categories(),
+    c(
+      "upstream-attribution", "migration-instruction",
+      "immutable-historical-evidence", "old-option-replacement",
+      "reviewed-serialization-fingerprint"
+    )
+  )
+  tool$workflow_identity_validate_policy()
+  after = readBin(identity_path, "raw", file.info(identity_path)$size)
+  expect_identical(after, before)
+})
