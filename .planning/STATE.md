@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-17-PLAN.md
-last_updated: "2026-09-17T20:34:37.800Z"
+stopped_at: Completed 03-15-PLAN.md
+last_updated: "2026-09-18T09:22:25.578Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 03 execution resumed (wave continue)
-state_head: c277d71013ab5aacbe016d44ab031db74443bdff
+state_head: b9ff46620623eae2ffedfae8ad6570fd3c0cf596
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 37
-  completed_plans: 31
+  completed_plans: 32
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 3 of 20
+Plan: 4 of 20
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 03 execution resumed (wave continue)
 
@@ -61,6 +61,7 @@ Progress: [████████░░] 78% (29/37 current milestone plans ex
 | Phase 03 P12 | 2h09m | 2 tasks | 2 files |
 | Phase 03 P13 | 7h 13m | 2 tasks | 8 files |
 | Phase 03-gemodelr-identity-migration P17 | 65min | 2 tasks | 5 files |
+| Phase 03 P15 | 12h 39m | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -129,6 +130,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Use a separately pinned read-only original-artifact authority and keep current-source numerical migration checks on their own stage.
 - [Phase 03]: Parent the serialization BUGFIX stage to source-identity and require its distinct BUGFIX/PASS output contract.
 - [Phase 03]: Propagate GEModelR_GAP_TEST_LIBRARY to the isolated full-suite process and require the 03-13, 03-14, and 03-16 gap tests.
+- [Phase 03]: Treat CR-04 as a separately reviewed BUGFIX; keep R/modelSerialization.R and all identity/numerical evidence unchanged in 03-15.
+- [Phase 03]: Bind approval only to the exact authorized before, after, and patch SHA-256 values with David Zenz and 2026-09-18T09:12:51Z.
+- [Phase 03]: Allow proposal-mode revalidation of an approved record while approved mode still requires live after-bytes for 03-16.
 
 ### Pending Todos
 
@@ -155,6 +159,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-17T20:34:37.749Z
-Stopped at: Completed 03-17-PLAN.md
+Last session: 2026-09-18T09:22:25.526Z
+Stopped at: Completed 03-15-PLAN.md
 Resume file: None
