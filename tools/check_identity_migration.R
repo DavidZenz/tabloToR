@@ -9,6 +9,104 @@ identity_abort = function(code, detail = NULL) {
   stop(message, call. = FALSE)
 }
 
+identity_approved_workflow_policy_sha256 =
+  "882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e"
+
+identity_workflow_policy_path_set = function() {
+  c(
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-VALIDATION.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-REVIEW.md",
+    file.path(
+      ".planning/phases/03-gemodelr-identity-migration",
+      paste0(sprintf("03-%02d", 13:20), "-SUMMARY.md")
+    )
+  )
+}
+
+identity_reviewed_planning_path_set = function(root = identity_repository_root()) {
+  value = c(
+    file.path(
+      ".planning/phases/03-gemodelr-identity-migration",
+      "03-12-SUMMARY.md"
+    ),
+    file.path(
+      ".planning/phases/03-gemodelr-identity-migration",
+      paste0(sprintf("03-%02d", 13:20), "-PLAN.md")
+    ),
+    file.path(
+      ".planning/phases/03-gemodelr-identity-migration",
+      "03-VERIFICATION.md"
+    )
+  )
+  allowlist_path = file.path(root, "inst", "migration",
+                             "old-identity-allowlist.csv")
+  if (file.exists(allowlist_path)) {
+    existing = tryCatch(
+      read.csv(allowlist_path, stringsAsFactors = FALSE,
+               check.names = FALSE, colClasses = "character"),
+      error = function(error) NULL
+    )
+    if (is.data.frame(existing) && "path" %in% names(existing)) {
+      value = unique(c(
+        value,
+        as.character(existing[["path"]][
+          startsWith(as.character(existing[["path"]]), ".planning/")
+        ])
+      ))
+    }
+  }
+  value
+}
+
+identity_workflow_tool = function(root) {
+  path = file.path(root, "tools", "check_workflow_identity_policy.R")
+  if (!isTRUE(file_test("-f", path))) {
+    identity_abort("WORKFLOW_IDENTITY_TOOL_MISSING", path)
+  }
+  environment = new.env(parent = globalenv())
+  sys.source(path, envir = environment)
+  environment
+}
+
+identity_validate_approved_workflow_policy = function(
+    root = identity_repository_root(),
+    policy_path = file.path(
+      root, "inst", "migration", "workflow-evidence-policy.csv"
+    ),
+    review_path = file.path(
+      root, "inst", "migration", "workflow-evidence-policy-review.dcf"
+    )) {
+  root = normalizePath(root, winslash = "/", mustWork = TRUE)
+  tool = identity_workflow_tool(root)
+  review = tool$workflow_identity_validate_review(
+    "approved", root = root, policy_path = policy_path,
+    review_path = review_path
+  )
+  result = tool$workflow_identity_check_lines(
+    root = root, policy_path = policy_path, review_path = review_path
+  )
+  digest = result$policy$PolicySHA256
+  if (!identical(digest, identity_approved_workflow_policy_sha256) ||
+      !identical(review[["Policy-SHA256"]],
+                  identity_approved_workflow_policy_sha256)) {
+    identity_abort("WORKFLOW_IDENTITY_APPROVED_POLICY_DIGEST", digest)
+  }
+  if (!identical(unique(result$policy_rows$path),
+                unique(identity_workflow_policy_path_set()))) {
+    identity_abort("WORKFLOW_IDENTITY_APPROVED_POLICY_SCOPE")
+  }
+  list(
+    clean = TRUE,
+    policy = result$policy,
+    review = review,
+    policy_rows = result$policy_rows,
+    policy_paths = identity_workflow_policy_path_set(),
+    observed = result$rows
+  )
+}
+
 identity_script_path = local({
   source_files = vapply(sys.frames(), function(frame) {
     value = frame$ofile
@@ -699,8 +797,14 @@ identity_active_owner = function(path, line, position) {
   NA_character_
 }
 
-identity_occurrence_category = function(path, line, position) {
-  if (grepl("^\\.planning/", path)) return("migration-instruction")
+identity_occurrence_category = function(
+    path, line, position,
+    reviewed_planning_paths = identity_reviewed_planning_path_set()) {
+  if (path %in% identity_workflow_policy_path_set() ||
+      path %in% reviewed_planning_paths) {
+    return("migration-instruction")
+  }
+  if (grepl("^\\.planning/", path)) return(NA_character_)
   if (grepl("^benchmarks/\\.", path) ||
       path == "benchmarks/GTAP12A_CPP_RESULTS.md" ||
       grepl("^tests/testthat/baselines/phase02/", path) ||
@@ -716,7 +820,9 @@ identity_occurrence_category = function(path, line, position) {
     "tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds",
     "R/modelSerialization.R",
     "tests/testthat/test-model-serialization.R",
-    "tools/check_predecessor_bridge.R"
+    "tests/testthat/test-serialization-leaf-types.R",
+    "tools/check_predecessor_bridge.R",
+    "tools/check_serialization_bugfix.R"
   )) {
     return("reviewed-serialization-fingerprint")
   }
@@ -743,7 +849,8 @@ identity_occurrence_category = function(path, line, position) {
     "tests/testthat/test-baseline-artifacts.R",
     "tests/testthat/test-benchmark-harness.R",
     "tools/check_identity_migration.R",
-    "tools/qualify_phase03_migration.R"
+    "tools/qualify_phase03_migration.R",
+    "tests/testthat/test-phase03-identity-reseal.R"
   )) {
     return("migration-instruction")
   }
@@ -762,7 +869,7 @@ identity_occurrence_category = function(path, line, position) {
 identity_git_tracked_paths = function(root) {
   git = if (file.exists("/usr/bin/git")) "/usr/bin/git" else "git"
   output = suppressWarnings(system2(
-    git, c("-C", shQuote(root), "ls-files"),
+    git, c("-C", root, "ls-files"),
     stdout = TRUE, stderr = TRUE
   ))
   status = attr(output, "status")
@@ -772,13 +879,16 @@ identity_git_tracked_paths = function(root) {
   sort(unique(output[nzchar(output)]), method = "radix")
 }
 
-identity_occurrences_for_path = function(root, relative) {
+identity_occurrences_for_path = function(
+    root, relative, reviewed_planning_paths =
+      identity_reviewed_planning_path_set(root)) {
   path = identity_resolve_path(root, relative)
   rows = list()
   add = function(record, line, position, kind) {
     owner = identity_active_owner(relative, line, position)
     category = if (is.na(owner)) {
-      identity_occurrence_category(relative, line, position)
+      identity_occurrence_category(
+        relative, line, position, reviewed_planning_paths)
     } else {
       NA_character_
     }
@@ -847,6 +957,7 @@ identity_scan_occurrences = function(
   if (!identical(mode, "tracked-source")) {
     identity_abort("UNEXPECTED_OLD_IDENTITY_MODE", mode)
   }
+  reviewed_planning_paths = identity_reviewed_planning_path_set(root)
   paths = identity_git_tracked_paths(root)
   paths = paths[vapply(paths, function(relative) {
     candidate = file.path(root, relative)
@@ -854,7 +965,8 @@ identity_scan_occurrences = function(
       isTRUE(file_test("-f", candidate))
   }, logical(1))]
   rows = lapply(paths, function(relative) {
-    identity_occurrences_for_path(root, relative)
+    identity_occurrences_for_path(
+      root, relative, reviewed_planning_paths)
   })
   rows = rows[!vapply(rows, is.null, logical(1))]
   if (!length(rows)) {
@@ -869,8 +981,13 @@ identity_scan_occurrences = function(
 
 identity_build_occurrence_allowlist = function(
     root = identity_repository_root(), mode = "tracked-source") {
+  workflow = identity_validate_approved_workflow_policy(root)
   occurrences = identity_scan_occurrences(root, mode)
-  retained = occurrences[is.na(occurrences$active_owner), , drop = FALSE]
+  retained = occurrences[
+    is.na(occurrences$active_owner) &
+      !occurrences$path %in% workflow$policy_paths,
+    , drop = FALSE
+  ]
   if (anyNA(retained$category)) {
     missing = unique(retained$path[is.na(retained$category)])
     identity_abort(
@@ -917,6 +1034,7 @@ identity_build_occurrence_allowlist = function(
 
 identity_validate_occurrence_allowlist = function(
     value, root = identity_repository_root(), mode = "tracked-source") {
+  workflow = identity_validate_approved_workflow_policy(root)
   if (!is.data.frame(value) ||
       !identical(names(value), identity_historical_allowlist_fields())) {
     identity_abort("UNEXPECTED_OLD_IDENTITY_FIELDS")
@@ -935,6 +1053,9 @@ identity_validate_occurrence_allowlist = function(
   }
   if (any(!value$category %in% identity_occurrence_categories())) {
     identity_abort("UNEXPECTED_OLD_IDENTITY_CATEGORY")
+  }
+  if (any(value$path %in% workflow$policy_paths)) {
+    identity_abort("UNEXPECTED_OLD_IDENTITY_POLICY_OWNED_PATH")
   }
   invisible(lapply(value$path, function(relative) {
     tryCatch(
@@ -997,12 +1118,25 @@ identity_validate_historical_allowlist = function(value, root, registry) {
 identity_check_occurrences = function(
     mode = "tracked-source", root = identity_repository_root(),
     allowlist_path = identity_historical_allowlist_path(root)) {
+  workflow = identity_validate_approved_workflow_policy(root)
   occurrences = identity_scan_occurrences(root, mode)
+  active = occurrences[!is.na(occurrences$active_owner), , drop = FALSE]
+  if (nrow(active)) {
+    identity_abort(
+      "UNEXPECTED_OLD_IDENTITY_ACTIVE",
+      paste(unique(active$path), collapse = ",")
+    )
+  }
   allowlist = identity_read_historical_allowlist(allowlist_path)
   identity_validate_occurrence_allowlist(
     allowlist, root = root, mode = mode
   )
-  active = occurrences[!is.na(occurrences$active_owner), , drop = FALSE]
+  workflow_count = if (is.data.frame(workflow$observed) &&
+                       nrow(workflow$observed)) {
+    sum(as.integer(workflow$observed$observed_count))
+  } else {
+    0L
+  }
   list(
     clean = TRUE,
     mode = mode,
@@ -1010,8 +1144,10 @@ identity_check_occurrences = function(
     allowlisted_occurrences = as.integer(sum(
       as.integer(allowlist$expected_count)
     )),
-    active_occurrences = as.integer(nrow(active)),
-    active_owners = sort(unique(active$active_owner), method = "radix"),
+    active_occurrences = 0L,
+    active_owners = character(),
+    workflow_occurrences = as.integer(workflow_count),
+    workflow_policy = workflow,
     allowlist = allowlist
   )
 }
@@ -1087,6 +1223,9 @@ identity_main = function(arguments = commandArgs(trailingOnly = TRUE)) {
     ))
     cat(sprintf(
       "Active-owner-occurrences: %s\n", result$active_occurrences
+    ))
+    cat(sprintf(
+      "Workflow-policy-occurrences: %s\n", result$workflow_occurrences
     ))
     if (length(result$active_owners)) {
       cat(sprintf(

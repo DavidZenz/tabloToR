@@ -118,15 +118,19 @@ test_that("final-tree check is read-only across an actual tracked Git lifecycle"
   dir.create(root, recursive = TRUE)
   on.exit(unlink(root, recursive = TRUE, force = TRUE), add = TRUE)
 
-  archive = tempfile("identity-reseal-archive-", fileext = ".tar")
-  on.exit(unlink(archive, force = TRUE), add = TRUE)
-  status = system2("git", c("-C", source_root, "archive", "--format=tar",
-                             "HEAD", "-o", archive), stdout = TRUE, stderr = TRUE)
-  expect_equal(attr(status, "status") %||% 0L, 0L)
-  expect_equal(system2("tar", c("-xf", archive, "-C", root)), 0L)
-  expect_equal(system2("git", c("-C", root, "init", "-q")), 0L)
-  system2("git", c("-C", root, "config", "user.email", "reseal@example.invalid"))
-  system2("git", c("-C", root, "config", "user.name", "Identity Reseal"))
+  git = if (file.exists("/usr/bin/git")) "/usr/bin/git" else Sys.which("git")
+  expect_true(nzchar(git))
+  expect_equal(system2(git, c("clone", "--no-local", source_root, root)), 0L)
+  expect_true(file.copy(
+    file.path(source_root, "tools", "check_identity_migration.R"),
+    file.path(root, "tools", "check_identity_migration.R"), overwrite = TRUE
+  ))
+  expect_true(file.copy(
+    file.path(source_root, "tools", "seal_phase03_identity.R"),
+    file.path(root, "tools", "seal_phase03_identity.R"), overwrite = TRUE
+  ))
+  system2(git, c("-C", root, "config", "user.email", "reseal@example.invalid"))
+  system2(git, c("-C", root, "config", "user.name", "Identity Reseal"))
 
   candidate = tool$identity_build_occurrence_allowlist(root)
   allowlist_path = file.path(root, "inst", "migration",
@@ -151,8 +155,8 @@ test_that("final-tree check is read-only across an actual tracked Git lifecycle"
                           "identity-reseal-review.dcf")
   resealWriteDcf(review, review_path)
 
-  expect_equal(system2("git", c("-C", root, "add", "-A")), 0L)
-  expect_equal(system2("git", c("-C", root, "commit", "-q", "-m",
+  expect_equal(system2(git, c("-C", root, "add", "-A")), 0L)
+  expect_equal(system2(git, c("-C", root, "commit", "-q", "-m",
                                  "fixture")), 0L)
   before_head = tool$seal_git_head(root)
   before_status = tool$seal_git_status(root)
@@ -170,8 +174,8 @@ test_that("final-tree check is read-only across an actual tracked Git lifecycle"
   if (file.exists(state)) {
     writeLines(c("Approved evidence-only write", readLines(state,
                warn = FALSE, encoding = "UTF-8")), state, useBytes = TRUE)
-    system2("git", c("-C", root, "add", state))
-    system2("git", c("-C", root, "commit", "-q", "-m", "evidence"))
+    system2(git, c("-C", root, "add", state))
+    system2(git, c("-C", root, "commit", "-q", "-m", "evidence"))
     expect_true(tool$seal_check_final_tree(root)$clean)
   }
 })
