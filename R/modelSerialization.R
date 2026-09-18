@@ -660,12 +660,8 @@
     }
     return(invisible(TRUE))
   }
-  numeric_template = is.numeric(template) || is.logical(template)
-  numeric_value = is.numeric(value) || is.logical(value)
-  if ((numeric_template && !numeric_value) ||
-      (!numeric_template &&
-       (!identical(typeof(value), typeof(template)) ||
-        !identical(class(value), class(template))))) {
+  if (!identical(typeof(value), typeof(template)) ||
+      !identical(class(value), class(template))) {
     .serialization_stop(sprintf(
       "%s type does not match the reconstructed model", path
     ))
@@ -817,12 +813,9 @@
       .serialization_validate_structure(value, template, path)
       return(invisible(TRUE))
     }
-    numeric_template = is.numeric(template) || is.logical(template)
-    numeric_value = is.numeric(value) || is.logical(value)
-    if ((numeric_template && !numeric_value) ||
-        (!numeric_template &&
-         (!identical(typeof(value), typeof(template)) ||
-          !identical(class(value), class(template))))) {
+    expected_template = template
+    if (!identical(typeof(value), typeof(expected_template)) ||
+        !identical(class(value), class(expected_template))) {
       .serialization_stop(sprintf(
         "%s type does not match the reconstructed model", path
       ))
