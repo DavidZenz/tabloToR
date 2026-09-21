@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 03
 current_phase_name: GEModelR Identity Migration
 status: executing
-stopped_at: Completed 03-16-PLAN.md
-last_updated: "2026-09-18T12:36:26.556Z"
+stopped_at: Completed 03-19-PLAN.md
+last_updated: "2026-09-21T12:57:51.950Z"
 last_activity: 2026-09-17
 last_activity_desc: Phase 03 execution resumed (wave continue)
-state_head: 1c3398626a01aeaa7e8a9dc046e0d06354d88b74
+state_head: 2a7b6b917fbbe8836319191bbd5a2fef853c1d1c
 progress:
   total_phases: 7
   completed_phases: 2
   total_plans: 37
-  completed_plans: 35
+  completed_plans: 36
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 03 (GEModelR Identity Migration) — EXECUTING
-Plan: 7 of 20
+Plan: 8 of 20
 Status: Ready to execute
 Last activity: 2026-09-17 — Phase 03 execution resumed (wave continue)
 
@@ -65,6 +65,7 @@ Progress: [████████░░] 78% (29/37 current milestone plans ex
 | Phase 03-gemodelr-identity-migration P18 | 35min | 2 tasks | 5 files |
 | Phase 03 P14 | 1h 26m | 2 tasks | 3 files |
 | Phase 03 P16 | 47 min | 2 tasks | 6 files |
+| Phase 03 P19 | 5h 13m | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Validate warmup metadata when present but require solution RDS only for measured runs; keep Phase 02 tolerance authority independent.
 - [Phase 03]: CR-04 revised compatibility source is bound to David Zenz at 2026-09-18T12:26:01Z with candidate source SHA c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e and incremental patch SHA 87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f.
 - [Phase 03]: Strict leaf validation remains exact while compatibility normalization is limited to reconstructed generated fields; compact projections accept only bounded unique subsets.
+- [Phase 03]: Apply only the exact maintainer-approved candidate allowlist bytes after before/candidate/policy SHA-256 validation.
+- [Phase 03]: Bind identity reseal approval to David Zenz at 2026-09-21T12:50:50Z and the exact before and candidate allowlist hashes.
+- [Phase 03]: Keep the final tracked-tree seal read-only and external so generated evidence cannot self-certify its own audit digest.
 
 ### Pending Todos
 
@@ -169,6 +173,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-18T12:36:26.500Z
-Stopped at: Completed 03-16-PLAN.md
+Last session: 2026-09-21T12:57:51.898Z
+Stopped at: Completed 03-19-PLAN.md
 Resume file: None
