@@ -1,0 +1,8 @@
+Schema: gemodelr-identity-reseal-review-v1
+Before-Allowlist-SHA256: 208d3197d1330007804fc948b2ba1c207fc98a4d2580954cd1941c9f1c44484e
+Approved-Allowlist-SHA256: 514417bba0b7845a91fdf426c007ebace80f62da6b5054af6b8376978192cb27
+Policy-SHA256: 882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e
+Scope: Exact reviewed Task 2 inventory: six added, six changed, and three removed rows; workflow-owned paths remain governed by the approved policy; reseal not yet applied.
+Reviewer: David Zenz
+Reviewed-UTC: 2026-09-21T07:41:31Z
+Review-State: approved
