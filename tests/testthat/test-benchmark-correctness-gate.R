@@ -16,10 +16,24 @@ benchmark_gate_test_process = function(command, arguments = character(),
   list(status = as.integer(status), output = as.character(output))
 }
 
-benchmark_gate_test_install = function() {
-  source_root = normalizePath(
-    testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE
+benchmark_gate_source_root = function() {
+  candidates = c(
+    testthat::test_path("..", ".."),
+    testthat::test_path("..", "..", "00_pkg_src", "GEModelR")
   )
+  candidates = candidates[vapply(candidates, function(path) {
+    file.exists(file.path(path, "DESCRIPTION")) &&
+      dir.exists(file.path(path, "R")) &&
+      dir.exists(file.path(path, "benchmarks"))
+  }, logical(1L))]
+  if (!length(candidates)) {
+    stop("GEModelR source tree is unavailable", call. = FALSE)
+  }
+  normalizePath(candidates[[1L]], winslash = "/", mustWork = TRUE)
+}
+
+benchmark_gate_test_install = function() {
+  source_root = benchmark_gate_source_root()
   root = tempfile("GEModelR-benchmark-gate-install-")
   build_root = file.path(root, "build")
   library = file.path(root, "library")
@@ -147,8 +161,8 @@ benchmark_gate_test_cli = function(script, input_dir, output) {
 }
 
 test_that("installed benchmark gate requires a matched solution pair", {
-  source_script = testthat::test_path(
-    "..", "..", "benchmarks", "check_benchmark_gate.R"
+  source_script = file.path(
+    benchmark_gate_source_root(), "benchmarks", "check_benchmark_gate.R"
   )
   source_environment = new.env(parent = globalenv())
   sys.source(source_script, envir = source_environment)
@@ -207,7 +221,7 @@ test_that("installed benchmark gate requires a matched solution pair", {
 
 benchmark_gate_task2_source_script = function() {
   normalizePath(
-    testthat::test_path("..", "..", "benchmarks", "check_benchmark_gate.R"),
+    file.path(benchmark_gate_source_root(), "benchmarks", "check_benchmark_gate.R"),
     mustWork = TRUE
   )
 }
