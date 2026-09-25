@@ -10,6 +10,25 @@ serializationBugfixToolPath = function() {
   normalizePath(hits[[1L]], mustWork = TRUE)
 }
 
+serializationBugfixSourceTreeAvailable = function() {
+  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  required = c(
+    "DESCRIPTION",
+    "R/modelSerialization.R",
+    "tools/check_serialization_bugfix.R",
+    "inst/migration/serialization-bugfix.dcf",
+    "inst/migration/serialization-bugfix.patch"
+  )
+  all(file.exists(file.path(root, required)))
+}
+
+skipUnlessSerializationBugfixSourceTree = function() {
+  testthat::skip_if_not(
+    serializationBugfixSourceTreeAvailable(),
+    "serialization BUGFIX review tests require the package source tree"
+  )
+}
+
 loadSerializationBugfixTool = function() {
   environment = new.env(parent = globalenv())
   sys.source(serializationBugfixToolPath(), envir = environment)
@@ -17,6 +36,7 @@ loadSerializationBugfixTool = function() {
 }
 
 test_that("applied BUGFIX gate proves the exact revised candidate", {
+  skipUnlessSerializationBugfixSourceTree()
   tool = loadSerializationBugfixTool()
   review_record = tool$serialization_bugfix_validate_record()
   proposal_record_path = NULL
@@ -80,6 +100,7 @@ test_that("applied BUGFIX gate proves the exact revised candidate", {
 })
 
 test_that("BUGFIX review records reject scope, digest and approval drift", {
+  skipUnlessSerializationBugfixSourceTree()
   tool = loadSerializationBugfixTool()
   record = tool$serialization_bugfix_validate_record()
   expect_identical(record$`Source-Path`, "R/modelSerialization.R")
