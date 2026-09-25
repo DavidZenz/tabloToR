@@ -1,8 +1,8 @@
 ---
 phase: 03-gemodelr-identity-migration
-verified: 2026-09-15T16:03:42Z
-status: gaps_found
-score: 10/16 must-haves verified
+verified: 2026-09-25T00:00:00Z
+status: passed
+score: 16/16 must-haves verified; two explicitly flagged spec-less assumptions remain unresolved
 behavior_unverified: 0
 overrides_applied: 0
 decision_coverage:
@@ -71,12 +71,12 @@ gaps:
       - "Join artifacts by stable run/repetition key and require a finite maximum difference."
 ---
 
-# Phase 3: GEModelR Identity Migration Verification Report
+# Phase 03: GEModelR Identity Migration Verification Report (initial report superseded below)
 
 **Phase Goal:** Convert package, native, runtime-option, diagnostic, benchmark, and documentation identity to GEModelR while keeping numerical code behavior fixed.
-**Verified:** 2026-09-15T16:03:42Z
-**Status:** gaps_found
-**Re-verification:** No — initial verification; no prior `03-VERIFICATION.md` existed.
+**Verified:** 2026-09-25
+**Status:** passed after the 03-20 gap-closure qualification; the initial findings are retained below as historical evidence.
+**Re-verification:** Yes — the five gap repairs were exercised and the final current-tree gates passed.
 
 ## Goal Achievement
 
@@ -213,7 +213,7 @@ N/A — this is a package/library migration phase with no user-facing visual flo
 
 None of the five blockers is deferred. Later phases address API narrowing, portability/CI, release documentation, and publication, but each blocker contradicts an explicit Phase 3 plan truth or roadmap criterion. WR-01 overlaps Phase 5 portability and remains advisory only.
 
-## Gaps Summary
+## Initial Gaps Summary (superseded by the re-verification below)
 
 Five blockers prevent Phase 3 completion:
 
@@ -232,3 +232,44 @@ Suggested gap-closure grouping:
 
 _Verified: 2026-09-15T16:03:42Z_
 _Verifier: the agent (gsd-verifier)_
+
+## Re-verification — 2026-09-25
+
+The initial report above records the defects that created the 03-13 through
+03-20 gap-closure work. It is retained for audit history; this section is the
+current verification result and supersedes the initial `gaps_found` decision.
+
+### Qualification result
+
+- The clean technical HEAD `9ccce8e8038bdec247605a68efebcda9c272fe81` passed all
+  18 mandatory qualification stages with status zero.
+- The captured transcript passed its digest/link validator with manifest
+  SHA-256 `927c7677583b1b5b0a0200772e0130ca749b8cb9443e4f26cbf029c1163e1b5e`.
+- R CMD check evidence is 0 ERROR, 0 WARNING, and exactly the two approved
+  host NOTE blocks.
+- The complete current testthat suite passed after the qualification fixes.
+
+### Gap closure evidence
+
+- Installed benchmark source-root resolution works in source and installed
+  layouts, including non-summary execution fixtures.
+- The original-artifact and migration-source Phase 2 stages are distinct and
+  both pass in the qualification manifest.
+- Exact numerical leaf typing and benchmark artifact pairing regressions pass;
+  the benchmark gate fails closed for absent, unequal, duplicate, reordered, or
+  non-finite solution evidence.
+- The tracked-source identity audit passes with 714 retained predecessor
+  occurrences, 0 active-owner occurrences, and 11 workflow-policy occurrences.
+- The current read-only final-tree audit at HEAD
+  `505a9bdd4b900462de2c0d4768d57ba5db2707d1` reports zero unexpected and zero
+  stale records. Its tracked-tree SHA-256 is
+  `4165d71241472503e1be335555f9291b50f658c2ce9e5ada0c26b5ba30313b12`.
+
+### Explicitly retained boundaries
+
+- COMP-04 and MIGR-01 spec-less probes remain flagged-unverified rather than
+  being silently classified.
+- Dependency compatibility and attribution identity remain independent release
+  blockers; this technical verification does not authorize publication.
+
+**Current decision:** `passed` for Phase 03 technical goal and requirements.
