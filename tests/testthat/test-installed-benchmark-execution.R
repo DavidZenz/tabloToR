@@ -27,10 +27,24 @@ benchmark_gap_isolated_environment = function(library) {
   )
 }
 
-benchmark_gap_build_install = function() {
-  source_root = normalizePath(
-    testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE
+benchmark_gap_source_root = function() {
+  candidates = c(
+    testthat::test_path("..", ".."),
+    testthat::test_path("..", "..", "00_pkg_src", "GEModelR")
   )
+  candidates = candidates[vapply(candidates, function(path) {
+    file.exists(file.path(path, "DESCRIPTION")) &&
+      dir.exists(file.path(path, "R")) &&
+      dir.exists(file.path(path, "inst"))
+  }, logical(1L))]
+  if (!length(candidates)) {
+    stop("GEModelR source tree is unavailable", call. = FALSE)
+  }
+  normalizePath(candidates[[1L]], winslash = "/", mustWork = TRUE)
+}
+
+benchmark_gap_build_install = function() {
+  source_root = benchmark_gap_source_root()
   root = tempfile("GEModelR-installed-benchmark-")
   build_root = file.path(root, "build")
   library = file.path(root, "library")
