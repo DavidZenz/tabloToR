@@ -12,6 +12,30 @@ workflowIdentityPolicyToolPath = function() {
   normalizePath(hits[[1L]], mustWork = TRUE)
 }
 
+workflowIdentitySourceTreeAvailable = function() {
+  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
+  required = c(
+    "DESCRIPTION",
+    "tools/check_workflow_identity_policy.R",
+    "tools/check_identity_migration.R",
+    "inst/migration/predecessor-fingerprints.dcf",
+    "inst/migration/workflow-evidence-policy.csv",
+    "inst/migration/workflow-evidence-policy-review.dcf",
+    ".planning/STATE.md",
+    ".planning/ROADMAP.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-VALIDATION.md",
+    ".planning/phases/03-gemodelr-identity-migration/03-REVIEW.md"
+  )
+  all(file.exists(file.path(root, required)))
+}
+
+skipUnlessWorkflowIdentitySourceTree = function() {
+  testthat::skip_if_not(
+    workflowIdentitySourceTreeAvailable(),
+    "workflow identity policy tests require the package source tree"
+  )
+}
+
 loadWorkflowIdentityPolicyTool = function() {
   environment = new.env(parent = globalenv())
   sys.source(workflowIdentityPolicyToolPath(), envir = environment)
@@ -91,6 +115,7 @@ workflowPolicyTree = function(tool) {
 }
 
 test_that("checked-in workflow policy is an approved exact-line contract", {
+  skipUnlessWorkflowIdentitySourceTree()
   tool = loadWorkflowIdentityPolicyTool()
 
   expect_silent(tool$workflow_identity_validate_policy())
@@ -118,6 +143,7 @@ test_that("checked-in workflow policy is an approved exact-line contract", {
 })
 
 test_that("a real evidence lifecycle permits movement but rejects new identity", {
+  skipUnlessWorkflowIdentitySourceTree()
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
   predecessor_package = tool$workflow_identity_old_token(tree$root)
@@ -163,6 +189,7 @@ test_that("a real evidence lifecycle permits movement but rejects new identity",
 })
 
 test_that("policy rejects source, arbitrary planning, and symlink paths", {
+  skipUnlessWorkflowIdentitySourceTree()
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
   predecessor_package = tool$workflow_identity_old_token(tree$root)
@@ -205,6 +232,7 @@ test_that("policy rejects source, arbitrary planning, and symlink paths", {
 })
 
 test_that("fenced executable evidence cannot use a metadata allowance", {
+  skipUnlessWorkflowIdentitySourceTree()
   tool = loadWorkflowIdentityPolicyTool()
   tree = workflowPolicyTree(tool)
   predecessor_package = tool$workflow_identity_old_token(tree$root)
@@ -224,6 +252,7 @@ test_that("fenced executable evidence cannot use a metadata allowance", {
 })
 
 test_that("the proposal does not alter the five-category tracked-source gate", {
+  skipUnlessWorkflowIdentitySourceTree()
   tool = loadWorkflowIdentityPolicyTool()
   identity_path = file.path(
     tool$workflow_identity_repository_root(), "tools", 
