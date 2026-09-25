@@ -1099,10 +1099,10 @@ qualification_execute = function(root = qualification_repository_root()) {
     "serialization-bugfix", qualification_r("Rscript"),
     c(
       "--vanilla",
-      file.path(source, "tools", "check_serialization_bugfix.R"),
+      file.path(root, "tools", "check_serialization_bugfix.R"),
       "--verify-approved"
     ),
-    directory = source, log_directory = logs
+    directory = root, log_directory = logs
   )
   qualification_assert_output(
     serialization_bugfix_result$output,
