@@ -438,7 +438,7 @@ seal_example_qualification_manifest = function() {
     function(stage) seal_hash_raw(charToRaw(paste0("output:", stage))),
     character(1)
   )
-  root_digest = seal_hash_raw(charToRaw("ROOT"))
+  root_digest = seal_hash_raw(charToRaw(paste(rep("0", 40L), collapse = "")))
   parent_digest = vapply(stages, function(stage) {
     parent = unname(parents[[stage]])
     if (identical(parent, "ROOT")) root_digest else
@@ -553,11 +553,14 @@ seal_validate_manifest = function(manifest) {
       any(!grepl("^[0-9a-f]{40}$", manifest$HEAD))) {
     seal_abort("QUALIFICATION_TRANSCRIPT_DIGEST")
   }
+  if (length(unique(manifest$HEAD)) != 1L) {
+    seal_abort("QUALIFICATION_TRANSCRIPT_HEAD")
+  }
   parents = seal_qualification_parents()
   for (index in seq_along(stages)) {
     parent = unname(parents[[stages[[index]]]])
     expected = if (identical(parent, "ROOT")) {
-      seal_hash_raw(charToRaw("ROOT"))
+      seal_hash_raw(charToRaw(manifest$HEAD[[1L]]))
     } else {
       manifest[["Output-Digest"]][[match(parent, stages)]]
     }
