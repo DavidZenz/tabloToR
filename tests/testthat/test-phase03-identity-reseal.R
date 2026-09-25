@@ -5,34 +5,9 @@ identityResealToolPath = function() {
   )
   hits = candidates[file.exists(candidates)]
   if (!length(hits)) {
-    stop("identity reseal tooling is unavailable", call. = FALSE)
+    testthat::skip("identity reseal tests require the package source tree")
   }
   normalizePath(hits[[1L]], mustWork = TRUE)
-}
-
-identityResealSourceTreeAvailable = function() {
-  root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
-  required = c(
-    "DESCRIPTION",
-    "tools/seal_phase03_identity.R",
-    "tools/check_identity_migration.R",
-    "inst/migration/predecessor-fingerprints.dcf",
-    "inst/migration/workflow-evidence-policy.csv",
-    "inst/migration/workflow-evidence-policy-review.dcf",
-    "inst/migration/identity-reseal-review.dcf",
-    ".planning/STATE.md",
-    ".planning/ROADMAP.md",
-    ".planning/phases/03-gemodelr-identity-migration/03-VALIDATION.md",
-    ".planning/phases/03-gemodelr-identity-migration/03-REVIEW.md"
-  )
-  all(file.exists(file.path(root, required)))
-}
-
-skipUnlessIdentityResealSourceTree = function() {
-  testthat::skip_if_not(
-    identityResealSourceTreeAvailable(),
-    "identity reseal tests require the package source tree"
-  )
 }
 
 loadIdentityResealTool = function() {
@@ -55,7 +30,6 @@ resealWriteDcf = function(value, path) {
 }
 
 test_that("approved workflow policy is pinned and active", {
-  skipUnlessIdentityResealSourceTree()
   tool = loadIdentityResealTool()
   root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
 
@@ -72,7 +46,6 @@ test_that("approved workflow policy is pinned and active", {
 })
 
 test_that("workflow-owned rows are excluded only after exact policy validation", {
-  skipUnlessIdentityResealSourceTree()
   tool = loadIdentityResealTool()
   root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
   expect_silent(tool$seal_validate_approved_workflow_policy(root))
@@ -103,7 +76,6 @@ test_that("workflow-owned rows are excluded only after exact policy validation",
 })
 
 test_that("qualification transcript validation is exact and fail-closed", {
-  skipUnlessIdentityResealSourceTree()
   tool = loadIdentityResealTool()
   transcript = tempfile("qualification-transcript-", fileext = ".log")
   on.exit(unlink(transcript, force = TRUE), add = TRUE)
@@ -140,7 +112,6 @@ test_that("qualification transcript validation is exact and fail-closed", {
 })
 
 test_that("final-tree check is read-only across an actual tracked Git lifecycle", {
-  skipUnlessIdentityResealSourceTree()
   tool = loadIdentityResealTool()
   source_root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
   root = tempfile("identity-reseal-tree-")
@@ -210,7 +181,6 @@ test_that("final-tree check is read-only across an actual tracked Git lifecycle"
 })
 
 test_that("source and novel workflow changes fail without mutating the tree", {
-  skipUnlessIdentityResealSourceTree()
   tool = loadIdentityResealTool()
   root = normalizePath(testthat::test_path("..", ".."), mustWork = TRUE)
   before_head = tool$seal_git_head(root)
