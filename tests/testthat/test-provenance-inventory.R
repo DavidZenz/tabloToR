@@ -560,9 +560,9 @@ test_that("accepted native hash review remains historical evidence", {
     root, "docs", "provenance", "HASH-REVIEW.md"
   ))
 
-  expect_identical(nrow(expected), 290L)
-  expect_identical(nrow(ledger), 290L)
-  expect_identical(nrow(fresh), 290L)
+  expect_identical(nrow(expected), 291L)
+  expect_identical(nrow(ledger), 291L)
+  expect_identical(nrow(fresh), 291L)
   expect_identical(sum(ledger$language == "C/C++"), 55L)
   expect_identical(nrow(proposal$rows), 54L)
   expect_identical(proposal$rows$key, sort(proposal$rows$key))
@@ -613,8 +613,8 @@ test_that("accepted Phase 02 inventory review remains historical evidence", {
     file.path(root, "docs", "provenance", "INVENTORY-REVIEW.csv"), columns
   )
 
-  expect_identical(nrow(ledger), 290L)
-  expect_identical(nrow(fresh), 290L)
+  expect_identical(nrow(ledger), 291L)
+  expect_identical(nrow(fresh), 291L)
   expect_identical(nrow(review), 39L)
   expect_identical(sum(review$change == "added"), 30L)
   expect_identical(sum(review$change == "expression-hash-changed"), 9L)

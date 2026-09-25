@@ -38,6 +38,7 @@
 "R/modelSerialization.R",".serialization_model_shocks"
 "R/modelSerialization.R",".serialization_object_fingerprint"
 "R/modelSerialization.R",".serialization_package_lineage_registry"
+"R/modelSerialization.R",".serialization_promote_reconstructed_fields"
 "R/modelSerialization.R",".serialization_source_path"
 "R/modelSerialization.R",".serialization_stop"
 "R/modelSerialization.R",".serialization_strip_runtime"
