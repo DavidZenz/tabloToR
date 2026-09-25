@@ -798,9 +798,9 @@ qualification_execute = function(root = qualification_repository_root()) {
     source_result$output,
     c(
       "Tracked source identity audit: PASS",
-      "Allowlisted-predecessor-occurrences: 706",
+      "Allowlisted-predecessor-occurrences: 714",
       "Active-owner-occurrences: 0",
-      "provenance_status=reviewed rows=290 expected_keys=290"
+      "provenance_status=reviewed rows=291 expected_keys=291"
     ),
     "source-identity"
   )
@@ -813,7 +813,7 @@ qualification_execute = function(root = qualification_repository_root()) {
   )))
   stages = qualification_append_stage(
     stages, "source-identity", source_identity_digest, source_result, source,
-    "706 retained predecessor occurrences; 0 active; provenance 290/290",
+    "714 retained predecessor occurrences; 0 active; provenance 291/291",
     root_digest
   )
 
