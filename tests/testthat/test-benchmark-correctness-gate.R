@@ -819,8 +819,8 @@ test_that("benchmark correctness gate handles warmups, ordering, and boundaries"
 
 test_that("benchmark correctness evidence preserves Phase 02 authority and mirrors", {
   source = benchmark_gate_task2_source_script()
-  installed = testthat::test_path(
-    "..", "..", "inst", "benchmarks", "check_benchmark_gate.R"
+  installed = file.path(
+    benchmark_gate_source_root(), "inst", "benchmarks", "check_benchmark_gate.R"
   )
   expect_identical(
     readBin(source, "raw", n = file.info(source)$size),
