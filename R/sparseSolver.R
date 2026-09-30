@@ -1,5 +1,108 @@
 # Numeric sparse execution helpers for GEModel.
 
+.sparse_backend_registry = new.env(parent = emptyenv())
+.sparse_backend_registry$Matrix = list(
+  requested_backend = "Matrix",
+  implementation = "Matrix",
+  preflight = function(requested_backend = "Matrix", ...) {
+    list(
+      requested_backend = requested_backend,
+      implementation = "Matrix",
+      available = TRUE,
+      capability = "base R Matrix package"
+    )
+  },
+  solve = function(coefficient_matrix, rhs, reduction, ...) {
+    started = proc.time()[[3L]]
+    solution = solve_sparse_system(
+      coefficient_matrix, rhs, backend = "Matrix", reduction = reduction
+    )
+    list(
+      solution = solution,
+      elapsed_seconds = proc.time()[[3L]] - started,
+      cleanup_status = list(
+        status = "complete",
+        scope = "solve",
+        resources = "none retained"
+      )
+    )
+  }
+)
+
+.sparse_backend_preflight = function(backend, ...) {
+  adapter = .sparse_backend_registry[[backend]]
+  if (is.null(adapter)) {
+    return(list(
+      requested_backend = backend,
+      adapter = NULL,
+      capability_evidence = NULL
+    ))
+  }
+  capability_evidence = adapter$preflight(
+    requested_backend = backend, ...
+  )
+  list(
+    requested_backend = backend,
+    adapter = adapter,
+    capability_evidence = capability_evidence
+  )
+}
+
+.sparse_backend_solve = function(preflight, coefficient_matrix, rhs,
+                                 reduction) {
+  adapter = preflight$adapter
+  result = adapter$solve(
+    coefficient_matrix = coefficient_matrix,
+    rhs = rhs,
+    reduction = reduction
+  )
+  if (!is.list(result) || is.null(result$solution)) {
+    stop("Sparse backend adapter returned no solution candidate",
+         call. = FALSE)
+  }
+  solution = result$solution
+  output_structure = list(
+    class = class(solution),
+    type = typeof(solution),
+    length = length(solution),
+    names = names(solution),
+    dim = dim(solution),
+    dimnames = dimnames(solution),
+    missing = as.vector(is.na(solution)),
+    encoding = if (is.character(solution)) {
+      unname(Encoding(solution))
+    } else character()
+  )
+  list(
+    backend = preflight$requested_backend,
+    requested_backend = preflight$requested_backend,
+    implementation = adapter$implementation,
+    solution = solution,
+    coefficient_matrix = coefficient_matrix,
+    rhs = rhs,
+    output_structure = output_structure,
+    structural_metadata = list(
+      matrix_class = class(coefficient_matrix),
+      matrix_dimensions = dim(coefficient_matrix),
+      matrix_nonzeros = length(coefficient_matrix@x)
+    ),
+    finiteness_evidence = list(
+      solution = all(is.finite(solution)),
+      rhs = all(is.finite(rhs)),
+      matrix = all(is.finite(coefficient_matrix@x))
+    ),
+    residual_evidence_inputs = list(
+      rhs_l2_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0,
+      rhs_length = length(rhs),
+      solution_length = length(solution),
+      matrix_dimensions = dim(coefficient_matrix)
+    ),
+    timing = list(elapsed_seconds = result$elapsed_seconds),
+    capability_evidence = preflight$capability_evidence,
+    cleanup_status = result$cleanup_status
+  )
+}
+
 sparse_state_data = function(state) {
   if (is.environment(state)) state$data else state
 }
@@ -2129,6 +2232,7 @@ sparse_check_budget = function(estimate, budget) {
                                  reduction, measure = FALSE,
                                  structured_partition = NULL,
                                  candidate_transform = NULL) {
+  backend_preflight = .sparse_backend_preflight(backend, model = model)
   structured_backend = backend %in% c(
     "StructuredSchur", "StructuredSchurFGMRES"
   )
@@ -2159,6 +2263,7 @@ sparse_check_budget = function(estimate, budget) {
   }
   .transaction_fault("factorization")
   solver_diagnostics = NULL
+  candidate = NULL
   if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
     if (is.null(structured_partition)) {
       stop("StructuredSchur backend requires a model-specific partition",
@@ -2176,6 +2281,14 @@ sparse_check_budget = function(estimate, budget) {
     )
     solution = exact_result$solution
     solver_diagnostics = exact_result
+  } else if (!is.null(backend_preflight$adapter)) {
+    candidate = .sparse_backend_solve(
+      backend_preflight,
+      coefficient_matrix = coefficient_matrix,
+      rhs = emitted$rhs,
+      reduction = reduction
+    )
+    solution = candidate$solution
   } else {
     solution = solve_sparse_system(
       coefficient_matrix, emitted$rhs, backend = backend,
@@ -2193,24 +2306,26 @@ sparse_check_budget = function(estimate, budget) {
     missing = rep(FALSE, ncol(coefficient_matrix)),
     encoding = character()
   )
-  candidate = list(
-    backend = backend,
-    solution = solution,
-    coefficient_matrix = coefficient_matrix,
-    rhs = emitted$rhs,
-    output_structure = list(
-      class = class(solution),
-      type = typeof(solution),
-      length = length(solution),
-      names = names(solution),
-      dim = dim(solution),
-      dimnames = dimnames(solution),
-      missing = as.vector(is.na(solution)),
-      encoding = if (is.character(solution)) {
-        unname(Encoding(solution))
-      } else character()
+  if (is.null(candidate)) {
+    candidate = list(
+      backend = backend,
+      solution = solution,
+      coefficient_matrix = coefficient_matrix,
+      rhs = emitted$rhs,
+      output_structure = list(
+        class = class(solution),
+        type = typeof(solution),
+        length = length(solution),
+        names = names(solution),
+        dim = dim(solution),
+        dimnames = dimnames(solution),
+        missing = as.vector(is.na(solution)),
+        encoding = if (is.character(solution)) {
+          unname(Encoding(solution))
+        } else character()
+      )
     )
-  )
+  }
   if (!is.null(candidate_transform)) {
     if (!is.function(candidate_transform)) {
       stop("candidate_transform must be a function", call. = FALSE)
