@@ -45,6 +45,27 @@ test_that("public native backend is opt-in and numerically equivalent", {
   expect_identical(candidate$lastDiagnostics$solver_backend,
                    "StructuredSchurFGMRESCpp")
   expect_identical(candidate$lastDiagnostics$solver_backend_impl, "cpp")
+  expect_identical(candidate$lastDiagnostics$schema_version, 1L)
+  expect_identical(candidate$lastDiagnostics$engine, "sparse")
+  expect_identical(candidate$lastDiagnostics$requested_backend,
+                   "StructuredSchurFGMRESCpp")
+  expect_identical(candidate$lastDiagnostics$implementation, "cpp")
+  expect_identical(candidate$lastDiagnostics$status, "succeeded")
+  expect_true(candidate$lastDiagnostics$accepted_numerical_state)
+  expect_false(candidate$lastDiagnostics$retryable_postsim)
+  expect_true(candidate$lastDiagnostics$capability_evidence$available)
+  expect_identical(
+    candidate$lastDiagnostics$effective_thread_count,
+    candidate$lastDiagnostics$native$threads_effective_max
+  )
+  expect_identical(candidate$lastDiagnostics$cleanup_status$status, "complete")
+  expect_identical(
+    candidate$lastDiagnostics$cleanup_status$structural_metadata,
+    "model-scoped cache retained"
+  )
+  expect_true(length(candidate$lastDiagnostics$true_residual_history) > 0L)
+  expect_true(is.list(candidate$lastDiagnostics$phase_allocations))
+  expect_true(is.list(candidate$lastDiagnostics$estimated_memory))
   expect_lte(candidate$lastDiagnostics$max_full_relative_residual, 2e-7)
   expect_false(candidate$lastDiagnostics$dense_fallback)
   expect_false(contains_external_pointer(candidate$lastDiagnostics))
@@ -61,6 +82,25 @@ test_that("public native backend is opt-in and numerically equivalent", {
   expect_true(is.list(cache))
   expect_identical(cache$abi, 1L)
   expect_identical(.sparse_schur_cpp_runtime$live_dense_factors, list())
+
+  minimal <- make_cpp_structured_model()
+  testthat::with_mocked_bindings(
+    minimal$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      diagnostics = FALSE, backend = "StructuredSchurFGMRESCpp",
+      output = "compact"
+    ),
+    sparse_gtap_elimination_partition = partition,
+    .package = "GEModelR"
+  )
+  expect_identical(names(minimal$lastDiagnostics), .gemodelr_diagnostics_fields)
+  expect_identical(minimal$lastDiagnostics$requested_backend,
+                   "StructuredSchurFGMRESCpp")
+  expect_identical(minimal$lastDiagnostics$implementation, "cpp")
+  expect_identical(minimal$lastDiagnostics$status, "succeeded")
+  expect_identical(minimal$lastDiagnostics$cleanup_status$status, "complete")
+  expect_false("native" %in% names(minimal$lastDiagnostics))
+  expect_false("true_residual_history" %in% names(minimal$lastDiagnostics))
 
   failed <- make_cpp_structured_model()
   cleanups_before_error <- length(cleanup_results)
@@ -83,6 +123,15 @@ test_that("public native backend is opt-in and numerically equivalent", {
   expect_identical(error$failure_phase, "candidate-acceptance")
   expect_false(error$accepted_numerical_state)
   expect_true(is.list(error$remediation))
+  expect_identical(failed$lastDiagnostics$schema_version, 1L)
+  expect_identical(failed$lastDiagnostics$status, "numerical_failed")
+  expect_identical(failed$lastDiagnostics$requested_backend,
+                   "StructuredSchurFGMRESCpp")
+  expect_identical(failed$lastDiagnostics$implementation, "cpp")
+  expect_identical(failed$lastDiagnostics$condition_class,
+                   "GEModelR_numerical_error")
+  expect_identical(failed$lastDiagnostics$cleanup_status$status, "complete")
+  expect_true(is.list(failed$lastDiagnostics$capability_evidence))
   expect_gt(length(cleanup_results), cleanups_before_error)
   expect_identical(tail(cleanup_results, 1L)[[1L]]$status, "complete")
   expect_identical(tail(cleanup_results, 1L)[[1L]]$scope, "solve")

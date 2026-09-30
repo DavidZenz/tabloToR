@@ -219,6 +219,47 @@ test_that("accepted logical state round trips through the versioned payload", {
   expect_true(all(is.finite(fresh$after$solution)))
 })
 
+test_that("small versioned solve envelope round trips without extra state", {
+  model = make_three_region_model("sparse")
+  model$setMemoryBudget(128 * 1024^2)
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "full", backend = "Matrix",
+    reduction = "off"
+  )
+  detailed = model$lastDiagnostics
+  envelope = .gemodelr_diagnostics_envelope(
+    engine = detailed$engine,
+    requested_backend = detailed$requested_backend,
+    implementation = detailed$implementation,
+    status = detailed$status,
+    condition_class = detailed$condition_class,
+    accepted_numerical_state = detailed$accepted_numerical_state,
+    retryable_postsim = detailed$retryable_postsim,
+    failure_phase = detailed$failure_phase,
+    failure_reason = detailed$failure_reason,
+    cleanup_status = detailed$cleanup_status
+  )
+  model$lastDiagnostics = envelope
+  expect_identical(names(envelope), .gemodelr_diagnostics_fields)
+  expect_identical(envelope$schema_version, 1L)
+
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  model$saveState(state_file)
+  payload = readRDS(state_file)
+  expect_identical(names(payload), serializationPayloadFields())
+  expect_identical(payload$schema, "gemodel-logical-state")
+  expect_identical(payload$schema_version, 1L)
+  expect_identical(payload$diagnostics, envelope)
+
+  restored = GEModel$new()
+  restored$loadState(state_file)
+  expect_identical(restored$lastDiagnostics, envelope)
+  expect_identical(names(restored$lastDiagnostics), .gemodelr_diagnostics_fields)
+})
+
 test_that("case-insensitive shock labels round trip through logical state", {
   model = make_three_region_model("sparse")
   shocks = setNames(

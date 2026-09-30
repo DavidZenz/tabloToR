@@ -730,9 +730,22 @@
     length(payload[["accepted"]][["solution"]])
   ) {
     fields = available_variables
+    post_simulation_retained = isTRUE(
+      payload[["diagnostics"]][["post_simulation_retained"]]
+    )
     if (identical(payload[["engine"]], "legacy") ||
-        isTRUE(payload[["diagnostics"]][["post_simulation_retained"]])) {
+        post_simulation_retained) {
       fields = c(fields, reconstructed_update_fields)
+    } else {
+      numeric_update_fields = reconstructed_update_fields[vapply(
+        reconstructed_update_fields,
+        function(field) {
+          field %in% names(payload[["levels"]]) &&
+            is.double(payload[["levels"]][[field]])
+        },
+        logical(1)
+      )]
+      fields = c(fields, numeric_update_fields)
     }
     unique(fields)
   } else character()

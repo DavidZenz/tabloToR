@@ -124,7 +124,15 @@ test_that("solve engine must match the loaded runtime until data is reloaded", {
     expectLifecycleValidation(error, "loadData")
     expect_identical(error$requested_engine, requested_engine)
     expect_identical(error$loaded_engine, loaded_engine)
-    expect_identical(lifecycleModelSnapshot(model), before)
+    after = lifecycleModelSnapshot(model)
+    after$lastDiagnostics = before$lastDiagnostics
+    expect_identical(after, before)
+    expect_identical(names(model$lastDiagnostics), .gemodelr_diagnostics_fields)
+    expect_identical(model$lastDiagnostics$status, "validation_failed")
+    expect_identical(model$lastDiagnostics$condition_class,
+                     "GEModelR_validation_error")
+    expect_identical(model$lastDiagnostics$engine, requested_engine)
+    expect_identical(model$lastDiagnostics$requested_backend, "Matrix")
 
     model$loadData(three_region_input_data(), engine = requested_engine)
     expect_identical(model$loadedEngine, requested_engine)

@@ -387,7 +387,7 @@ test_that("native backend preflight fails closed before solving", {
     model$lastDiagnostics$requested_backend,
     "StructuredSchurFGMRESCpp"
   )
-  expect_null(model$lastDiagnostics$implementation)
+  expect_identical(model$lastDiagnostics$implementation, "cpp")
   expect_identical(
     model$lastDiagnostics$condition_class, "GEModelR_capability_error"
   )
