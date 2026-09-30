@@ -203,11 +203,25 @@ Gap execution: `$gsd-execute-phase 03 --gaps-only`. Approval checkpoints in 03-1
 **Plans**: 6 plans
 
 Plans:
+**Wave 1**
+
 - [ ] 04-01-PLAN.md — Prove the Matrix backend adapter path end to end
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
 - [ ] 04-02-PLAN.md — Register backend IDs and native preflight/cleanup
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
 - [ ] 04-03-PLAN.md — Enforce lifecycle and state invalidation
 - [ ] 04-04-PLAN.md — Validate selectors and materialize output on demand
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 04-05-PLAN.md — Add stable diagnostics and condition contracts
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 04-06-PLAN.md — Publish the deliberate namespace and generated docs
 
 **Execution waves**
