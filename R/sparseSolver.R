@@ -1,25 +1,71 @@
 # Numeric sparse execution helpers for GEModel.
 
+.sparse_value_structure = function(value) {
+  list(
+    class = class(value),
+    type = typeof(value),
+    length = length(value),
+    names = names(value),
+    dim = dim(value),
+    dimnames = dimnames(value),
+    missing = as.vector(is.na(value)),
+    encoding = if (is.character(value)) {
+      unname(Encoding(value))
+    } else character()
+  )
+}
+
+.sparse_matrix_structure = function(coefficient_matrix) {
+  list(
+    matrix_class = class(coefficient_matrix),
+    matrix_dimensions = dim(coefficient_matrix),
+    matrix_nonzeros = length(coefficient_matrix@x)
+  )
+}
+
 .sparse_backend_registry = new.env(parent = emptyenv())
 .sparse_backend_registry$Matrix = list(
   requested_backend = "Matrix",
-  implementation = "Matrix",
+  implementation = "solve_sparse_system(Matrix)",
   preflight = function(requested_backend = "Matrix", ...) {
     list(
       requested_backend = requested_backend,
-      implementation = "Matrix",
+      implementation = "solve_sparse_system(Matrix)",
       available = TRUE,
       capability = "base R Matrix package"
     )
   },
-  solve = function(coefficient_matrix, rhs, reduction, ...) {
+  solve = function(coefficient_matrix, rhs, reduction,
+                   requested_backend = "Matrix",
+                   implementation = "solve_sparse_system(Matrix)",
+                   capability_evidence, ...) {
     started = proc.time()[[3L]]
     solution = solve_sparse_system(
       coefficient_matrix, rhs, backend = "Matrix", reduction = reduction
     )
+    elapsed_seconds = proc.time()[[3L]] - started
     list(
+      backend = requested_backend,
+      requested_backend = requested_backend,
+      implementation = implementation,
       solution = solution,
-      elapsed_seconds = proc.time()[[3L]] - started,
+      coefficient_matrix = coefficient_matrix,
+      rhs = rhs,
+      output_structure = .sparse_value_structure(solution),
+      structural_metadata = .sparse_matrix_structure(coefficient_matrix),
+      finiteness_evidence = list(
+        solution = all(is.finite(solution)),
+        rhs = all(is.finite(rhs)),
+        matrix = all(is.finite(coefficient_matrix@x))
+      ),
+      residual_evidence_inputs = list(
+        rhs_l2_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0,
+        rhs_length = length(rhs),
+        solution_length = length(solution),
+        matrix_dimensions = dim(coefficient_matrix)
+      ),
+      timing = list(elapsed_seconds = elapsed_seconds),
+      capability_evidence = capability_evidence,
       cleanup_status = list(
         status = "complete",
         scope = "solve",
@@ -50,57 +96,117 @@
 
 .sparse_backend_solve = function(preflight, coefficient_matrix, rhs,
                                  reduction) {
+  if (!is.list(preflight) ||
+      !is.character(preflight$requested_backend) ||
+      length(preflight$requested_backend) != 1L ||
+      is.na(preflight$requested_backend) ||
+      !nzchar(preflight$requested_backend) ||
+      !is.list(preflight$adapter) ||
+      !is.list(preflight$capability_evidence)) {
+    stop("Sparse backend preflight record is incomplete", call. = FALSE)
+  }
   adapter = preflight$adapter
+  if (!identical(adapter$requested_backend, preflight$requested_backend) ||
+      !is.character(adapter$implementation) ||
+      length(adapter$implementation) != 1L ||
+      is.na(adapter$implementation) || !nzchar(adapter$implementation) ||
+      !is.function(adapter$solve)) {
+    stop("Sparse backend adapter identity is inconsistent", call. = FALSE)
+  }
+  capability_evidence = preflight$capability_evidence
+  if (!identical(capability_evidence$requested_backend,
+                 preflight$requested_backend) ||
+      !identical(capability_evidence$implementation,
+                 adapter$implementation) ||
+      !identical(capability_evidence$available, TRUE)) {
+    stop("Sparse backend capability evidence is inconsistent", call. = FALSE)
+  }
   result = adapter$solve(
     coefficient_matrix = coefficient_matrix,
     rhs = rhs,
-    reduction = reduction
-  )
-  if (!is.list(result) || is.null(result$solution)) {
-    stop("Sparse backend adapter returned no solution candidate",
-         call. = FALSE)
-  }
-  solution = result$solution
-  output_structure = list(
-    class = class(solution),
-    type = typeof(solution),
-    length = length(solution),
-    names = names(solution),
-    dim = dim(solution),
-    dimnames = dimnames(solution),
-    missing = as.vector(is.na(solution)),
-    encoding = if (is.character(solution)) {
-      unname(Encoding(solution))
-    } else character()
-  )
-  list(
-    backend = preflight$requested_backend,
+    reduction = reduction,
     requested_backend = preflight$requested_backend,
     implementation = adapter$implementation,
-    solution = solution,
-    coefficient_matrix = coefficient_matrix,
-    rhs = rhs,
-    output_structure = output_structure,
-    structural_metadata = list(
-      matrix_class = class(coefficient_matrix),
-      matrix_dimensions = dim(coefficient_matrix),
-      matrix_nonzeros = length(coefficient_matrix@x)
-    ),
-    finiteness_evidence = list(
-      solution = all(is.finite(solution)),
-      rhs = all(is.finite(rhs)),
-      matrix = all(is.finite(coefficient_matrix@x))
-    ),
-    residual_evidence_inputs = list(
-      rhs_l2_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0,
-      rhs_length = length(rhs),
-      solution_length = length(solution),
-      matrix_dimensions = dim(coefficient_matrix)
-    ),
-    timing = list(elapsed_seconds = result$elapsed_seconds),
-    capability_evidence = preflight$capability_evidence,
-    cleanup_status = result$cleanup_status
+    capability_evidence = capability_evidence
   )
+  required = c(
+    "backend", "requested_backend", "implementation", "solution",
+    "coefficient_matrix", "rhs", "output_structure",
+    "structural_metadata", "finiteness_evidence",
+    "residual_evidence_inputs", "timing", "capability_evidence",
+    "cleanup_status"
+  )
+  missing_fields = setdiff(required, names(result))
+  if (!is.list(result) || length(missing_fields)) {
+    stop(sprintf(
+      "Sparse backend result is missing field(s): %s",
+      paste(missing_fields, collapse = ", ")
+    ), call. = FALSE)
+  }
+  if (!identical(result$backend, preflight$requested_backend) ||
+      !identical(result$requested_backend, preflight$requested_backend) ||
+      !identical(result$implementation, adapter$implementation)) {
+    stop("Sparse backend result identity is inconsistent", call. = FALSE)
+  }
+  if (!identical(result$coefficient_matrix, coefficient_matrix) ||
+      !identical(result$rhs, rhs)) {
+    stop("Sparse backend result does not match the emitted system",
+         call. = FALSE)
+  }
+  if (!inherits(result$coefficient_matrix, "sparseMatrix")) {
+    stop("Sparse backend result coefficient matrix must remain sparse",
+         call. = FALSE)
+  }
+  if (!identical(result$output_structure,
+                 .sparse_value_structure(result$solution))) {
+    stop("Sparse backend output structure metadata is inconsistent",
+         call. = FALSE)
+  }
+  if (!identical(result$structural_metadata,
+                 .sparse_matrix_structure(coefficient_matrix))) {
+    stop("Sparse backend structural metadata is inconsistent",
+         call. = FALSE)
+  }
+  evidence = result$finiteness_evidence
+  if (!is.list(evidence) ||
+      !identical(sort(names(evidence)), c("matrix", "rhs", "solution")) ||
+      !all(vapply(evidence, function(value) {
+        is.logical(value) && length(value) == 1L && !is.na(value)
+      }, logical(1)))) {
+    stop("Sparse backend finiteness evidence is incomplete", call. = FALSE)
+  }
+  residual_inputs = result$residual_evidence_inputs
+  if (!is.list(residual_inputs) ||
+      !all(c("rhs_l2_norm", "rhs_length", "solution_length",
+             "matrix_dimensions") %in% names(residual_inputs)) ||
+      !is.numeric(residual_inputs$rhs_l2_norm) ||
+      length(residual_inputs$rhs_l2_norm) != 1L ||
+      !identical(residual_inputs$rhs_length, length(rhs)) ||
+      !identical(residual_inputs$solution_length, length(result$solution)) ||
+      !identical(residual_inputs$matrix_dimensions,
+                 dim(coefficient_matrix))) {
+    stop("Sparse backend residual evidence inputs are inconsistent",
+         call. = FALSE)
+  }
+  timing = result$timing
+  if (!is.list(timing) ||
+      !is.numeric(timing$elapsed_seconds) ||
+      length(timing$elapsed_seconds) != 1L ||
+      !is.finite(timing$elapsed_seconds) || timing$elapsed_seconds < 0) {
+    stop("Sparse backend elapsed timing is invalid", call. = FALSE)
+  }
+  if (!identical(result$capability_evidence, capability_evidence)) {
+    stop("Sparse backend result capability evidence is inconsistent",
+         call. = FALSE)
+  }
+  cleanup = result$cleanup_status
+  if (!is.list(cleanup) || !identical(cleanup$status, "complete") ||
+      !identical(cleanup$scope, "solve") ||
+      !is.character(cleanup$resources) || length(cleanup$resources) != 1L ||
+      is.na(cleanup$resources) || !nzchar(cleanup$resources)) {
+    stop("Sparse backend cleanup status is incomplete", call. = FALSE)
+  }
+  result
 }
 
 sparse_state_data = function(state) {
@@ -1641,21 +1747,7 @@ sparse_true_residual = function(A, solution, rhs) {
     stop("Sparse candidate coefficient matrix must remain sparse",
          call. = FALSE)
   }
-  structure_of = function(value) {
-    list(
-      class = class(value),
-      type = typeof(value),
-      length = length(value),
-      names = names(value),
-      dim = dim(value),
-      dimnames = dimnames(value),
-      missing = as.vector(is.na(value)),
-      encoding = if (is.character(value)) {
-        unname(Encoding(value))
-      } else character()
-    )
-  }
-  solution_structure = structure_of(candidate$solution)
+  solution_structure = .sparse_value_structure(candidate$solution)
   if (!is.null(candidate$output_structure) &&
       !identical(candidate$output_structure, solution_structure)) {
     stop("Sparse candidate output structure metadata is inconsistent",
@@ -1680,7 +1772,7 @@ sparse_true_residual = function(A, solution, rhs) {
          call. = FALSE)
   }
   if (!is.null(reference)) {
-    reference_structure = structure_of(reference)
+    reference_structure = .sparse_value_structure(reference)
     if (!identical(solution_structure, reference_structure)) {
       stop("Sparse candidate and authority structures differ",
            call. = FALSE)

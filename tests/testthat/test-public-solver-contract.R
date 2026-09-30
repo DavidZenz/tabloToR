@@ -25,9 +25,15 @@ test_that("Matrix adapter preflights before emission and commits accepted state"
   adapter <- .sparse_backend_registry$Matrix
   old_adapter <- adapter
   original_preflight <- adapter$preflight
+  original_solve <- adapter$solve
+  adapter_result <- NULL
   adapter$preflight <- function(...) {
     events <<- c(events, "preflight")
     original_preflight(...)
+  }
+  adapter$solve <- function(...) {
+    adapter_result <<- original_solve(...)
+    adapter_result
   }
   .sparse_backend_registry$Matrix <- adapter
   withr::defer(.sparse_backend_registry$Matrix <- old_adapter)
@@ -61,10 +67,75 @@ test_that("Matrix adapter preflights before emission and commits accepted state"
   expect_equal(as.numeric(sparse_state_data(model$sparseState)$x), c(8, 3),
                tolerance = 1e-12)
   expect_true(model$lastDiagnostics$accepted_numerical_state)
+  expect_identical(adapter_result$requested_backend, "Matrix")
+  expect_identical(adapter_result$backend, "Matrix")
+  expect_identical(
+    adapter_result$implementation, "solve_sparse_system(Matrix)"
+  )
+  expect_s4_class(adapter_result$coefficient_matrix, "sparseMatrix")
+  expect_true(all(c(
+    "output_structure", "structural_metadata", "finiteness_evidence",
+    "residual_evidence_inputs", "timing", "capability_evidence",
+    "cleanup_status"
+  ) %in% names(adapter_result)))
   expect_lt(
     model$lastDiagnostics$true_residual_history[[1L]]$metrics$relative_l2,
     2e-7
   )
+})
+
+test_that("Matrix adapter records fail closed before accepted-state commit", {
+  reject_adapter_result <- function(mutate_result, expected_error) {
+    model <- make_synthetic_model()
+    model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
+    before <- transactionalModelSnapshot(model, include_diagnostics = FALSE)
+    commits <- 0L
+
+    adapter <- .sparse_backend_registry$Matrix
+    old_adapter <- adapter
+    original_solve <- adapter$solve
+    adapter$solve <- function(...) {
+      mutate_result(original_solve(...))
+    }
+    .sparse_backend_registry$Matrix <- adapter
+    withr::defer(.sparse_backend_registry$Matrix <- old_adapter)
+    localTransactionFault(function(phase, context) {
+      if (identical(phase, "commit-accepted-state")) {
+        commits <<- commits + 1L
+      }
+      invisible(NULL)
+    }, env = environment())
+
+    expect_error(
+      model$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+        diagnostics = TRUE, backend = "Matrix", reduction = "off"
+      ),
+      expected_error
+    )
+    expect_identical(commits, 0L)
+    expectTransactionalStateIdentical(before, model)
+  }
+
+  reject_adapter_result(function(result) {
+    result$cleanup_status <- NULL
+    result
+  }, "missing field.*cleanup_status")
+
+  reject_adapter_result(function(result) {
+    result$output_structure$length <- result$output_structure$length + 1L
+    result
+  }, "output structure metadata is inconsistent")
+
+  reject_adapter_result(function(result) {
+    result$solution[[1L]] <- Inf
+    result
+  }, "contains non-finite values")
+
+  reject_adapter_result(function(result) {
+    result$solution <- result$solution + 1
+    result
+  }, "true residual.*solution was not applied")
 })
 
 test_that("native backend preflight fails closed before solving", {
