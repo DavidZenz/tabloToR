@@ -16,10 +16,10 @@ test_that("solver defaults and reference backend remain unchanged", {
   expect_identical(explicit$lastDiagnostics, list())
 })
 
-test_that("each registered R backend routes with its requested identity", {
+test_that("each registered backend routes with its requested identity", {
   backend_ids <- c(
     "Matrix", "SparseM", "SuiteSparse", "StructuredSchur",
-    "StructuredSchurFGMRES"
+    "StructuredSchurFGMRES", "StructuredSchurFGMRESCpp"
   )
   expect_setequal(ls(.sparse_backend_registry), backend_ids)
   original_adapters <- lapply(backend_ids, function(backend) {
@@ -256,14 +256,24 @@ test_that("native backend preflight fails closed before solving", {
                                         call. = FALSE)
   on.exit(runtime$require <- old_require, add = TRUE)
   before <- sparse_state_data(model$sparseState)
+  emitted <- FALSE
+  original_emit <- getFromNamespace("sparse_emit_system", "GEModelR")
+  testthat::local_mocked_bindings(
+    sparse_emit_system = function(...) {
+      emitted <<- TRUE
+      original_emit(...)
+    },
+    .package = "GEModelR"
+  )
 
   expect_error(
     model$solveModel(
       iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
       backend = "StructuredSchurFGMRESCpp"
     ),
-    "injected preflight failure"
+    "Requested backend 'StructuredSchurFGMRESCpp'.*injected preflight failure.*Remediation:"
   )
+  expect_false(emitted)
   expect_identical(sparse_state_data(model$sparseState), before)
   expect_false(isTRUE(runtime$active))
 })

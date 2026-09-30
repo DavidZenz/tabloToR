@@ -17,6 +17,19 @@ test_that("public native backend is opt-in and numerically equivalent", {
     sparse_gtap_elimination_partition = partition,
     .package = "GEModelR"
   )
+  cpp_adapter <- .sparse_backend_registry$StructuredSchurFGMRESCpp
+  original_cleanup <- cpp_adapter$cleanup
+  cleanup_results <- list()
+  cpp_adapter$cleanup <- function(...) {
+    status <- original_cleanup(...)
+    cleanup_results[[length(cleanup_results) + 1L]] <<- status
+    status
+  }
+  .sparse_backend_registry$StructuredSchurFGMRESCpp <- cpp_adapter
+  withr::defer(
+    .sparse_backend_registry$StructuredSchurFGMRESCpp$cleanup <-
+      original_cleanup
+  )
   testthat::with_mocked_bindings(
     candidate$solveModel(
       iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
@@ -36,4 +49,38 @@ test_that("public native backend is opt-in and numerically equivalent", {
   expect_false(candidate$lastDiagnostics$dense_fallback)
   expect_false(contains_external_pointer(candidate$lastDiagnostics))
   expect_false(contains_external_pointer(candidate$sparseState))
+  expect_gt(length(cleanup_results), 0L)
+  expect_identical(tail(cleanup_results, 1L)[[1L]]$status, "complete")
+  expect_identical(tail(cleanup_results, 1L)[[1L]]$scope, "solve")
+  expect_match(tail(cleanup_results, 1L)[[1L]]$resources, "released")
+  expect_identical(
+    tail(cleanup_results, 1L)[[1L]]$structural_metadata,
+    "model-scoped cache retained"
+  )
+  cache <- candidate$sparseState$.solver_cache[["StructuredSchurFGMRESCpp"]]
+  expect_true(is.list(cache))
+  expect_identical(cache$abi, 1L)
+  expect_identical(.sparse_schur_cpp_runtime$live_dense_factors, list())
+
+  failed <- make_cpp_structured_model()
+  cleanups_before_error <- length(cleanup_results)
+  expect_error(
+    testthat::with_mocked_bindings(
+      failed$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+        diagnostics = TRUE, backend = "StructuredSchurFGMRESCpp",
+        output = "compact"
+      ),
+      sparse_gtap_elimination_partition = partition,
+      .GEModelR_dense_lu_solve = function(...) {
+        stop("injected native factor solve failure", call. = FALSE)
+      },
+      .package = "GEModelR"
+    ),
+    "injected native factor solve failure"
+  )
+  expect_gt(length(cleanup_results), cleanups_before_error)
+  expect_identical(tail(cleanup_results, 1L)[[1L]]$status, "complete")
+  expect_identical(tail(cleanup_results, 1L)[[1L]]$scope, "solve")
+  expect_identical(.sparse_schur_cpp_runtime$live_dense_factors, list())
 })

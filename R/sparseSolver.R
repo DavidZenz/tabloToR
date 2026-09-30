@@ -557,6 +557,9 @@ sparse_make_state = function(data) {
     stop("No retryable post-simulation record is available", call. = FALSE)
   }
   state = sparse_make_state(record$state_data)
+  if (!is.null(record$structural_cache)) {
+    state$.solver_cache = record$structural_cache
+  }
   tryCatch({
     .transaction_phase("post-update", {
       .transaction_fault("post-update")
@@ -2906,6 +2909,9 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   postsim_record = list(
     engine = "sparse",
     state_data = sparse_state_data(state),
+    structural_cache = if (is.environment(state)) {
+      state$.solver_cache
+    } else NULL,
     index = index,
     spec = model$sparseSpec,
     solution = solution,
