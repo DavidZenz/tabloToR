@@ -577,7 +577,8 @@ sparse_make_state = function(data) {
                      !is.null(record$dimensions)) {
         sparse_project_outputs(
           state, record$index, record$variables, record$dimensions,
-          if (record$output == "compact") record$solution else NULL
+          if (record$output == "compact") record$solution else NULL,
+          memory_budget = record$memory_budget
         )
       } else NULL
       compact_output = if (!is.null(selected)) selected else list()
@@ -2388,7 +2389,188 @@ sparse_extrapolate_steps = function(step_results, steps) {
        call. = FALSE)
 }
 
-sparse_subset_output = function(array, dimensions) {
+sparse_output_selector_error = function(argument, selector, cause, action) {
+  selector_text = paste(deparse(selector), collapse = "")
+  .gemodelr_abort_validation(
+    sprintf(
+      "Invalid %s selector %s: %s. Remediation: %s",
+      argument, selector_text, cause, action
+    ),
+    "solveModel", "solveModel", action,
+    fields = list(
+      argument = argument,
+      requested_selector = selector,
+      cause = cause
+    )
+  )
+}
+
+sparse_validate_output_selectors = function(index, variables = NULL,
+                                            dimensions = NULL,
+                                            memory_budget = NULL,
+                                            state = NULL) {
+  indexed_variables = vapply(
+    index$variables, function(variable) variable$name, character(1)
+  )
+  data = if (is.null(state)) list() else sparse_state_data(state)
+  data_variables = names(data)[vapply(data, function(value) {
+    is.atomic(value) && !is.object(value) &&
+      (is.numeric(value) || is.logical(value))
+  }, logical(1))]
+  available_variables = unique(c(indexed_variables, data_variables))
+  if (is.null(variables)) variables = character()
+  if (!is.character(variables) || is.object(variables) || anyNA(variables) ||
+      any(!nzchar(variables))) {
+    sparse_output_selector_error(
+      "variables", variables,
+      "expected a character vector of variable names",
+      "supply variable names such as variables = c(\"stock\") or use character() for an explicit empty projection"
+    )
+  }
+  variables = unique(tolower(variables))
+  unknown_variables = setdiff(variables, available_variables)
+  if (length(unknown_variables)) {
+    sparse_output_selector_error(
+      "variables", variables,
+      sprintf("unknown variable name(s): %s",
+              paste(shQuote(unknown_variables), collapse = ", ")),
+      sprintf("choose names from: %s",
+              paste(shQuote(available_variables), collapse = ", "))
+    )
+  }
+
+  if (is.null(dimensions)) dimensions = list()
+  if (!is.list(dimensions) || is.object(dimensions)) {
+    sparse_output_selector_error(
+      "dimensions", dimensions,
+      "expected a named list of character label selections",
+      "supply dimensions as a named list such as list(reg = \"south\"), or use list() for no dimension filtering"
+    )
+  }
+  if (length(dimensions)) {
+    dimension_names = names(dimensions)
+    if (is.null(dimension_names) || length(dimension_names) !=
+        length(dimensions) || anyNA(dimension_names) ||
+        any(!nzchar(dimension_names)) || anyDuplicated(dimension_names)) {
+      sparse_output_selector_error(
+        "dimensions", dimensions,
+        "dimension selectors must have unique, non-empty names",
+        "name each selector with its model dimension, for example list(reg = \"south\")"
+      )
+    }
+    unknown_dimensions = setdiff(dimension_names, names(index$sets))
+    if (length(unknown_dimensions)) {
+      sparse_output_selector_error(
+        "dimensions", dimensions,
+        sprintf("unknown dimension name(s): %s",
+                paste(shQuote(unknown_dimensions), collapse = ", ")),
+        sprintf("choose dimension names from: %s",
+                paste(shQuote(names(index$sets)), collapse = ", "))
+      )
+    }
+    for (dimension in dimension_names) {
+      selector = dimensions[[dimension]]
+      if (!is.character(selector) || is.object(selector) || anyNA(selector) ||
+          any(!nzchar(selector))) {
+        sparse_output_selector_error(
+          "dimensions", dimensions,
+          sprintf("selector for dimension '%s' must be a character vector of labels",
+                  dimension),
+          sprintf("select labels with list(%s = c(\"label\"))",
+                  dimension)
+        )
+      }
+      available_labels = index$sets[[dimension]]$values
+      unknown_labels = setdiff(selector, available_labels)
+      if (length(unknown_labels)) {
+        sparse_output_selector_error(
+          "dimensions", dimensions,
+          sprintf("dimension '%s' has unknown label(s): %s", dimension,
+                  paste(shQuote(unknown_labels), collapse = ", ")),
+          sprintf("choose labels from: %s", paste(
+            shQuote(available_labels), collapse = ", "
+          ))
+        )
+      }
+    }
+  }
+
+  estimated_bytes = 0
+  if (length(variables)) {
+    for (name in variables) {
+      variable_id = index$variable_by_name[[name]]
+      variable = if (is.null(variable_id)) NULL else {
+        index$variables[[variable_id]]
+      }
+      array = data[[name]]
+      array_dimensions = dim(array)
+      if (is.null(array_dimensions)) array_dimensions = integer()
+      selected_lengths = as.numeric(array_dimensions)
+      if (!length(selected_lengths) && !is.null(variable)) {
+        selected_lengths = as.numeric(variable$lengths)
+      }
+      array_dimnames = dimnames(array)
+      set_names = if (!is.null(array_dimnames) &&
+                      !is.null(names(array_dimnames))) {
+        names(array_dimnames)
+      } else if (!is.null(variable)) {
+        variable$sets
+      } else character()
+      selected_dimnames_bytes = 0
+      for (dimension_id in seq_along(set_names)) {
+        dimension = set_names[[dimension_id]]
+        if (!is.null(dimensions[[dimension]])) {
+          labels = dimensions[[dimension]]
+        } else if (!is.null(array_dimnames) &&
+                   dimension_id <= length(array_dimnames)) {
+          labels = array_dimnames[[dimension_id]]
+        } else {
+          labels = index$sets[[dimension]]$values
+        }
+        if (dimension_id <= length(selected_lengths)) {
+          selected_lengths[[dimension_id]] = length(labels)
+        }
+        selected_dimnames_bytes = selected_dimnames_bytes +
+          8 * length(labels) + sum(nchar(labels, type = "bytes"))
+      }
+      selected_count = if (any(selected_lengths == 0)) {
+        0
+      } else if (length(selected_lengths)) {
+        prod(selected_lengths)
+      } else {
+        1
+      }
+      estimated_bytes = estimated_bytes + 128 + 8 * selected_count +
+        selected_dimnames_bytes
+    }
+  }
+
+  if (is.numeric(memory_budget) && length(memory_budget) == 1L &&
+      !is.na(memory_budget) && is.finite(memory_budget) &&
+      estimated_bytes > memory_budget) {
+    selector = list(variables = variables, dimensions = dimensions)
+    action = paste(
+      "increase memory_budget or setMemoryBudget(),",
+      "or request fewer variables and dimension labels"
+    )
+    sparse_output_selector_error(
+      "output projection", selector,
+      sprintf(
+        "estimated output allocation of %.0f bytes exceeds the configured memory budget of %.0f bytes",
+        estimated_bytes, memory_budget
+      ),
+      action
+    )
+  }
+
+  list(
+    variables = variables,
+    dimensions = dimensions,
+    estimated_bytes = estimated_bytes
+  )
+}
+
+sparse_subset_output = function(array, dimensions, set_names = NULL) {
   if (is.null(dimensions) || !length(dimensions) || is.null(dim(array))) {
     return(array)
   }
@@ -2397,11 +2579,10 @@ sparse_subset_output = function(array, dimensions) {
   for (d in seq_along(selectors)) {
     set_name = if (!is.null(dim_names) && !is.null(names(dim_names))) {
       names(dim_names)[[d]]
+    } else if (!is.null(set_names) && d <= length(set_names)) {
+      set_names[[d]]
     } else NULL
     selector = if (!is.null(set_name)) dimensions[[set_name]] else NULL
-    if (is.null(selector) && d <= length(dimensions)) {
-      selector = dimensions[[d]]
-    }
     if (is.null(selector)) selector = TRUE
     if (is.character(selector) && !is.null(dim_names[[d]])) {
       selector = match(selector, dim_names[[d]])
@@ -2412,16 +2593,25 @@ sparse_subset_output = function(array, dimensions) {
 }
 
 sparse_project_outputs = function(state, index, variables = NULL,
-                                  dimensions = NULL, solution = NULL) {
+                                  dimensions = NULL, solution = NULL,
+                                  memory_budget = NULL) {
+  validated = sparse_validate_output_selectors(
+    index, variables, dimensions, memory_budget, state
+  )
+  variables = validated$variables
+  dimensions = validated$dimensions
   data = sparse_state_data(state)
-  if (is.null(variables) || !length(variables)) {
-    variables = character()
-  }
-  variables = tolower(sub("\\[.*$", "", as.character(variables)))
-  variables = intersect(unique(variables), names(data))
   result = list()
   for (name in variables) {
-    result[[name]] = sparse_subset_output(data[[name]], dimensions)
+    variable_id = index$variable_by_name[[name]]
+    variable_sets = if (!is.null(variable_id)) {
+      index$variables[[variable_id]]$sets
+    } else {
+      names(dimnames(data[[name]]))
+    }
+    result[[name]] = sparse_subset_output(
+      data[[name]], dimensions, set_names = variable_sets
+    )
   }
   if (!is.null(solution)) result$solution = solution
   result
@@ -2748,6 +2938,18 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     index = sparse_build_row_layout(model$sparseSpec, index, state)
   }
   full_index = index
+  budget = memory_budget
+  if (is.null(budget) || !length(budget)) budget = model$memoryBudget
+  project_outputs = output == "compact" || !is.null(variables) ||
+    !is.null(dimensions)
+  if (project_outputs) {
+    validated = sparse_validate_output_selectors(
+      full_index, variables, dimensions, memory_budget = budget,
+      state = state
+    )
+    variables = validated$variables
+    dimensions = validated$dimensions
+  }
   index = sparse_select_simulation_index(
     index, model$sparseSpec, state, postsim = postsim
   )
@@ -2770,8 +2972,6 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     }
     structured_partition = sparse_gtap_elimination_partition(index, state)
   }
-  budget = memory_budget
-  if (is.null(budget) || !length(budget)) budget = model$memoryBudget
   estimate = sparse_estimate_memory(
     model, index, budget = budget, postsim = postsim, state = state
   )
@@ -2919,7 +3119,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     postsim = isTRUE(postsim),
     output = output,
     variables = variables,
-    dimensions = dimensions
+    dimensions = dimensions,
+    memory_budget = budget
   )
   diagnostics_record = if (isTRUE(diagnostics)) {
     diagnostics_result

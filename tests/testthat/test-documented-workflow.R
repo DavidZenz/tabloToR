@@ -281,6 +281,55 @@ test_that("WF-FULL-OUTPUT freezes full and selected structures", {
   expect_identical(empty$compactOutput, list())
 })
 
+test_that("compact output selectors are validated before solving", {
+  unknown_variable = make_three_region_model()
+  set_three_region_shocks(unknown_variable, "preferred")
+  expect_error(
+    unknown_variable$solveModel(
+      iter = 1, steps = 1, engine = "sparse", output = "compact",
+      variables = "stock_typo", reduction = "off"
+    ),
+    "unknown variable name.*Remediation"
+  )
+  expect_identical(unknown_variable$solution, numeric())
+  expect_identical(unknown_variable$compactOutput, list())
+
+  unknown_dimension = make_three_region_model()
+  set_three_region_shocks(unknown_dimension, "preferred")
+  expect_error(
+    unknown_dimension$solveModel(
+      iter = 1, steps = 1, engine = "sparse", output = "compact",
+      variables = "stock", dimensions = list(region = "south"),
+      reduction = "off"
+    ),
+    "unknown dimension name.*Remediation"
+  )
+  expect_identical(unknown_dimension$solution, numeric())
+  expect_identical(unknown_dimension$compactOutput, list())
+
+  unsupported_shape = make_three_region_model()
+  expect_error(
+    unsupported_shape$solveModel(
+      iter = 1, steps = 1, engine = "sparse", output = "compact",
+      variables = "stock", dimensions = c(reg = "south"),
+      reduction = "off"
+    ),
+    "expected a named list"
+  )
+
+  over_budget = make_three_region_model()
+  expect_error(
+    over_budget$solveModel(
+      iter = 1, steps = 1, engine = "sparse", output = "compact",
+      variables = "stock", dimensions = list(reg = "south"),
+      memory_budget = 1, reduction = "off"
+    ),
+    "estimated output allocation.*memory budget.*Remediation"
+  )
+  expect_identical(over_budget$solution, numeric())
+  expect_identical(over_budget$compactOutput, list())
+})
+
 test_that("WF-COMPACT-OUTPUT and WF-POSTSIM-OFF freeze compact structures", {
   compact = make_three_region_model()
   set_three_region_shocks(compact, "preferred", c(1, 2, -1))
