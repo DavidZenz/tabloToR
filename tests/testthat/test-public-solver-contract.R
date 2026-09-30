@@ -16,6 +16,116 @@ test_that("solver defaults and reference backend remain unchanged", {
   expect_identical(explicit$lastDiagnostics, list())
 })
 
+test_that("each registered R backend routes with its requested identity", {
+  backend_ids <- c(
+    "Matrix", "SparseM", "SuiteSparse", "StructuredSchur",
+    "StructuredSchurFGMRES"
+  )
+  expect_setequal(ls(.sparse_backend_registry), backend_ids)
+  original_adapters <- lapply(backend_ids, function(backend) {
+    .sparse_backend_registry[[backend]]
+  })
+  names(original_adapters) <- backend_ids
+  withr::defer({
+    for (backend in backend_ids) {
+      .sparse_backend_registry[[backend]] <- original_adapters[[backend]]
+    }
+  })
+
+  preflight_calls <- stats::setNames(integer(length(backend_ids)), backend_ids)
+  solve_calls <- stats::setNames(vector("list", length(backend_ids)),
+                                 backend_ids)
+  cleanup_calls <- stats::setNames(integer(length(backend_ids)), backend_ids)
+  for (backend in backend_ids) {
+    adapter <- .sparse_backend_registry[[backend]]
+    implementation <- adapter$implementation
+    expect_true(is.function(adapter$cleanup))
+    adapter$preflight <- local({
+      backend_id <- backend
+      implementation_id <- implementation
+      function(requested_backend = backend_id, ...) {
+        expect_identical(requested_backend, backend_id)
+        preflight_calls[[backend_id]] <<- preflight_calls[[backend_id]] + 1L
+        list(
+          requested_backend = requested_backend,
+          implementation = implementation_id,
+          available = TRUE,
+          capability = "routing contract probe"
+        )
+      }
+    })
+    adapter$solve <- local({
+      backend_id <- backend
+      implementation_id <- implementation
+      function(coefficient_matrix, rhs, reduction, requested_backend,
+               implementation, capability_evidence, ...) {
+        expect_identical(requested_backend, backend_id)
+        expect_identical(implementation, implementation_id)
+        solve_calls[[backend_id]] <<- implementation
+        solution <- as.numeric(Matrix::solve(coefficient_matrix, rhs))
+        .sparse_backend_candidate_record(
+          solution, coefficient_matrix, rhs, requested_backend,
+          implementation, capability_evidence, 0
+        )
+      }
+    })
+    adapter$cleanup <- local({
+      backend_id <- backend
+      function(...) {
+        cleanup_calls[[backend_id]] <<- cleanup_calls[[backend_id]] + 1L
+        .sparse_backend_noop_cleanup()
+      }
+    })
+    .sparse_backend_registry[[backend]] <- adapter
+  }
+
+  coefficient_matrix <- Matrix::Matrix(
+    c(3, 0, 0, 5), nrow = 2L, sparse = TRUE
+  )
+  rhs <- c(3, 5)
+  for (backend in backend_ids) {
+    preflight <- .sparse_backend_preflight(backend)
+    candidate <- .sparse_backend_solve(
+      preflight, coefficient_matrix, rhs, reduction = "off"
+    )
+    expect_identical(candidate$requested_backend, backend)
+    expect_identical(
+      candidate$implementation,
+      original_adapters[[backend]]$implementation
+    )
+    expect_equal(candidate$solution, c(1, 1), tolerance = 1e-12)
+  }
+  expect_identical(unname(preflight_calls), rep(1L, length(backend_ids)))
+  expect_identical(
+    unname(solve_calls),
+    unname(lapply(original_adapters, `[[`, "implementation"))
+  )
+  expect_identical(unname(cleanup_calls), rep(1L, length(backend_ids)))
+})
+
+test_that("optional R backend preflights preserve exact IDs", {
+  check_preflight <- function(backend) {
+    result <- tryCatch(
+      .sparse_backend_preflight(backend),
+      error = function(error) error
+    )
+    if (inherits(result, "error")) {
+      expect_match(
+        conditionMessage(result),
+        sprintf("Requested backend '%s'.*Remediation:", backend)
+      )
+    } else {
+      expect_identical(result$requested_backend, backend)
+      expect_identical(
+        result$capability_evidence$requested_backend, backend
+      )
+      expect_true(result$capability_evidence$available)
+    }
+  }
+  check_preflight("SparseM")
+  check_preflight("SuiteSparse")
+})
+
 test_that("Matrix adapter preflights before emission and commits accepted state", {
   model <- make_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
@@ -118,9 +228,9 @@ test_that("Matrix adapter records fail closed before accepted-state commit", {
   }
 
   reject_adapter_result(function(result) {
-    result$cleanup_status <- NULL
+    result$output_structure <- NULL
     result
-  }, "missing field.*cleanup_status")
+  }, "missing field.*output_structure")
 
   reject_adapter_result(function(result) {
     result$output_structure$length <- result$output_structure$length + 1L

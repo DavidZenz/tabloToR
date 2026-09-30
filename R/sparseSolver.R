@@ -23,6 +23,55 @@
   )
 }
 
+.sparse_backend_candidate_record = function(
+    solution, coefficient_matrix, rhs, requested_backend, implementation,
+    capability_evidence, elapsed_seconds) {
+  list(
+    backend = requested_backend,
+    requested_backend = requested_backend,
+    implementation = implementation,
+    solution = solution,
+    coefficient_matrix = coefficient_matrix,
+    rhs = rhs,
+    output_structure = .sparse_value_structure(solution),
+    structural_metadata = .sparse_matrix_structure(coefficient_matrix),
+    finiteness_evidence = list(
+      solution = all(is.finite(solution)),
+      rhs = all(is.finite(rhs)),
+      matrix = all(is.finite(coefficient_matrix@x))
+    ),
+    residual_evidence_inputs = list(
+      rhs_l2_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0,
+      rhs_length = length(rhs),
+      solution_length = length(solution),
+      matrix_dimensions = dim(coefficient_matrix)
+    ),
+    timing = list(elapsed_seconds = elapsed_seconds),
+    capability_evidence = capability_evidence,
+    cleanup_status = list(
+      status = "complete",
+      scope = "solve",
+      resources = "none retained"
+    )
+  )
+}
+
+.sparse_backend_unavailable = function(requested_backend, cause,
+                                       remediation) {
+  stop(sprintf(
+    "Requested backend '%s' is unavailable: %s. Remediation: %s",
+    requested_backend, cause, remediation
+  ), call. = FALSE)
+}
+
+.sparse_backend_noop_cleanup = function(...) {
+  list(
+    status = "complete",
+    scope = "solve",
+    resources = "none retained"
+  )
+}
+
 .sparse_backend_registry = new.env(parent = emptyenv())
 .sparse_backend_registry$Matrix = list(
   requested_backend = "Matrix",
@@ -35,6 +84,7 @@
       capability = "base R Matrix package"
     )
   },
+  cleanup = .sparse_backend_noop_cleanup,
   solve = function(coefficient_matrix, rhs, reduction,
                    requested_backend = "Matrix",
                    implementation = "solve_sparse_system(Matrix)",
@@ -44,36 +94,167 @@
       coefficient_matrix, rhs, backend = "Matrix", reduction = reduction
     )
     elapsed_seconds = proc.time()[[3L]] - started
-    list(
-      backend = requested_backend,
-      requested_backend = requested_backend,
-      implementation = implementation,
-      solution = solution,
-      coefficient_matrix = coefficient_matrix,
-      rhs = rhs,
-      output_structure = .sparse_value_structure(solution),
-      structural_metadata = .sparse_matrix_structure(coefficient_matrix),
-      finiteness_evidence = list(
-        solution = all(is.finite(solution)),
-        rhs = all(is.finite(rhs)),
-        matrix = all(is.finite(coefficient_matrix@x))
-      ),
-      residual_evidence_inputs = list(
-        rhs_l2_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0,
-        rhs_length = length(rhs),
-        solution_length = length(solution),
-        matrix_dimensions = dim(coefficient_matrix)
-      ),
-      timing = list(elapsed_seconds = elapsed_seconds),
-      capability_evidence = capability_evidence,
-      cleanup_status = list(
-        status = "complete",
-        scope = "solve",
-        resources = "none retained"
-      )
+    .sparse_backend_candidate_record(
+      solution, coefficient_matrix, rhs, requested_backend, implementation,
+      capability_evidence, elapsed_seconds
     )
   }
 )
+
+.sparse_backend_registry$SparseM = list(
+  requested_backend = "SparseM",
+  implementation = "solve_sparse_system(SparseM)",
+  preflight = function(requested_backend = "SparseM", ...) {
+    if (!requireNamespace("SparseM", quietly = TRUE)) {
+      .sparse_backend_unavailable(
+        requested_backend,
+        "the optional SparseM package is not installed",
+        "install SparseM and retry this exact backend"
+      )
+    }
+    list(
+      requested_backend = requested_backend,
+      implementation = "solve_sparse_system(SparseM)",
+      available = TRUE,
+      capability = "SparseM sparse solver"
+    )
+  },
+  cleanup = .sparse_backend_noop_cleanup,
+  solve = function(coefficient_matrix, rhs, reduction,
+                   requested_backend = "SparseM",
+                   implementation = "solve_sparse_system(SparseM)",
+                   capability_evidence, ...) {
+    started = proc.time()[[3L]]
+    solution = solve_sparse_system(
+      coefficient_matrix, rhs, backend = "SparseM", reduction = reduction
+    )
+    elapsed_seconds = proc.time()[[3L]] - started
+    .sparse_backend_candidate_record(
+      solution, coefficient_matrix, rhs, requested_backend, implementation,
+      capability_evidence, elapsed_seconds
+    )
+  }
+)
+
+.sparse_backend_registry$SuiteSparse = list(
+  requested_backend = "SuiteSparse",
+  implementation = "solve_sparse_system(SuiteSparse/UMFPACK)",
+  preflight = function(requested_backend = "SuiteSparse", ...) {
+    if (!exists("sparse_suite_sparse_available", mode = "function",
+                inherits = TRUE) ||
+        !isTRUE(sparse_suite_sparse_available())) {
+      .sparse_backend_unavailable(
+        requested_backend,
+        "Rcpp or a supported 64-bit SuiteSparse/UMFPACK installation is unavailable",
+        paste(
+          "install Rcpp and SuiteSparse with umfpack.h and libumfpack,",
+          "or select another explicit backend"
+        )
+      )
+    }
+    list(
+      requested_backend = requested_backend,
+      implementation = "solve_sparse_system(SuiteSparse/UMFPACK)",
+      available = TRUE,
+      capability = "Rcpp and SuiteSparse/UMFPACK"
+    )
+  },
+  cleanup = .sparse_backend_noop_cleanup,
+  solve = function(coefficient_matrix, rhs, reduction,
+                   requested_backend = "SuiteSparse",
+                   implementation = "solve_sparse_system(SuiteSparse/UMFPACK)",
+                   capability_evidence, ...) {
+    started = proc.time()[[3L]]
+    solution = solve_sparse_system(
+      coefficient_matrix, rhs, backend = "SuiteSparse", reduction = reduction
+    )
+    elapsed_seconds = proc.time()[[3L]] - started
+    .sparse_backend_candidate_record(
+      solution, coefficient_matrix, rhs, requested_backend, implementation,
+      capability_evidence, elapsed_seconds
+    )
+  }
+)
+
+.sparse_backend_structured_adapter = function(
+    requested_backend, implementation, reduced_solver) {
+  list(
+    requested_backend = requested_backend,
+    implementation = implementation,
+    preflight = function(requested_backend = requested_backend, model = NULL,
+                         structured_partition = NULL, ...) {
+      if (!exists("sparse_exact_structured_solve", mode = "function",
+                  inherits = TRUE)) {
+        .sparse_backend_unavailable(
+          requested_backend,
+          "the structured R solver implementation is unavailable",
+          "reinstall GEModelR with its structured solver sources"
+        )
+      }
+      if (is.null(structured_partition)) {
+        .sparse_backend_unavailable(
+          requested_backend,
+          "the model has no validated structured elimination partition",
+          "load a supported structured model or select Matrix explicitly"
+        )
+      }
+      .identity_guard_old_options("tabloToR.sparse.lu_order")
+      lu_order = suppressWarnings(as.integer(getOption(
+        "GEModelR.sparse.lu_order", 3L
+      ))[1L])
+      if (is.na(lu_order) || lu_order < 0L || lu_order > 3L) {
+        stop(sprintf(
+          "Requested backend '%s' cannot run: GEModelR.sparse.lu_order must be an integer from 0 to 3. Remediation: set a supported ordering.",
+          requested_backend
+        ), call. = FALSE)
+      }
+      list(
+        requested_backend = requested_backend,
+        implementation = implementation,
+        available = TRUE,
+      capability = "structured R Schur solver",
+        lu_order = lu_order,
+        reduced_solver = reduced_solver
+      )
+    },
+    cleanup = .sparse_backend_noop_cleanup,
+    solve = function(coefficient_matrix, rhs, reduction,
+                     requested_backend = requested_backend,
+                     implementation = implementation,
+                     capability_evidence, structured_partition = NULL, ...) {
+      started = proc.time()[[3L]]
+      exact_result = sparse_exact_structured_solve(
+        coefficient_matrix, rhs, structured_partition,
+        lu_order = capability_evidence$lu_order,
+        pivot_tolerance = getOption(
+          "GEModelR.sparse.elimination_pivot_tolerance", 1e-12
+        ),
+        reduced_solver = capability_evidence$reduced_solver
+      )
+      elapsed_seconds = proc.time()[[3L]] - started
+      candidate = .sparse_backend_candidate_record(
+        exact_result$solution, coefficient_matrix, rhs,
+        requested_backend, implementation, capability_evidence,
+        elapsed_seconds
+      )
+      candidate$solver_diagnostics = exact_result
+      candidate
+    }
+  )
+}
+
+.sparse_backend_registry$StructuredSchur =
+  .sparse_backend_structured_adapter(
+    "StructuredSchur",
+    "sparse_exact_structured_solve(R; reduced_solver=btf)",
+    "btf"
+  )
+.sparse_backend_registry$StructuredSchurFGMRES =
+  .sparse_backend_structured_adapter(
+    "StructuredSchurFGMRES",
+    "sparse_exact_structured_solve(R; reduced_solver=schur)",
+    "schur"
+  )
 
 .sparse_backend_preflight = function(backend, ...) {
   adapter = .sparse_backend_registry[[backend]]
@@ -84,9 +265,31 @@
       capability_evidence = NULL
     ))
   }
+  if (!is.list(adapter) ||
+      !identical(adapter$requested_backend, backend) ||
+      !is.character(adapter$implementation) ||
+      length(adapter$implementation) != 1L ||
+      is.na(adapter$implementation) || !nzchar(adapter$implementation) ||
+      !is.function(adapter$preflight) || !is.function(adapter$solve) ||
+      !is.function(adapter$cleanup)) {
+    stop(sprintf(
+      "Requested backend '%s' has an incomplete or inconsistent adapter registration",
+      backend
+    ), call. = FALSE)
+  }
   capability_evidence = adapter$preflight(
     requested_backend = backend, ...
   )
+  if (!is.list(capability_evidence) ||
+      !identical(capability_evidence$requested_backend, backend) ||
+      !identical(capability_evidence$implementation,
+                 adapter$implementation) ||
+      !identical(capability_evidence$available, TRUE)) {
+    stop(sprintf(
+      "Requested backend '%s' returned incomplete preflight evidence",
+      backend
+    ), call. = FALSE)
+  }
   list(
     requested_backend = backend,
     adapter = adapter,
@@ -95,7 +298,7 @@
 }
 
 .sparse_backend_solve = function(preflight, coefficient_matrix, rhs,
-                                 reduction) {
+                                 reduction, ...) {
   if (!is.list(preflight) ||
       !is.character(preflight$requested_backend) ||
       length(preflight$requested_backend) != 1L ||
@@ -110,7 +313,8 @@
       !is.character(adapter$implementation) ||
       length(adapter$implementation) != 1L ||
       is.na(adapter$implementation) || !nzchar(adapter$implementation) ||
-      !is.function(adapter$solve)) {
+      !is.function(adapter$preflight) || !is.function(adapter$solve) ||
+      !is.function(adapter$cleanup)) {
     stop("Sparse backend adapter identity is inconsistent", call. = FALSE)
   }
   capability_evidence = preflight$capability_evidence
@@ -121,14 +325,40 @@
       !identical(capability_evidence$available, TRUE)) {
     stop("Sparse backend capability evidence is inconsistent", call. = FALSE)
   }
-  result = adapter$solve(
-    coefficient_matrix = coefficient_matrix,
-    rhs = rhs,
-    reduction = reduction,
-    requested_backend = preflight$requested_backend,
-    implementation = adapter$implementation,
-    capability_evidence = capability_evidence
+  solve_outcome = tryCatch(
+    list(result = adapter$solve(
+      coefficient_matrix = coefficient_matrix,
+      rhs = rhs,
+      reduction = reduction,
+      requested_backend = preflight$requested_backend,
+      implementation = adapter$implementation,
+      capability_evidence = capability_evidence,
+      ...
+    )),
+    error = function(error) list(error = error)
   )
+  cleanup_outcome = tryCatch(
+    list(status = adapter$cleanup(
+      requested_backend = preflight$requested_backend,
+      capability_evidence = capability_evidence,
+      result = solve_outcome$result,
+      ...
+    )),
+    error = function(error) list(error = error)
+  )
+  if (!is.null(cleanup_outcome$error)) {
+    if (!is.null(solve_outcome$error)) {
+      stop(sprintf(
+        "Sparse backend cleanup failed after solve error: %s (original solve error: %s)",
+        conditionMessage(cleanup_outcome$error),
+        conditionMessage(solve_outcome$error)
+      ), call. = FALSE)
+    }
+    stop(cleanup_outcome$error)
+  }
+  if (!is.null(solve_outcome$error)) stop(solve_outcome$error)
+  result = solve_outcome$result
+  result$cleanup_status = cleanup_outcome$status
   required = c(
     "backend", "requested_backend", "implementation", "solution",
     "coefficient_matrix", "rhs", "output_structure",
@@ -2324,14 +2554,9 @@ sparse_check_budget = function(estimate, budget) {
                                  reduction, measure = FALSE,
                                  structured_partition = NULL,
                                  candidate_transform = NULL) {
-  backend_preflight = .sparse_backend_preflight(backend, model = model)
-  structured_backend = backend %in% c(
-    "StructuredSchur", "StructuredSchurFGMRES"
+  backend_preflight = .sparse_backend_preflight(
+    backend, model = model, structured_partition = structured_partition
   )
-  if (structured_backend) {
-    .identity_guard_old_options("tabloToR.sparse.lu_order")
-    structured_lu_order = getOption("GEModelR.sparse.lu_order", 3L)
-  }
   .identity_guard_old_options(
     "tabloToR.sparse.structured_residual_tolerance"
   )
@@ -2356,31 +2581,17 @@ sparse_check_budget = function(estimate, budget) {
   .transaction_fault("factorization")
   solver_diagnostics = NULL
   candidate = NULL
-  if (backend %in% c("StructuredSchur", "StructuredSchurFGMRES")) {
-    if (is.null(structured_partition)) {
-      stop("StructuredSchur backend requires a model-specific partition",
-           call. = FALSE)
-    }
-    exact_result = sparse_exact_structured_solve(
-      coefficient_matrix, emitted$rhs, structured_partition,
-      lu_order = structured_lu_order,
-      pivot_tolerance = getOption(
-        "GEModelR.sparse.elimination_pivot_tolerance", 1e-12
-      ),
-      reduced_solver = if (identical(backend, "StructuredSchurFGMRES")) {
-        "schur"
-      } else "btf"
-    )
-    solution = exact_result$solution
-    solver_diagnostics = exact_result
-  } else if (!is.null(backend_preflight$adapter)) {
+  if (!is.null(backend_preflight$adapter)) {
     candidate = .sparse_backend_solve(
       backend_preflight,
       coefficient_matrix = coefficient_matrix,
       rhs = emitted$rhs,
-      reduction = reduction
+      reduction = reduction,
+      model = model,
+      structured_partition = structured_partition
     )
     solution = candidate$solution
+    solver_diagnostics = candidate$solver_diagnostics
   } else {
     solution = solve_sparse_system(
       coefficient_matrix, emitted$rhs, backend = backend,
