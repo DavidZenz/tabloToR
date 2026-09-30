@@ -398,7 +398,13 @@ test_that("GEModel is the only exported package binding", {
   exported <- sort(getNamespaceExports("GEModelR"))
   expect_identical(exported, "GEModel")
 
-  namespace <- readLines(testthat::test_path("..", "..", "NAMESPACE"))
+  namespace_path <- testthat::test_path("..", "..", "NAMESPACE")
+  if (!file.exists(namespace_path)) {
+    namespace_path <- file.path(
+      getNamespaceInfo(asNamespace("GEModelR"), "path"), "NAMESPACE"
+    )
+  }
+  namespace <- readLines(namespace_path)
   expect_true(any(grepl("^export\\(GEModel\\)$", namespace)))
   expect_false(any(grepl("exportPattern", namespace, fixed = TRUE)))
 
