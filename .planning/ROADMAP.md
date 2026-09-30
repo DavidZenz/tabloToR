@@ -200,12 +200,12 @@ Gap execution: `$gsd-execute-phase 03 --gaps-only`. Approval checkpoints in 03-1
   3. Backend registration, capability checks, solve invocation, diagnostics, and cleanup follow one explicit internal interface.
   4. Legacy, Matrix, structured R, and native C++ implementations remain independently selectable correctness/performance references.
 
-**Plans**: 6 plans
+**Plans**: 1/6 plans executed
 
 Plans:
 **Wave 1**
 
-- [ ] 04-01-PLAN.md — Prove the Matrix backend adapter path end to end
+- [x] 04-01-PLAN.md — Prove the Matrix backend adapter path end to end
 
 **Wave 2** *(blocked on Wave 1 completion)*
 
@@ -282,7 +282,7 @@ Plans:
 | 1. Provenance and Release Boundary | 11/11 | Complete    | 2026-08-31 |
 | 2. Compatibility and Numerical Baseline | 6/6 | Complete    | 2026-09-09 |
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
-| 4. Public API and Solver Boundaries | 0/TBD | Not started | - |
+| 4. Public API and Solver Boundaries | 1/6 | In Progress|  |
 | 5. Portable Native Build and CI | 0/TBD | Not started | - |
 | 6. Documentation and Release Qualification | 0/TBD | Not started | - |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |

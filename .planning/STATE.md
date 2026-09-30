@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Public API and Solver Boundaries
 status: executing
-stopped_at: Phase 4 planning complete
-last_updated: "2026-09-30T16:50:45Z"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-09-30T17:57:32.825Z"
 last_activity: 2026-09-30
-last_activity_desc: Phase 4 planning complete — 6 plans ready
-state_head: d99c852ba4802e30dd1585758537dcf957631d24
+last_activity_desc: Phase 04 execution started
+state_head: 83458936afe632f52730665c1b95b58e7da5eded
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 44
-  completed_plans: 38
+  completed_plans: 39
 milestone_name: milestone
 ---
 
@@ -28,10 +28,10 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 
 ## Current Position
 
-Phase: 04 (Public API and Solver Boundaries) — READY TO EXECUTE
-Plan: Not started
+Phase: 04 (Public API and Solver Boundaries) — EXECUTING
+Plan: 2 of 6
 Status: Ready to execute
-Last activity: 2026-09-30 — Phase 4 planning complete — 6 plans ready
+Last activity: 2026-09-30 — Phase 04 execution started
 
 Progress: [█████████░] 86% (38/44 current milestone plans executed)
 
@@ -66,6 +66,7 @@ Progress: [█████████░] 86% (38/44 current milestone plans ex
 | Phase 03 P14 | 1h 26m | 2 tasks | 3 files |
 | Phase 03 P16 | 47 min | 2 tasks | 6 files |
 | Phase 03 P19 | 5h 13m | 3 tasks | 5 files |
+| Phase 04 P01 | 11min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -147,6 +148,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Apply only the exact maintainer-approved candidate allowlist bytes after before/candidate/policy SHA-256 validation.
 - [Phase 03]: Bind identity reseal approval to David Zenz at 2026-09-21T12:50:50Z and the exact before and candidate allowlist hashes.
 - [Phase 03]: Keep the final tracked-tree seal read-only and external so generated evidence cannot self-certify its own audit digest.
+- [Phase 04]: Keep the caller-requested backend ID separate from adapter implementation identity.
+- [Phase 04]: Keep adapter numerical evidence diagnostic; central candidate acceptance independently recomputes structure, finiteness, and true residual.
 
 ### Pending Todos
 
@@ -173,6 +176,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-28T08:40:44.809Z
-Stopped at: Phase 4 context gathered
-Resume file: .planning/phases/04-public-api-and-solver-boundaries/04-CONTEXT.md
+Last session: 2026-09-30T17:57:32.745Z
+Stopped at: Completed 04-01-PLAN.md
+Resume file: None
