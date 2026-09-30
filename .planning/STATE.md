@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 04
 current_phase_name: Public API and Solver Boundaries
-status: executing
-stopped_at: Completed 04-05-PLAN.md
-last_updated: "2026-09-30T19:54:11.581Z"
+status: verifying
+stopped_at: Completed 04-06-PLAN.md
+last_updated: "2026-09-30T20:30:21.151Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 04 execution started
-state_head: dae9966ef1743c3393fd79d43f96ad46b8268a8a
+state_head: b79989489780da808bd05cec5ea7abdeb8e04551
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 44
-  completed_plans: 43
+  completed_plans: 44
 milestone_name: milestone
 ---
 
@@ -30,7 +30,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 
 Phase: 04 (Public API and Solver Boundaries) — EXECUTING
 Plan: 6 of 6
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-09-30 — Phase 04 execution started
 
 Progress: [█████████░] 86% (38/44 current milestone plans executed)
@@ -71,6 +71,7 @@ Progress: [█████████░] 86% (38/44 current milestone plans ex
 | Phase 04 P03 | 21min | 2 tasks | 3 files |
 | Phase 04 P04 | 15min | 2 tasks | 2 files |
 | Phase 04 P05 | 50min | 3 tasks | 11 files |
+| Phase 04 P06 | 35min | 2 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -163,6 +164,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 04]: Store a fixed version-1 envelope on every solve attempt and keep detailed telemetry opt-in.
 - [Phase 04]: Keep StructuredSchurFGMRESCpp as the requested backend ID and cpp as the implementation identity.
 - [Phase 04]: Preserve the logical-state payload schema and infer generated numeric update fields from serialized levels when small diagnostics omit postsimulation detail.
+- [Phase 04]: Phase 04 Plan 06: Export only GEModel; keep native registration and required imports while leaving implementation helpers private.
+- [Phase 04]: Phase 04 Plan 06: Compare manifest export parity with supported-tier rows only.
+- [Phase 04]: Phase 04 Plan 06: Assert the schema-version-1 diagnostics envelope for successful legacy solve attempts.
 
 ### Pending Todos
 
@@ -178,6 +182,7 @@ None yet.
 - Release remains intentionally blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING until the package dependency audit establishes a final compatible License.
 - Release remains intentionally blocked by ATTRIBUTION_IDENTITY_UNRESOLVED until the Git alias receives a reviewed attribution disposition.
 - The initial GEModelR name report is approved, but a fresh release-kind check remains required immediately before release.
+- R CMD check . remains non-clean: the 04-06 snapshot had 27 test failures (three plan-local test-context/stale-contract assertions were fixed afterward); remaining benchmark source-tree, compatibility-helper, provenance/release-gate, sparse-core fixture, and repository-artifact findings are recorded in 04-06-SUMMARY.md.
 
 ## Deferred Items
 
@@ -189,6 +194,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T19:54:11.509Z
-Stopped at: Completed 04-05-PLAN.md
+Last session: 2026-09-30T20:30:00.847Z
+Stopped at: Completed 04-06-PLAN.md
 Resume file: None

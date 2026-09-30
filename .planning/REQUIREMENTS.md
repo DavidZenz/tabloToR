@@ -29,7 +29,7 @@
 
 - [x] **MIGR-01**: Package metadata, namespace, native initialization/registration symbols, private wrappers, options, diagnostics, benchmark signatures, tests, and documentation consistently use the GEModelR identity.
 - [x] **MIGR-02**: Package renaming does not alter solver algorithms or numerical defaults in the same change set.
-- [ ] **API-01**: GEModelR exports a deliberate documented public API instead of `exportPattern("^[[:alpha:]]+")`.
+- [x] **API-01**: GEModelR exports a deliberate documented public API instead of `exportPattern("^[[:alpha:]]+")`.
 - [x] **API-02**: Backend selection and capability checks use an explicit internal dispatch contract while preserving the R reference implementations.
 
 ### Portability and Quality
@@ -42,7 +42,7 @@
 
 ### Documentation and Release
 
-- [ ] **DOCS-01**: All supported exports, the package, and native/backend options have generated R documentation.
+- [x] **DOCS-01**: All supported exports, the package, and native/backend options have generated R documentation.
 - [ ] **DOCS-02**: Vignettes cover first simulation, legacy-to-sparse migration, backend selection, diagnostics/memory budgeting, and external full-scale benchmarking.
 - [ ] **DOCS-03**: Contributor and architecture documentation explains subsystem boundaries, numerical gates, data restrictions, and cross-platform native development.
 - [ ] **REL-01**: NEWS, semantic-versioning policy, lifecycle/deprecation rules, citation/provenance text, and release checklists exist.
@@ -86,14 +86,14 @@
 | NUM-03 | Phase 6 | Pending |
 | MIGR-01 | Phase 3 | Complete |
 | MIGR-02 | Phase 3 | Complete |
-| API-01 | Phase 4 | Pending |
+| API-01 | Phase 4 | Complete |
 | API-02 | Phase 4 | Complete |
 | PORT-01 | Phase 5 | Pending |
 | PORT-02 | Phase 5 | Pending |
 | PORT-03 | Phase 5 | Pending |
 | CI-01 | Phase 5 | Pending |
 | CI-02 | Phase 6 | Pending |
-| DOCS-01 | Phase 4 | Pending |
+| DOCS-01 | Phase 4 | Complete |
 | DOCS-02 | Phase 6 | Pending |
 | DOCS-03 | Phase 6 | Pending |
 | REL-01 | Phase 6 | Pending |
