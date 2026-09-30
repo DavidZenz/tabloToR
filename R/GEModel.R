@@ -6,6 +6,109 @@
 #   solve the model (for the given coefficients)
 #   update data (execute all updates/formulas always)
 
+.gemodelr_condition = function(primary_class, message, fields = list()) {
+  if (!is.character(primary_class) || length(primary_class) != 1L ||
+      is.na(primary_class) || !grepl("^GEModelR_", primary_class)) {
+    stop("primary_class must be one GEModelR condition class", call. = FALSE)
+  }
+  if (!is.character(message) || length(message) != 1L || is.na(message)) {
+    stop("message must be one non-missing character value", call. = FALSE)
+  }
+  if (!is.list(fields) || is.object(fields) ||
+      (length(fields) && (is.null(names(fields)) ||
+                          anyNA(names(fields)) ||
+                          any(!nzchar(names(fields))) ||
+                          anyDuplicated(names(fields))))) {
+    stop("fields must be a uniquely named list", call. = FALSE)
+  }
+  fields = fields[setdiff(names(fields), c("message", "call"))]
+  structure(
+    c(list(message = message, call = NULL), fields),
+    class = c(primary_class, "error", "condition")
+  )
+}
+
+.gemodelr_abort_validation = function(
+    message, operation, next_method, action, fields = list()) {
+  condition_fields = list(
+    operation = operation,
+    failure_phase = "validation",
+    accepted_numerical_state = FALSE,
+    retryable_postsim = FALSE,
+    remediation = list(next_method = next_method, action = action)
+  )
+  condition_fields[names(fields)] = NULL
+  condition_fields = c(condition_fields, fields)
+  stop(.gemodelr_condition(
+    "GEModelR_validation_error", message, condition_fields
+  ))
+}
+
+.gemodelr_match_arg = function(value, choices, operation, argument, action) {
+  tryCatch(
+    match.arg(value, choices),
+    error = function(error) {
+      .gemodelr_abort_validation(
+        conditionMessage(error), operation, operation, action,
+        fields = list(
+          argument = argument,
+          requested_value = value,
+          allowed_values = choices,
+          cause = conditionMessage(error)
+        )
+      )
+    }
+  )
+}
+
+.gemodelr_require_tablo = function(model, operation) {
+  if (is.function(model$skeletonGenerator) &&
+      is.function(model$generateVariables) &&
+      length(model$tabloStatements) && length(model$sparseSpec)) {
+    return(invisible(NULL))
+  }
+  .gemodelr_abort_validation(
+    sprintf("%s requires a successfully loaded TABLO model", operation),
+    operation, "loadTablo",
+    sprintf("Call loadTablo() with a valid TABLO file before %s", operation),
+    fields = list(required_method = "loadTablo")
+  )
+}
+
+.gemodelr_require_runtime = function(model, operation,
+                                    requested_engine = NULL) {
+  .gemodelr_require_tablo(model, operation)
+  loaded_engine = model$loadedEngine
+  if (length(loaded_engine) != 1L || is.na(loaded_engine) ||
+      !loaded_engine %in% c("legacy", "sparse")) {
+    .gemodelr_abort_validation(
+      sprintf("%s requires model data to be loaded", operation),
+      operation, "loadData",
+      sprintf("Call loadData(engine = \"legacy\" or \"sparse\") before %s",
+              operation),
+      fields = list(required_method = "loadData")
+    )
+  }
+  if (!is.null(requested_engine) &&
+      !identical(requested_engine, loaded_engine)) {
+    .gemodelr_abort_validation(
+      sprintf(
+        "%s requested engine '%s', but loadData() initialized '%s'",
+        operation, requested_engine, loaded_engine
+      ),
+      operation, "loadData",
+      sprintf("Call loadData(engine = \"%s\") before %s",
+              requested_engine, operation),
+      fields = list(
+        requested_engine = requested_engine,
+        loaded_engine = loaded_engine,
+        required_method = "loadData"
+      )
+    )
+  }
+  invisible(NULL)
+}
+
 GEModel = setRefClass(
   "GEModel",
   fields = list(
@@ -38,85 +141,232 @@ GEModel = setRefClass(
   methods = list(
     # Loads a tablo without any data (only produces generic functions to genrate coefficients/equation coefficients etc.)
     loadTablo = function(tabloPath) {
-      legacy_results = tryCatch(processTablo(tabloPath),
-                                error = function(e) NULL)
-      sparse_results = tryCatch(sparse_process_tablo(tabloPath),
-                                error = function(e) NULL)
-      results = if (!is.null(legacy_results)) legacy_results else sparse_results
-      if (is.null(results)) {
-        stop(sprintf("Unable to process TABLO file: %s", tabloPath),
-             call. = FALSE)
+      if (!is.character(tabloPath) || length(tabloPath) != 1L ||
+          is.na(tabloPath) || !nzchar(tabloPath) ||
+          !file.exists(tabloPath) || dir.exists(tabloPath)) {
+        .gemodelr_abort_validation(
+          "tabloPath must identify one existing TABLO file",
+          "loadTablo", "loadTablo",
+          "Call loadTablo() with a readable, valid TABLO file",
+          fields = list(argument = "tabloPath", requested_path = tabloPath)
+        )
       }
-      skeletonGenerator <<- results$skeletonGenerator
-      sparseSkeletonGenerator <<- if (!is.null(sparse_results)) {
-        sparse_results$skeletonGenerator
-      } else results$skeletonGenerator
-
-      equationCoefficientMatrixGenerator <<-
-        results$equationCoefficientMatrixGenerator
-      equationCoefficientGenerator <<- results$equationCoefficientGenerator
-      generateVariables <<- results$generateVariables
-      generateUpdates <<- results$generateUpdates
-      if(!is.null(results$changeVariables)){
-      basicChangeVariables <<- results$changeVariables
-      }
-      variables <<- results$variables
-      tabloStatements <<- results$statements
-      sparseSpec <<- if (!is.null(sparse_results) &&
+      prepared = tryCatch({
+        legacy_results = tryCatch(processTablo(tabloPath),
+                                  error = function(error) NULL)
+        sparse_results = tryCatch(sparse_process_tablo(tabloPath),
+                                  error = function(error) NULL)
+        results = if (!is.null(legacy_results)) {
+          legacy_results
+        } else {
+          sparse_results
+        }
+        if (is.null(results)) {
+          stop("TABLO parsing did not produce a usable model", call. = FALSE)
+        }
+        sparse_generator = if (!is.null(sparse_results)) {
+          sparse_results$skeletonGenerator
+        } else {
+          results$skeletonGenerator
+        }
+        sparse_spec = if (!is.null(sparse_results) &&
                           !is.null(sparse_results$sparseSpec)) {
-        sparse_results$sparseSpec
-      } else if (!is.null(results$sparseSpec)) {
-        results$sparseSpec
-      } else sparse_compile_spec(tabloStatements)
-      sourceData <<- .serialization_capture_tablo(tabloPath)
+          sparse_results$sparseSpec
+        } else if (!is.null(results$sparseSpec)) {
+          results$sparseSpec
+        } else {
+          sparse_compile_spec(results$statements)
+        }
+        basic_change_variables = if (is.null(results$changeVariables)) {
+          character()
+        } else {
+          as.character(results$changeVariables)
+        }
+        source_record = .serialization_capture_tablo(tabloPath)
+        required_functions = c(
+          "skeletonGenerator", "equationCoefficientMatrixGenerator",
+          "equationCoefficientGenerator", "generateVariables",
+          "generateUpdates"
+        )
+        functions = list(
+          skeletonGenerator = results$skeletonGenerator,
+          equationCoefficientMatrixGenerator =
+            results$equationCoefficientMatrixGenerator,
+          equationCoefficientGenerator =
+            results$equationCoefficientGenerator,
+          generateVariables = results$generateVariables,
+          generateUpdates = results$generateUpdates,
+          sparseSkeletonGenerator = sparse_generator
+        )
+        if (!all(vapply(functions[required_functions], is.function,
+                        logical(1))) ||
+            !is.function(functions$sparseSkeletonGenerator) ||
+            !is.character(results$variables) ||
+            !is.list(results$statements) || !is.list(sparse_spec) ||
+            !is.list(source_record)) {
+          stop("TABLO setup produced an invalid model structure",
+               call. = FALSE)
+        }
+        list(
+          functions = functions,
+          basic_change_variables = basic_change_variables,
+          variables = results$variables,
+          statements = results$statements,
+          sparse_spec = sparse_spec,
+          source_data = source_record
+        )
+      }, error = function(error) {
+        if (inherits(error, "GEModelR_validation_error")) stop(error)
+        .gemodelr_abort_validation(
+          sprintf("Unable to process TABLO file: %s", conditionMessage(error)),
+          "loadTablo", "loadTablo",
+          "Retry loadTablo() with a readable, valid TABLO file",
+          fields = list(
+            argument = "tabloPath",
+            requested_path = tabloPath,
+            cause = conditionMessage(error),
+            failure_phase = "loadTablo"
+          )
+        )
+      })
+
+      skeletonGenerator <<- prepared$functions$skeletonGenerator
+      sparseSkeletonGenerator <<- prepared$functions$sparseSkeletonGenerator
+      equationCoefficientMatrixGenerator <<-
+        prepared$functions$equationCoefficientMatrixGenerator
+      equationCoefficientGenerator <<-
+        prepared$functions$equationCoefficientGenerator
+      generateVariables <<- prepared$functions$generateVariables
+      generateUpdates <<- prepared$functions$generateUpdates
+      basicChangeVariables <<- prepared$basic_change_variables
+      variables <<- prepared$variables
+      tabloStatements <<- prepared$statements
+      sparseSpec <<- prepared$sparse_spec
+      sourceData <<- prepared$source_data
+      data <<- list()
+      solution <<- numeric()
+      changeVariables <<- character()
+      variableValues <<- list()
+      sparseIndex <<- list()
+      sparseState <<- sparse_make_state(list())
       loadedEngine <<- character()
+      lastDiagnostics <<- list()
+      compactOutput <<- list()
+      .postsimRecord <<- list()
+      invisible(.self)
     },
     loadData = function(inputData, engine = c("legacy", "sparse")) {
-      #browser()
-      engine = match.arg(engine)
+      engine = .gemodelr_match_arg(
+        engine, c("legacy", "sparse"), "loadData", "engine",
+        "Call loadData() with engine = 'legacy' or engine = 'sparse'"
+      )
+      .gemodelr_require_tablo(.self, "loadData")
+      prepared = tryCatch({
+        source_record = sourceData
+        source_record$loaded_data = inputData
+        source_record$data_fingerprint =
+          .serialization_object_fingerprint(inputData)
+        if (engine == "sparse" && length(sparseSpec$compile_errors)) {
+          errors = unique(as.character(sparseSpec$compile_errors))
+          stop(sprintf(
+            "Sparse TABLO compilation failed for %s equation(s): %s",
+            length(errors), paste(errors, collapse = "; ")
+          ), call. = FALSE)
+        }
+        generator = if (engine == "sparse" &&
+                        is.function(sparseSkeletonGenerator)) {
+          sparseSkeletonGenerator
+        } else {
+          skeletonGenerator
+        }
+        if (!is.function(generator) || !is.function(generateVariables)) {
+          stop("TABLO generators are unavailable", call. = FALSE)
+        }
+        generated_data = generator(inputData)
+        if (engine == "sparse") {
+          generated_data = generateVariables(generated_data)
+          sparse_state = sparse_make_state(generated_data)
+          sparse_index = sparse_build_index(sparseSpec, generated_data)
+          sparse_index = sparse_rebuild_columns(sparse_index, closure)
+          sparse_index = sparse_build_row_layout(
+            sparseSpec, sparse_index, sparse_state
+          )
+          sparse_initialize_update_targets(
+            sparse_state, sparse_index, sparseSpec,
+            updates = sparseSpec$simulation_updates
+          )
+          sparse_apply_updates(
+            sparse_state, sparse_index, sparseSpec,
+            updates = sparseSpec$formula_initialization_updates
+          )
+          list(
+            data = generated_data,
+            variable_values = list(),
+            change_variables = basicChangeVariables,
+            sparse_state = sparse_state,
+            sparse_index = sparse_index,
+            source_data = source_record,
+            loaded_engine = "sparse"
+          )
+        } else {
+          generated_data = equationCoefficientMatrixGenerator(generated_data)
+          generated_data = generateVariables(generated_data)
+          variable_values = generated_data[variables]
+          change_variables = generated_data$variables[
+            substr(
+              generated_data$variables, 1,
+              regexpr("\\[", generated_data$variables) - 1
+            ) %in% basicChangeVariables
+          ]
+          list(
+            data = generated_data,
+            variable_values = variable_values,
+            change_variables = change_variables,
+            sparse_state = sparse_make_state(list()),
+            sparse_index = list(),
+            source_data = source_record,
+            loaded_engine = "legacy"
+          )
+        }
+      }, error = function(error) {
+        if (inherits(error, "GEModelR_validation_error")) stop(error)
+        remediation = if (grepl("Sparse TABLO compilation failed",
+                                conditionMessage(error), fixed = TRUE)) {
+          list(
+            next_method = "loadTablo",
+            action = "Correct the TABLO compilation issue and reload it with loadTablo()"
+          )
+        } else {
+          list(
+            next_method = "loadData",
+            action = "Retry loadData() with valid model data for the selected engine"
+          )
+        }
+        .gemodelr_abort_validation(
+          sprintf("Unable to initialize the %s runtime: %s", engine,
+                  conditionMessage(error)),
+          "loadData", remediation$next_method, remediation$action,
+          fields = list(
+            argument = "inputData",
+            requested_engine = engine,
+            cause = conditionMessage(error),
+            failure_phase = "loadData"
+          )
+        )
+      })
+
+      data <<- prepared$data
+      variableValues <<- prepared$variable_values
+      changeVariables <<- prepared$change_variables
+      sparseState <<- prepared$sparse_state
+      sparseIndex <<- prepared$sparse_index
+      sourceData <<- prepared$source_data
+      loadedEngine <<- prepared$loaded_engine
+      solution <<- numeric()
+      lastDiagnostics <<- list()
+      compactOutput <<- list()
       .postsimRecord <<- list()
-      source_record = sourceData
-      source_record$loaded_data = inputData
-      source_record$data_fingerprint =
-        .serialization_object_fingerprint(inputData)
-      if (engine == "sparse" && length(sparseSpec$compile_errors)) {
-        errors = unique(as.character(sparseSpec$compile_errors))
-        stop(sprintf(
-          "Sparse TABLO compilation failed for %s equation(s): %s",
-          length(errors), paste(errors, collapse = "; ")
-        ), call. = FALSE)
-      }
-      generator = if (engine == "sparse" &&
-                      is.function(sparseSkeletonGenerator)) {
-        sparseSkeletonGenerator
-      } else skeletonGenerator
-      data <<- generator(inputData)
-      if (engine == "sparse") {
-        data <<- generateVariables(data)
-        variableValues <<- list()
-        changeVariables <<- basicChangeVariables
-        sparseState <<- sparse_make_state(data)
-        sparseIndex <<- sparse_build_index(sparseSpec, data)
-        sparseIndex <<- sparse_rebuild_columns(sparseIndex, closure)
-        sparseIndex <<- sparse_build_row_layout(sparseSpec, sparseIndex, sparseState)
-        sparse_initialize_update_targets(
-          sparseState, sparseIndex, sparseSpec,
-          updates = sparseSpec$simulation_updates
-        )
-        sparse_apply_updates(
-          sparseState, sparseIndex, sparseSpec,
-          updates = sparseSpec$formula_initialization_updates
-        )
-        sourceData <<- source_record
-        loadedEngine <<- "sparse"
-        return(invisible(.self))
-      }
-      data <<- equationCoefficientMatrixGenerator(data)
-      data <<- generateVariables(data)
-      variableValues <<- data[variables]
-      changeVariables <<- data$variables[substr(data$variables,1,regexpr('\\[',data$variables)-1) %in% basicChangeVariables]
-      sourceData <<- source_record
-      loadedEngine <<- "legacy"
+      invisible(.self)
     },
     setShocks = function(shocks) {
       shocks <<- shocks
@@ -130,11 +380,28 @@ GEModel = setRefClass(
     },
     estimateMemory = function(engine = c("legacy", "sparse"),
                               postsim = TRUE) {
-      engine = match.arg(engine)
+      engine = .gemodelr_match_arg(
+        engine, c("legacy", "sparse"), "estimateMemory", "engine",
+        "Call estimateMemory() with engine = 'legacy' or engine = 'sparse'"
+      )
+      .gemodelr_require_runtime(.self, "estimateMemory", engine)
+      if (!is.logical(postsim) || length(postsim) != 1L || is.na(postsim)) {
+        .gemodelr_abort_validation(
+          "postsim must be one non-missing logical value",
+          "estimateMemory", "estimateMemory",
+          "Call estimateMemory() with postsim = TRUE or postsim = FALSE",
+          fields = list(argument = "postsim", requested_value = postsim)
+        )
+      }
       if (engine == "sparse") {
         if (!length(sparseIndex)) {
-          stop("Sparse engine is not loaded; call loadData(engine='sparse')",
-               call. = FALSE)
+          .gemodelr_abort_validation(
+            "Sparse runtime structures are unavailable",
+            "estimateMemory", "loadData",
+            "Call loadData(engine = 'sparse') before estimateMemory()",
+            fields = list(requested_engine = engine,
+                          loaded_engine = loadedEngine)
+          )
         }
         idx = sparse_rebuild_columns(sparseIndex, closure)
         if (!isTRUE(idx$row_layout_ready) && is.environment(sparseState)) {
@@ -156,6 +423,35 @@ GEModel = setRefClass(
       )
     },
     retryPostsim = function(diagnostics = FALSE) {
+      if (!is.logical(diagnostics) || length(diagnostics) != 1L ||
+          is.na(diagnostics)) {
+        .gemodelr_abort_validation(
+          "diagnostics must be one non-missing logical value",
+          "retryPostsim", "retryPostsim",
+          "Call retryPostsim() with diagnostics = TRUE or FALSE",
+          fields = list(argument = "diagnostics",
+                        requested_value = diagnostics)
+        )
+      }
+      .gemodelr_require_runtime(.self, "retryPostsim")
+      if (!length(.postsimRecord)) {
+        next_method = if (identical(loadedEngine, "sparse")) {
+          "solveModel"
+        } else {
+          "loadData"
+        }
+        action = if (identical(loadedEngine, "sparse")) {
+          "Run a sparse solve with postsim = TRUE; retry after a retryable postsimulation failure"
+        } else {
+          "Call loadData(engine = 'sparse') before requesting a retryable postsimulation solve"
+        }
+        .gemodelr_abort_validation(
+          "No retryable post-simulation record is available",
+          "retryPostsim", next_method, action,
+          fields = list(required_method = next_method,
+                        loaded_engine = loadedEngine)
+        )
+      }
       .retry_postsim_from_record(.self, diagnostics = diagnostics)
     },
     saveState = function(file) {
@@ -282,7 +578,11 @@ GEModel = setRefClass(
                           backend = "Matrix",
                           reduction = c("auto", "off", "on"),
                           memory_budget = NULL) {
-      engine = match.arg(engine)
+      engine = .gemodelr_match_arg(
+        engine, c("legacy", "sparse"), "solveModel", "engine",
+        "Call solveModel() with engine = 'legacy' or engine = 'sparse'"
+      )
+      .gemodelr_require_runtime(.self, "solveModel", engine)
       if (engine == "sparse") {
         return(sparse_solve_model(
           .self, iter = iter, steps = steps, postsim = postsim,
