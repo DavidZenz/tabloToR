@@ -1,25 +1,31 @@
-rd_aliases <- function(path) {
-  rd <- tools::parse_Rd(path)
+rd_aliases <- function(rd) {
   aliases <- Filter(
     function(node) identical(attr(node, "Rd_tag"), "\\alias"), rd
   )
   vapply(aliases, function(node) as.character(node[[1L]]), character(1))
 }
 
-rd_text <- function(path) {
-  rd <- tools::parse_Rd(path)
+rd_text <- function(rd) {
   paste(unlist(rd, recursive = TRUE, use.names = FALSE), collapse = " ")
 }
 
 test_that("generated help covers the deliberate GEModel API", {
   package_path <- testthat::test_path("..", "..", "man", "GEModelR-package.Rd")
   class_path <- testthat::test_path("..", "..", "man", "GEModel.Rd")
-  package_aliases <- rd_aliases(package_path)
-  class_aliases <- rd_aliases(class_path)
+  if (file.exists(package_path) && file.exists(class_path)) {
+    package_rd <- tools::parse_Rd(package_path)
+    class_rd <- tools::parse_Rd(class_path)
+  } else {
+    installed_help <- tools::Rd_db("GEModelR")
+    package_rd <- installed_help[["GEModelR-package.Rd"]]
+    class_rd <- installed_help[["GEModel.Rd"]]
+  }
+  package_aliases <- rd_aliases(package_rd)
+  class_aliases <- rd_aliases(class_rd)
   expect_true("GEModelR-package" %in% package_aliases)
   expect_true("GEModel" %in% class_aliases)
 
-  help_text <- paste(rd_text(package_path), rd_text(class_path))
+  help_text <- paste(rd_text(package_rd), rd_text(class_rd))
   supported_methods <- c(
     "loadTablo", "loadData", "setShocks", "setClosure",
     "setMemoryBudget", "estimateMemory", "solveModel", "retryPostsim",

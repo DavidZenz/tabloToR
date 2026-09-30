@@ -448,7 +448,15 @@ test_that("WF-PREFERRED-LEGACY-SMOKE exercises only public compatibility", {
   expect_false(returned$visible)
   expect_identical(returned$value, NULL)
   expect_identical(model$loadedEngine, "legacy")
-  expect_identical(model$lastDiagnostics, list())
+  expect_identical(names(model$lastDiagnostics), .gemodelr_diagnostics_fields)
+  expect_identical(model$lastDiagnostics$schema_version, 1L)
+  expect_identical(model$lastDiagnostics$engine, "legacy")
+  expect_identical(model$lastDiagnostics$requested_backend, "Matrix")
+  expect_identical(model$lastDiagnostics$implementation, "r")
+  expect_identical(model$lastDiagnostics$status, "succeeded")
+  expect_null(model$lastDiagnostics$condition_class)
+  expect_true(model$lastDiagnostics$accepted_numerical_state)
+  expect_false(model$lastDiagnostics$retryable_postsim)
   expect_identical(
     describeCompatibilityStructure(model$solution),
     list(
