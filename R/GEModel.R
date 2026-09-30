@@ -369,11 +369,19 @@ GEModel = setRefClass(
       invisible(.self)
     },
     setShocks = function(shocks) {
+      normalized = sparse_normalize_shocks(shocks)
       shocks <<- shocks
-      explicitShocks <<- sparse_normalize_shocks(shocks)
+      explicitShocks <<- normalized
+      .postsimRecord <<- list()
+      lastDiagnostics <<- list()
     },
     setClosure = function(exogenous_variables) {
       sparse_set_closure_state(.self, exogenous_variables)
+      solution <<- numeric()
+      compactOutput <<- list()
+      .postsimRecord <<- list()
+      lastDiagnostics <<- list()
+      invisible(.self)
     },
     setMemoryBudget = function(bytes) {
       sparse_set_memory_budget_state(.self, bytes)

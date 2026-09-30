@@ -176,3 +176,91 @@ test_that("failed TABLO and data setup preserve every prior model field", {
   expect_identical(error$requested_engine, "sparse")
   expect_identical(lifecycleModelSnapshot(failed_data_model), before_data)
 })
+
+test_that("closure changes clear accepted outputs and dependent caches", {
+  model = make_three_region_model(engine = "sparse")
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "compact", variables = "stock",
+    reduction = "off"
+  )
+  failTransactionAt("post-update")
+  expect_error(model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "compact", variables = "stock",
+    reduction = "off"
+  ), "injected post-update failure")
+  expect_true(length(model$.postsimRecord) > 0L)
+  expect_true(length(model$lastDiagnostics) > 0L)
+
+  prior_spec = model$sparseSpec
+  prior_source = model$sourceData
+  prior_data = sparse_state_data(model$sparseState)
+  model$sparseState$.solver_cache = list(
+    StructuredSchurFGMRESCpp = list(index_key = "stale closure cache")
+  )
+  model$sparseIndex$pattern_cache = list(key = "stale closure pattern")
+  model$sparseIndex$column_order = 1L
+
+  model$setClosure(character())
+
+  expect_identical(model$solution, numeric())
+  expect_identical(model$compactOutput, list())
+  expect_identical(model$.postsimRecord, list())
+  expect_identical(model$lastDiagnostics, list())
+  expect_identical(model$sparseSpec, prior_spec)
+  expect_identical(model$sourceData, prior_source)
+  expect_identical(sparse_state_data(model$sparseState), prior_data)
+  expect_identical(model$closure, character())
+  expect_identical(model$sparseIndex$closure_names, character())
+  expect_null(model$sparseIndex$pattern_cache)
+  expect_null(model$sparseIndex$column_order)
+  expect_false(isTRUE(model$sparseIndex$row_layout_ready))
+  expect_identical(model$sparseState$.solver_cache, list())
+})
+
+test_that("shock changes clear pending solve state but retain logical inputs", {
+  model = make_three_region_model(engine = "sparse")
+  model$variableValues = list(
+    tax = three_region_shock_array(c(1, 2, -1))
+  )
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "compact", variables = "stock",
+    reduction = "off"
+  )
+  failTransactionAt("post-update")
+  expect_error(model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "compact", variables = "stock",
+    reduction = "off"
+  ), "injected post-update failure")
+  expect_true(length(model$.postsimRecord) > 0L)
+  expect_true(length(model$lastDiagnostics) > 0L)
+
+  prior_spec = model$sparseSpec
+  prior_source = model$sourceData
+  prior_index = model$sparseIndex
+  prior_state = sparse_state_data(model$sparseState)
+  prior_cache = model$sparseState$.solver_cache
+  prior_values = model$variableValues
+  prior_solution = model$solution
+  prior_output = model$compactOutput
+
+  model$setShocks(setNames(
+    c(2, 0, -2),
+    c('tax["north"]', 'tax["south"]', 'tax["east"]')
+  ))
+
+  expect_identical(model$.postsimRecord, list())
+  expect_identical(model$lastDiagnostics, list())
+  expect_identical(model$sparseSpec, prior_spec)
+  expect_identical(model$sourceData, prior_source)
+  expect_identical(model$sparseIndex, prior_index)
+  expect_identical(sparse_state_data(model$sparseState), prior_state)
+  expect_identical(model$sparseState$.solver_cache, prior_cache)
+  expect_identical(model$variableValues, prior_values)
+  expect_identical(model$solution, prior_solution)
+  expect_identical(model$compactOutput, prior_output)
+})

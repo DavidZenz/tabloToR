@@ -10,6 +10,19 @@ if (!exists("GEModel", inherits = TRUE)) {
     sys.source(serialization_r_file, envir = .GlobalEnv)
   }
 }
+serializationCompleteReceiverSnapshot = function(model) {
+  fields = names(GEModel$fields())
+  snapshot = lapply(fields, function(field) {
+    value = model[[field]]
+    if (identical(field, "sparseState") && is.environment(value)) {
+      return(as.list.environment(value, all.names = TRUE))
+    }
+    value
+  })
+  names(snapshot) = fields
+  snapshot
+}
+
 serializationPayloadFields = function() {
   c(
     "schema", "schema_version", "package_lineage", "source",
@@ -321,9 +334,25 @@ test_that("malformed logical payloads fail closed before receiver mutation", {
   malformed$invalid_nested_name = payload
   names(malformed$invalid_nested_name$diagnostics)[1L] = NA_character_
 
+  receiver = make_three_region_model("sparse")
+  set_three_region_shocks(receiver, "preferred", c(1, 2, -1))
+  receiver$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "compact", variables = "stock",
+    reduction = "off"
+  )
+  before = serializationCompleteReceiverSnapshot(receiver)
+  state_files = stats::setNames(vapply(names(malformed), function(name) {
+    path = tempfile(fileext = ".rds")
+    writeSerializationPayload(malformed[[name]], path)
+    path
+  }, character(1)), names(malformed))
+  on.exit(unlink(state_files), add = TRUE)
+
   for (name in names(malformed)) {
-    expectSerializationRejectedWithoutMutation(
-      malformed[[name]], info = name
+    expect_error(receiver$loadState(state_files[[name]]), info = name)
+    expect_identical(
+      serializationCompleteReceiverSnapshot(receiver), before, info = name
     )
   }
 })
@@ -374,14 +403,18 @@ test_that("serialization limits reject oversized artifacts and values", {
   on.exit(unlink(state_file), add = TRUE)
   writeSerializationPayload(payload, state_file)
 
-  receiver = GEModel$new()
-  receiver$closure = "receiver-sentinel"
-  before = serializationReceiverSnapshot(receiver)
+  receiver = make_three_region_model("sparse")
+  set_three_region_shocks(receiver, "preferred", c(1, 2, -1))
+  receiver$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "full", reduction = "off"
+  )
+  before = serializationCompleteReceiverSnapshot(receiver)
   withr::local_options(
     GEModelR.serialization.max_bytes = file.info(state_file)$size - 1
   )
   expect_error(receiver$loadState(state_file), "size limit")
-  expect_identical(serializationReceiverSnapshot(receiver), before)
+  expect_identical(serializationCompleteReceiverSnapshot(receiver), before)
 
   withr::local_options(GEModelR.serialization.max_elements = 2)
   expect_error(
@@ -406,12 +439,16 @@ test_that("compressed RDS expansion is rejected after trusted-local decode", {
   expect_lt(compressed_size, limit)
   expect_gt(logical_size, limit)
 
-  receiver = GEModel$new()
-  receiver$closure = "receiver-sentinel"
-  before = serializationReceiverSnapshot(receiver)
+  receiver = make_three_region_model("sparse")
+  set_three_region_shocks(receiver, "preferred", c(1, 2, -1))
+  receiver$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+    diagnostics = TRUE, output = "full", reduction = "off"
+  )
+  before = serializationCompleteReceiverSnapshot(receiver)
   withr::local_options(GEModelR.serialization.max_bytes = limit)
   expect_error(receiver$loadState(state_file), "payload exceeds.*size limit")
-  expect_identical(serializationReceiverSnapshot(receiver), before)
+  expect_identical(serializationCompleteReceiverSnapshot(receiver), before)
 })
 
 test_that("portable edge values retain structure equality and encoding", {
