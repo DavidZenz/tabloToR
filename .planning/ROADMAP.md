@@ -202,6 +202,22 @@ Gap execution: `$gsd-execute-phase 03 --gaps-only`. Approval checkpoints in 03-1
 
 **Plans**: 6 plans
 
+Plans:
+- [ ] 04-01-PLAN.md — Prove the Matrix backend adapter path end to end
+- [ ] 04-02-PLAN.md — Register backend IDs and native preflight/cleanup
+- [ ] 04-03-PLAN.md — Enforce lifecycle and state invalidation
+- [ ] 04-04-PLAN.md — Validate selectors and materialize output on demand
+- [ ] 04-05-PLAN.md — Add stable diagnostics and condition contracts
+- [ ] 04-06-PLAN.md — Publish the deliberate namespace and generated docs
+
+**Execution waves**
+
+- Wave 1: 04-01
+- Wave 2: 04-02 (depends on 04-01)
+- Wave 3: 04-03 and 04-04 (both depend on 04-02)
+- Wave 4: 04-05 (depends on 04-03 and 04-04)
+- Wave 5: 04-06 (depends on 04-05)
+
 ### Phase 5: Portable Native Build and CI
 
 **Goal**: Make installation and native execution predictable on major R platforms with or without OpenMP.
