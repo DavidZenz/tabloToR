@@ -64,8 +64,7 @@ test_that("public native backend is opt-in and numerically equivalent", {
 
   failed <- make_cpp_structured_model()
   cleanups_before_error <- length(cleanup_results)
-  expect_error(
-    testthat::with_mocked_bindings(
+  error <- tryCatch(testthat::with_mocked_bindings(
       failed$solveModel(
         iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
         diagnostics = TRUE, backend = "StructuredSchurFGMRESCpp",
@@ -76,9 +75,14 @@ test_that("public native backend is opt-in and numerically equivalent", {
         stop("injected native factor solve failure", call. = FALSE)
       },
       .package = "GEModelR"
-    ),
-    "injected native factor solve failure"
-  )
+    ), error = identity)
+  expect_match(conditionMessage(error), "injected native factor solve failure")
+  expect_identical(class(error)[[1L]], "GEModelR_numerical_error")
+  expect_identical(error$requested_engine, "sparse")
+  expect_identical(error$requested_backend, "StructuredSchurFGMRESCpp")
+  expect_identical(error$failure_phase, "candidate-acceptance")
+  expect_false(error$accepted_numerical_state)
+  expect_true(is.list(error$remediation))
   expect_gt(length(cleanup_results), cleanups_before_error)
   expect_identical(tail(cleanup_results, 1L)[[1L]]$status, "complete")
   expect_identical(tail(cleanup_results, 1L)[[1L]]$scope, "solve")

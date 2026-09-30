@@ -75,6 +75,28 @@ test_that("transaction commit seam remains internal", {
   expect_identical(row$tier, "internal")
 })
 
+test_that("accepted-state commit failures have a stable condition class", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  failTransactionAt("commit-accepted-state")
+
+  error = tryCatch(model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    diagnostics = TRUE, reduction = "off"
+  ), error = identity)
+
+  expect_identical(class(error)[[1L]],
+                   "GEModelR_committed_state_error")
+  expect_identical(error$requested_engine, "sparse")
+  expect_identical(error$requested_backend, "Matrix")
+  expect_identical(error$failure_phase, "commit-accepted-state")
+  expect_false(error$accepted_numerical_state)
+  expect_false(error$retryable_postsim)
+  expect_true(is.list(error$remediation))
+  expectTransactionalStateIdentical(before, model)
+})
+
 test_that("sparse numerical rejection matrix preserves committed state", {
   phases = c(
     "compilation", "factorization", "convergence", "finiteness",
@@ -86,14 +108,21 @@ test_that("sparse numerical rejection matrix preserves committed state", {
     before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
     failTransactionAt(phase)
 
-    expect_error(
-      model$solveModel(
+    error = tryCatch(model$solveModel(
         iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
         diagnostics = TRUE, reduction = "off"
-      ),
-      paste("injected", phase, "failure"),
+      ), error = identity)
+    expect_match(
+      conditionMessage(error), paste("injected", phase, "failure"),
       info = phase
     )
+    expect_identical(class(error)[[1L]], "GEModelR_numerical_error",
+                     info = phase)
+    expect_identical(error$requested_engine, "sparse", info = phase)
+    expect_identical(error$requested_backend, "Matrix", info = phase)
+    expect_identical(error$failure_phase, phase, info = phase)
+    expect_false(error$accepted_numerical_state, info = phase)
+    expect_true(is.list(error$remediation), info = phase)
     expectTransactionalStateIdentical(before, model)
     expect_identical(model$lastDiagnostics$status, "failed", info = phase)
     expect_identical(model$lastDiagnostics$failure_phase, phase, info = phase)
@@ -195,15 +224,23 @@ test_that("post failures preserve accepted solve and prior complete output", {
 
     set_three_region_shocks(model, "preferred", c(2, 0, 0))
     recordTransactionPhases(fail_phase = phase)
-    expect_error(
-      model$solveModel(
+    error = tryCatch(model$solveModel(
         iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
         diagnostics = TRUE, output = "compact", variables = "stock",
         reduction = "off"
-      ),
-      paste("injected", phase, "failure"),
+      ), error = identity)
+    expect_match(
+      conditionMessage(error), paste("injected", phase, "failure"),
       info = phase
     )
+    expect_identical(class(error)[[1L]],
+                     "GEModelR_retryable_postsim_error", info = phase)
+    expect_identical(error$requested_engine, "sparse", info = phase)
+    expect_identical(error$requested_backend, "Matrix", info = phase)
+    expect_identical(error$failure_phase, phase, info = phase)
+    expect_true(error$accepted_numerical_state, info = phase)
+    expect_true(error$retryable_postsim, info = phase)
+    expect_true(is.list(error$remediation), info = phase)
 
     expect_equal(unname(model$solution), c(2, 0, 0), tolerance = 1e-12)
     expect_identical(model$data, prior_data)

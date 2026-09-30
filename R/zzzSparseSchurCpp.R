@@ -46,12 +46,18 @@
   fail = function(cause, remediation = paste(
       "reinstall or rebuild GEModelR so the native library and generated",
       "Rcpp wrappers match the package sources")) {
-    stop(sprintf(
+    message = sprintf(
       paste0(
         "Requested backend 'StructuredSchurFGMRESCpp' failed preflight: %s. ",
         "Remediation: %s. No fallback was attempted."
       ), cause, remediation
-    ), call. = FALSE)
+    )
+    stop(.gemodelr_solve_condition(
+      simpleError(message), "sparse", "StructuredSchurFGMRESCpp",
+      primary_class = "GEModelR_capability_error",
+      failure_phase = "capability-preflight",
+      remediation = list(action = remediation)
+    ))
   }
   if (is.na(threads) || threads < 1L) {
     fail(
@@ -732,9 +738,23 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     .sparse_schur_cpp_runtime$index_key = NULL
     .sparse_cpp_release_live_factors()
   }, add = TRUE)
-  result = .sparse_solve_model_reference(
-    model, iter, steps, postsim, diagnostics, output, variables,
-    dimensions, "StructuredSchurFGMRES", reduction, memory_budget
+  result = tryCatch(
+    .sparse_solve_model_reference(
+      model, iter, steps, postsim, diagnostics, output, variables,
+      dimensions, "StructuredSchurFGMRES", reduction, memory_budget
+    ),
+    error = function(error) {
+      error = .gemodelr_solve_condition(
+        error, "sparse", "StructuredSchurFGMRESCpp"
+      )
+      if (is.list(model$lastDiagnostics)) {
+        model$lastDiagnostics$condition_class = class(error)[[1L]]
+        model$lastDiagnostics$requested_engine = "sparse"
+        model$lastDiagnostics$requested_backend =
+          "StructuredSchurFGMRESCpp"
+      }
+      stop(error)
+    }
   )
   if (isTRUE(diagnostics)) {
     builds = .sparse_schur_cpp_runtime$build_diagnostics

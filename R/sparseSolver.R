@@ -58,10 +58,16 @@
 
 .sparse_backend_unavailable = function(requested_backend, cause,
                                        remediation) {
-  stop(sprintf(
+  message = sprintf(
     "Requested backend '%s' is unavailable: %s. Remediation: %s",
     requested_backend, cause, remediation
-  ), call. = FALSE)
+  )
+  stop(.gemodelr_solve_condition(
+    simpleError(message), "sparse", requested_backend,
+    primary_class = "GEModelR_capability_error",
+    failure_phase = "capability-preflight",
+    remediation = list(action = remediation)
+  ))
 }
 
 .sparse_backend_noop_cleanup = function(...) {
@@ -259,42 +265,58 @@
 .sparse_backend_preflight = function(backend, ...) {
   adapter = .sparse_backend_registry[[backend]]
   if (is.null(adapter)) {
-    return(list(
-      requested_backend = backend,
-      adapter = NULL,
-      capability_evidence = NULL
+    stop(.gemodelr_solve_condition(
+      simpleError(sprintf(
+        "Requested backend '%s' has no registered adapter",
+        backend
+      )),
+      "sparse", backend,
+      primary_class = "GEModelR_capability_error",
+      failure_phase = "capability-preflight",
+      remediation = list(action = "Choose a registered sparse backend ID")
     ))
   }
-  if (!is.list(adapter) ||
-      !identical(adapter$requested_backend, backend) ||
-      !is.character(adapter$implementation) ||
-      length(adapter$implementation) != 1L ||
-      is.na(adapter$implementation) || !nzchar(adapter$implementation) ||
-      !is.function(adapter$preflight) || !is.function(adapter$solve) ||
-      !is.function(adapter$cleanup)) {
-    stop(sprintf(
-      "Requested backend '%s' has an incomplete or inconsistent adapter registration",
-      backend
-    ), call. = FALSE)
-  }
-  capability_evidence = adapter$preflight(
-    requested_backend = backend, ...
-  )
-  if (!is.list(capability_evidence) ||
-      !identical(capability_evidence$requested_backend, backend) ||
-      !identical(capability_evidence$implementation,
-                 adapter$implementation) ||
-      !identical(capability_evidence$available, TRUE)) {
-    stop(sprintf(
-      "Requested backend '%s' returned incomplete preflight evidence",
-      backend
-    ), call. = FALSE)
-  }
-  list(
-    requested_backend = backend,
-    adapter = adapter,
-    capability_evidence = capability_evidence
-  )
+  tryCatch({
+    if (!is.list(adapter) ||
+        !identical(adapter$requested_backend, backend) ||
+        !is.character(adapter$implementation) ||
+        length(adapter$implementation) != 1L ||
+        is.na(adapter$implementation) || !nzchar(adapter$implementation) ||
+        !is.function(adapter$preflight) || !is.function(adapter$solve) ||
+        !is.function(adapter$cleanup)) {
+      stop(sprintf(
+        "Requested backend '%s' has an incomplete or inconsistent adapter registration",
+        backend
+      ), call. = FALSE)
+    }
+    capability_evidence = adapter$preflight(
+      requested_backend = backend, ...
+    )
+    if (!is.list(capability_evidence) ||
+        !identical(capability_evidence$requested_backend, backend) ||
+        !identical(capability_evidence$implementation,
+                   adapter$implementation) ||
+        !identical(capability_evidence$available, TRUE)) {
+      stop(sprintf(
+        "Requested backend '%s' returned incomplete preflight evidence",
+        backend
+      ), call. = FALSE)
+    }
+    list(
+      requested_backend = backend,
+      adapter = adapter,
+      capability_evidence = capability_evidence
+    )
+  }, error = function(error) {
+    stop(.gemodelr_solve_condition(
+      error, "sparse", backend,
+      primary_class = "GEModelR_capability_error",
+      failure_phase = "capability-preflight",
+      remediation = list(
+        action = "Install the requested backend or repair its capability registration"
+      )
+    ))
+  })
 }
 
 .sparse_backend_solve = function(preflight, coefficient_matrix, rhs,
@@ -439,6 +461,29 @@
   result
 }
 
+.sparse_backend_solve_reference = .sparse_backend_solve
+.sparse_backend_solve = function(preflight, coefficient_matrix, rhs,
+                                 reduction, ...) {
+  backend = if (is.list(preflight)) preflight$requested_backend else NULL
+  tryCatch(
+    .sparse_backend_solve_reference(
+      preflight, coefficient_matrix, rhs, reduction, ...
+    ),
+    error = function(error) {
+      stop(.gemodelr_solve_condition(
+        error, "sparse", backend,
+        primary_class = "GEModelR_numerical_error",
+        failure_phase = "candidate-acceptance",
+        accepted_numerical_state = FALSE,
+        retryable_postsim = FALSE,
+        remediation = list(
+          action = "Review the backend candidate and its structural evidence"
+        )
+      ))
+    }
+  )
+}
+
 sparse_state_data = function(state) {
   if (is.environment(state)) state$data else state
 }
@@ -474,17 +519,128 @@ sparse_make_state = function(data) {
   )
 }
 
+.gemodelr_solve_condition = function(
+    error, engine, backend, primary_class = NULL, failure_phase = NULL,
+    accepted_numerical_state = NULL, retryable_postsim = NULL,
+    remediation = NULL) {
+  if (!inherits(error, "condition")) {
+    error = simpleError(as.character(error)[[1L]])
+  }
+  error_classes = class(error)
+  existing_primary = error_classes[grepl(
+    "^GEModelR_.*_error$", error_classes
+  )]
+  if (is.null(primary_class) && length(existing_primary)) {
+    primary_class = existing_primary[[1L]]
+  }
+  if (is.null(failure_phase)) {
+    failure_phase = attr(error, "transaction_phase")
+  }
+  if (is.null(failure_phase) && !is.null(error$failure_phase)) {
+    failure_phase = error$failure_phase
+  }
+  if (is.null(failure_phase) || !length(failure_phase)) {
+    failure_phase = if (identical(primary_class, "GEModelR_validation_error")) {
+      "validation"
+    } else "setup"
+  }
+  failure_phase = as.character(failure_phase)[[1L]]
+  if (is.null(primary_class)) {
+    primary_class = if (identical(failure_phase, "validation")) {
+      "GEModelR_validation_error"
+    } else if (grepl("^capability", failure_phase)) {
+      "GEModelR_capability_error"
+    } else if (grepl("^commit-", failure_phase)) {
+      "GEModelR_committed_state_error"
+    } else if (grepl("^(post|output-)", failure_phase)) {
+      if (isTRUE(retryable_postsim)) {
+        "GEModelR_retryable_postsim_error"
+      } else "GEModelR_postsim_error"
+    } else "GEModelR_numerical_error"
+  }
+  if (is.null(accepted_numerical_state)) {
+    accepted_numerical_state = error$accepted_numerical_state
+    if (is.null(accepted_numerical_state)) {
+      accepted_numerical_state = attr(
+        error, "GEModelR.accepted_numerical_state"
+      )
+    }
+    accepted_numerical_state = isTRUE(accepted_numerical_state)
+  }
+  if (is.null(retryable_postsim)) {
+    retryable_postsim = isTRUE(error$retryable_postsim)
+  }
+  if (is.null(remediation)) remediation = error$remediation
+  if (is.null(remediation)) {
+    remediation = switch(
+      primary_class,
+      GEModelR_validation_error = list(
+        action = "Correct the solve arguments or load the required model state"
+      ),
+      GEModelR_capability_error = list(
+        action = "Install the requested backend or rebuild its native support"
+      ),
+      GEModelR_postsim_error = list(
+        action = "Correct the postsimulation inputs and retry the solve"
+      ),
+      GEModelR_retryable_postsim_error = list(
+        action = "Correct the postsimulation inputs and call retryPostsim()"
+      ),
+      GEModelR_committed_state_error = list(
+        action = "Inspect the model state and retry the failed commit"
+      ),
+      list(action = "Review the model inputs and solver evidence before retrying")
+    )
+  }
+  existing_fields = as.list(error)
+  existing_fields = existing_fields[setdiff(
+    names(existing_fields), c("message", "call")
+  )]
+  fields = list(
+    requested_engine = engine,
+    requested_backend = backend,
+    failure_phase = failure_phase,
+    accepted_numerical_state = isTRUE(accepted_numerical_state),
+    retryable_postsim = isTRUE(retryable_postsim),
+    remediation = remediation
+  )
+  existing_fields[names(fields)] = NULL
+  result = .gemodelr_condition(
+    primary_class, conditionMessage(error), c(existing_fields, fields)
+  )
+  if (identical(primary_class, "GEModelR_retryable_postsim_error")) {
+    class(result) = c(
+      "GEModelR_retryable_postsim_error", "GEModelR_postsim_error",
+      "error", "condition"
+    )
+  }
+  transaction_phase = attr(error, "transaction_phase")
+  if (!is.null(transaction_phase)) {
+    attr(result, "transaction_phase") = transaction_phase
+  }
+  if (isTRUE(accepted_numerical_state)) {
+    attr(result, "GEModelR.accepted_numerical_state") = TRUE
+  }
+  result
+}
+
 .transaction_failure_diagnostics = function(engine, error,
                                              retryable_postsim = FALSE) {
   phase = attr(error, "transaction_phase")
+  if (is.null(phase)) phase = error$failure_phase
   if (is.null(phase) || !length(phase)) phase = "setup"
+  requested_engine = error$requested_engine
+  if (is.null(requested_engine)) requested_engine = engine
   list(
     engine = engine,
     status = "failed",
     accepted_numerical_state = FALSE,
     retryable_postsim = isTRUE(retryable_postsim),
     failure_phase = as.character(phase)[[1L]],
-    failure_reason = conditionMessage(error)
+    failure_reason = conditionMessage(error),
+    condition_class = class(error)[[1L]],
+    requested_engine = requested_engine,
+    requested_backend = error$requested_backend
   )
 }
 
@@ -494,13 +650,23 @@ sparse_make_state = function(data) {
     diagnostics = list(engine = record$engine)
   }
   phase = attr(error, "transaction_phase")
+  if (is.null(phase)) phase = error$failure_phase
   if (is.null(phase) || !length(phase)) phase = "postsim"
+  requested_engine = error$requested_engine
+  if (is.null(requested_engine)) requested_engine = record$engine
+  requested_backend = error$requested_backend
+  if (is.null(requested_backend)) {
+    requested_backend = record$requested_backend
+  }
   diagnostics$status = "postsim-incomplete"
   diagnostics$accepted_numerical_state = TRUE
   diagnostics$retryable_postsim = TRUE
   diagnostics$failure_phase = as.character(phase)[[1L]]
   diagnostics$failure_reason = conditionMessage(error)
   diagnostics$post_simulation_retained = FALSE
+  diagnostics$condition_class = class(error)[[1L]]
+  diagnostics$requested_engine = requested_engine
+  diagnostics$requested_backend = requested_backend
   diagnostics
 }
 
@@ -611,6 +777,17 @@ sparse_make_state = function(data) {
     ))
     invisible(model)
   }, error = function(error) {
+    backend = record$requested_backend
+    if (is.null(backend)) backend = record$diagnostics$requested_backend
+    if (is.null(backend)) backend = record$diagnostics$solver_backend
+    error = .gemodelr_solve_condition(
+      error, record$engine, backend,
+      accepted_numerical_state = TRUE,
+      retryable_postsim = TRUE,
+      remediation = list(
+        action = "Correct the postsimulation failure and call retryPostsim()"
+      )
+    )
     attr(error, "GEModelR.accepted_numerical_state") = TRUE
     model$lastDiagnostics = .postsim_failure_diagnostics(record, error)
     stop(error)
@@ -2050,6 +2227,41 @@ sparse_true_residual = function(A, solution, rhs) {
   candidate
 }
 
+.sparse_accept_candidate_reference = .sparse_accept_candidate
+.sparse_accept_candidate = function(
+    candidate,
+    expected_structure = NULL,
+    reference = NULL,
+    solution_atol = 0,
+    solution_rtol = 0,
+    residual_tolerance = 2e-7,
+    diagnostics = FALSE) {
+  tryCatch(
+    .sparse_accept_candidate_reference(
+      candidate, expected_structure, reference, solution_atol,
+      solution_rtol, residual_tolerance, diagnostics
+    ),
+    error = function(error) {
+      requested_backend = if (is.list(candidate)) {
+        candidate$requested_backend
+      } else NULL
+      if (is.null(requested_backend) && is.list(candidate)) {
+        requested_backend = candidate$backend
+      }
+      stop(.gemodelr_solve_condition(
+        error, "sparse", requested_backend,
+        primary_class = "GEModelR_numerical_error",
+        failure_phase = "candidate-acceptance",
+        accepted_numerical_state = FALSE,
+        retryable_postsim = FALSE,
+        remediation = list(
+          action = "Review the candidate solution and its residual evidence"
+        )
+      ))
+    }
+  )
+}
+
 
 sparse_reduce_system = function(A, rhs) {
   if (length(A@x) && any(!is.finite(A@x) | A@x == 0)) {
@@ -2955,18 +3167,60 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
                               reduction = c("auto", "off", "on"),
                               memory_budget = NULL) {
   if (!is.numeric(iter) || length(iter) != 1L || iter < 1 ||
-      iter != as.integer(iter)) {
-    stop("iter must be a positive integer", call. = FALSE)
+      is.na(iter) || !is.finite(iter) || iter != as.integer(iter)) {
+    .gemodelr_abort_validation(
+      "iter must be a positive integer", "solveModel", "solveModel",
+      "Set iter to a positive integer",
+      fields = list(
+        argument = "iter", requested_value = iter,
+        requested_engine = "sparse", requested_backend = backend
+      )
+    )
   }
-  if (!length(steps) || any(steps < 1) ||
+  if (!is.numeric(steps) || !length(steps) || anyNA(steps) ||
+      any(!is.finite(steps)) || any(steps < 1) ||
       any(steps != as.integer(steps))) {
-    stop("steps must contain positive integers", call. = FALSE)
+    .gemodelr_abort_validation(
+      "steps must contain positive integers", "solveModel", "solveModel",
+      "Set steps to one or more positive integers",
+      fields = list(
+        argument = "steps", requested_value = steps,
+        requested_engine = "sparse", requested_backend = backend
+      )
+    )
   }
-  output = match.arg(output)
-  reduction = match.arg(reduction)
-  backend = match.arg(backend, c(
-    "Matrix", "SuiteSparse", "SparseM", "StructuredSchur", "StructuredSchurFGMRES"
-  ))
+  output = .gemodelr_match_arg(
+    output, c("full", "compact"), "solveModel", "output",
+    "Set output to 'full' or 'compact'"
+  )
+  reduction = .gemodelr_match_arg(
+    reduction, c("auto", "off", "on"), "solveModel", "reduction",
+    "Set reduction to 'auto', 'off', or 'on'"
+  )
+  backend = .gemodelr_match_arg(
+    backend, c(
+      "Matrix", "SuiteSparse", "SparseM", "StructuredSchur",
+      "StructuredSchurFGMRES", "StructuredSchurFGMRESCpp"
+    ), "solveModel", "backend", "Choose a registered sparse backend ID"
+  )
+  if (identical(backend, "Matrix")) {
+    .identity_guard_old_options("tabloToR.sparse.lu_order")
+    lu_order = suppressWarnings(as.integer(
+      getOption("GEModelR.sparse.lu_order", 3L)
+    )[1L])
+    if (is.na(lu_order) || lu_order < 0L || lu_order > 3L) {
+      .gemodelr_abort_validation(
+        "GEModelR.sparse.lu_order must be an integer from 0 to 3",
+        "solveModel", "solveModel",
+        "Set GEModelR.sparse.lu_order to an integer from 0 to 3",
+        fields = list(
+          argument = "GEModelR.sparse.lu_order",
+          requested_value = getOption("GEModelR.sparse.lu_order", 3L),
+          requested_engine = "sparse", requested_backend = backend
+        )
+      )
+    }
+  }
   native_requested = exists(
     ".sparse_schur_cpp_runtime", mode = "environment", inherits = TRUE
   ) && isTRUE(.sparse_schur_cpp_runtime$active) &&
@@ -2999,6 +3253,19 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   full_index = index
   budget = memory_budget
   if (is.null(budget) || !length(budget)) budget = model$memoryBudget
+  if (!is.null(budget) && length(budget) &&
+      (!is.numeric(budget) || length(budget) != 1L ||
+       is.na(budget) || !is.finite(budget) || budget <= 0)) {
+    .gemodelr_abort_validation(
+      "Memory budget must be a positive finite number of bytes",
+      "solveModel", "solveModel",
+      "Set memory_budget to a positive finite number of bytes",
+      fields = list(
+        argument = "memory_budget", requested_value = budget,
+        requested_engine = "sparse", requested_backend = requested_backend
+      )
+    )
+  }
   project_outputs = output == "compact" || !is.null(variables) ||
     !is.null(dimensions)
   if (project_outputs) {
@@ -3167,6 +3434,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   )
   postsim_record = list(
     engine = "sparse",
+    requested_backend = requested_backend,
     state_data = sparse_state_data(state),
     structural_cache = if (is.environment(state)) {
       state$.solver_cache
@@ -3229,12 +3497,31 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       memory_budget = memory_budget
     ),
     error = function(error) {
-      if (isTRUE(attr(error, "GEModelR.accepted_numerical_state"))) {
+      accepted_numerical_state = isTRUE(
+        attr(error, "GEModelR.accepted_numerical_state")
+      )
+      retryable_postsim = accepted_numerical_state ||
+        length(model$.postsimRecord) > 0L
+      error = .gemodelr_solve_condition(
+        error, "sparse", backend,
+        accepted_numerical_state = accepted_numerical_state,
+        retryable_postsim = retryable_postsim
+      )
+      if (accepted_numerical_state) {
+        diagnostics = model$lastDiagnostics
+        if (!is.list(diagnostics) || !length(diagnostics)) {
+          diagnostics = .postsim_failure_diagnostics(
+            model$.postsimRecord, error
+          )
+        }
+        diagnostics$condition_class = class(error)[[1L]]
+        diagnostics$requested_engine = "sparse"
+        diagnostics$requested_backend = backend
+        model$lastDiagnostics = diagnostics
         stop(error)
       }
       model$lastDiagnostics = .transaction_failure_diagnostics(
-        "sparse", error,
-        retryable_postsim = length(model$.postsimRecord) > 0L
+        "sparse", error, retryable_postsim = retryable_postsim
       )
       stop(error)
     }

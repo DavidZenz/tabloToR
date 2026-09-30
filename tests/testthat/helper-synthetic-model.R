@@ -21,18 +21,18 @@ make_shared_synthetic_data <- function() {
 }
 
 make_synthetic_model <- function() {
-  spec <- make_shared_synthetic_spec()
-  data <- make_shared_synthetic_data()
   model <- GEModel$new()
-  model$sparseSpec <- spec
-  model$data <- data
-  model$sourceData <- data
-  model$sparseState <- sparse_make_state(data)
-  model$sparseIndex <- sparse_build_index(spec, data)
+  fixture <- tempfile(fileext = ".tab")
+  writeLines(c(
+    "set reg (r1,r2);",
+    "variable (all,r,reg)(change) x(r);",
+    "variable (all,r,reg) a(r);",
+    "variable (all,r,reg) b(r);",
+    "equation eq (all,r,reg) x(r) = a(r) + sum(s,reg,b(s));"
+  ), fixture)
+  on.exit(unlink(fixture), add = TRUE)
+  model$loadTablo(fixture)
   model$setClosure(c("a", "b"))
-  model$sparseIndex <- sparse_build_row_layout(
-    spec, model$sparseIndex, model$sparseState
-  )
-  model$variableValues <- data[c("x", "a", "b")]
+  model$loadData(make_shared_synthetic_data(), engine = "sparse")
   model
 }

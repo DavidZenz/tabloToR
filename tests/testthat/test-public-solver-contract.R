@@ -16,6 +16,33 @@ test_that("solver defaults and reference backend remain unchanged", {
   expect_identical(explicit$lastDiagnostics, list())
 })
 
+test_that("solve and lifecycle validation conditions share a stable class", {
+  capture_error <- function(expression) {
+    tryCatch(force(expression), error = identity)
+  }
+  unloaded <- GEModel$new()
+  lifecycle_error <- capture_error(unloaded$solveModel(engine = "sparse"))
+  expect_identical(class(lifecycle_error)[[1L]],
+                   "GEModelR_validation_error")
+  expect_identical(lifecycle_error$failure_phase, "validation")
+  expect_true(is.list(lifecycle_error$remediation))
+
+  model <- make_synthetic_model()
+  selector_error <- capture_error(model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    backend = "not-a-backend"
+  ))
+  expect_identical(class(selector_error)[[1L]],
+                   "GEModelR_validation_error")
+  expect_identical(selector_error$argument, "backend")
+  expect_identical(selector_error$requested_engine, "sparse")
+  expect_identical(selector_error$requested_backend, "not-a-backend")
+  expect_identical(selector_error$failure_phase, "validation")
+  expect_false(selector_error$accepted_numerical_state)
+  expect_false(selector_error$retryable_postsim)
+  expect_true(is.list(selector_error$remediation))
+})
+
 test_that("each registered backend routes with its requested identity", {
   backend_ids <- c(
     "Matrix", "SparseM", "SuiteSparse", "StructuredSchur",
@@ -216,13 +243,18 @@ test_that("Matrix adapter records fail closed before accepted-state commit", {
       invisible(NULL)
     }, env = environment())
 
-    expect_error(
-      model$solveModel(
+    error <- tryCatch(model$solveModel(
         iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
         diagnostics = TRUE, backend = "Matrix", reduction = "off"
-      ),
-      expected_error
-    )
+      ), error = identity)
+    expect_match(conditionMessage(error), expected_error)
+    expect_identical(class(error)[[1L]], "GEModelR_numerical_error")
+    expect_identical(error$requested_engine, "sparse")
+    expect_identical(error$requested_backend, "Matrix")
+    expect_identical(error$failure_phase, "candidate-acceptance")
+    expect_false(error$accepted_numerical_state)
+    expect_false(error$retryable_postsim)
+    expect_true(is.list(error$remediation))
     expect_identical(commits, 0L)
     expectTransactionalStateIdentical(before, model)
   }
@@ -266,13 +298,20 @@ test_that("native backend preflight fails closed before solving", {
     .package = "GEModelR"
   )
 
-  expect_error(
-    model$solveModel(
+  error <- tryCatch(model$solveModel(
       iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
       backend = "StructuredSchurFGMRESCpp"
-    ),
+    ), error = identity)
+  expect_match(
+    conditionMessage(error),
     "Requested backend 'StructuredSchurFGMRESCpp'.*injected preflight failure.*Remediation:"
   )
+  expect_identical(class(error)[[1L]], "GEModelR_capability_error")
+  expect_identical(error$requested_engine, "sparse")
+  expect_identical(error$requested_backend, "StructuredSchurFGMRESCpp")
+  expect_identical(error$failure_phase, "capability-preflight")
+  expect_false(error$accepted_numerical_state)
+  expect_true(is.list(error$remediation))
   expect_false(emitted)
   expect_identical(sparse_state_data(model$sparseState), before)
   expect_false(isTRUE(runtime$active))
