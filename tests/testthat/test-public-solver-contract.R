@@ -12,8 +12,18 @@ test_that("solver defaults and reference backend remain unchanged", {
                       backend = "Matrix")
 
   expect_equal(omitted$solution, explicit$solution, tolerance = 1e-12)
-  expect_identical(omitted$lastDiagnostics, list())
-  expect_identical(explicit$lastDiagnostics, list())
+  for (model in list(omitted, explicit)) {
+    expect_identical(model$lastDiagnostics$schema_version, 1L)
+    expect_identical(model$lastDiagnostics$engine, "sparse")
+    expect_identical(model$lastDiagnostics$requested_backend, "Matrix")
+    expect_identical(model$lastDiagnostics$implementation, "r")
+    expect_identical(model$lastDiagnostics$status, "succeeded")
+    expect_null(model$lastDiagnostics$condition_class)
+    expect_true(model$lastDiagnostics$accepted_numerical_state)
+    expect_false(model$lastDiagnostics$retryable_postsim)
+    expect_identical(model$lastDiagnostics$cleanup_status$status, "complete")
+    expect_false("true_residual_history" %in% names(model$lastDiagnostics))
+  }
 })
 
 test_that("solve and lifecycle validation conditions share a stable class", {
@@ -28,6 +38,10 @@ test_that("solve and lifecycle validation conditions share a stable class", {
   expect_true(is.list(lifecycle_error$remediation))
 
   model <- make_synthetic_model()
+  model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    diagnostics = FALSE
+  )
   selector_error <- capture_error(model$solveModel(
     iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
     backend = "not-a-backend"
@@ -41,6 +55,59 @@ test_that("solve and lifecycle validation conditions share a stable class", {
   expect_false(selector_error$accepted_numerical_state)
   expect_false(selector_error$retryable_postsim)
   expect_true(is.list(selector_error$remediation))
+  expect_identical(model$lastDiagnostics$schema_version, 1L)
+  expect_identical(model$lastDiagnostics$status, "validation_failed")
+  expect_identical(model$lastDiagnostics$engine, "sparse")
+  expect_identical(model$lastDiagnostics$requested_backend, "not-a-backend")
+  expect_identical(
+    model$lastDiagnostics$condition_class, "GEModelR_validation_error"
+  )
+  expect_null(model$lastDiagnostics$implementation)
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_identical(model$lastDiagnostics$cleanup_status$status, "not-run")
+
+  invalid_engine <- make_synthetic_model()
+  invalid_engine_error <- capture_error(
+    invalid_engine$solveModel(engine = "unknown")
+  )
+  expect_identical(class(invalid_engine_error)[[1L]],
+                   "GEModelR_validation_error")
+  expect_identical(invalid_engine$lastDiagnostics$status, "validation_failed")
+  expect_identical(invalid_engine$lastDiagnostics$engine, "unknown")
+  expect_identical(
+    invalid_engine$lastDiagnostics$requested_backend, "Matrix"
+  )
+  expect_null(invalid_engine$lastDiagnostics$implementation)
+})
+
+test_that("diagnostic details are opt-in for sparse and legacy solves", {
+  sparse <- make_synthetic_model()
+  sparse$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    diagnostics = TRUE, backend = "Matrix"
+  )
+  expect_identical(sparse$lastDiagnostics$status, "succeeded")
+  expect_true(length(sparse$lastDiagnostics$true_residual_history) > 0L)
+  expect_true(is.list(sparse$lastDiagnostics$phase_allocations))
+  expect_true(is.list(sparse$lastDiagnostics$capability_evidence))
+  expect_true(is.list(sparse$lastDiagnostics$estimated_memory))
+
+  legacy <- make_three_region_model(engine = "legacy")
+  set_three_region_shocks(legacy, "preferred", c(1, 0, 0))
+  legacy$solveModel(
+    iter = 1, steps = 1, engine = "legacy", diagnostics = TRUE
+  )
+  expect_identical(legacy$lastDiagnostics$status, "succeeded")
+  expect_identical(legacy$lastDiagnostics$implementation, "r")
+  expect_true(is.list(legacy$lastDiagnostics$capability_evidence))
+  expect_true(is.list(legacy$lastDiagnostics$phase_allocations))
+  expect_true(is.list(legacy$lastDiagnostics$estimated_memory))
+
+  minimal <- make_three_region_model(engine = "legacy")
+  minimal$solveModel(
+    iter = 1, steps = 1, engine = "legacy", diagnostics = FALSE
+  )
+  expect_identical(names(minimal$lastDiagnostics), .gemodelr_diagnostics_fields)
 })
 
 test_that("each registered backend routes with its requested identity", {
@@ -315,6 +382,16 @@ test_that("native backend preflight fails closed before solving", {
   expect_false(emitted)
   expect_identical(sparse_state_data(model$sparseState), before)
   expect_false(isTRUE(runtime$active))
+  expect_identical(model$lastDiagnostics$status, "capability_failed")
+  expect_identical(
+    model$lastDiagnostics$requested_backend,
+    "StructuredSchurFGMRESCpp"
+  )
+  expect_null(model$lastDiagnostics$implementation)
+  expect_identical(
+    model$lastDiagnostics$condition_class, "GEModelR_capability_error"
+  )
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
 })
 
 test_that("private native wrappers do not expand the exported namespace", {

@@ -586,6 +586,17 @@ GEModel = setRefClass(
                           backend = "Matrix",
                           reduction = c("auto", "off", "on"),
                           memory_budget = NULL) {
+      requested_engine = if (identical(engine, c("legacy", "sparse"))) {
+        "legacy"
+      } else engine
+      requested_backend = backend
+      diagnostics_requested = isTRUE(diagnostics)
+      solve_started = proc.time()[[3L]]
+      lastDiagnostics <<- .gemodelr_diagnostics_envelope(
+        engine = requested_engine,
+        requested_backend = requested_backend
+      )
+      tryCatch({
       engine = .gemodelr_match_arg(
         engine, c("legacy", "sparse"), "solveModel", "engine",
         "Call solveModel() with engine = 'legacy' or engine = 'sparse'"
@@ -600,6 +611,10 @@ GEModel = setRefClass(
           memory_budget = memory_budget
         ))
       }
+      lastDiagnostics <<- .gemodelr_diagnostics_envelope(
+        engine = engine, requested_backend = requested_backend,
+        implementation = "r"
+      )
 
       if (!isTRUE(getOption("GEModelR.legacy.transaction.working"))) {
         old_transaction_option = getOption(
@@ -628,8 +643,31 @@ GEModel = setRefClass(
             .self, working, diagnostics = diagnostics
           )
         }, error = function(error) {
-          lastDiagnostics <<- .transaction_failure_diagnostics(
+          prior = lastDiagnostics
+          failure = .transaction_failure_diagnostics(
             "legacy", error
+          )
+          cleanup = prior$cleanup_status
+          if (is.null(cleanup)) cleanup = failure$cleanup_status
+          details = if (diagnostics_requested) {
+            .gemodelr_diagnostics_details(prior)
+          } else list()
+          if (diagnostics_requested && is.list(error$diagnostic_evidence)) {
+            details[names(error$diagnostic_evidence)] =
+              error$diagnostic_evidence
+          }
+          lastDiagnostics <<- .gemodelr_diagnostics_envelope(
+            engine = failure$engine,
+            requested_backend = failure$requested_backend,
+            implementation = prior$implementation,
+            status = failure$status,
+            condition_class = failure$condition_class,
+            accepted_numerical_state = failure$accepted_numerical_state,
+            retryable_postsim = failure$retryable_postsim,
+            failure_phase = failure$failure_phase,
+            failure_reason = failure$failure_reason,
+            cleanup_status = cleanup,
+            details = details
           )
           stop(error)
         })
@@ -880,8 +918,111 @@ GEModel = setRefClass(
         eval(parse(text=sprintf("%s=%s;", names(shocks), shocks[names(shocks)])))
       })
 
+      legacy_details = if (diagnostics_requested) {
+        elapsed = proc.time()[[3L]] - solve_started
+        peak = sparse_gc_bytes()
+        list(
+          true_residual_history = list(),
+          residual_evidence = list(
+            available = FALSE,
+            reason = "The legacy engine does not record true residuals"
+          ),
+          elapsed_seconds = elapsed,
+          phase_allocations = list(legacy_peak_gc_bytes = peak),
+          capability_evidence = list(
+            requested_backend = requested_backend,
+            implementation = "r",
+            available = TRUE,
+            capability = "legacy R solver"
+          ),
+          estimated_memory = list(
+            available = FALSE,
+            reason = "The legacy engine has no sparse memory preflight"
+          ),
+          peak_gc_bytes = peak
+        )
+      } else list()
+      lastDiagnostics <<- .gemodelr_diagnostics_envelope(
+        engine = "legacy", requested_backend = requested_backend,
+        implementation = "r", status = "succeeded",
+        accepted_numerical_state = TRUE,
+        retryable_postsim = FALSE,
+        cleanup_status = list(
+          status = "complete", scope = "solve",
+          resources = "legacy working model"
+        ),
+        details = legacy_details
+      )
       invisible(NULL)
-
+      }, error = function(error) {
+        error = .gemodelr_solve_condition(
+          error, requested_engine, requested_backend
+        )
+        prior = lastDiagnostics
+        status = .gemodelr_diagnostics_status(class(error)[[1L]])
+        failure_engine = prior$engine
+        if (is.null(failure_engine)) failure_engine = requested_engine
+        failure_backend = error$requested_backend
+        if (is.null(failure_backend)) failure_backend = prior$requested_backend
+        if (is.null(failure_backend)) failure_backend = requested_backend
+        accepted = isTRUE(error$accepted_numerical_state)
+        retryable = isTRUE(error$retryable_postsim)
+        cleanup = prior$cleanup_status
+        if (is.null(cleanup)) cleanup = list(status = "not-run")
+        details = if (diagnostics_requested) {
+          .gemodelr_diagnostics_details(prior)
+        } else list()
+        if (diagnostics_requested) {
+          if (is.list(error$diagnostic_evidence)) {
+            details[names(error$diagnostic_evidence)] =
+              error$diagnostic_evidence
+          }
+          if (is.null(details$true_residual_history)) {
+            details$true_residual_history = list()
+          }
+          if (is.null(details$elapsed_seconds)) {
+            details$elapsed_seconds = proc.time()[[3L]] - solve_started
+          }
+          if (is.null(details$phase_allocations)) {
+            details$phase_allocations = list()
+          }
+          if (is.null(details$phase_seconds)) {
+            details$phase_seconds = list()
+          }
+          if (is.null(details$capability_evidence)) {
+            details$capability_evidence = list(
+              requested_backend = failure_backend,
+              available = !identical(status, "capability_failed"),
+              phase = if (identical(status, "capability_failed")) {
+                "preflight"
+              } else "not-dispatched"
+            )
+          }
+          if (is.null(details$estimated_memory)) {
+            details$estimated_memory = list(
+              available = FALSE,
+              reason = "Memory preflight did not produce an estimate"
+            )
+          }
+          if (is.null(details$peak_gc_bytes)) {
+            details$peak_gc_bytes = sparse_gc_bytes()
+          }
+        }
+        lastDiagnostics <<- .gemodelr_diagnostics_envelope(
+          engine = failure_engine,
+          requested_backend = failure_backend,
+          implementation = prior$implementation,
+          status = status,
+          condition_class = class(error)[[1L]],
+          accepted_numerical_state = accepted,
+          retryable_postsim = retryable,
+          failure_phase = error$failure_phase,
+          failure_reason = conditionMessage(error),
+          cleanup_status = cleanup,
+          details = details
+        )
+        stop(error)
+      })
     }
   )
 )

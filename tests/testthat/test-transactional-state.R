@@ -13,10 +13,13 @@ test_that("sparse second-substep failure is transactionally invisible", {
   )
 
   expectTransactionalStateIdentical(before, model)
-  expect_identical(model$lastDiagnostics$status, "failed")
+  expect_identical(model$lastDiagnostics$status, "numerical_failed")
   expect_identical(model$lastDiagnostics$failure_phase, "after-substep")
   expect_false(model$lastDiagnostics$accepted_numerical_state)
   expect_false(model$lastDiagnostics$retryable_postsim)
+  expect_true(length(model$lastDiagnostics$true_residual_history) > 0L)
+  expect_true(is.list(model$lastDiagnostics$capability_evidence))
+  expect_identical(model$lastDiagnostics$cleanup_status$status, "complete")
 })
 
 test_that("sparse simulation-update failure does not publish working state", {
@@ -55,7 +58,7 @@ test_that("accepted sparse solve commits exactly once", {
 
   expect_identical(commits, 1L)
   expect_equal(unname(model$solution), c(1, 3, -2), tolerance = 3e-2)
-  expect_identical(model$lastDiagnostics$status, "complete")
+  expect_identical(model$lastDiagnostics$status, "succeeded")
   expect_true(model$lastDiagnostics$accepted_numerical_state)
   expect_false(model$lastDiagnostics$retryable_postsim)
 })
@@ -94,6 +97,15 @@ test_that("accepted-state commit failures have a stable condition class", {
   expect_false(error$accepted_numerical_state)
   expect_false(error$retryable_postsim)
   expect_true(is.list(error$remediation))
+  expect_identical(model$lastDiagnostics$status, "committed_state_failed")
+  expect_identical(
+    model$lastDiagnostics$condition_class,
+    "GEModelR_committed_state_error"
+  )
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_identical(model$lastDiagnostics$implementation, "r")
+  expect_identical(model$lastDiagnostics$cleanup_status$status, "complete")
+  expect_true(length(model$lastDiagnostics$true_residual_history) > 0L)
   expectTransactionalStateIdentical(before, model)
 })
 
@@ -124,7 +136,9 @@ test_that("sparse numerical rejection matrix preserves committed state", {
     expect_false(error$accepted_numerical_state, info = phase)
     expect_true(is.list(error$remediation), info = phase)
     expectTransactionalStateIdentical(before, model)
-    expect_identical(model$lastDiagnostics$status, "failed", info = phase)
+    expect_identical(
+      model$lastDiagnostics$status, "numerical_failed", info = phase
+    )
     expect_identical(model$lastDiagnostics$failure_phase, phase, info = phase)
     expect_false(model$lastDiagnostics$accepted_numerical_state, info = phase)
   }
@@ -178,7 +192,9 @@ test_that("legacy rejection matrix runs on an isolated copy", {
       info = phase
     )
     expectTransactionalStateIdentical(before, model)
-    expect_identical(model$lastDiagnostics$status, "failed", info = phase)
+    expect_identical(
+      model$lastDiagnostics$status, "numerical_failed", info = phase
+    )
     expect_identical(model$lastDiagnostics$engine, "legacy", info = phase)
     expect_identical(model$lastDiagnostics$failure_phase, phase, info = phase)
   }
@@ -245,7 +261,7 @@ test_that("post failures preserve accepted solve and prior complete output", {
     expect_equal(unname(model$solution), c(2, 0, 0), tolerance = 1e-12)
     expect_identical(model$data, prior_data)
     expect_identical(model$compactOutput, prior_output)
-    expect_identical(model$lastDiagnostics$status, "postsim-incomplete")
+    expect_identical(model$lastDiagnostics$status, "postsim_failed")
     expect_true(model$lastDiagnostics$accepted_numerical_state)
     expect_true(model$lastDiagnostics$retryable_postsim)
     expect_identical(model$lastDiagnostics$failure_phase, phase)
@@ -278,7 +294,7 @@ test_that("post failures preserve accepted solve and prior complete output", {
     expect_identical(returned$value, model)
     expect_identical(model$data, expected$data)
     expect_identical(model$compactOutput, expected$compactOutput)
-    expect_identical(model$lastDiagnostics$status, "complete")
+    expect_identical(model$lastDiagnostics$status, "succeeded")
     expect_false(model$lastDiagnostics$retryable_postsim)
     expect_identical(model$.postsimRecord, list())
   }
@@ -377,7 +393,7 @@ test_that("a later numerical failure preserves an older retry record", {
     serialize(model$.postsimRecord, NULL, version = 3L),
     accepted_record
   )
-  expect_identical(model$lastDiagnostics$status, "failed")
+  expect_identical(model$lastDiagnostics$status, "numerical_failed")
   expect_false(model$lastDiagnostics$accepted_numerical_state)
   expect_true(model$lastDiagnostics$retryable_postsim)
   expect_identical(model$lastDiagnostics$failure_phase, "compilation")

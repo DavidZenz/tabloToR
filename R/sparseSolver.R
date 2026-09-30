@@ -626,48 +626,50 @@ sparse_make_state = function(data) {
 
 .transaction_failure_diagnostics = function(engine, error,
                                              retryable_postsim = FALSE) {
-  phase = attr(error, "transaction_phase")
-  if (is.null(phase)) phase = error$failure_phase
-  if (is.null(phase) || !length(phase)) phase = "setup"
-  requested_engine = error$requested_engine
-  if (is.null(requested_engine)) requested_engine = engine
-  list(
-    engine = engine,
-    status = "failed",
-    accepted_numerical_state = FALSE,
-    retryable_postsim = isTRUE(retryable_postsim),
-    failure_phase = as.character(phase)[[1L]],
-    failure_reason = conditionMessage(error),
+  error = .gemodelr_solve_condition(
+    error, engine, error$requested_backend,
+    accepted_numerical_state = isTRUE(error$accepted_numerical_state),
+    retryable_postsim = retryable_postsim
+  )
+  .gemodelr_diagnostics_envelope(
+    engine = error$requested_engine,
+    requested_backend = error$requested_backend,
+    status = .gemodelr_diagnostics_status(class(error)[[1L]]),
     condition_class = class(error)[[1L]],
-    requested_engine = requested_engine,
-    requested_backend = error$requested_backend
+    accepted_numerical_state = error$accepted_numerical_state,
+    retryable_postsim = error$retryable_postsim,
+    failure_phase = error$failure_phase,
+    failure_reason = conditionMessage(error)
   )
 }
 
-.postsim_failure_diagnostics = function(record, error) {
-  diagnostics = record$diagnostics
-  if (!is.list(diagnostics) || !length(diagnostics)) {
-    diagnostics = list(engine = record$engine)
-  }
-  phase = attr(error, "transaction_phase")
-  if (is.null(phase)) phase = error$failure_phase
-  if (is.null(phase) || !length(phase)) phase = "postsim"
-  requested_engine = error$requested_engine
-  if (is.null(requested_engine)) requested_engine = record$engine
+.postsim_failure_diagnostics = function(record, error, diagnostics = FALSE) {
   requested_backend = error$requested_backend
   if (is.null(requested_backend)) {
     requested_backend = record$requested_backend
   }
-  diagnostics$status = "postsim-incomplete"
-  diagnostics$accepted_numerical_state = TRUE
-  diagnostics$retryable_postsim = TRUE
-  diagnostics$failure_phase = as.character(phase)[[1L]]
-  diagnostics$failure_reason = conditionMessage(error)
-  diagnostics$post_simulation_retained = FALSE
-  diagnostics$condition_class = class(error)[[1L]]
-  diagnostics$requested_engine = requested_engine
-  diagnostics$requested_backend = requested_backend
-  diagnostics
+  error = .gemodelr_solve_condition(
+    error, record$engine, requested_backend,
+    accepted_numerical_state = TRUE,
+    retryable_postsim = TRUE
+  )
+  details = if (isTRUE(diagnostics)) {
+    .gemodelr_diagnostics_details(record$diagnostics)
+  } else list()
+  if (isTRUE(diagnostics)) details$post_simulation_retained = FALSE
+  .gemodelr_diagnostics_envelope(
+    engine = record$engine,
+    requested_backend = requested_backend,
+    implementation = record$diagnostics$implementation,
+    status = .gemodelr_diagnostics_status(class(error)[[1L]]),
+    condition_class = class(error)[[1L]],
+    accepted_numerical_state = TRUE,
+    retryable_postsim = TRUE,
+    failure_phase = error$failure_phase,
+    failure_reason = conditionMessage(error),
+    cleanup_status = record$diagnostics$cleanup_status,
+    details = details
+  )
 }
 
 .commit_accepted_state = function(model, record) {
@@ -762,13 +764,29 @@ sparse_make_state = function(data) {
       list(data = data_result, compact_output = compact_output)
     })
     complete = record$diagnostics
-    complete$status = "complete"
+    complete$status = "succeeded"
     complete$accepted_numerical_state = TRUE
     complete$retryable_postsim = FALSE
     complete$failure_phase = NULL
     complete$failure_reason = NULL
     complete$post_simulation_retained = isTRUE(record$postsim)
-    public_diagnostics = if (isTRUE(diagnostics)) complete else list()
+    details = if (isTRUE(diagnostics)) {
+      .gemodelr_diagnostics_details(complete)
+    } else list()
+    cleanup = complete$cleanup_status
+    if (is.null(cleanup)) {
+      cleanup = list(status = "complete", scope = "postsim", resources = "none")
+    }
+    public_diagnostics = .gemodelr_diagnostics_envelope(
+      engine = record$engine,
+      requested_backend = record$requested_backend,
+      implementation = complete$implementation,
+      status = "succeeded",
+      accepted_numerical_state = TRUE,
+      retryable_postsim = FALSE,
+      cleanup_status = cleanup,
+      details = details
+    )
     .commit_postsim_state(model, list(
       state = state,
       data = result$data,
@@ -789,7 +807,9 @@ sparse_make_state = function(data) {
       )
     )
     attr(error, "GEModelR.accepted_numerical_state") = TRUE
-    model$lastDiagnostics = .postsim_failure_diagnostics(record, error)
+    model$lastDiagnostics = .postsim_failure_diagnostics(
+      record, error, diagnostics = diagnostics
+    )
     stop(error)
   })
 }
@@ -800,15 +820,26 @@ sparse_make_state = function(data) {
   model$data = working$data
   model$solution = working$solution
   model$compactOutput = working$compactOutput
-  model$lastDiagnostics = if (isTRUE(diagnostics)) {
-    list(
-      engine = "legacy",
-      status = "complete",
-      accepted_numerical_state = TRUE,
-      retryable_postsim = FALSE,
-      failure_phase = NULL
-    )
+  working_diagnostics = working$lastDiagnostics
+  details = if (isTRUE(diagnostics)) {
+    .gemodelr_diagnostics_details(working_diagnostics)
   } else list()
+  cleanup = working_diagnostics$cleanup_status
+  if (is.null(cleanup)) {
+    cleanup = list(
+      status = "complete", scope = "solve",
+      resources = "legacy working model"
+    )
+  }
+  model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+    engine = "legacy",
+    requested_backend = working_diagnostics$requested_backend,
+    implementation = "r", status = "succeeded",
+    accepted_numerical_state = TRUE,
+    retryable_postsim = FALSE,
+    cleanup_status = cleanup,
+    details = details
+  )
   model$loadedEngine = working$loadedEngine
   model$.postsimRecord = list()
   invisible(model)
@@ -3095,11 +3126,22 @@ sparse_check_budget = function(estimate, budget) {
   }
   .transaction_fault("finiteness")
   .transaction_fault("residual")
-  accepted = .sparse_accept_candidate(
-    candidate,
-    expected_structure = expected_structure,
-    residual_tolerance = residual_tolerance,
-    diagnostics = measure
+  accepted = tryCatch(
+    .sparse_accept_candidate(
+      candidate,
+      expected_structure = expected_structure,
+      residual_tolerance = residual_tolerance,
+      diagnostics = measure
+    ),
+    error = function(error) {
+      error$diagnostic_evidence = list(
+        capability_evidence = candidate$capability_evidence,
+        cleanup_status = candidate$cleanup_status,
+        solver_backend = candidate$requested_backend,
+        solver_backend_impl = candidate$implementation
+      )
+      stop(error)
+    }
   )
   solution = accepted$solution
   true_residual = accepted$true_residual
@@ -3138,12 +3180,29 @@ sparse_check_budget = function(estimate, budget) {
   } else {
     phase = NULL
   }
+  capability_evidence = candidate$capability_evidence
+  if (is.null(capability_evidence)) {
+    capability_evidence = backend_preflight$capability_evidence
+  }
+  implementation = candidate$implementation
+  if (is.null(implementation) && !is.null(backend_preflight$adapter)) {
+    implementation = backend_preflight$adapter$implementation
+  }
+  cleanup_status = candidate$cleanup_status
+  if (is.null(cleanup_status)) {
+    cleanup_status = list(
+      status = "complete", scope = "solve", resources = "none retained"
+    )
+  }
   list(
     solution = solution,
     nnz = emitted$nnz,
     true_residual = true_residual,
     solver_diagnostics = solver_diagnostics,
     acceptance_diagnostics = acceptance_diagnostics,
+    capability_evidence = capability_evidence,
+    implementation = implementation,
+    cleanup_status = cleanup_status,
     column_permuted = length(column_order) > 0L,
     phase = phase,
     index = index
@@ -3229,6 +3288,10 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     "StructuredSchurFGMRESCpp"
   } else backend
   backend_impl = if (native_requested) "cpp" else "r"
+  model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+    engine = "sparse", requested_backend = requested_backend,
+    implementation = backend_impl
+  )
   index = model$sparseIndex
   committed_state = model$sparseState
   if (is.null(committed_state) || !is.environment(committed_state)) {
@@ -3322,6 +3385,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   max_nnz = 0
   residual_history = list()
   solver_diagnostics_history = list()
+  capability_history = list()
+  cleanup_history = list()
   for (iteration in seq_len(iter)) {
     outer_checkpoint = sparse_checkpoint_state(
       state, index, model$sparseSpec
@@ -3354,15 +3419,19 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
           measure = diagnostics,
           structured_partition = structured_partition
         )
-        .transaction_fault("after-substep", list(
-          iteration = iteration, step = step_id,
-          substep = current_step
-        ))
         index = solved$index
         if (!is.null(solved$solver_diagnostics)) {
           solver_diagnostics_history[[
             length(solver_diagnostics_history) + 1L
           ]] = solved$solver_diagnostics
+        }
+        if (!is.null(solved$capability_evidence)) {
+          capability_history[[length(capability_history) + 1L]] =
+            solved$capability_evidence
+        }
+        if (!is.null(solved$cleanup_status)) {
+          cleanup_history[[length(cleanup_history) + 1L]] =
+            solved$cleanup_status
         }
         if (!is.null(solved$phase)) {
           for (metric in names(phase_metrics)) {
@@ -3383,6 +3452,44 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
             metrics = solved$true_residual
           )
         }
+        cleanup = if (length(cleanup_history)) {
+          cleanup_history[[length(cleanup_history)]]
+        } else list(status = "not-run")
+        progress_details = if (isTRUE(diagnostics)) {
+          list(
+            iterations = iteration,
+            steps = steps,
+            elapsed_seconds = proc.time()[[3L]] - start_time,
+            estimated_memory = estimate,
+            max_sparse_nonzeros = max_nnz,
+            true_residual_history = residual_history,
+            capability_evidence = if (length(capability_history)) {
+              capability_history[[length(capability_history)]]
+            } else list(),
+            capability_history = capability_history,
+            cleanup_history = cleanup_history,
+            solver_diagnostics = if (length(solver_diagnostics_history)) {
+              solver_diagnostics_history[[length(solver_diagnostics_history)]]
+            } else NULL,
+            phase_allocations = phase_metrics,
+            phase_seconds = phase_metrics[c(
+              "matrix_seconds", "factor_solve_seconds", "update_seconds"
+            )],
+            dense_fallback = FALSE,
+            peak_gc_bytes = sparse_gc_bytes()
+          )
+        } else list()
+        model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+          engine = "sparse",
+          requested_backend = requested_backend,
+          implementation = backend_impl,
+          cleanup_status = cleanup,
+          details = progress_details
+        )
+        .transaction_fault("after-substep", list(
+          iteration = iteration, step = step_id,
+          substep = current_step
+        ))
         step_result = sparse_add_solution(
           step_result, solved$solution, change_mask
         )
@@ -3409,7 +3516,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   if (output == "full") names(solution) = sparse_endogenous_labels(index)
   diagnostics_result = list(
     engine = "sparse",
-    status = "numerically-accepted",
+    implementation = backend_impl,
+    requested_backend = requested_backend,
     accepted_numerical_state = TRUE,
     retryable_postsim = TRUE,
     failure_phase = NULL,
@@ -3422,6 +3530,20 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     true_residual_history = residual_history,
     solver_backend = requested_backend,
     solver_backend_impl = backend_impl,
+    capability_evidence = if (length(capability_history)) {
+      capability_history[[length(capability_history)]]
+    } else list(
+      requested_backend = requested_backend,
+      implementation = backend_impl,
+      available = TRUE
+    ),
+    capability_history = capability_history,
+    cleanup_status = if (length(cleanup_history)) {
+      cleanup_history[[length(cleanup_history)]]
+    } else list(
+      status = "complete", scope = "solve", resources = "none retained"
+    ),
+    cleanup_history = cleanup_history,
     solver_diagnostics = if (length(solver_diagnostics_history)) {
       solver_diagnostics_history[[length(solver_diagnostics_history)]]
     } else NULL,
@@ -3450,20 +3572,16 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     dimensions = dimensions,
     memory_budget = budget
   )
-  diagnostics_record = if (isTRUE(diagnostics)) {
-    diagnostics_result
-  } else {
-    list(
-      engine = "sparse",
-      status = "numerically-accepted",
-      accepted_numerical_state = TRUE,
-      retryable_postsim = TRUE,
-      failure_phase = NULL,
-      failure_reason = NULL,
-      solver_backend = requested_backend,
-      solver_backend_impl = backend_impl
-    )
-  }
+  diagnostics_record = .gemodelr_diagnostics_envelope(
+    engine = "sparse",
+    requested_backend = requested_backend,
+    implementation = backend_impl,
+    accepted_numerical_state = TRUE,
+    retryable_postsim = TRUE,
+    cleanup_status = diagnostics_result$cleanup_status,
+    details = if (isTRUE(diagnostics)) diagnostics_result else list()
+  )
+  model$lastDiagnostics = diagnostics_record
   .commit_accepted_state(model, list(
     state = state,
     index = full_index,
@@ -3482,6 +3600,7 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
                               backend = "Matrix",
                               reduction = c("auto", "off", "on"),
                               memory_budget = NULL) {
+  diagnostics_enabled = isTRUE(diagnostics)
   tryCatch(
     .sparse_solve_model_impl(
       model,
@@ -3511,17 +3630,36 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
         diagnostics = model$lastDiagnostics
         if (!is.list(diagnostics) || !length(diagnostics)) {
           diagnostics = .postsim_failure_diagnostics(
-            model$.postsimRecord, error
+            model$.postsimRecord, error,
+            diagnostics = diagnostics_enabled
           )
         }
         diagnostics$condition_class = class(error)[[1L]]
-        diagnostics$requested_engine = "sparse"
         diagnostics$requested_backend = backend
         model$lastDiagnostics = diagnostics
         stop(error)
       }
-      model$lastDiagnostics = .transaction_failure_diagnostics(
+      prior = model$lastDiagnostics
+      failure = .transaction_failure_diagnostics(
         "sparse", error, retryable_postsim = retryable_postsim
+      )
+      cleanup = prior$cleanup_status
+      if (is.null(cleanup)) cleanup = failure$cleanup_status
+      details = if (diagnostics_enabled) {
+        .gemodelr_diagnostics_details(prior)
+      } else list()
+      model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+        engine = failure$engine,
+        requested_backend = failure$requested_backend,
+        implementation = prior$implementation,
+        status = failure$status,
+        condition_class = failure$condition_class,
+        accepted_numerical_state = failure$accepted_numerical_state,
+        retryable_postsim = failure$retryable_postsim,
+        failure_phase = failure$failure_phase,
+        failure_reason = failure$failure_reason,
+        cleanup_status = cleanup,
+        details = details
       )
       stop(error)
     }
