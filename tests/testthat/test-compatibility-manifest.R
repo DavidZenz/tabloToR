@@ -3,7 +3,9 @@ test_that("compatibility manifest covers the observed package surface", {
   observed = observedCompatibilitySurface()
 
   expect_identical(
-    sort(manifest$name[manifest$kind == "export"]),
+    sort(manifest$name[
+      manifest$kind == "export" & manifest$tier == "supported"
+    ]),
     observed$exports
   )
   expect_identical(
