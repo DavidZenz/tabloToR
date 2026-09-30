@@ -37,3 +37,4 @@ Config/Attribution-Evidence:
     R/sparseCompiler.R::sparse_compile_spec;
     R/sparseSolver.R::sparse_solve_model;
     src/sparse-schur.cpp::GEModelR_schur_accumulate_global
+RoxygenNote: 7.3.3

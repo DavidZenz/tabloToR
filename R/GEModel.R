@@ -109,6 +109,20 @@
   invisible(NULL)
 }
 
+#' GEModel reference-class facade
+#'
+#' Create a GEModel reference-class generator. Instances provide the supported
+#' interface for loading a TABLO model and its data, configuring closure and
+#' shocks, solving with the legacy or sparse engine, and inspecting the
+#' resulting model state and solve diagnostics. Use the model methods for
+#' supported state changes rather than modifying compiler, index, or cache
+#' fields directly.
+#'
+#' @name GEModel
+#' @aliases GEModel-class
+#' @docType class
+#' @export GEModel
+#' @seealso \code{\link{GEModelR-package}}
 GEModel = setRefClass(
   "GEModel",
   fields = list(
