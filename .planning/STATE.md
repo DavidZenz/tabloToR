@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Public API and Solver Boundaries
 status: executing
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-09-30T19:02:36.228Z"
+stopped_at: Completed 04-05-PLAN.md
+last_updated: "2026-09-30T19:54:11.581Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 04 execution started
-state_head: 84b74342cd2c8a62af92d515b9bb18c5979cf2c0
+state_head: dae9966ef1743c3393fd79d43f96ad46b8268a8a
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 44
-  completed_plans: 42
+  completed_plans: 43
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 04 (Public API and Solver Boundaries) — EXECUTING
-Plan: 5 of 6
+Plan: 6 of 6
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 04 execution started
 
@@ -70,6 +70,7 @@ Progress: [█████████░] 86% (38/44 current milestone plans ex
 | Phase 04 P02 | 20min | 2 tasks | 5 files |
 | Phase 04 P03 | 21min | 2 tasks | 3 files |
 | Phase 04 P04 | 15min | 2 tasks | 2 files |
+| Phase 04 P05 | 50min | 3 tasks | 11 files |
 
 ## Accumulated Context
 
@@ -159,6 +160,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 04]: Invalidate closure-dependent structure separately from shock-dependent pending solve state.
 - [Phase 04]: Validate variable names, named dimensions, labels, and output allocation before sparse solve work.
 - [Phase 04]: Retain the current full closure index separately from the simulation index through postsimulation projection.
+- [Phase 04]: Store a fixed version-1 envelope on every solve attempt and keep detailed telemetry opt-in.
+- [Phase 04]: Keep StructuredSchurFGMRESCpp as the requested backend ID and cpp as the implementation identity.
+- [Phase 04]: Preserve the logical-state payload schema and infer generated numeric update fields from serialized levels when small diagnostics omit postsimulation detail.
 
 ### Pending Todos
 
@@ -185,6 +189,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T19:02:36.153Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-09-30T19:54:11.509Z
+Stopped at: Completed 04-05-PLAN.md
 Resume file: None
