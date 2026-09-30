@@ -394,9 +394,18 @@ test_that("native backend preflight fails closed before solving", {
   expect_false(model$lastDiagnostics$accepted_numerical_state)
 })
 
-test_that("private native wrappers do not expand the exported namespace", {
-  exported <- getNamespaceExports("GEModelR")
+test_that("GEModel is the only exported package binding", {
+  exported <- sort(getNamespaceExports("GEModelR"))
+  expect_identical(exported, "GEModel")
+
+  namespace <- readLines(testthat::test_path("..", "..", "NAMESPACE"))
+  expect_true(any(grepl("^export\\(GEModel\\)$", namespace)))
+  expect_false(any(grepl("exportPattern", namespace, fixed = TRUE)))
+
+  private_helpers <- c(
+    "processTablo", "sparse_compile_spec", "sparse_solve_model",
+    "solve_sparse_system", "sparse_exact_schur_solve"
+  )
+  expect_false(any(private_helpers %in% exported))
   expect_false(any(startsWith(exported, ".GEModelR_")))
-  expect_true(all(c("GEModel", "solve_sparse_system",
-                    "sparse_exact_schur_solve") %in% exported))
 })
