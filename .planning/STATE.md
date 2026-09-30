@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 04
 current_phase_name: Public API and Solver Boundaries
 status: executing
-stopped_at: Completed 04-02-PLAN.md
-last_updated: "2026-09-30T18:21:35.895Z"
+stopped_at: Completed 04-03-PLAN.md
+last_updated: "2026-09-30T18:44:24.562Z"
 last_activity: 2026-09-30
 last_activity_desc: Phase 04 execution started
-state_head: 085af902c259adb0ce879ab525517cf4924679db
+state_head: 5dd4e2d15df30d936b5b2fb0f2a8320a5cf22afb
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 44
-  completed_plans: 40
+  completed_plans: 41
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-08-31)
 ## Current Position
 
 Phase: 04 (Public API and Solver Boundaries) — EXECUTING
-Plan: 3 of 6
+Plan: 4 of 6
 Status: Ready to execute
 Last activity: 2026-09-30 — Phase 04 execution started
 
@@ -68,6 +68,7 @@ Progress: [█████████░] 86% (38/44 current milestone plans ex
 | Phase 03 P19 | 5h 13m | 3 tasks | 5 files |
 | Phase 04 P01 | 11min | 2 tasks | 2 files |
 | Phase 04 P02 | 20min | 2 tasks | 5 files |
+| Phase 04 P03 | 21min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -153,6 +154,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 04]: Keep adapter numerical evidence diagnostic; central candidate acceptance independently recomputes structure, finiteness, and true residual.
 - [Phase 04]: Keep caller-requested backend IDs separate from adapter implementation identities across all six sparse paths.
 - [Phase 04]: Fail closed during native preflight before system emission, and retain structural cache metadata while cleaning solve-scoped numerical resources.
+- [Phase 04]: Use GEModelR_validation_error with structured remediation and publish loader state only after setup succeeds.
+- [Phase 04]: Invalidate closure-dependent structure separately from shock-dependent pending solve state.
 
 ### Pending Todos
 
@@ -179,6 +182,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T18:21:35.816Z
-Stopped at: Completed 04-02-PLAN.md
+Last session: 2026-09-30T18:44:24.484Z
+Stopped at: Completed 04-03-PLAN.md
 Resume file: None
