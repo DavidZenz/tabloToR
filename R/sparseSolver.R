@@ -549,8 +549,8 @@ sparse_make_state = function(data) {
 .retry_postsim_from_record = function(model, diagnostics = FALSE) {
   record = model$.postsimRecord
   required = c(
-    "engine", "state_data", "index", "spec", "solution", "diagnostics",
-    "postsim", "output", "variables", "dimensions"
+    "engine", "state_data", "index", "solve_index", "spec", "solution",
+    "diagnostics", "postsim", "output", "variables", "dimensions"
   )
   if (!is.list(record) || !length(record) ||
       length(setdiff(required, names(record)))) {
@@ -578,7 +578,7 @@ sparse_make_state = function(data) {
         sparse_project_outputs(
           state, record$index, record$variables, record$dimensions,
           if (record$output == "compact") record$solution else NULL,
-          memory_budget = record$memory_budget
+          memory_budget = record$memory_budget, spec = record$spec
         )
       } else NULL
       compact_output = if (!is.null(selected)) selected else list()
@@ -2570,31 +2570,87 @@ sparse_validate_output_selectors = function(index, variables = NULL,
   )
 }
 
-sparse_subset_output = function(array, dimensions, set_names = NULL) {
+sparse_output_set_names = function(name, array, index, spec = NULL) {
+  variable_id = index$variable_by_name[[name]]
+  if (!is.null(variable_id)) return(index$variables[[variable_id]]$sets)
+  dim_names = dimnames(array)
+  if (!is.null(dim_names) && !is.null(names(dim_names))) {
+    return(names(dim_names))
+  }
+  updates = if (is.null(spec)) list() else Filter(
+    function(update) identical(update$target$name, name), spec$updates
+  )
+  if (length(updates)) {
+    return(vapply(updates[[1L]]$domains, function(domain) {
+      domain$set
+    }, character(1)))
+  }
+  character()
+}
+
+sparse_subset_output = function(array, dimensions, set_names = NULL,
+                                index = NULL) {
   if (is.null(dimensions) || !length(dimensions) || is.null(dim(array))) {
     return(array)
   }
   dim_names = dimnames(array)
-  selectors = vector("list", length(dim(array)))
+  array_dimensions = dim(array)
+  selectors = vector("list", length(array_dimensions))
+  output_dimnames = vector("list", length(array_dimensions))
   for (d in seq_along(selectors)) {
     set_name = if (!is.null(dim_names) && !is.null(names(dim_names))) {
       names(dim_names)[[d]]
     } else if (!is.null(set_names) && d <= length(set_names)) {
       set_names[[d]]
     } else NULL
-    selector = if (!is.null(set_name)) dimensions[[set_name]] else NULL
-    if (is.null(selector)) selector = TRUE
-    if (is.character(selector) && !is.null(dim_names[[d]])) {
-      selector = match(selector, dim_names[[d]])
+    selector = if (is.null(set_name)) NULL else dimensions[[set_name]]
+    source_labels = if (!is.null(dim_names) &&
+                        d <= length(dim_names) &&
+                        !is.null(dim_names[[d]])) {
+      dim_names[[d]]
+    } else if (!is.null(index) && !is.null(set_name) &&
+               !is.null(index$sets[[set_name]])) {
+      index$sets[[set_name]]$values
+    } else NULL
+    if (is.null(selector)) {
+      selectors[[d]] = TRUE
+      output_dimnames[d] = list(source_labels)
+    } else if (!is.null(source_labels)) {
+      positions = match(selector, source_labels)
+      if (anyNA(positions)) {
+        sparse_output_selector_error(
+          "dimensions", dimensions,
+          sprintf("labels for dimension '%s' are unavailable on the selected output array",
+                  set_name),
+          sprintf("choose labels from the selected array's '%s' dimension",
+                  set_name)
+        )
+      }
+      selectors[[d]] = positions
+      output_dimnames[d] = list(selector)
+    } else {
+      sparse_output_selector_error(
+        "dimensions", dimensions,
+        sprintf("dimension '%s' cannot be mapped to the selected output array",
+                set_name),
+        sprintf("select a named dimension present on the output array, such as list(%s = \"label\")",
+                set_name)
+      )
     }
-    selectors[[d]] = selector
   }
-  do.call("[", c(list(array), selectors, list(drop = FALSE)))
+  projected = do.call("[", c(list(array), selectors, list(drop = FALSE)))
+  if (any(vapply(output_dimnames, Negate(is.null), logical(1)))) {
+    if (length(set_names) == length(output_dimnames)) {
+      names(output_dimnames) = set_names
+    }
+    dimnames(projected) = output_dimnames
+  }
+  projected
 }
 
 sparse_project_outputs = function(state, index, variables = NULL,
                                   dimensions = NULL, solution = NULL,
-                                  memory_budget = NULL) {
+                                  memory_budget = NULL, spec = NULL) {
   validated = sparse_validate_output_selectors(
     index, variables, dimensions, memory_budget, state
   )
@@ -2603,14 +2659,11 @@ sparse_project_outputs = function(state, index, variables = NULL,
   data = sparse_state_data(state)
   result = list()
   for (name in variables) {
-    variable_id = index$variable_by_name[[name]]
-    variable_sets = if (!is.null(variable_id)) {
-      index$variables[[variable_id]]$sets
-    } else {
-      names(dimnames(data[[name]]))
-    }
+    variable_sets = sparse_output_set_names(
+      name, data[[name]], index, spec
+    )
     result[[name]] = sparse_subset_output(
-      data[[name]], dimensions, set_names = variable_sets
+      data[[name]], dimensions, set_names = variable_sets, index = index
     )
   }
   if (!is.null(solution)) result$solution = solution
@@ -2923,16 +2976,22 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   } else backend
   backend_impl = if (native_requested) "cpp" else "r"
   index = model$sparseIndex
-  if (is.null(index) || !length(index)) {
-    stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
-         call. = FALSE)
-  }
   committed_state = model$sparseState
   if (is.null(committed_state) || !is.environment(committed_state)) {
     state = sparse_make_state(model$data)
   } else state = sparse_make_state(sparse_state_data(committed_state))
   closure = model$closure
   if (is.null(closure)) closure = character()
+  index_is_invalid = is.null(index) || !length(index) ||
+    !setequal(index$closure_names, closure)
+  if (index_is_invalid && identical(model$loadedEngine, "sparse") &&
+      is.environment(committed_state) && length(model$sparseSpec)) {
+    index = sparse_build_index(model$sparseSpec, sparse_state_data(state))
+  }
+  if (is.null(index) || !length(index)) {
+    stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
+         call. = FALSE)
+  }
   index = sparse_rebuild_columns(index, closure)
   if (!isTRUE(index$row_layout_ready)) {
     index = sparse_build_row_layout(model$sparseSpec, index, state)
@@ -3112,7 +3171,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     structural_cache = if (is.environment(state)) {
       state$.solver_cache
     } else NULL,
-    index = index,
+    index = full_index,
+    solve_index = index,
     spec = model$sparseSpec,
     solution = solution,
     diagnostics = diagnostics_result,

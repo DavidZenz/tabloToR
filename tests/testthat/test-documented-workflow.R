@@ -347,10 +347,39 @@ test_that("WF-COMPACT-OUTPUT and WF-POSTSIM-OFF freeze compact structures", {
   expect_identical(dim(compact$compactOutput$stock), 1L)
   expect_identical(dimnames(compact$compactOutput$stock),
                    list(reg = "south"))
+  expect_equal(as.numeric(compact$compactOutput$stock), 203,
+               tolerance = 1e-12)
+  expect_false("reported" %in% names(compact$compactOutput))
   expect_identical(names(compact$compactOutput$solution), NULL)
   expect_identical(length(compact$compactOutput$solution), 3L)
   expect_true(length(compact$data) > 0L)
+  expect_false("variables" %in% names(compact$data))
+  expect_false("equations" %in% names(compact$data))
   expect_identical(compact$lastDiagnostics$post_simulation_retained, TRUE)
+
+  closure_changed = GEModel$new()
+  closure_changed$loadTablo(three_region_fixture_path())
+  closure_changed$setClosure("tax")
+  input_data = three_region_input_data()
+  input_data$q = three_region_shock_array(c(0, 0, 0))
+  closure_changed$loadData(input_data, engine = "sparse")
+  closure_changed$setClosure("q")
+  closure_changed$sparseIndex = list()
+  closure_changed$solveModel(
+    iter = 1, steps = 1, engine = "sparse", output = "compact",
+    variables = "stock", dimensions = list(reg = "south"),
+    reduction = "off"
+  )
+
+  expect_identical(closure_changed$sparseIndex$closure_names, "q")
+  q_id = closure_changed$sparseIndex$variable_by_name$q
+  expect_true(closure_changed$sparseIndex$variables[[q_id]]$exogenous)
+  expect_identical(dimnames(closure_changed$compactOutput$stock),
+                   list(reg = "south"))
+  expect_equal(as.numeric(closure_changed$compactOutput$stock), 200,
+               tolerance = 1e-12)
+  expect_identical(names(closure_changed$compactOutput),
+                   c("stock", "solution"))
 
   no_postsim = make_three_region_model()
   set_three_region_shocks(no_postsim, "preferred", c(1, 2, -1))
