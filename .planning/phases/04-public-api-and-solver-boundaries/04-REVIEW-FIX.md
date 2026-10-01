@@ -53,6 +53,8 @@ status: partial
 
 **Commit:** `6bfbb97`
 
+**Status:** fixed: requires human verification
+
 **Applied fix:** Closure names are validated against the compiled TABLO variables for sparse and legacy models. Sparse columns are rebuilt in a local replacement index before either model field is changed, so rejected closures preserve the full prior state. Regression coverage snapshots both engines after solving, including sparse retry state, and verifies a valid closure update still rebuilds the sparse index.
 
 ### WR-01: Compact-output selectors are silently ignored by legacy solves
@@ -91,13 +93,17 @@ status: partial
 
 ## Verification
 
-Iteration 2 focused verification ran in the isolated review-fix worktree. The combined `lifecycle-contract`, `documented-workflow`, `public-solver-contract`, and `sparse-core` groups passed with 746 assertions and no test failures, warnings, or skips. R parsing for both modified files and `git diff --check` also passed.
+Iteration 2 focused verification ran in the isolated review-fix worktree. The combined `lifecycle-contract`, `documented-workflow`, `public-solver-contract`, and `sparse-core` groups passed with 746 assertions and no test failures, warnings, or skips. R parsing for both modified files and `git diff --check` also passed. A post-fix code review covered 20 files and reported zero findings; CR-01–CR-05 and WR-01–WR-02 are closed.
 
-Focused tests and syntax checks ran in the isolated review-fix worktree. The combined focused run covered `compatibility-helpers`, `sparse-core`, `public-solver-contract`, `model-serialization`, `transactional-state`, and `api-documentation`. All passed except this known Phase 02 migration-source gate:
+The post-fix full source suite completed but exited nonzero on the separate Phase 02 identity-map drift: `package-mixed-case=416/328` (`package-upper-case=2/2`). Phase 02 CLI warnings and the existing `GEModel$generateSolution()` ReferenceClass field-assignment warning also appeared. No Phase 04 test failure was reported.
+
+The post-fix `R CMD check .` passed package installation, namespace, R-code, and documentation checks. Its test phase reported 19 failures, 2,364 passes, and 65 skips. Failures were in benchmark-correctness gates (4), installed benchmark execution (2; source-tree availability), provenance inventory (4), and release gates (9; stale or duplicate provenance keys). The check ended with 1 ERROR, 4 WARNINGs, and 4 NOTEs. Warnings covered generated object files/executables, nested check directories, and nonportable paths; notes included hidden files, the pending license declaration, LazyData without a data directory, and compiled-code findings.
+
+An earlier focused run covered `compatibility-helpers`, `sparse-core`, `public-solver-contract`, `model-serialization`, `transactional-state`, and `api-documentation`. It hit this known Phase 02 migration-source gate:
 
 `tests/testthat/test-model-serialization.R:147` — `Identity mapping row is stale or count drifted: package-mixed-case=416/328,package-upper-case=2/2`.
 
-The Phase 02 provenance/identity map was left untouched. No license metadata was changed. The full package test suite and `R CMD check` were not run.
+The Phase 02 provenance/identity map was left untouched. No license metadata was changed; its decision remains pending under `docs/provenance/LICENSE-DECISION.md`.
 
 ---
 
