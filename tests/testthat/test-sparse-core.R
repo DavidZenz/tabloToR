@@ -50,6 +50,24 @@ make_synthetic_model <- function() {
   model
 }
 
+make_loaded_synthetic_model <- function(engine = "sparse") {
+  fixture <- tempfile(fileext = ".tab")
+  writeLines(c(
+    "set reg (r1,r2);",
+    "variable (all,r,reg)(change) x(r);",
+    "variable (all,r,reg) a(r);",
+    "variable (all,r,reg) b(r);",
+    "equation eq (all,r,reg) x(r) = a(r) + sum(s,reg,b(s));"
+  ), fixture)
+  on.exit(unlink(fixture), add = TRUE)
+
+  model <- GEModel$new()
+  model$loadTablo(fixture)
+  model$setClosure(c("a", "b"))
+  model$loadData(list(), engine = engine)
+  model
+}
+
 test_that("unshocked exogenous values evaluate as implicit zero", {
   model <- make_synthetic_model()
   data <- sparse_state_data(model$sparseState)
@@ -276,7 +294,7 @@ test_that("SuiteSparse backend uses sparse LU without densifying", {
 })
 
 test_that("GEModel exposes sparse closure, shocks, memory, and compact output", {
-  model <- make_synthetic_model()
+  model <- make_loaded_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
 
   model$solveModel(
@@ -297,7 +315,7 @@ test_that("GEModel exposes sparse closure, shocks, memory, and compact output", 
   expect_gt(estimate$estimated_peak_bytes, 0)
   expect_false(estimate$dense_fallback)
 
-  compact <- make_synthetic_model()
+  compact <- make_loaded_synthetic_model()
   compact$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
   compact$solveModel(
     iter = 1,
@@ -353,7 +371,7 @@ test_that("closure changes rebuild endogenous columns and invalidate patterns", 
 })
 
 test_that("memory budgets fail during preflight", {
-  model <- make_synthetic_model()
+  model <- make_loaded_synthetic_model()
   model$setMemoryBudget(1)
   expect_error(
     model$solveModel(
@@ -452,7 +470,7 @@ test_that("sparse updates match legacy across iterations and post-simulation", {
 })
 
 test_that("sparse Euler steps stream without dense substep matrices", {
-  model <- make_synthetic_model()
+  model <- make_loaded_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
   model$solveModel(
     iter = 3,
@@ -473,7 +491,7 @@ test_that("sparse Euler steps stream without dense substep matrices", {
 
 test_that("SparseM remains a compatible sparse backend", {
   skip_if_not_installed("SparseM")
-  model <- make_synthetic_model()
+  model <- make_loaded_synthetic_model()
   model$setShocks(setNames(c(5, 1, 2), c("a[r1]", "b[r1]", "b[r2]")))
   model$solveModel(
     iter = 1,
