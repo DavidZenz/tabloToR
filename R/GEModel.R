@@ -530,7 +530,7 @@ GEModel = setRefClass(
         stop("file must be one non-empty path", call. = FALSE)
       }
       payload = .build_logical_state_payload(.self)
-      saveRDS(payload, file, version = 3L)
+      .serialization_atomic_save_rds(payload, file)
       invisible(.self)
     },
     loadState = function(file) {

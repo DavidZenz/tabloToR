@@ -447,6 +447,28 @@
   sparse_normalize_shocks(model$shocks)
 }
 
+.serialization_atomic_save_rds = function(object, file,
+                                         replace = file.rename) {
+  destination = path.expand(file)
+  directory = dirname(destination)
+  if (!dir.exists(directory)) {
+    stop("The state-file destination directory does not exist", call. = FALSE)
+  }
+  temporary = tempfile(
+    pattern = paste0(".", basename(destination), "-"),
+    tmpdir = directory
+  )
+  on.exit(unlink(temporary), add = TRUE)
+  saveRDS(object, temporary, version = 3L)
+  if (!isTRUE(replace(temporary, destination))) {
+    stop(
+      "Unable to atomically replace the saved state file; the previous state was preserved",
+      call. = FALSE
+    )
+  }
+  invisible(NULL)
+}
+
 .build_logical_state_payload = function(model) {
   if (!inherits(model, "GEModel")) {
     stop("model must be a GEModel reference object", call. = FALSE)

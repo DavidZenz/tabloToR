@@ -59,6 +59,38 @@ test_that("saveState writes exact current GEModelR package lineage", {
   )
 })
 
+test_that("failed state replacement preserves the previous checkpoint", {
+  model = make_three_region_model("sparse")
+  state_file = tempfile(fileext = ".rds")
+  on.exit(unlink(state_file), add = TRUE)
+  model$saveState(state_file)
+  prior_payload = readRDS(state_file)
+  prior_bytes = readBin(
+    state_file, what = "raw", n = file.info(state_file)$size
+  )
+
+  expect_error(
+    .serialization_atomic_save_rds(
+      list(replacement = TRUE), state_file,
+      replace = function(from, to) FALSE
+    ),
+    "previous state was preserved"
+  )
+
+  expect_identical(readRDS(state_file), prior_payload)
+  expect_identical(
+    readBin(state_file, what = "raw", n = file.info(state_file)$size),
+    prior_bytes
+  )
+  temporary_prefix = paste0(".", basename(state_file), "-")
+  directory_files = list.files(dirname(state_file), all.files = TRUE,
+                               no.. = TRUE)
+  expect_false(any(startsWith(directory_files, temporary_prefix)))
+
+  model$saveState(state_file)
+  expect_identical(readRDS(state_file), prior_payload)
+})
+
 test_that("unsupported package lineage fails before receiver mutation", {
   model = make_three_region_model("sparse")
   payload = .build_logical_state_payload(model)
