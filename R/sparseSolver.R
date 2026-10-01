@@ -2999,8 +2999,13 @@ sparse_subset_output = function(array, dimensions, set_names = NULL,
   }
   projected = do.call("[", c(list(array), selectors, list(drop = FALSE)))
   if (any(vapply(output_dimnames, Negate(is.null), logical(1)))) {
-    if (length(set_names) == length(output_dimnames)) {
-      names(output_dimnames) = set_names
+    output_names = set_names
+    if (is.null(output_names) && !is.null(dim_names)) {
+      output_names = names(dim_names)
+    }
+    if (!is.null(output_names) &&
+        length(output_names) == length(output_dimnames)) {
+      names(output_dimnames) = output_names
     }
     dimnames(projected) = output_dimnames
   }
