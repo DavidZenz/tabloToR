@@ -1077,12 +1077,31 @@ sparse_set_closure_state = function(model, exogenous_variables) {
   exogenous_variables = sub("\\[.*$", "", exogenous_variables)
   exogenous_variables = sub("\\(.*$", "", exogenous_variables)
   exogenous_variables = tolower(unique(exogenous_variables[nzchar(exogenous_variables)]))
-  model$closure = exogenous_variables
-  if (!is.null(model$sparseIndex) && length(model$sparseIndex)) {
-    model$sparseIndex = sparse_rebuild_columns(
-      model$sparseIndex, exogenous_variables
+  compiled_variables = model$sparseSpec$variable_names
+  if (is.null(compiled_variables)) {
+    compiled_variables = names(model$sparseIndex$variable_by_name)
+  }
+  compiled_variables = tolower(as.character(compiled_variables))
+  if (length(exogenous_variables) && !length(compiled_variables)) {
+    stop("Cannot validate closure without compiled TABLO variables",
+         call. = FALSE)
+  }
+  unknown = setdiff(exogenous_variables, compiled_variables)
+  if (length(unknown)) {
+    stop(sprintf("Unknown closure variable(s): %s",
+                 paste(unknown, collapse = ", ")), call. = FALSE)
+  }
+
+  replacement_index = model$sparseIndex
+  has_sparse_index = !is.null(replacement_index) && length(replacement_index)
+  if (has_sparse_index) {
+    replacement_index = sparse_rebuild_columns(
+      replacement_index, exogenous_variables
     )
   }
+
+  model$closure = exogenous_variables
+  if (has_sparse_index) model$sparseIndex = replacement_index
   invisible(model)
 }
 

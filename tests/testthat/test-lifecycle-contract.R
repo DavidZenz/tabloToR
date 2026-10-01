@@ -228,6 +228,64 @@ test_that("closure changes clear accepted outputs and dependent caches", {
   expect_identical(model$sparseState$.solver_cache, list())
 })
 
+test_that("invalid closure names preserve solved state for both engines", {
+  for (engine in c("sparse", "legacy")) {
+    model = make_three_region_model(engine = engine)
+    set_three_region_shocks(model, "preferred", c(1, 2, -1))
+
+    if (identical(engine, "sparse")) {
+      fail_retryable_postsim = function() {
+        failTransactionAt("post-update", env = environment())
+        expect_error(model$solveModel(
+          iter = 1, steps = 1, engine = engine, postsim = TRUE,
+          diagnostics = TRUE, output = "compact", variables = "stock",
+          reduction = "off"
+        ), "injected post-update failure")
+      }
+      model$solveModel(
+        iter = 1, steps = 1, engine = engine, postsim = TRUE,
+        diagnostics = TRUE, output = "compact", variables = "stock",
+        reduction = "off"
+      )
+      fail_retryable_postsim()
+      expect_true(length(model$.postsimRecord) > 0L)
+      expect_true(model$lastDiagnostics$retryable_postsim)
+      expect_true(length(model$compactOutput) > 0L)
+    } else {
+      model$solveModel(
+        iter = 1, steps = 1, engine = engine, postsim = FALSE,
+        diagnostics = TRUE, output = "full", reduction = "off"
+      )
+      expect_length(model$sparseIndex, 0L)
+    }
+
+    expect_true(length(model$solution) > 0L)
+    expect_true(length(model$lastDiagnostics) > 0L)
+    before = lifecycleModelSnapshot(model)
+
+    expect_error(model$setClosure("not_a_tablo_variable"),
+                 "Unknown closure variable")
+    expect_identical(lifecycleModelSnapshot(model), before)
+
+    model$setClosure("q")
+    expect_identical(model$closure, "q")
+    expect_identical(model$solution, numeric())
+    expect_identical(model$compactOutput, list())
+    expect_identical(model$.postsimRecord, list())
+    expect_identical(model$lastDiagnostics, list())
+    if (identical(engine, "sparse")) {
+      expect_identical(model$sparseIndex$closure_names, "q")
+      q_id = model$sparseIndex$variable_by_name$q
+      tax_id = model$sparseIndex$variable_by_name$tax
+      expect_true(model$sparseIndex$variables[[q_id]]$exogenous)
+      expect_false(model$sparseIndex$variables[[tax_id]]$exogenous)
+      expect_null(model$sparseIndex$pattern_cache)
+    } else {
+      expect_length(model$sparseIndex, 0L)
+    }
+  }
+})
+
 test_that("shock changes clear pending solve state but retain logical inputs", {
   model = make_three_region_model(engine = "sparse")
   model$variableValues = list(
