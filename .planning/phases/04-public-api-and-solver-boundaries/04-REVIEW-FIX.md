@@ -1,23 +1,24 @@
 ---
 phase: 04-public-api-and-solver-boundaries
-fixed_at: 2026-10-01T07:13:18Z
+fixed_at: 2026-10-01T07:44:41Z
 review_path: .planning/phases/04-public-api-and-solver-boundaries/04-REVIEW.md
-iteration: 1
-findings_in_scope: 7
-fixed: 6
+iteration: 2
+findings_in_scope: 8
+fixed: 7
 skipped: 1
 status: partial
 ---
 
 # Phase 04: Code Review Fix Report
 
-**Fixed at:** 2026-10-01T07:13:18Z  
+**Fixed at:** 2026-10-01T07:44:41Z
+
 **Source review:** `.planning/phases/04-public-api-and-solver-boundaries/04-REVIEW.md`  
-**Iteration:** 1
+**Iteration:** 2
 
 **Summary:**
-- Findings in scope: 7
-- Fixed: 6
+- Findings in scope: 8
+- Fixed: 7
 - Skipped: 1
 
 ## Fixed Issues
@@ -45,6 +46,14 @@ status: partial
 **Files modified:** `R/GEModel.R`, `R/modelSerialization.R`, `tests/testthat/test-model-serialization.R`  
 **Commit:** `88fcc12`  
 **Applied fix:** State is saved to a temporary file in the target directory and replaces the existing file only after a successful write. The new failed-replacement test confirmed that the prior checkpoint bytes and payload remain intact and that temporary files are removed. This test passed; the same test file still has the separate Phase 02 identity-map failure recorded under verification below.
+
+### CR-05: Invalid closure input partially mutates the model
+
+**Files modified:** `R/sparseSolver.R`, `tests/testthat/test-lifecycle-contract.R`
+
+**Commit:** `6bfbb97`
+
+**Applied fix:** Closure names are validated against the compiled TABLO variables for sparse and legacy models. Sparse columns are rebuilt in a local replacement index before either model field is changed, so rejected closures preserve the full prior state. Regression coverage snapshots both engines after solving, including sparse retry state, and verifies a valid closure update still rebuilds the sparse index.
 
 ### WR-01: Compact-output selectors are silently ignored by legacy solves
 
@@ -82,14 +91,17 @@ status: partial
 
 ## Verification
 
+Iteration 2 focused verification ran in the isolated review-fix worktree. The combined `lifecycle-contract`, `documented-workflow`, `public-solver-contract`, and `sparse-core` groups passed with 746 assertions and no test failures, warnings, or skips. R parsing for both modified files and `git diff --check` also passed.
+
 Focused tests and syntax checks ran in the isolated review-fix worktree. The combined focused run covered `compatibility-helpers`, `sparse-core`, `public-solver-contract`, `model-serialization`, `transactional-state`, and `api-documentation`. All passed except this known Phase 02 migration-source gate:
 
 `tests/testthat/test-model-serialization.R:147` — `Identity mapping row is stale or count drifted: package-mixed-case=416/328,package-upper-case=2/2`.
 
-The Phase 02 provenance/identity map was left untouched. The full package test suite and `R CMD check` were not run.
+The Phase 02 provenance/identity map was left untouched. No license metadata was changed. The full package test suite and `R CMD check` were not run.
 
 ---
 
-_Fixed: 2026-10-01T07:13:18Z_  
+_Fixed: 2026-10-01T07:44:41Z_
+
 _Fixer: the agent (gsd-code-fixer)_  
-_Iteration: 1_
+_Iteration: 2_
