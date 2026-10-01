@@ -1,15 +1,15 @@
 # Phase 05: Portable Native Build and CI - Pattern Map
 
 **Mapped:** 2026-10-01  
-**Files analyzed:** 16 target files  
-**Analogs found:** 15 / 16
+**Files analyzed:** 18 target files
+**Analogs found:** 15 / 18
 
 ## File Classification
 
-| New/Modified File | Role | Data Flow | Closest Analog | Match Quality |
+| Target File | Role | Data Flow | Closest Analog | Match Quality |
 |-------------------|------|-----------|----------------|---------------|
-| `.github/workflows/R-CMD-check.yaml` | config | build-time | None | none |
-| `.Rbuildignore` | config | build-time | `.Rbuildignore` | exact |
+| `.github/workflows/native-ci.yaml` | config | build-time | None | none |
+| `.Rbuildignore` (existing; unchanged) | config | build-time | `.Rbuildignore` | exact |
 | `DESCRIPTION` | config | build-time | `DESCRIPTION` | exact |
 | `README.md` | utility (package documentation) | transform | `R/apiDocumentation.R` | role-match |
 | `R/sparseElimination.R` | utility (native bridge) | transform | `R/RcppExports.R` | role-match |
@@ -24,12 +24,14 @@
 | `tests/testthat/test-sparse-core.R` | test | transform | same file | exact (harness only) |
 | `tests/testthat/test-api-documentation.R` | test | transform | same file | exact |
 | `tests/testthat/test-native-portability.R` | test | file-I/O | `tests/testthat/test-installed-benchmark-execution.R` | role-match |
+| `tools/ci/install-matrix-source.R` | utility (CI support) | build-time | None | none |
+| `tools/ci/verify-matrix-floor-evidence.R` | utility (CI evidence validation) | transform | None | none |
 
 `DESCRIPTION` is implied by D-08 through D-10: it currently imports Matrix without a minimum version. `README.md` and `test-sparse-core.R` are also implied by D-13 and the existing documented SuiteSparse solve path/test. The new native portability test is proposed in RESEARCH.md.
 
 ## Pattern Assignments
 
-### `.github/workflows/R-CMD-check.yaml` (config, build-time)
+### `.github/workflows/native-ci.yaml` (config, build-time)
 
 **Analog:** None. No `.github/workflows/` directory or existing workflow file was found.
 
@@ -38,6 +40,8 @@ Define the supported rows explicitly. Each row should identify OS, R, Matrix end
 ### `.Rbuildignore` (config, build-time)
 
 **Analog:** `.Rbuildignore`
+
+**Status:** Existing file; no Phase 05 modification is planned. Its current anchored patterns already exclude `.planning`, so the new planning evidence remains outside package source builds.
 
 **Archive exclusion pattern** (lines 1-7):
 
@@ -51,7 +55,7 @@ Define the supported rows explicitly. Each row should identify OS, R, Matrix end
 ^rcpp-solver-acceleration-plan\.md$
 ```
 
-If the source archive must exclude workflow metadata, add an exclusion here using the same anchored regular-expression style. The current file does not exclude `.github`.
+No Phase 05 task changes this file. The existing `.planning` exclusion is retained; whether workflow metadata needs an additional package-build exclusion is not treated as an existing modification in this pattern map.
 
 ### `DESCRIPTION` (config, build-time)
 
@@ -362,7 +366,9 @@ Keep dependency declarations in `Imports`, user-facing backend statements in rox
 
 | File | Role | Data Flow | Reason |
 |------|------|-----------|--------|
-| `.github/workflows/R-CMD-check.yaml` | config | build-time | No existing GitHub Actions workflow or `.github/workflows/` directory exists. Use the matrix and installed-test requirements in `05-RESEARCH.md`. |
+| `.github/workflows/native-ci.yaml` | config | build-time | No existing GitHub Actions workflow or `.github/workflows/` directory exists. Use the matrix and installed-test requirements in `05-RESEARCH.md`. |
+| `tools/ci/install-matrix-source.R` | utility (CI support) | build-time | No existing exact-source dependency installer exists; keep the workflow-specific source-install contract in this focused helper. |
+| `tools/ci/verify-matrix-floor-evidence.R` | utility (CI evidence validation) | transform | No existing CI artifact validator exists; this helper checks the five oldrel-1 floor rows before package metadata changes. |
 
 ## Metadata
 
