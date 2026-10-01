@@ -1,6 +1,6 @@
 ---
 phase: 04-public-api-and-solver-boundaries
-reviewed: 2026-10-01T07:33:22Z
+reviewed: 2026-10-01T07:48:38Z
 depth: standard
 files_reviewed: 20
 files_reviewed_list:
@@ -25,37 +25,28 @@ files_reviewed_list:
   - tests/testthat/test-sparse-core.R
   - tests/testthat/test-transactional-state.R
 findings:
-  critical: 1
+  critical: 0
   warning: 0
   info: 0
-  total: 1
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 04: Code Review Report
 
-**Reviewed:** 2026-10-01T07:33:22Z
+**Reviewed:** 2026-10-01T07:48:38Z
 **Depth:** standard
 **Files Reviewed:** 20
-**Status:** issues_found
+**Status:** clean
 
 ## Narrative Findings (AI reviewer)
 
-The previous shock-label injection, residual-overflow acceptance, duplicate-step extrapolation, checkpoint replacement, legacy output-selector, and solve-flag findings were rechecked in the live code. Their reported paths now fail closed or preserve the prior checkpoint. `DESCRIPTION` retains the pending license placeholder required by `docs/provenance/LICENSE-DECISION.md`; it is not reported as a new finding. The sparse-core fixture changes exercise the public load lifecycle.
+The earlier findings CR-01–CR-04 and WR-01–WR-02 were rechecked and are closed. Commit `6bfbb97` validates closure names and builds the replacement sparse index before publishing closure state, closing CR-05; its regression covers invalid and valid closure changes for both engines. No new bugs or quality defects were identified in the 20-file scope. The pending license placeholder remains consistent with `docs/provenance/LICENSE-DECISION.md` and is not reported as a finding. Tests were not run as instructed.
 
-### Critical Issues
-
-#### CR-05: Invalid closure input partially mutates the model
-
-**Severity:** BLOCKER  
-**File:** `R/sparseSolver.R:1080-1084` (called by `R/GEModel.R:461-466`)
-
-**Issue:** `sparse_set_closure_state()` assigns the normalized input to `model$closure` before calling `sparse_rebuild_columns()`. The latter rejects closure names absent from the compiled index. When a caller supplies an unknown variable, the setter errors after changing `closure`; `GEModel$setClosure()` therefore never reaches the lines that clear `solution`, `compactOutput`, retry state, and diagnostics. The model is left with a new invalid closure, the old index, and stale accepted output.
-
-**Fix:** Validate closure names against the compiled TABLO variables and build the replacement index in local variables before mutating model fields. Publish the closure and index only after validation and rebuilding succeed, so a rejected call preserves the entire prior model state. Apply the same name validation when the legacy engine has no sparse index.
+All reviewed files meet the review criteria. No issues remain.
 
 ---
 
-_Reviewed: 2026-10-01T07:33:22Z_
+_Reviewed: 2026-10-01T07:48:38Z_
 _Reviewer: the agent (gsd-code-reviewer)_
 _Depth: standard_
