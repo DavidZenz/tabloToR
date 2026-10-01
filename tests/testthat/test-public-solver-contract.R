@@ -112,6 +112,39 @@ test_that("legacy shock labels resolve declared positions without evaluation", {
   expect_length(model$explicitShocks$labels, 0L)
 })
 
+test_that("true residual metrics remain finite at large magnitudes", {
+  coefficient_matrix <- Matrix::sparseMatrix(
+    i = 1:2, j = 1:2, x = c(1, 1), dims = c(2L, 2L)
+  )
+  solution <- c(2e200, 0)
+  rhs <- c(1e200, 0)
+
+  metrics <- sparse_true_residual(coefficient_matrix, solution, rhs)
+  expect_true(all(is.finite(unlist(metrics))))
+  expect_equal(metrics$relative_l2, 1)
+  expect_error(
+    .sparse_accept_candidate(list(
+      backend = "Matrix",
+      solution = solution,
+      coefficient_matrix = coefficient_matrix,
+      rhs = rhs
+    )),
+    "true residual"
+  )
+
+  overflowing_product <- Matrix::sparseMatrix(
+    i = 1L, j = 1L, x = 1e308, dims = c(1L, 1L)
+  )
+  expect_error(
+    sparse_true_residual(overflowing_product, 2, 0),
+    "non-finite A"
+  )
+  expect_error(
+    sparse_true_residual(overflowing_product, 1, -1e308),
+    "non-finite residual"
+  )
+})
+
 test_that("diagnostic details are opt-in for sparse and legacy solves", {
   sparse <- make_synthetic_model()
   sparse$solveModel(

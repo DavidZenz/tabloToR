@@ -2232,11 +2232,22 @@ sparse_true_residual = function(A, solution, rhs) {
     stop("Residual check received non-finite values", call. = FALSE)
   }
   lhs = as.numeric(A %*% solution)
+  if (any(!is.finite(lhs))) {
+    stop("Residual check produced non-finite A %*% solution values",
+         call. = FALSE)
+  }
   residual = lhs - rhs
-  residual_norm = if (length(residual)) {
-    sqrt(sum(residual * residual))
-  } else 0
-  rhs_norm = if (length(rhs)) sqrt(sum(rhs * rhs)) else 0
+  if (any(!is.finite(residual))) {
+    stop("Residual check produced non-finite residual values", call. = FALSE)
+  }
+  scaled_l2 = function(values) {
+    if (!length(values)) return(0)
+    scale = max(abs(values))
+    if (scale == 0) return(0)
+    scale * sqrt(sum((values / scale) * (values / scale)))
+  }
+  residual_norm = scaled_l2(residual)
+  rhs_norm = scaled_l2(rhs)
   result = list(
     infinity_norm = if (length(residual)) max(abs(residual)) else 0,
     l2_norm = residual_norm,
@@ -2312,6 +2323,14 @@ sparse_true_residual = function(A, solution, rhs) {
   true_residual = sparse_true_residual(
     coefficient_matrix, candidate$solution, candidate$rhs
   )
+  residual_metrics = unlist(true_residual, use.names = FALSE)
+  if (length(residual_metrics) != 3L ||
+      any(!is.finite(residual_metrics))) {
+    stop(paste(
+      "Sparse candidate true residual metrics are non-finite;",
+      "the solution was not applied."
+    ), call. = FALSE)
+  }
   if (true_residual$relative_l2 > residual_tolerance) {
     stop(sprintf(
       paste(
