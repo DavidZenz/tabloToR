@@ -61,6 +61,37 @@
   )
 }
 
+.gemodelr_validate_solve_counts = function(iter, steps) {
+  maximum = .Machine$integer.max
+  valid_iter = is.numeric(iter) && length(iter) == 1L &&
+    !is.na(iter) && is.finite(iter) && iter >= 1 && iter <= maximum &&
+    iter == floor(iter)
+  if (!valid_iter) {
+    .gemodelr_abort_validation(
+      sprintf("iter must be one positive integer no greater than %s", maximum),
+      "solveModel", "solveModel",
+      "Pass iter as one finite positive integer",
+      fields = list(argument = "iter", requested_value = iter)
+    )
+  }
+  valid_steps = is.numeric(steps) && length(steps) >= 1L &&
+    length(steps) <= 3L && all(!is.na(steps)) && all(is.finite(steps)) &&
+    all(steps >= 1) && all(steps <= maximum) &&
+    all(steps == floor(steps)) && !anyDuplicated(steps)
+  if (!valid_steps) {
+    .gemodelr_abort_validation(
+      paste(
+        "steps must contain one to three distinct positive integers",
+        sprintf("no greater than %s", maximum)
+      ),
+      "solveModel", "solveModel",
+      "Pass one, two, or three distinct finite positive integer step counts",
+      fields = list(argument = "steps", requested_value = steps)
+    )
+  }
+  invisible(NULL)
+}
+
 .gemodelr_require_tablo = function(model, operation) {
   if (is.function(model$skeletonGenerator) &&
       is.function(model$generateVariables) &&
@@ -632,6 +663,7 @@ GEModel = setRefClass(
         engine, c("legacy", "sparse"), "solveModel", "engine",
         "Call solveModel() with engine = 'legacy' or engine = 'sparse'"
       )
+      .gemodelr_validate_solve_counts(iter, steps)
       .gemodelr_require_runtime(.self, "solveModel", engine)
       if (engine == "sparse") {
         return(sparse_solve_model(
@@ -847,6 +879,12 @@ GEModel = setRefClass(
           stepSolution[[step]][solutionPctChangeVariables] = ((apply(
             subStepMatrix / 100 + 1, MARGIN = 1, FUN = prod
           ) - 1) * 100)[solutionPctChangeVariables]
+          if (any(!is.finite(stepSolution[[step]]))) {
+            stop(
+              "Legacy solver produced a non-finite accumulated step solution",
+              call. = FALSE
+            )
+          }
           #browser()
           # If any step <-100 we have to treat it as a change variable (like GEMPACK)
           # sols = apply(do.call(cbind,subStepSolution)<=-100,MARGIN = 1, any)
@@ -876,6 +914,13 @@ GEModel = setRefClass(
           # We have three sets of steps and so we can extrapolate and provide accuracy
           iterationSolution[[it]] = colSums(t(do.call(cbind,stepSolution)) * (steps[c(2,3)] * c(1,-1))) / (steps[2]-steps[3])
 
+        }
+
+        if (any(!is.finite(iterationSolution[[it]]))) {
+          stop(
+            "Legacy extrapolation produced a non-finite candidate solution",
+            call. = FALSE
+          )
         }
 
         # tictoc::tic()
@@ -932,6 +977,13 @@ GEModel = setRefClass(
         solution[solutionPctChangeVariables] <<- ((apply(
           1 + iterationMatrix / 100, MARGIN = 1, FUN = prod
         ) - 1) * 100)[solutionPctChangeVariables]
+      }
+
+      if (any(!is.finite(solution))) {
+        stop(
+          "Legacy accumulated solution is non-finite; model state was not committed",
+          call. = FALSE
+        )
       }
 
       #solution[solutionPctChangeVariables]<<- (exp(rowSums(log(1+do.call(cbind,iterationSolution)[solutionPctChangeVariables,, drop = FALSE]/100)))-1)*100

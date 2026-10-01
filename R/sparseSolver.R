@@ -2683,6 +2683,9 @@ sparse_change_mask = function(index) {
 }
 
 sparse_add_solution = function(accumulator, current, change_mask) {
+  if (any(!is.finite(current))) {
+    stop("Sparse step solution contains non-finite values", call. = FALSE)
+  }
   if (is.null(accumulator)) return(current)
   changed = change_mask
   regular = !change_mask
@@ -2691,6 +2694,10 @@ sparse_add_solution = function(accumulator, current, change_mask) {
   if (any(regular)) accumulator[regular] =
     ((1 + accumulator[regular] / 100) *
        (1 + current[regular] / 100) - 1) * 100
+  if (any(!is.finite(accumulator))) {
+    stop("Sparse accumulated solution contains non-finite values",
+         call. = FALSE)
+  }
   accumulator
 }
 
@@ -2714,19 +2721,31 @@ sparse_advance_applied_shocks = function(applied, substep) {
 }
 
 sparse_extrapolate_steps = function(step_results, steps) {
-  if (length(step_results) == 1L) return(step_results[[1L]])
-  if (length(step_results) == 2L) {
-    return((step_results[[1L]] * steps[[1L]] -
-              step_results[[2L]] * steps[[2L]]) /
-             (steps[[1L]] - steps[[2L]]))
+  if (!length(step_results) || length(step_results) > 3L) {
+    stop("Sparse solver supports one, two, or three Euler step counts",
+         call. = FALSE)
   }
-  if (length(step_results) == 3L) {
-    return((step_results[[2L]] * steps[[2L]] -
-              step_results[[3L]] * steps[[3L]]) /
-             (steps[[2L]] - steps[[3L]]))
+  if (any(vapply(step_results, function(result) {
+    any(!is.finite(result))
+  }, logical(1)))) {
+    stop("Sparse Euler step result contains non-finite values", call. = FALSE)
   }
-  stop("Sparse solver supports one, two, or three Euler step counts",
-       call. = FALSE)
+  result = if (length(step_results) == 1L) {
+    step_results[[1L]]
+  } else if (length(step_results) == 2L) {
+    (step_results[[1L]] * steps[[1L]] -
+       step_results[[2L]] * steps[[2L]]) /
+      (steps[[1L]] - steps[[2L]])
+  } else {
+    (step_results[[2L]] * steps[[2L]] -
+       step_results[[3L]] * steps[[3L]]) /
+      (steps[[2L]] - steps[[3L]])
+  }
+  if (any(!is.finite(result))) {
+    stop("Sparse extrapolation produced a non-finite candidate solution",
+         call. = FALSE)
+  }
+  result
 }
 
 sparse_output_selector_error = function(argument, selector, cause, action) {

@@ -145,6 +145,47 @@ test_that("true residual metrics remain finite at large magnitudes", {
   )
 })
 
+test_that("both engines reject invalid iteration and Euler step counts", {
+  invalid_counts <- list(
+    list(argument = "iter", value = list(iter = 0)),
+    list(argument = "iter", value = list(iter = 1.5)),
+    list(argument = "iter", value = list(iter = NA_real_)),
+    list(argument = "steps", value = list(steps = c(1, 1))),
+    list(argument = "steps", value = list(steps = c(1, 2, 2))),
+    list(argument = "steps", value = list(steps = c(1, 2, 3, 4))),
+    list(argument = "steps", value = list(steps = c(0))),
+    list(argument = "steps", value = list(steps = c(1, 1.5)))
+  )
+
+  for (engine in c("legacy", "sparse")) {
+    model <- make_three_region_model(engine = engine)
+    for (invalid in invalid_counts) {
+      arguments <- list(
+        iter = 1, steps = 1, engine = engine, postsim = FALSE
+      )
+      arguments[names(invalid$value)] <- invalid$value
+      error <- tryCatch(
+        do.call(model$solveModel, arguments),
+        error = identity
+      )
+      expect_identical(class(error)[[1L]], "GEModelR_validation_error")
+      expect_identical(error$argument, invalid$argument)
+      expect_identical(error$failure_phase, "validation")
+    }
+  }
+
+  expect_error(
+    sparse_extrapolate_steps(
+      list(c(x = 1e308), c(x = -1e308)), c(1, 2)
+    ),
+    "non-finite candidate"
+  )
+  expect_error(
+    sparse_add_solution(1e308, 1e308, TRUE),
+    "accumulated solution contains non-finite"
+  )
+})
+
 test_that("diagnostic details are opt-in for sparse and legacy solves", {
   sparse <- make_synthetic_model()
   sparse$solveModel(
