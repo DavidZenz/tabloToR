@@ -665,6 +665,40 @@ GEModel = setRefClass(
       )
       .gemodelr_validate_solve_counts(iter, steps)
       .gemodelr_require_runtime(.self, "solveModel", engine)
+      if (engine == "legacy") {
+        legacy_output = if (identical(output, c("full", "compact"))) {
+          "full"
+        } else {
+          .gemodelr_match_arg(
+            output, c("full", "compact"), "solveModel", "output",
+            "Use output = 'full' or the sparse engine's compact output mode"
+          )
+        }
+        if (!identical(legacy_output, "full") ||
+            !is.null(variables) || !is.null(dimensions)) {
+          argument = if (!identical(legacy_output, "full")) {
+            "output"
+          } else if (!is.null(variables)) {
+            "variables"
+          } else {
+            "dimensions"
+          }
+          .gemodelr_abort_validation(
+            paste(
+              "The legacy engine supports only output = 'full' and",
+              "does not support variable or dimension selectors"
+            ),
+            "solveModel", "solveModel",
+            "Use engine = 'sparse' for compact output or selectors",
+            fields = list(
+              argument = argument,
+              requested_output = legacy_output,
+              variables = variables,
+              dimensions = dimensions
+            )
+          )
+        }
+      }
       if (engine == "sparse") {
         return(sparse_solve_model(
           .self, iter = iter, steps = steps, postsim = postsim,

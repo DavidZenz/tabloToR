@@ -72,6 +72,18 @@ test_that("generated help covers the deliberate GEModel API", {
     )
   }
   expect_match(help_text, "Integer from 0 through 3", fixed = TRUE)
+  expect_match(
+    help_text,
+    "Compact output and variable/dimension selectors are supported",
+    fixed = TRUE
+  )
+  expect_match(help_text, "only by the sparse engine", fixed = TRUE)
+  expect_match(
+    help_text,
+    "the legacy engine accepts full output and no",
+    fixed = TRUE
+  )
+  expect_match(help_text, "selectors", fixed = TRUE)
   for (ordering in c("cholmod", "amd", "metis", "best", "natural", "none", "given")) {
     expect_true(grepl(ordering, help_text, fixed = TRUE))
   }

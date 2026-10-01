@@ -67,7 +67,9 @@
 #'
 #' @section Output modes:
 #' \code{solveModel(output = "full")} materializes the compatibility output
-#' structure. \code{output = "compact"} returns a compact projection; use
+#' structure. Compact output and variable/dimension selectors are supported
+#' only by the sparse engine; the legacy engine accepts full output and no
+#' selectors. \code{output = "compact"} returns a compact projection; use
 #' \code{variables} and \code{dimensions} to select the requested values and
 #' labels. The defaults are \code{output = c("full", "compact")},
 #' \code{variables = NULL}, and \code{dimensions = NULL}.

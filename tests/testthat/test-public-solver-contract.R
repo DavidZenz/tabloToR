@@ -186,6 +186,30 @@ test_that("both engines reject invalid iteration and Euler step counts", {
   )
 })
 
+test_that("legacy solves reject compact and selective output requests", {
+  model <- make_three_region_model(engine = "legacy")
+  requests <- list(
+    list(argument = "output", values = list(output = "compact")),
+    list(argument = "variables", values = list(variables = "q")),
+    list(argument = "dimensions", values = list(
+      dimensions = list(region = "north")
+    ))
+  )
+
+  for (request in requests) {
+    arguments <- list(
+      iter = 1, steps = 1, engine = "legacy", postsim = FALSE
+    )
+    arguments[names(request$values)] <- request$values
+    error <- tryCatch(
+      do.call(model$solveModel, arguments),
+      error = identity
+    )
+    expect_identical(class(error)[[1L]], "GEModelR_validation_error")
+    expect_identical(error$argument, request$argument)
+  }
+})
+
 test_that("diagnostic details are opt-in for sparse and legacy solves", {
   sparse <- make_synthetic_model()
   sparse$solveModel(
