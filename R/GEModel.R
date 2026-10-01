@@ -92,6 +92,27 @@
   invisible(NULL)
 }
 
+.gemodelr_validate_solve_flags = function(postsim, diagnostics) {
+  flags = list(postsim = postsim, diagnostics = diagnostics)
+  for (argument in names(flags)) {
+    value = flags[[argument]]
+    valid = is.logical(value) && length(value) == 1L && !is.na(value)
+    if (!valid) {
+      .gemodelr_abort_validation(
+        sprintf("%s must be one non-missing logical value", argument),
+        "solveModel", "solveModel",
+        sprintf("Pass %s = TRUE or %s = FALSE", argument, argument),
+        fields = list(
+          argument = argument,
+          requested_value = value,
+          allowed_values = c(TRUE, FALSE)
+        )
+      )
+    }
+  }
+  invisible(NULL)
+}
+
 .gemodelr_require_tablo = function(model, operation) {
   if (is.function(model$skeletonGenerator) &&
       is.function(model$generateVariables) &&
@@ -664,6 +685,7 @@ GEModel = setRefClass(
         "Call solveModel() with engine = 'legacy' or engine = 'sparse'"
       )
       .gemodelr_validate_solve_counts(iter, steps)
+      .gemodelr_validate_solve_flags(postsim, diagnostics)
       .gemodelr_require_runtime(.self, "solveModel", engine)
       if (engine == "legacy") {
         legacy_output = if (identical(output, c("full", "compact"))) {

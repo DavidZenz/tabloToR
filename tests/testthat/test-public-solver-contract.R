@@ -186,6 +186,37 @@ test_that("both engines reject invalid iteration and Euler step counts", {
   )
 })
 
+test_that("both engines reject malformed solve flags", {
+  invalid_flags <- list(
+    list(argument = "postsim", value = 1L),
+    list(argument = "postsim", value = NA),
+    list(argument = "postsim", value = "yes"),
+    list(argument = "postsim", value = c(TRUE, FALSE)),
+    list(argument = "diagnostics", value = 1L),
+    list(argument = "diagnostics", value = NA),
+    list(argument = "diagnostics", value = "yes"),
+    list(argument = "diagnostics", value = c(TRUE, FALSE))
+  )
+
+  for (engine in c("legacy", "sparse")) {
+    model <- make_three_region_model(engine = engine)
+    for (invalid in invalid_flags) {
+      arguments <- list(
+        iter = 1, steps = 1, engine = engine,
+        postsim = FALSE, diagnostics = FALSE
+      )
+      arguments[invalid$argument] <- list(invalid$value)
+      error <- tryCatch(
+        do.call(model$solveModel, arguments),
+        error = identity
+      )
+      expect_identical(class(error)[[1L]], "GEModelR_validation_error")
+      expect_identical(error$argument, invalid$argument)
+      expect_identical(error$failure_phase, "validation")
+    }
+  }
+})
+
 test_that("legacy solves reject compact and selective output requests", {
   model <- make_three_region_model(engine = "legacy")
   requests <- list(
