@@ -1,50 +1,11 @@
 # Exact structured elimination for large GTAP-like TABLO systems.
 
-sparse_elimination_cpp = local({
-  compiled = NULL
-  function() {
-    if (!is.null(compiled)) return(compiled)
-    if (is.loaded(
-      "_tabloToR_tabloToR_eliminate_blocks", PACKAGE = "tabloToR"
-    )) {
-      eliminate = get0(
-        "tabloToR_eliminate_blocks", envir = environment(),
-        mode = "function", inherits = TRUE
-      )
-      reconstruct = get0(
-        "tabloToR_reconstruct_blocks", envir = environment(),
-        mode = "function", inherits = TRUE
-      )
-      if (is.function(eliminate) && is.function(reconstruct)) {
-        compiled <<- list(eliminate = eliminate, reconstruct = reconstruct)
-        return(compiled)
-      }
-    }
-    if (!requireNamespace("Rcpp", quietly = TRUE)) {
-      stop(
-        "The structured sparse backend requires the optional Rcpp package",
-        call. = FALSE
-      )
-    }
-    path = system.file(
-      "cpp/sparse-elimination.cpp", package = "tabloToR"
-    )
-    if (!nzchar(path)) path = file.path(
-      "inst", "cpp", "sparse-elimination.cpp"
-    )
-    if (!file.exists(path)) {
-      stop("The structured sparse elimination helper is unavailable",
-           call. = FALSE)
-    }
-    environment = new.env(parent = parent.frame())
-    Rcpp::sourceCpp(file = path, env = environment, showOutput = FALSE)
-    compiled <<- list(
-      eliminate = get("tabloToR_eliminate_blocks", environment),
-      reconstruct = get("tabloToR_reconstruct_blocks", environment)
-    )
-    compiled
-  }
-})
+sparse_elimination_cpp = function() {
+  list(
+    eliminate = GEModelR_eliminate_blocks,
+    reconstruct = GEModelR_reconstruct_blocks
+  )
+}
 
 sparse_elimination_sequence = function(domains, index, selected_sets, n,
                                        variable = FALSE) {
