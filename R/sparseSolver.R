@@ -922,10 +922,89 @@ sparse_process_tablo = function(tabloPath) {
   )
 }
 
+.legacy_label_key = function(labels) {
+  gsub("[\\\"'[:space:]]", "", as.character(labels))
+}
+
+legacy_resolve_model_labels = function(data, labels, role = "Model") {
+  if (!is.list(data) || is.null(data$variables) ||
+      !length(data$variables)) {
+    stop(sprintf("%s labels cannot be resolved before model data is loaded",
+                 role), call. = FALSE)
+  }
+  labels = as.character(labels)
+  references = lapply(labels, sparse_parse_label)
+  declared_labels = as.character(data$variables)
+  global_positions = match(
+    .legacy_label_key(labels), .legacy_label_key(declared_labels)
+  )
+  if (anyNA(global_positions)) {
+    invalid = labels[which(is.na(global_positions))[[1L]]]
+    stop(sprintf(
+      "%s label does not resolve to a declared variable/index: %s",
+      role, invalid
+    ), call. = FALSE)
+  }
+  declared_names = tolower(sub("\\[.*$", "", declared_labels))
+  variable_names = vapply(references, `[[`, character(1), "name")
+  if (any(variable_names != declared_names[global_positions])) {
+    invalid = labels[which(variable_names !=
+                             declared_names[global_positions])[[1L]]]
+    stop(sprintf(
+      "%s label does not resolve to its declared variable: %s",
+      role, invalid
+    ), call. = FALSE)
+  }
+  local_positions = integer(length(labels))
+  for (i in seq_along(labels)) {
+    within_variable = which(declared_names == variable_names[[i]])
+    local_positions[[i]] = match(global_positions[[i]], within_variable)
+    values = data[[variable_names[[i]]]]
+    if (is.na(local_positions[[i]]) ||
+        is.null(values) || local_positions[[i]] > length(values)) {
+      stop(sprintf("%s label has no matching data position: %s",
+                   role, labels[[i]]), call. = FALSE)
+    }
+  }
+  list(
+    labels = labels,
+    references = references,
+    variable_names = variable_names,
+    global_positions = as.integer(global_positions),
+    local_positions = as.integer(local_positions)
+  )
+}
+
+legacy_apply_labeled_values = function(data, values) {
+  if (!length(values)) return(data)
+  labels = names(values)
+  if (is.null(labels) && length(dim(values)) == 2L && dim(values)[[2L]] == 1L) {
+    labels = rownames(values)
+  }
+  values = as.numeric(values)
+  if (is.null(labels) || length(labels) != length(values)) {
+    stop("Model values must have declared TABLO labels", call. = FALSE)
+  }
+  if (any(!is.finite(values))) {
+    stop("Model values contain non-finite entries", call. = FALSE)
+  }
+  resolved = legacy_resolve_model_labels(data, labels, "Model value")
+  for (i in seq_along(values)) {
+    variable = resolved$variable_names[[i]]
+    array = data[[variable]]
+    array[resolved$local_positions[[i]]] = values[[i]]
+    data[[variable]] = array
+  }
+  data
+}
+
 legacy_shocks_from_explicit = function(model) {
   explicit = model$explicitShocks
   if (is.null(explicit) || !length(explicit$labels)) return(numeric())
-  inferred = sub("\\[.*$", "", explicit$labels)
+  resolved = legacy_resolve_model_labels(
+    model$data, explicit$labels, "Shock"
+  )
+  inferred = resolved$variable_names
   closure = unique(tolower(c(model$closure, inferred)))
   pieces = list()
   for (variable in closure) {
@@ -940,8 +1019,7 @@ legacy_shocks_from_explicit = function(model) {
   if (!length(shocks)) {
     shocks = setNames(numeric(), character())
   }
-  key = function(labels) gsub("[\\\"'[:space:]]", "", labels)
-  explicit_keys = key(explicit$labels)
+  explicit_keys = .legacy_label_key(explicit$labels)
   unique_keys = unique(explicit_keys)
   explicit_values = vapply(unique_keys, function(value) {
     sum(explicit$values[explicit_keys == value])
@@ -950,13 +1028,13 @@ legacy_shocks_from_explicit = function(model) {
   keep = !is.na(explicit_values) & explicit_values != 0
   explicit_values = explicit_values[keep]
   explicit_labels = explicit_labels[keep]
-  positions = match(unique_keys[keep], key(names(shocks)))
+  positions = match(unique_keys[keep], .legacy_label_key(names(shocks)))
+  if (anyNA(positions)) {
+    stop("Resolved shock labels are absent from legacy closure storage",
+         call. = FALSE)
+  }
   for (i in seq_along(explicit_labels)) {
-    if (is.na(positions[[i]])) {
-      shocks[[explicit_labels[[i]]]] = explicit_values[[i]]
-    } else {
-      shocks[[positions[[i]]]] = explicit_values[[i]]
-    }
+    shocks[[positions[[i]]]] = explicit_values[[i]]
   }
   shocks[!is.na(shocks)]
 }

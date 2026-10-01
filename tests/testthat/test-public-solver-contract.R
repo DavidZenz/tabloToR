@@ -80,6 +80,38 @@ test_that("solve and lifecycle validation conditions share a stable class", {
   expect_null(invalid_engine$lastDiagnostics$implementation)
 })
 
+test_that("legacy shock labels resolve declared positions without evaluation", {
+  model <- make_three_region_model(engine = "legacy")
+  injected_name <- "GEModelR.test.shock.label.injected"
+  had_prior_value <- exists(injected_name, envir = .GlobalEnv,
+                            inherits = FALSE)
+  prior_value <- if (had_prior_value) {
+    get(injected_name, envir = .GlobalEnv, inherits = FALSE)
+  } else NULL
+  on.exit({
+    if (had_prior_value) {
+      assign(injected_name, prior_value, envir = .GlobalEnv)
+    } else if (exists(injected_name, envir = .GlobalEnv, inherits = FALSE)) {
+      rm(list = injected_name, envir = .GlobalEnv)
+    }
+  }, add = TRUE)
+  assign(injected_name, FALSE, envir = .GlobalEnv)
+
+  malicious_label <- paste0(
+    'a["r1"]; assign("', injected_name,
+    '", TRUE, envir = .GlobalEnv); a["r1"]'
+  )
+  error <- tryCatch(
+    model$setShocks(setNames(5, malicious_label)),
+    error = identity
+  )
+
+  expect_identical(class(error)[[1L]], "GEModelR_validation_error")
+  expect_identical(error$argument, "shocks")
+  expect_identical(get(injected_name, envir = .GlobalEnv), FALSE)
+  expect_length(model$explicitShocks$labels, 0L)
+})
+
 test_that("diagnostic details are opt-in for sparse and legacy solves", {
   sparse <- make_synthetic_model()
   sparse$solveModel(

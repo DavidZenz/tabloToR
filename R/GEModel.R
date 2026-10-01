@@ -384,6 +384,23 @@ GEModel = setRefClass(
     },
     setShocks = function(shocks) {
       normalized = sparse_normalize_shocks(shocks)
+      if (identical(loadedEngine, "legacy") &&
+          length(normalized$labels)) {
+        tryCatch(
+          legacy_resolve_model_labels(data, normalized$labels, "Shock"),
+          error = function(error) {
+            .gemodelr_abort_validation(
+              sprintf("Invalid shock label: %s", conditionMessage(error)),
+              "setShocks", "setShocks",
+              "Use labels for declared TABLO variables and indices",
+              fields = list(
+                argument = "shocks",
+                cause = conditionMessage(error)
+              )
+            )
+          }
+        )
+      }
       shocks <<- shocks
       explicitShocks <<- normalized
       .postsimRecord <<- list()
@@ -802,14 +819,12 @@ GEModel = setRefClass(
             .transaction_fault("residual")
 
             # Update the variables
-            data <<- within(data,{
-              eval(parse(text=sprintf("%s=%s;", names(subStepSolution[[currentStep]]), subStepSolution[[currentStep]][names(subStepSolution[[currentStep]])])))
-            })
+            data <<- legacy_apply_labeled_values(
+              data, subStepSolution[[currentStep]]
+            )
 
             # Update the shocked variables
-            data <<- within(data,{
-              eval(parse(text=sprintf("%s=%s;", names(stepShocks), stepShocks[names(stepShocks)])))
-            })
+            data <<- legacy_apply_labeled_values(data, stepShocks)
 
             # Update the data
             .transaction_fault("simulation-update")
@@ -884,16 +899,16 @@ GEModel = setRefClass(
         data <<-originalData
 
         invisible(NULL)
-        data <<- within(data,{
-          eval(parse(text=sprintf("%s=%s;", names(iterationSolution[[it]]), iterationSolution[[it]][names(iterationSolution[[it]])])))
-        })
+        data <<- legacy_apply_labeled_values(
+          data, iterationSolution[[it]]
+        )
         invisible(NULL)
 
 
         invisible(NULL)
-        data <<- within(data,{
-          eval(parse(text=sprintf("%s=%s;", names(shocks), subShocks[names(shocks)])))
-        })
+        data <<- legacy_apply_labeled_values(
+          data, setNames(subShocks[names(shocks)], names(shocks))
+        )
         invisible(NULL)
 
         #browser()
@@ -922,15 +937,11 @@ GEModel = setRefClass(
       #solution[solutionPctChangeVariables]<<- (exp(rowSums(log(1+do.call(cbind,iterationSolution)[solutionPctChangeVariables,, drop = FALSE]/100)))-1)*100
 
       invisible(NULL)
-      data <<- within(data,{
-        eval(parse(text=sprintf("%s=%s;", names(solution), solution[names(solution)])))
-      })
+      data <<- legacy_apply_labeled_values(data, solution)
       invisible(NULL)
 
       invisible(NULL)
-      data <<- within(data,{
-        eval(parse(text=sprintf("%s=%s;", names(shocks), shocks[names(shocks)])))
-      })
+      data <<- legacy_apply_labeled_values(data, shocks)
 
       legacy_details = if (diagnostics_requested) {
         elapsed = proc.time()[[3L]] - solve_started
