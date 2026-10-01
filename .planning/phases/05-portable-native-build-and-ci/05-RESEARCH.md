@@ -279,24 +279,21 @@ The existing public contract runs backend preflight before `sparse_emit_system`,
 | A1 | `Matrix 1.6-5` is a plausible minimum candidate because CRAN archive metadata permits R >= 3.5, but GEModelR compatibility has not been tested against it. | Standard Stack | If the package’s Matrix sparseLU calls or native contract differ, the support floor and endpoint matrix must move. Verify package build and solver tests before locking it. |
 | A2 | Linux and Windows hosted R toolchains will expose at least one supported OpenMP-enabled job, while default macOS jobs remain serial. | Validation Architecture | Runner/compiler changes can make a nominal OpenMP cell serial; fail the cell on false capability and revise only from actual runner evidence. |
 | A3 | A user Makevars override clearing `SHLIB_OPENMP_CXXFLAGS` will produce a serial build across supported runners. | Architecture Patterns | Makevars expansion or platform-specific order could differ; capability assertion is the acceptance test and the workflow must be adjusted if it still reports OpenMP. |
-| A4 | The matrix can afford the full supported combination count. If all 3 OS × 3 R labels × 2 Matrix endpoints are valid, serial gives 18 rows; Linux and Windows OpenMP add 12 more, for 30 cells. | Validation Architecture | Hosted runtime/cost may be material. If needed, explicitly enumerate endpoint/platform/R pairings that meet the locked coverage rule rather than silently reducing required coverage. |
+| A4 | **RESOLVED FOR PLANNING:** Plan the full 30-row candidate matrix: all 3 OS × 3 R aliases × 2 Matrix endpoints as serial (18 rows), plus Linux and Windows OpenMP for all 6 R/Matrix pairs (12 rows). Execution must retain each row unless its exact R requirement, Matrix source-install result, or installed solver contract demonstrates that pairing is invalid; execution evidence remains pending. | Validation Architecture | The complete 30-row selection is the planning baseline. Hosted execution may exclude only individually evidenced invalid pairings, with row-specific evidence recorded. |
 
-## Open Questions
+## Open Questions — Resolved for Planning
 
-1. **Which Matrix version becomes the minimum?**
-   - What we know: Current CRAN is 1.7-6 and requires R >= 4.4; archive Matrix 1.6-5 metadata says R >= 3.5. The package currently declares Matrix in Imports but no lower bound. [CITED: CRAN Matrix page/archive; VERIFIED: DESCRIPTION:21-25]
-   - What’s unclear: Which minimum version actually installs and passes GEModelR’s API/native sparseLU contract on every oldest supported R/platform cell; archive source builds may behave differently from current binaries.
-   - Recommendation: Treat 1.6-5 as the first candidate and probe it on the oldest supported R on Linux, macOS, and Windows. If a supported cell fails, select the oldest passing release and add the corresponding DESCRIPTION lower bound. Test the current endpoint separately.
+1. **Which Matrix version becomes the minimum? — RESOLVED FOR PLANNING**
+   - Planning choice: Treat Matrix 1.6-5 as the provisional floor candidate and Matrix 1.7-6 as the current endpoint candidate from the 2026-10-01 research snapshot. Refresh the current endpoint from CRAN at execution.
+   - Execution evidence remains pending: On oldrel-1, source-install the exact 1.6-5 archive and run the installed GEModelR Matrix solver contract for every supported floor pairing: Linux, macOS, and Windows serial builds, plus Linux and Windows OpenMP builds. Record the exact R version, OS, build mode, Matrix version, source-install result, and solver-test result. Set the DESCRIPTION floor only after these checks pass; if any supported pairing fails, use the oldest Matrix version that passes the same checks. This choice is resolved for planning, not proven.
 
-2. **Which hosted R toolchains actually provide OpenMP?**
-   - What we know: R Core says Linux/Windows commonly support OpenMP and Apple clang does not provide native OpenMP. [CITED: R Core Writing R Extensions]
-   - What’s unclear: The exact compiler selected by each GitHub runner/R action combination at execution time.
-   - Recommendation: Keep serial jobs on all three OSes; include expected OpenMP jobs where the selected R toolchain supports it and require capability true/max threads >= 2 in those jobs.
+2. **Which hosted R toolchains actually provide OpenMP? — RESOLVED FOR PLANNING**
+   - Planning choice: Require serial jobs on Linux, macOS, and Windows. Include expected OpenMP jobs for the supported Linux and Windows R toolchains; keep the default Apple clang macOS lane serial. Do not infer capability from the OS label.
+   - Execution evidence remains pending: Every expected OpenMP job must explicitly assert `openmp == TRUE` and `max_threads >= 2`; every serial job must assert `openmp == FALSE` and `max_threads == 1`. Only a job explicitly marked serial may skip OpenMP-only assertions. These checks decide whether each selected toolchain actually provides the planned capability; the planning choice is not proof of hosted-runner behavior.
 
-3. **How should the representative package-check job surface existing failures?**
-   - What we know: The newest Phase 04 verification records the non-clean result below, and Phase 06 owns broader check cleanup.
-   - What’s unclear: Whether the project wants the baseline job to be required, allowed to fail, or reported in a separate workflow.
-   - Recommendation: Keep a visibly named, non-required baseline job with logs retained and a summary that states the known failure counts; do not mark the package check as clean or claim Phase 05 fixed those failures.
+3. **How should the representative package-check job surface existing failures? — RESOLVED FOR PLANNING**
+   - Planning choice: Use a visibly named, non-required Linux/release/current-Matrix/serial baseline job with a named full-check step. The job summary reports the current check outcome and original exit status and labels the known counts as the inherited Phase 04 baseline only.
+   - Evidence retention: Preserve the complete raw check log and check directory as downloadable artifacts even when the check exits nonzero. Do not imply Phase 05 resolves inherited findings. The job and reporting contract are resolved for planning; the current result and artifacts remain pending execution.
 
 ## Environment Availability
 
