@@ -5,7 +5,7 @@ current_phase: 5
 current_phase_name: Portable Native Build and CI
 status: planning
 stopped_at: Phase 04 complete, ready to plan Phase 5
-last_updated: "2026-10-01T08:20:59.360Z"
+last_updated: "2026-10-01T08:24:06Z"
 last_activity: 2026-10-01
 last_activity_desc: Phase 04 complete, transitioned to Phase 5
 state_head: c7d49fa1beeee65faf02113df312661dbba7f999
@@ -21,10 +21,10 @@ milestone_name: milestone
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-08-31)
+See: `.planning/PROJECT.md` (updated 2026-10-01)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 04 — Public API and Solver Boundaries
+**Current focus:** Phase 05 — Portable Native Build and CI
 
 ## Current Position
 
@@ -33,7 +33,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-10-01 — Phase 04 complete, transitioned to Phase 5
 
-Progress: [█████████░] 86% (38/44 current milestone plans executed)
+Progress: [████████████████████] 100% (44/44 currently planned milestone plans executed; Phase 5 plans are not created yet)
 
 ## Performance Metrics
 
@@ -153,20 +153,11 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 03]: Apply only the exact maintainer-approved candidate allowlist bytes after before/candidate/policy SHA-256 validation.
 - [Phase 03]: Bind identity reseal approval to David Zenz at 2026-09-21T12:50:50Z and the exact before and candidate allowlist hashes.
 - [Phase 03]: Keep the final tracked-tree seal read-only and external so generated evidence cannot self-certify its own audit digest.
-- [Phase 04]: Keep the caller-requested backend ID separate from adapter implementation identity.
-- [Phase 04]: Keep adapter numerical evidence diagnostic; central candidate acceptance independently recomputes structure, finiteness, and true residual.
-- [Phase 04]: Keep caller-requested backend IDs separate from adapter implementation identities across all six sparse paths.
-- [Phase 04]: Fail closed during native preflight before system emission, and retain structural cache metadata while cleaning solve-scoped numerical resources.
-- [Phase 04]: Use GEModelR_validation_error with structured remediation and publish loader state only after setup succeeds.
-- [Phase 04]: Invalidate closure-dependent structure separately from shock-dependent pending solve state.
-- [Phase 04]: Validate variable names, named dimensions, labels, and output allocation before sparse solve work.
-- [Phase 04]: Retain the current full closure index separately from the simulation index through postsimulation projection.
-- [Phase 04]: Store a fixed version-1 envelope on every solve attempt and keep detailed telemetry opt-in.
-- [Phase 04]: Keep StructuredSchurFGMRESCpp as the requested backend ID and cpp as the implementation identity.
-- [Phase 04]: Preserve the logical-state payload schema and infer generated numeric update fields from serialized levels when small diagnostics omit postsimulation detail.
-- [Phase 04]: Phase 04 Plan 06: Export only GEModel; keep native registration and required imports while leaving implementation helpers private.
-- [Phase 04]: Phase 04 Plan 06: Compare manifest export parity with supported-tier rows only.
-- [Phase 04]: Phase 04 Plan 06: Assert the schema-version-1 diagnostics envelope for successful legacy solve attempts.
+- [Phase 04]: Export only the GEModel facade and keep implementation helpers private.
+- [Phase 04]: Keep requested backend IDs distinct from adapter identity; preflight before emission and centralize candidate acceptance, true-residual checks, commit, and cleanup.
+- [Phase 04]: Publish lifecycle state only after successful setup and invalidate closure- and shock-dependent state separately.
+- [Phase 04]: Validate exact output selectors and allocation budgets before compact projection while retaining full-output compatibility.
+- [Phase 04]: Use a fixed version-1 diagnostics envelope on every solve attempt; detailed telemetry remains opt-in.
 
 ### Pending Todos
 
@@ -174,15 +165,10 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 03 remains incomplete: installed benchmark child execution, strict serialization leaf types, fail-closed solution comparisons, independent baseline qualification and final identity-audit closure require execution of 03-13 through 03-20.
-- Human review checkpoints in 03-15, 03-18 and 03-19 are not granted by plan-level approval. Canonical Phase 02 hash f6f2297a6ab257c9737a64354c82d7f1 and predecessor evidence remain immutable.
-- MIGR-01 remains blocked per 03-VERIFICATION.md despite the earlier completed requirements checklist; successful gap execution and re-verification are required before claiming Phase 03 completion.
-- Qualification remains scoped to the exact two approved current-host NOTE blocks; final identity audit must run read-only after all durable review/verification/state writes.
-
-- Release remains intentionally blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING until the package dependency audit establishes a final compatible License.
-- Release remains intentionally blocked by ATTRIBUTION_IDENTITY_UNRESOLVED until the Git alias receives a reviewed attribution disposition.
-- The initial GEModelR name report is approved, but a fresh release-kind check remains required immediately before release.
-- R CMD check . remains non-clean: the 04-06 snapshot had 27 test failures (three plan-local test-context/stale-contract assertions were fixed afterward); remaining benchmark source-tree, compatibility-helper, provenance/release-gate, sparse-core fixture, and repository-artifact findings are recorded in 04-06-SUMMARY.md.
+- Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; the license decision and attribution alias still need reviewed dispositions.
+- Phase 1: A fresh GEModelR name availability check remains required immediately before release.
+- Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
+- Phase 4: Full source tests and `R CMD check .` remain non-clean. The package check reports 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; failures are in benchmark/source-tree, provenance-inventory, and release-gate groups. See `04-VERIFICATION.md`.
 
 ## Deferred Items
 
@@ -194,6 +180,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-09-30T20:30:00.847Z
+Last session: 2026-10-01T08:24:06Z
 Stopped at: Phase 04 complete, ready to plan Phase 5
 Resume file: None

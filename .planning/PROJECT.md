@@ -21,12 +21,12 @@ Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R wi
 - ✓ Produce reproducible A/B, tuning, scaling, memory, and residual benchmarks — existing.
 - ✓ Establish a documented modification and redistribution basis for the audited inherited source — Phase 1.
 - ✓ Record reviewed provenance, attribution, GEModelR name availability, maintainer identity, and repository governance — Phase 1.
+- ✓ Migrate package, native, option, and diagnostic identity to GEModelR with reviewed migration instructions — Phase 3.
+- ✓ Preserve the supported `GEModel` workflow while documenting intentional migration changes — Phase 3.
+- ✓ Define a deliberate GEModel public API, explicit solver dispatch, stable diagnostics, and selectable R/native reference backends — Phase 4.
 
 ### Active
 
-- [ ] Rename package identity, native symbols, options, diagnostics, documentation, and benchmark metadata from `tabloToR` to `GEModelR` through an auditable migration.
-- [ ] Preserve source-level compatibility for the `GEModel` workflow and explicitly document intentional changes.
-- [ ] Define a narrow supported API while keeping legacy and R sparse implementations as correctness references.
 - [ ] Make installation and native compilation reliable on Linux, macOS, Windows, and builds without OpenMP.
 - [ ] Replace release-blocking metadata, namespace, documentation, and runtime-compilation weaknesses.
 - [ ] Add CI and release gates for checks, numerical equivalence, native capabilities, serialization, and benchmark schemas.
@@ -46,7 +46,7 @@ Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R wi
 
 The upstream package began as a compact in-memory TABLO implementation. This fork now contains a separate sparse compiler/runtime, structured Schur/FGMRES algorithms, Rcpp kernels, OpenMP batching, native LAPACK factors, diagnostics, tests, and benchmark harnesses. A validated full GTAP 12a run solved 26,781,398 positions with at most 80,306,307 nonzeros in 4,662 seconds and 25.34 GiB peak RSS: 3.99× faster and 14.4% lower-memory than the R structured baseline, with a `9.014e-8` residual.
 
-The implementation is therefore already beyond a toy extension, but distribution quality lags technical capability. `DESCRIPTION` still has placeholder identity/license fields, `NAMESPACE` exports too broadly, documentation is incomplete, SuiteSparse support is Linux/runtime-compiled, and no cross-platform CI exists. The repository also contains private experimental benchmark files that must remain untouched and outside the supported package surface.
+The implementation is therefore already beyond a toy extension. Phases 3 and 4 migrated the active package identity to GEModelR, narrowed `NAMESPACE` to the supported `GEModel` facade, generated public API help, and established explicit solver/backend boundaries. Distribution work remains: the dependency/license and attribution release gates are pending, SuiteSparse support is Linux/runtime-compiled, cross-platform CI is not yet in place, and the current package check still has benchmark-source, provenance, and release-gate failures. The repository also contains private experimental benchmark files that must remain untouched and outside the supported package surface.
 
 ## Constraints
 
@@ -73,6 +73,12 @@ The implementation is therefore already beyond a toy extension, but distribution
 | Accept the upstream public-domain/CC0 response for the audited baseline | The upstream author explicitly confirmed public-domain status and modification/redistribution rights | ✓ Validated in Phase 1 |
 | Keep public release fail-closed | Dependency compatibility and the unresolved attribution alias still require reviewed dispositions | ✓ Validated in Phase 1 |
 | Separate technical readiness from repository/publication authority | Passing package and release checks must not mutate or publish external resources | ✓ Validated in Phase 1 |
+| Export only the `GEModel` facade and keep implementation helpers private | A deliberate namespace makes the supported surface reviewable and stable | ✓ Validated in Phase 4 |
+| Keep requested backend IDs distinct from adapter implementation identity | Callers can select and observe each reference backend without silent substitution | ✓ Validated in Phase 4 |
+| Recheck candidate structure, finiteness, and true residual at one central acceptance boundary | Adapter evidence remains diagnostic; only the central gate can commit a solution | ✓ Validated in Phase 4 |
+| Preflight native capabilities before matrix emission and release solve-scoped resources on all exits | Unsupported native paths fail early and do not retain factors or buffers | ✓ Validated in Phase 4 |
+| Publish lifecycle state only after successful setup; validate compact selectors and budgets before projection | Failed setup preserves accepted state, while output allocation stays bounded | ✓ Validated in Phase 4 |
+| Use a version-1 diagnostics envelope on every solve attempt and keep detailed telemetry opt-in | Callers get stable status fields without paying to retain verbose evidence | ✓ Validated in Phase 4 |
 
 ## Evolution
 
@@ -91,4 +97,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update benchmark evidence and maintenance context.
 
 ---
-*Last updated: 2026-08-31 after Phase 1*
+*Last updated: 2026-10-01 after Phase 4*
