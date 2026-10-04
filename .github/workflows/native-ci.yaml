@@ -11,23 +11,34 @@ permissions:
   contents: read
 
 jobs:
-  linux-release-serial:
-    name: Linux / R release / serial
-    runs-on: ubuntu-latest
+  native-core:
+    name: ${{ matrix.platform }} / R ${{ matrix.r }} / ${{ matrix.build }}
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden}
+          - {platform: macOS, os: macos-latest, r: release, build: serial, openmp: forbidden}
+          - {platform: Windows, os: windows-latest, r: release, build: serial, openmp: forbidden}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required}
+          - {platform: Windows, os: windows-latest, r: release, build: openmp, openmp: required}
     env:
-      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-serial
+      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-native
       GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-library
+      GEModelR_EXPECT_OPENMP: ${{ matrix.openmp }}
+      GEModelR_EXPECT_MATRIX_VERSION: installed
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
 
-      - name: Set up R release
+      - name: Set up R
         uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
         with:
-          r-version: release
+          r-version: ${{ matrix.r }}
           use-public-rspm: true
 
       - name: Install package dependencies
@@ -38,10 +49,18 @@ jobs:
           install-pandoc: false
           install-quarto: false
 
-      - name: Configure serial native build
+      - name: Configure native build
         shell: Rscript --vanilla {0}
         run: |
-          writeLines("SHLIB_OPENMP_CXXFLAGS =", Sys.getenv("R_MAKEVARS_USER"))
+          expectation = Sys.getenv("GEModelR_EXPECT_OPENMP")
+          stopifnot(expectation %in% c("required", "forbidden"))
+          # Apple clang stays serial; Linux and Windows use R's OpenMP macro.
+          flags = if (identical(expectation, "forbidden")) {
+            "SHLIB_OPENMP_CXXFLAGS ="
+          } else {
+            character()
+          }
+          writeLines(flags, Sys.getenv("R_MAKEVARS_USER"))
           dir.create(Sys.getenv("GEModelR_TEST_LIBRARY"), recursive = TRUE)
           stopifnot(dir.exists(Sys.getenv("GEModelR_TEST_LIBRARY")))
 
@@ -49,7 +68,7 @@ jobs:
         shell: bash
         run: R CMD INSTALL --preclean --install-tests --library="$GEModelR_TEST_LIBRARY" .
 
-      - name: Verify installed serial native execution
+      - name: Run installed core contracts
         shell: Rscript --vanilla {0}
         run: |
           lib = Sys.getenv("GEModelR_TEST_LIBRARY")
@@ -62,12 +81,21 @@ jobs:
           stopifnot(dir.exists(system.file("tests", "testthat", package = "GEModelR")))
           capabilities = GEModelR:::.GEModelR_schur_cpp_capabilities()
           print(capabilities)
-          stopifnot(identical(capabilities$openmp, FALSE))
-          stopifnot(identical(capabilities$max_threads, 1L))
+          expectation = Sys.getenv("GEModelR_EXPECT_OPENMP")
+          if (identical(expectation, "forbidden")) {
+            stopifnot(identical(capabilities$openmp, FALSE))
+            stopifnot(identical(capabilities$max_threads, 1L))
+          } else {
+            stopifnot(identical(expectation, "required"))
+            stopifnot(identical(capabilities$openmp, TRUE))
+            stopifnot(capabilities$max_threads >= 2L)
+          }
           workdir = tempfile("GEModelR-installed-tests-")
           dir.create(workdir)
           setwd(workdir)
           testthat::test_package(
-            "GEModelR", filter = "native-portability", reporter = "summary",
+            "GEModelR",
+            filter = "^(native-portability|suite-sparse-unsupported|sparse-schur-openmp|public-cpp-backend|public-solver-contract|matrix-compatibility)$",
+            reporter = "summary",
             stop_on_failure = TRUE
           )
