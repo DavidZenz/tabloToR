@@ -69,33 +69,5 @@ jobs:
         run: R CMD INSTALL --preclean --install-tests --library="$GEModelR_TEST_LIBRARY" .
 
       - name: Run installed core contracts
-        shell: Rscript --vanilla {0}
-        run: |
-          lib = Sys.getenv("GEModelR_TEST_LIBRARY")
-          .libPaths(c(lib, .libPaths()))
-          library(GEModelR, lib.loc = lib)
-          stopifnot(identical(
-            normalizePath(find.package("GEModelR")),
-            normalizePath(file.path(lib, "GEModelR"))
-          ))
-          stopifnot(dir.exists(system.file("tests", "testthat", package = "GEModelR")))
-          capabilities = GEModelR:::.GEModelR_schur_cpp_capabilities()
-          print(capabilities)
-          expectation = Sys.getenv("GEModelR_EXPECT_OPENMP")
-          if (identical(expectation, "forbidden")) {
-            stopifnot(identical(capabilities$openmp, FALSE))
-            stopifnot(identical(capabilities$max_threads, 1L))
-          } else {
-            stopifnot(identical(expectation, "required"))
-            stopifnot(identical(capabilities$openmp, TRUE))
-            stopifnot(capabilities$max_threads >= 2L)
-          }
-          workdir = tempfile("GEModelR-installed-tests-")
-          dir.create(workdir)
-          setwd(workdir)
-          testthat::test_package(
-            "GEModelR",
-            filter = "^(native-portability|suite-sparse-unsupported|sparse-schur-openmp|public-cpp-backend|public-solver-contract|matrix-compatibility)$",
-            reporter = "summary",
-            stop_on_failure = TRUE
-          )
+        shell: bash
+        run: Rscript --vanilla tools/ci/run-installed-core-tests.R
