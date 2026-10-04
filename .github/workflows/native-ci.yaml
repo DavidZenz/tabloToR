@@ -154,3 +154,23 @@ jobs:
           path: ${{ env.GEModelR_EVIDENCE_DIR }}
           if-no-files-found: error
           retention-days: 30
+
+  representative-check:
+    name: Representative R CMD check baseline (informational, non-required)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up representative release R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Fast package-check report contract self-test
+        shell: bash
+        run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --self-test
