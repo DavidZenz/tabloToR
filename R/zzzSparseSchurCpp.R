@@ -139,7 +139,8 @@
   }
   maximum = suppressWarnings(as.integer(capabilities$max_threads)[1L])
   if (threads > 1L && !isTRUE(capabilities$openmp)) {
-    fail("multiple threads were requested from a serial build",
+    fail(sprintf("requested %s threads from a serial build (native maximum is 1)",
+                 threads),
          "set GEModelR.sparse.schur_cpp_threads to 1L or install an OpenMP build")
   }
   if (is.na(maximum) || maximum < 1L || threads > maximum) {
