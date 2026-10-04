@@ -244,9 +244,9 @@ Plans:
   3. Supported solve paths require no runtime compiler and no hard-coded Linux SuiteSparse include/library path.
   4. CI covers appropriate R release/oldrel/devel and Matrix compatibility variants while keeping long full-scale benchmarks external.
 
-**Plans**: 0/7 plans executed
+**Plans**: 1/7 plans executed
 
-- [ ] 05-01-PLAN.md
+- [x] 05-01-PLAN.md
 - [ ] 05-02-PLAN.md
 - [ ] 05-03-PLAN.md
 - [ ] 05-04-PLAN.md
@@ -291,6 +291,6 @@ Plans:
 | 2. Compatibility and Numerical Baseline | 6/6 | Complete    | 2026-09-09 |
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
-| 5. Portable Native Build and CI | 0/7 | Planned    |  |
+| 5. Portable Native Build and CI | 1/7 | In Progress|  |
 | 6. Documentation and Release Qualification | 0/TBD | Not started | - |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
