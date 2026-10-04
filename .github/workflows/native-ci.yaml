@@ -1,0 +1,73 @@
+name: Native portability
+
+'on':
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  linux-release-serial:
+    name: Linux / R release / serial
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-serial
+      GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-library
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up R release
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Install package dependencies
+        uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          packages: deps::.
+          cache: false
+          install-pandoc: false
+          install-quarto: false
+
+      - name: Configure serial native build
+        shell: Rscript --vanilla {0}
+        run: |
+          writeLines("SHLIB_OPENMP_CXXFLAGS =", Sys.getenv("R_MAKEVARS_USER"))
+          dir.create(Sys.getenv("GEModelR_TEST_LIBRARY"), recursive = TRUE)
+          stopifnot(dir.exists(Sys.getenv("GEModelR_TEST_LIBRARY")))
+
+      - name: Install GEModelR with tests
+        shell: bash
+        run: R CMD INSTALL --preclean --install-tests --library="$GEModelR_TEST_LIBRARY" .
+
+      - name: Verify installed serial native execution
+        shell: Rscript --vanilla {0}
+        run: |
+          lib = Sys.getenv("GEModelR_TEST_LIBRARY")
+          .libPaths(c(lib, .libPaths()))
+          library(GEModelR, lib.loc = lib)
+          stopifnot(identical(
+            normalizePath(find.package("GEModelR")),
+            normalizePath(file.path(lib, "GEModelR"))
+          ))
+          stopifnot(dir.exists(system.file("tests", "testthat", package = "GEModelR")))
+          capabilities = GEModelR:::.GEModelR_schur_cpp_capabilities()
+          print(capabilities)
+          stopifnot(identical(capabilities$openmp, FALSE))
+          stopifnot(identical(capabilities$max_threads, 1L))
+          workdir = tempfile("GEModelR-installed-tests-")
+          dir.create(workdir)
+          setwd(workdir)
+          testthat::test_package(
+            "GEModelR", filter = "native-portability", reporter = "summary",
+            stop_on_failure = TRUE
+          )
