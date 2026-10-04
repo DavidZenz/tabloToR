@@ -15,6 +15,36 @@ test_that("SuiteSparse remains recognized but its installed preflight is unavail
   expect_match(error$remediation$action, 'backend="Matrix"', fixed = TRUE)
 })
 
+test_that("SuiteSparse rejects predecessor ordering options before capability checks", {
+  replacements = expectedPublicOptionReplacements()
+  old_key = names(replacements)[endsWith(names(replacements), ".suite_sparse_ordering")]
+  expect_length(old_key, 1L)
+  replacement = replacements[[old_key]]
+  withr::local_options(stats::setNames(list("amd"), old_key))
+  unavailable_calls = 0L
+  testthat::local_mocked_bindings(
+    .sparse_backend_unavailable = function(...) {
+      unavailable_calls <<- unavailable_calls + 1L
+      stop("unexpected capability rejection before migration validation")
+    },
+    .package = "GEModelR"
+  )
+  operations = list(
+    function() .sparse_backend_preflight("SuiteSparse"),
+    function() sparse_suite_sparse_solver(stop("unexpected matrix access"),
+                                          stop("unexpected RHS access")),
+    function() sparse_suite_sparse_ordering()
+  )
+  for (operation in operations) {
+    error = tryCatch(operation(), error = identity)
+    expect_s3_class(error, "error")
+    expect_match(conditionMessage(error), old_key, fixed = TRUE)
+    expect_match(conditionMessage(error), replacement, fixed = TRUE)
+    expect_match(conditionMessage(error), "MIGRATION.md", fixed = TRUE)
+  }
+  expect_identical(unavailable_calls, 0L)
+})
+
 test_that("public SuiteSparse requests fail before emission, compilation or state commit", {
   for (diagnostics in c(FALSE, TRUE)) {
     model = make_synthetic_model()
