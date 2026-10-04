@@ -159,6 +159,13 @@ jobs:
     name: Representative R CMD check baseline (informational, non-required)
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    # Independent informational check: no needs edge to the supported matrix.
+    env:
+      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-representative
+      GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-check-library
+      GEModelR_EXPECT_OPENMP: forbidden
+      GEModelR_EXPECT_MATRIX_VERSION: '1.7-6'
+      GEModelR_CHECK_ARTIFACT_DIR: ${{ runner.temp }}/representative-check
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -174,3 +181,36 @@ jobs:
       - name: Fast package-check report contract self-test
         shell: bash
         run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --self-test
+
+      - name: Configure representative serial build
+        shell: Rscript --vanilla {0}
+        run: writeLines("SHLIB_OPENMP_CXXFLAGS =", Sys.getenv("R_MAKEVARS_USER"))
+
+      - name: Install representative package dependencies
+        uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          packages: deps::.
+          cache: false
+          install-pandoc: false
+          install-quarto: false
+
+      - name: Source-install representative exact current Matrix
+        shell: bash
+        run: Rscript --vanilla tools/ci/install-matrix-source.R https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY"
+
+      - name: Full R CMD check baseline (informational, non-required)
+        id: full-check
+        continue-on-error: true
+        shell: bash
+        # RTK wraps this exact Rscript command locally; hosted runners use Rscript.
+        run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --run
+
+      - name: Preserve complete current check log and directory even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
+        with:
+          name: representative-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.GEModelR_CHECK_ARTIFACT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
