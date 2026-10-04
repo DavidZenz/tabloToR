@@ -277,8 +277,16 @@ test_that("row singleton reduction reconstructs coupled variables", {
   expect_equal(reduced, direct, tolerance = 1e-12)
 })
 
-test_that("SuiteSparse backend uses sparse LU without densifying", {
-  skip_if_not(sparse_suite_sparse_available())
+test_that("SuiteSparse low-level backend fails closed without compilation", {
+  compiler_calls = 0L
+  testthat::local_mocked_bindings(
+    sourceCpp = function(...) {
+      compiler_calls <<- compiler_calls + 1L
+      stop("unexpected runtime compilation")
+    },
+    .package = "Rcpp"
+  )
+  expect_false(sparse_suite_sparse_available())
   A <- Matrix::sparseMatrix(
     i = c(1, 1, 2),
     j = c(1, 2, 2),
@@ -286,11 +294,23 @@ test_that("SuiteSparse backend uses sparse LU without densifying", {
     dims = c(2, 2)
   )
 
-  solution <- solve_sparse_system(
-    A, c(5, 4), backend = "SuiteSparse", reduction = "off"
+  for (reduction in c("off", "auto", "on")) {
+    for (rhs in list(c(5, 4), c(0, 0))) {
+      error = tryCatch(
+        solve_sparse_system(A, rhs, backend = "SuiteSparse",
+                            reduction = reduction),
+        error = identity
+      )
+      expect_s3_class(error, "GEModelR_capability_error")
+      expect_identical(error$requested_backend, "SuiteSparse")
+      expect_match(conditionMessage(error), 'backend="Matrix"', fixed = TRUE)
+    }
+  }
+  expect_error(
+    sparse_suite_sparse_solver(stop("matrix evaluated"), stop("rhs evaluated")),
+    class = "GEModelR_capability_error"
   )
-
-  expect_equal(solution, c(1.5, 2), tolerance = 1e-12)
+  expect_identical(compiler_calls, 0L)
 })
 
 test_that("GEModel exposes sparse closure, shocks, memory, and compact output", {

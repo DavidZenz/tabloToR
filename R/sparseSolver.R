@@ -146,24 +146,7 @@
   requested_backend = "SuiteSparse",
   implementation = "solve_sparse_system(SuiteSparse/UMFPACK)",
   preflight = function(requested_backend = "SuiteSparse", ...) {
-    if (!exists("sparse_suite_sparse_available", mode = "function",
-                inherits = TRUE) ||
-        !isTRUE(sparse_suite_sparse_available())) {
-      .sparse_backend_unavailable(
-        requested_backend,
-        "Rcpp or a supported 64-bit SuiteSparse/UMFPACK installation is unavailable",
-        paste(
-          "install Rcpp and SuiteSparse with umfpack.h and libumfpack,",
-          "or select another explicit backend"
-        )
-      )
-    }
-    list(
-      requested_backend = requested_backend,
-      implementation = "solve_sparse_system(SuiteSparse/UMFPACK)",
-      available = TRUE,
-      capability = "Rcpp and SuiteSparse/UMFPACK"
-    )
+    sparse_suite_sparse_unavailable()
   },
   cleanup = .sparse_backend_noop_cleanup,
   solve = function(coefficient_matrix, rhs, reduction,
@@ -312,7 +295,7 @@
       error, "sparse", backend,
       primary_class = "GEModelR_capability_error",
       failure_phase = "capability-preflight",
-      remediation = list(
+      remediation = if (!is.null(error$remediation)) error$remediation else list(
         action = "Install the requested backend or repair its capability registration"
       )
     ))
@@ -2160,6 +2143,7 @@ sparse_as_sparsem_csr = function(A) {
 solve_sparse_system = function(A, rhs, backend = "Matrix",
                                reduction = c("auto", "off", "on")) {
   backend = match.arg(backend, c("Matrix", "SuiteSparse", "SparseM"))
+  if (backend == "SuiteSparse") sparse_suite_sparse_unavailable()
   reduction = match.arg(reduction)
   if (!inherits(A, "sparseMatrix")) {
     stop("Sparse solver received a non-sparse coefficient matrix", call. = FALSE)
