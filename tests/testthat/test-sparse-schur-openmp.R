@@ -8,10 +8,12 @@ test_that("native job expectation rejects missing and invalid CI values", {
   }
   expect_error(nativeOpenmpExpectation("auto", ci = FALSE),
                "GEModelR_EXPECT_OPENMP.*required or forbidden")
+  serial = list(openmp = FALSE, max_threads = 1L)
+  expect_identical(nativeOpenmpCapabilities(serial, expectation = NULL), serial)
 })
 
 test_that("native capability matches the explicit job expectation", {
-  nativeOpenmpCapabilities()
+  expect_type(nativeOpenmpCapabilities(), "list")
 })
 
 test_that("bounded OpenMP Schur batches match serial execution", {
@@ -19,6 +21,9 @@ test_that("bounded OpenMP Schur batches match serial execution", {
   capabilities = nativeOpenmpCapabilities(expectation = expectation)
   if (identical(expectation, "forbidden")) {
     skip("Explicit serial job forbids OpenMP-only execution")
+  }
+  if (is.null(expectation) && !isTRUE(capabilities$openmp)) {
+    skip("Local serial build has no OpenMP-only execution")
   }
   fixture <- make_cpp_schur_fixture()
   local <- which(fixture$row_group == 0L)

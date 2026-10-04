@@ -2,7 +2,8 @@ nativeOpenmpExpectation = function(
     expectation = Sys.getenv("GEModelR_EXPECT_OPENMP", unset = ""),
     ci = tolower(Sys.getenv("CI", unset = "")) %in% c("true", "1") ||
       tolower(Sys.getenv("GITHUB_ACTIONS", unset = "")) == "true" ||
-      nzchar(Sys.getenv("GEModelR_TEST_LIBRARY", unset = ""))) {
+      nzchar(Sys.getenv("GEModelR_TEST_LIBRARY", unset = "")) ||
+      nzchar(Sys.getenv("GEModelR_CI_LIBRARY", unset = ""))) {
   if (identical(expectation, "") && !ci) return(NULL)
   if (!expectation %in% c("required", "forbidden")) {
     stop(
@@ -16,6 +17,7 @@ nativeOpenmpExpectation = function(
 nativeOpenmpCapabilities = function(
     capabilities = .GEModelR_schur_cpp_capabilities(),
     expectation = nativeOpenmpExpectation()) {
+  if (is.null(expectation)) return(capabilities)
   if (identical(expectation, "forbidden")) {
     expect_identical(capabilities$openmp, FALSE)
     expect_identical(capabilities$max_threads, 1L)

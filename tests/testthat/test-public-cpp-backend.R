@@ -145,10 +145,13 @@ test_that("public native backend is opt-in and numerically equivalent", {
   expect_identical(.sparse_schur_cpp_runtime$live_dense_factors, list())
 })
 
-test_that("explicit serial jobs preserve default threads and reject over-requests", {
+test_that("serial builds preserve default threads and reject over-requests", {
   expectation = nativeOpenmpExpectation()
   capabilities = nativeOpenmpCapabilities(expectation = expectation)
-  if (!identical(expectation, "forbidden")) return(invisible(NULL))
+  if (!identical(expectation, "forbidden") &&
+      !(is.null(expectation) && identical(capabilities$openmp, FALSE))) {
+    return(invisible(NULL))
+  }
   expect_identical(capabilities$openmp, FALSE)
   expect_identical(capabilities$max_threads, 1L)
   withr::local_options(GEModelR.sparse.schur_cpp_threads = NULL)
