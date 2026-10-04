@@ -91,6 +91,37 @@ matrixSourceVerify = function(library, version) {
   invisible(installed)
 }
 
+matrixSourceDownload = function(url, version, archive,
+                                download = utils::download.file) {
+  warnings = character()
+  status = tryCatch(withCallingHandlers(
+    download(url, archive, mode = "wb", quiet = FALSE),
+    warning = function(condition) {
+      warnings <<- c(warnings, conditionMessage(condition))
+      invokeRestart("muffleWarning")
+    }
+  ), error = identity)
+  if (!identical(status, 0L)) {
+    detail = c(warnings, if (inherits(status, "error")) conditionMessage(status))
+    current = paste0("https://cran.r-project.org/src/contrib/Matrix_",
+                     version, ".tar.gz")
+    missing = any(grepl("HTTP[^\n]*404|404[^\n]*Not Found", detail,
+                       ignore.case = TRUE))
+    if (!identical(url, current) || !missing) {
+      stop(paste(c("Matrix source download failed", detail), collapse = ": "),
+           call. = FALSE)
+    }
+    url = paste0("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_",
+                 version, ".tar.gz")
+    cat("Current source returned HTTP 404; retrying exact version:", url, "\n")
+    unlink(archive)
+    status = download(url, archive, mode = "wb", quiet = FALSE)
+    if (!identical(status, 0L)) stop("Matrix source download failed", call. = FALSE)
+  }
+  cat("Downloaded Matrix source archive:", url, "\n")
+  invisible(url)
+}
+
 matrixSourceInstall = function(inputs) {
   cat("Matrix source archive:", inputs$url, "\n")
   cat("Requested Matrix version:", inputs$version, "\n")
@@ -106,8 +137,7 @@ matrixSourceInstall = function(inputs) {
   dir.create(scratch)
   on.exit(unlink(scratch, recursive = TRUE), add = TRUE)
   archive = file.path(scratch, basename(inputs$url))
-  status = utils::download.file(inputs$url, archive, mode = "wb", quiet = FALSE)
-  if (!identical(status, 0L)) stop("Matrix source download failed", call. = FALSE)
+  matrixSourceDownload(inputs$url, inputs$version, archive)
   matrixSourceArchive(archive, inputs$version, scratch)
   # Check again after downloading before allowing R to write to the target.
   matrixSourceCleanLibrary(inputs$library)
