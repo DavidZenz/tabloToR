@@ -12,6 +12,10 @@ shocks, solving with the legacy or sparse engine, and inspecting the
 resulting model state and solve diagnostics. Use the model methods for
 supported state changes rather than modifying compiler, index, or cache
 fields directly.
+SuiteSparse is a recognized backend identifier but is unavailable in supported
+installed builds pending portable support. Explicitly select
+\code{backend="Matrix"} for a supported sparse solve. Explicit SuiteSparse
+requests fail capability preflight before matrix emission or runtime compilation.
 }
 
 \seealso{

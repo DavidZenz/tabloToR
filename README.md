@@ -178,14 +178,13 @@ model$compactOutput
 
 Use `model$setMemoryBudget(bytes)` or `memory_budget = bytes` to make the solver fail during preflight when the estimate exceeds the available budget. `setClosure()` accepts base variable names; indexed labels belong in `setShocks()`. Existing `variableValues` initialization remains supported when `setShocks()` is omitted.
 
-The sparse path uses Matrix sparse LU with fill-reducing ordering by default. For systems where SuperLU runs out of fill workspace, use the optional SuiteSparse/UMFPACK backend:
+The sparse path uses Matrix sparse LU with fill-reducing ordering by default. SuiteSparse remains a recognized backend ID but is unavailable in supported installed builds pending portable support. An explicit SuiteSparse request fails capability preflight before matrix emission or runtime compilation. Explicitly select `backend = "Matrix"` for a supported sparse solve:
 
 ```r
-options(GEModelR.sparse.suite_sparse_ordering = "amd")
-model$solveModel(engine = "sparse", backend = "SuiteSparse")
+model$solveModel(engine = "sparse", backend = "Matrix")
 ```
 
-The SuiteSparse ordering can be `cholmod`, `amd`, `metis`, `best`, or `natural`; it requires Rcpp and a system SuiteSparse installation. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
+Installing system SuiteSparse libraries or setting its reserved ordering option does not enable this backend. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
 
 For the unaggregated GTAP layout, the opt-in `StructuredSchur` backend performs exact staged elimination of the local production, bilateral, and (when nonsingular) endowment blocks, then solves the remaining sparse system in block-triangular form. Singular local blocks are retained in the reduced system and reconstructed exactly after solving:
 
@@ -199,7 +198,7 @@ model$solveModel(
 )
 ```
 
-Its native elimination helper is compiled during package installation, so solves do not invoke a compiler at runtime. The backend keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use Matrix, SuiteSparse, or SparseM.
+Its native elimination helper is compiled during package installation, so solves do not invoke a compiler at runtime. The backend keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should explicitly select Matrix or SparseM.
 
 When the remaining BTF block is numerically difficult, use the matrix-free regional Schur backend:
 

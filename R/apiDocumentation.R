@@ -51,14 +51,18 @@
 #' The \code{engine} argument chooses the model runtime: \code{legacy} uses the
 #' established in-memory solver and \code{sparse} uses sparse execution. The
 #' sparse \code{backend} argument independently chooses a solver implementation
-#' and defaults to \code{"Matrix"}. The supported backend identifiers and
+#' and defaults to \code{"Matrix"}. The recognized backend identifiers and
 #' tiers are:
 #' \describe{
 #'   \item{\code{Matrix}}{Supported general sparse backend and default.}
 #'   \item{\code{StructuredSchur} and
 #'     \code{StructuredSchurFGMRES}}{Supported structured R backends.}
-#'   \item{\code{SparseM}, \code{SuiteSparse}, and
+#'   \item{\code{SparseM} and
 #'     \code{StructuredSchurFGMRESCpp}}{Compatibility-only backend requests.}
+#'   \item{\code{SuiteSparse}}{Recognized but unavailable in supported installed
+#'     builds pending portable support. Explicitly select \code{backend="Matrix"}
+#'     for a supported sparse solve. An explicit SuiteSparse request fails
+#'     capability preflight before matrix emission or runtime compilation.}
 #' }
 #' Optional backends can fail capability preflight when their requirements are
 #' unavailable. A requested backend is not silently replaced by another
@@ -117,7 +121,9 @@
 #'   \item{\code{GEModelR.sparse.lu_order}}{Integer from 0 through 3;
 #'     default \code{3}. Controls sparse LU ordering where the selected sparse
 #'     solve path uses LU factorization.}
-#'   \item{\code{GEModelR.sparse.suite_sparse_ordering}}{SuiteSparse ordering;
+#'   \item{\code{GEModelR.sparse.suite_sparse_ordering}}{Reserved SuiteSparse ordering;
+#'     SuiteSparse is unavailable in supported installed builds, so this option
+#'     does not enable that backend;
 #'     default \code{"amd"}. Accepted values are \code{"cholmod"},
 #'     \code{"amd"}, \code{"metis"}, \code{"best"}, \code{"natural"}, and
 #'     \code{"none"}. \code{"given"} is rejected.}

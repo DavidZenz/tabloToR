@@ -88,4 +88,17 @@ test_that("generated help covers the deliberate GEModel API", {
     expect_true(grepl(ordering, help_text, fixed = TRUE))
   }
   expect_match(help_text, "No global solver-memory option", fixed = TRUE)
+  normalized_help = gsub("[[:space:]]+", " ", help_text)
+  expect_match(
+    normalized_help,
+    "Recognized but unavailable in supported installed builds pending portable support",
+    fixed = TRUE
+  )
+  expect_match(normalized_help, 'backend="Matrix"', fixed = TRUE)
+  expect_match(normalized_help, "before matrix emission or runtime compilation",
+               fixed = TRUE)
+  error = tryCatch(.sparse_backend_preflight("SuiteSparse"), error = identity)
+  expect_s3_class(error, "GEModelR_capability_error")
+  expect_match(conditionMessage(error), "SuiteSparse.*unavailable")
+  expect_match(conditionMessage(error), 'backend="Matrix"', fixed = TRUE)
 })
