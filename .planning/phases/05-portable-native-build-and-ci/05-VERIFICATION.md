@@ -1,10 +1,16 @@
 ---
 phase: 05-portable-native-build-and-ci
-verified: 2026-10-05T08:22:54Z
+verified: 2026-10-05T08:47:51Z
 status: passed
 score: 22/22 must-haves verified
 behavior_unverified: 0
 overrides_applied: 0
+re_verification:
+  previous_status: passed
+  previous_score: 22/22
+  gaps_closed: []
+  gaps_remaining: []
+  regressions: []
 decision_coverage:
   honored: 14
   total: 14
@@ -19,10 +25,20 @@ deferred:
 # Phase 5: Portable Native Build and CI Verification Report
 
 **Phase Goal:** Make installation and native execution predictable on major R platforms with or without OpenMP.
-**Verified:** 2026-10-05T08:22:54Z
+**Verified:** 2026-10-05T08:47:51Z
 **Status:** passed
-**Re-verification:** No — initial verification; no previous Phase 05 VERIFICATION.md exists.
-**Source inspected:** HEAD `2feafe0`; final hosted package/workflow evidence uses `a0e01810cfdc7afdcfcf7a109afc3ab39a4d43b4`.
+**Re-verification:** Yes — freshness re-verification after orchestrator summary/tracking closeout; previous verification passed 22/22 at 2026-10-05T08:22:54Z.
+**Source inspected:** Final tracked HEAD `7d0d2dc01eae7630db2eddfd3f5b70740c39bbb7`; final-head hosted confirmation is [run 37284391555](https://github.com/DavidZenz/tabloToR/actions/runs/37284391555). The retained checksum-bound package/workflow provenance bundle remains run `37277215498` at `a0e01810cfdc7afdcfcf7a109afc3ab39a4d43b4`.
+
+### Final Freshness Re-verification
+
+All seven final tracked PLAN files were compared byte-for-byte with the previously verified tree at `2feafe0`: all 29 original plan truths are unchanged and remain mapped to the 22 deduplicated truths below. The complete changed-file inventory contains only tracking, the Phase 05-07 summary, the execution handoff and this report. All supporting R/native implementation, workflow, tests, tools, dependency metadata, README, CONTEXT and checksum-bound hosted evidence remain unchanged. Every referenced truth therefore retains its previously recorded code and behavioral evidence; no regression, missing artifact or new human check was found. No build, install, test or probe was repeated for this freshness check.
+
+An independent read-only `gh run view 37284391555 --repo DavidZenz/tabloToR --json headSha,event,status,conclusion,url,jobs` confirmed the pull-request run completed successfully at exactly `7d0d2dc01eae7630db2eddfd3f5b70740c39bbb7`, with **26/26 successful jobs**. All **24 native rows** individually have successful exact Matrix source-install and installed core-contract steps. This run is final-head confirmation; it does not replace or reseal the existing locally retained provenance bundle.
+
+The final-head representative artifact at `/tmp/gemodelr-hosted-37284391555-representative/` was independently read. Its `job-summary.md` and `check-exit-status.txt` preserve **exit 1, 1,868 passes, nine failures, 164 skips, two ERRORs, two WARNINGs and one NOTE**, on R 4.6.1 / Matrix 1.7.6. Its inherited Phase 04 comparison remains separately labeled 2,364/19/65/1/4/4. Overall job success does not establish a passing full package check.
+
+The tracked ROADMAP marks Phase 5 complete and Phase 6 unstarted; STATE selects Phase 6 planning with no started plan. REQUIREMENTS marks PORT-01, PORT-02, PORT-03 and CI-01 complete while CI-02 and the remaining Phase 6 qualification requirements stay pending. PROJECT preserves the distribution and full-check limitations. The only summary change reports this phase/requirements transition and remaining orchestrator closeout; it changes no acceptance scope. Shared tracking was inspected and not edited by the verifier. **Fresh result: passed, 22/22, zero behavior-unverified truths, zero human-verification items.**
 
 ## Goal Achievement
 
@@ -198,7 +214,7 @@ Disconfirmation checked three concrete failure possibilities: a green OpenMP job
 | --- | --- | --- |
 | Clean full source-archive package check | Phase 6 | Roadmap Success Criterion 1 requires no errors/warnings/unexplained significant notes. Actual Phase 05 representative check still has nine serialization/predecessor assertions, missing pdflatex and provisional license findings; `deferred-items.md` preserves their details. |
 
-Actual final check evidence: `/tmp/gemodelr-hosted-37277215498/artifacts/representative-check-37277215498-1/`, including `job-summary.md`, `check-exit-status.txt`, complete raw logs and check directory. Its overall hosted job succeeds because the failing full-check step is informational. **This report does not certify a clean full check, license clearance, skipped source-only contracts, every R/Matrix cross-product, or release readiness.** No failed Phase 05 truth was waived or reassigned to obtain a pass.
+Actual retained post-metadata check evidence: `/tmp/gemodelr-hosted-37277215498/artifacts/representative-check-37277215498-1/`, including `job-summary.md`, `check-exit-status.txt`, complete raw logs and check directory. Final-head confirmation at [run 37284391555](https://github.com/DavidZenz/tabloToR/actions/runs/37284391555) retains the same original exit-1 counts in `/tmp/gemodelr-hosted-37284391555-representative/`. Both overall hosted jobs succeed because the failing full-check step is informational. **This report does not certify a clean full check, license clearance, skipped source-only contracts, every R/Matrix cross-product, or release readiness.** No failed Phase 05 truth was waived or reassigned to obtain a pass.
 
 ### Human Verification Required
 
@@ -212,5 +228,5 @@ Verification wrote only this report and performed no commit, tracking/config edi
 
 ---
 
-_Verified: 2026-10-05T08:22:54Z_
+_Verified: 2026-10-05T08:47:51Z_
 _Verifier: the agent (gsd-verifier)_
