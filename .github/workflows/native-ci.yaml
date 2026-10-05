@@ -30,6 +30,11 @@ jobs:
         id: current
         shell: bash
         run: Rscript --vanilla tools/ci/resolve-matrix-current.R
+      - name: Verify declared floor and recorded compatibility interval
+        shell: bash
+        run: |
+          Rscript --vanilla tools/ci/verify-matrix-floor-evidence.R --verify-final-metadata --evidence .planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md
+          Rscript --vanilla tools/ci/test-matrix-floor-evidence.R --expect-final-metadata
       - name: Preserve exact per-run current endpoint
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
