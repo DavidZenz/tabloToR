@@ -57,17 +57,17 @@ None: provisional 1.6-5 passed all five required pairings; no successor was test
 
 ## Individually evidenced exclusions
 
-| setup_r_alias | resolved_r_version | os | build_mode | candidate_label | matrix_version | source_install_result | solver_test_result | run_id |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| release | 4.6.1 | macOS | serial | minimum | 1.6-5 | failure | not_run | 37273713572 |
-| devel | 4.7.0 | macOS | serial | minimum | 1.6-5 | failure | not_run | 37273713572 |
-| release | 4.6.1 | Windows | serial | minimum | 1.6-5 | failure | not_run | 37273713572 |
-| devel | 4.7.0 | Windows | serial | minimum | 1.6-5 | failure | not_run | 37273713572 |
-| release | 4.6.1 | Windows | openmp | minimum | 1.6-5 | failure | not_run | 37273713572 |
-| devel | 4.7.0 | Windows | openmp | minimum | 1.6-5 | failure | not_run | 37273713572 |
+| setup_r_alias | resolved_r_version | os | build_mode | candidate_label | matrix_version | source_install_result | solver_test_result | run_id | failure_reason |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| release | 4.6.1 | macOS | serial | minimum | 1.6-5 | failure | not_run | 37273713572 | Csparse.c:288:3: error: call to undeclared function 'OBJECT'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration] |
+| devel | 4.7.0 | macOS | serial | minimum | 1.6-5 | failure | not_run | 37273713572 | Csparse.c:288:3: error: call to undeclared function 'OBJECT'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration] |
+| release | 4.6.1 | Windows | serial | minimum | 1.6-5 | failure | not_run | 37273713572 | Mdefines.h:210:14: error: implicit declaration of function 'OBJECT' [-Wimplicit-function-declaration] |
+| devel | 4.7.0 | Windows | serial | minimum | 1.6-5 | failure | not_run | 37273713572 | Mdefines.h:210:14: error: implicit declaration of function 'OBJECT' [-Wimplicit-function-declaration] |
+| release | 4.6.1 | Windows | openmp | minimum | 1.6-5 | failure | not_run | 37273713572 | Mdefines.h:210:14: error: implicit declaration of function 'OBJECT' [-Wimplicit-function-declaration] |
+| devel | 4.7.0 | Windows | openmp | minimum | 1.6-5 | failure | not_run | 37273713572 | Mdefines.h:210:14: error: implicit declaration of function 'OBJECT' [-Wimplicit-function-declaration] |
 
-The excluded tuples failed exact Matrix source installation (OBJECT undeclared); solver tests did not run.
-Raw job IDs, artifact IDs/digests and extracted-file hashes are retained in hosted-evidence/hosted-run-<run>-1.json.
+The excluded tuples failed exact Matrix source installation for the individually checked reasons above; solver tests did not run.
+Original JSON manifests, checked normalized job/artifact provenance, exact CSV payloads and failed-source logs are retained in hosted-evidence/.
 See HOSTED-COMPATIBILITY.md for the exact compiler errors, prior attempts and independent informational full-check findings.
 This evidence establishes endpoint compatibility on valid tuples; it does not claim every R/Matrix/platform cross-product installs.
 

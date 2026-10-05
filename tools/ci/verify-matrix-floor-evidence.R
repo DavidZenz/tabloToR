@@ -43,6 +43,124 @@ matrixEvidencePass = function(rows) {
   rows$source_install_result == "success" & rows$solver_test_result == "success"
 }
 
+matrixEvidenceDcf = function(path, fields) {
+  value = read.dcf(path)
+  if (nrow(value) != 1L || !identical(colnames(value), fields) ||
+      anyNA(value) || any(!nzchar(value))) {
+    stop("Invalid checked provenance metadata", call. = FALSE)
+  }
+  setNames(as.list(value[1L, ]), fields)
+}
+
+matrixEvidenceFile = function(directory, relative) {
+  if (!nzchar(relative) || grepl("^/|^[A-Za-z]:|\\\\|(^|/)[.][.](/|$)", relative)) {
+    stop("Invalid retained provenance path", call. = FALSE)
+  }
+  path = file.path(directory, relative)
+  if (!file.exists(path) || dir.exists(path) ||
+      !startsWith(normalizePath(path), paste0(normalizePath(directory), "/"))) {
+    stop("Missing retained provenance payload", call. = FALSE)
+  }
+  path
+}
+
+matrixEvidenceDigest = function(path, expected) {
+  if (!grepl("^[0-9a-f]{32}$", expected) ||
+      !identical(unname(tools::md5sum(path)), expected)) {
+    stop("Retained provenance digest mismatch", call. = FALSE)
+  }
+}
+
+matrixValidateRunProvenance = function(actual, directory, run) {
+  stem = paste0("hosted-provenance-", run, "-1")
+  metadata = matrixEvidenceDcf(file.path(directory, paste0(stem, ".dcf")),
+    c("RunID", "RunAttempt", "HeadSHA", "RunURL", "ManifestMD5",
+      "RowsFile", "RowsMD5", "Normalization"))
+  if (metadata$RunID != run || metadata$RunAttempt != "1" ||
+      !grepl("^[0-9a-f]{40}$", metadata$HeadSHA) ||
+      metadata$RunURL != paste0("https://github.com/DavidZenz/tabloToR/actions/runs/", run) ||
+      metadata$RowsFile != paste0(stem, ".csv") ||
+      metadata$Normalization != "strict-json-and-artifact-sha256-v1") {
+    stop("Invalid hosted run/attempt provenance", call. = FALSE)
+  }
+  # This DCF is a trusted normalization of strictly parsed original JSON and
+  # SHA256-checked artifacts. Runtime checks need only offline base R MD5.
+  matrixEvidenceDigest(file.path(directory, paste0("hosted-run-", run, "-1.json")),
+                       metadata$ManifestMD5)
+  path = matrixEvidenceFile(directory, metadata$RowsFile)
+  matrixEvidenceDigest(path, metadata$RowsMD5)
+  provenance = read.csv(path, colClasses = "character", check.names = FALSE,
+                         stringsAsFactors = FALSE)
+  extra = c("run_attempt", "job_id", "job_name", "job_conclusion", "source_step",
+    "solver_step", "artifact_id", "artifact_name", "artifact_digest", "payload_file",
+    "payload_md5", "payload_sha256", "failure_log_file", "failure_log_md5",
+    "failure_log_sha256", "failure_reason")
+  if (!identical(names(provenance), c(matrixEvidenceColumns, extra)) ||
+      !nrow(provenance) || anyNA(provenance) || any(!nzchar(as.matrix(provenance))) ||
+      anyDuplicated(matrixEvidenceKeys(provenance, TRUE)) ||
+      anyDuplicated(provenance$job_id) || anyDuplicated(provenance$artifact_id) ||
+      any(provenance$run_id != run) || any(provenance$run_attempt != metadata$RunAttempt)) {
+    stop("Invalid hosted row provenance", call. = FALSE)
+  }
+  for (i in seq_len(nrow(provenance))) {
+    row = provenance[i, , drop = FALSE]
+    if (!grepl("^[1-9][0-9]+$", row$job_id) ||
+        !grepl("^[1-9][0-9]+$", row$artifact_id) ||
+        !grepl("^sha256:[0-9a-f]{64}$", row$artifact_digest) ||
+        !grepl("^[0-9a-f]{64}$", row$payload_sha256)) {
+      stop("Invalid hosted job/artifact identifiers or digests", call. = FALSE)
+    }
+    jobNames = c(paste(row$os, "/ R", row$setup_r_alias, "/ Matrix",
+                      paste0(row$matrix_version, " (", row$candidate_label, ")"), "/", row$build_mode),
+                 paste(row$os, "/ R", row$setup_r_alias, "/ Matrix", row$candidate_label, "/", row$build_mode))
+    artifact = paste("matrix-candidate", run, metadata$RunAttempt, row$setup_r_alias,
+                     row$candidate_label, row$os, row$build_mode, sep = "-")
+    solver = if (row$solver_step == "skipped") "not_run" else row$solver_step
+    if (!row$job_name %in% jobNames || row$artifact_name != artifact ||
+        row$source_step != row$source_install_result || solver != row$solver_test_result ||
+        !row$source_step %in% c("success", "failure", "cancelled") ||
+        !row$solver_step %in% c("success", "failure", "cancelled", "skipped") ||
+        (matrixEvidencePass(row) && row$job_conclusion != "success") ||
+        ((row$source_step == "failure" || row$solver_step == "failure") &&
+           row$job_conclusion != "failure") ||
+        row$payload_file != paste0("payloads-", run, "-1/", row$job_id, ".csv")) {
+      stop("Hosted tuple or step outcomes disagree with payload", call. = FALSE)
+    }
+    payloadPath = matrixEvidenceFile(directory, row$payload_file)
+    matrixEvidenceDigest(payloadPath, row$payload_md5)
+    payload = readMatrixEvidence(payloadPath)
+    claim = row[matrixEvidenceColumns]
+    rownames(claim) = rownames(payload) = NULL
+    if (nrow(payload) != 1L || !identical(claim, payload)) {
+      stop("Hosted provenance disagrees with retained artifact row", call. = FALSE)
+    }
+    if (row$source_step == "failure") {
+      if (row$failure_log_file != paste0("payloads-", run, "-1/", row$job_id, ".log")) {
+        stop("Failed-source artifact identity mismatch", call. = FALSE)
+      }
+      logPath = matrixEvidenceFile(directory, row$failure_log_file)
+      matrixEvidenceDigest(logPath, row$failure_log_md5)
+      if (!grepl("^[0-9a-f]{64}$", row$failure_log_sha256)) {
+        stop("Missing failed-source artifact digest", call. = FALSE)
+      }
+      errors = trimws(grep("error:", readLines(logPath, warn = FALSE),
+                           value = TRUE, ignore.case = TRUE))
+      if (!length(errors) || row$failure_reason != errors[[1L]]) {
+        stop("Exclusion reason disagrees with retained source artifact", call. = FALSE)
+      }
+    } else if (any(unlist(row[c("failure_log_file", "failure_log_md5",
+                                "failure_log_sha256", "failure_reason")]) != "none")) {
+      stop("Unexpected failed-source provenance", call. = FALSE)
+    }
+  }
+  matched = provenance[match(matrixEvidenceKeys(actual, TRUE),
+                            matrixEvidenceKeys(provenance, TRUE)), , drop = FALSE]
+  claim = matched[matrixEvidenceColumns]
+  rownames(actual) = rownames(claim) = NULL
+  if (!identical(actual, claim)) stop("Evidence differs from checked hosted provenance", call. = FALSE)
+  matched
+}
+
 selectMatrixFloor = function(rows, history = NULL) {
   candidates = unique(rows$matrix_version[rows$candidate_label != "current"])
   candidates = candidates[order(package_version(candidates))]
@@ -140,6 +258,7 @@ matrixFloorRecord = function(inputPath, supportedPath, historyPath = NULL) {
     colClasses = "character", stringsAsFactors = FALSE)
   # Compare against retained immutable run merges, not mutable local claims.
   directory = file.path(dirname(inputPath), "hosted-evidence")
+  checked = list()
   for (rows in list(input, supported)) {
     for (run in unique(rows$run_id)) {
       retainedPath = file.path(directory, paste0("matrix-candidate-evidence-", run, "-1.csv"))
@@ -153,9 +272,15 @@ matrixFloorRecord = function(inputPath, supportedPath, historyPath = NULL) {
                               matrixEvidenceKeys(retained, TRUE)), , drop = FALSE]
       rownames(actual) = rownames(matched) = NULL
       if (!identical(actual, matched)) stop("Evidence differs from retained hosted rows", call. = FALSE)
+      checked[[length(checked) + 1L]] = matrixValidateRunProvenance(actual, directory, run)
     }
   }
   result = validateMatrixEvidence(input, supported, history)
+  provenance = do.call(rbind, checked)
+  reasons = provenance$failure_reason[match(matrixEvidenceKeys(result$excluded, TRUE),
+                                            matrixEvidenceKeys(provenance, TRUE))]
+  if (anyNA(reasons) || any(reasons == "none")) stop("Missing checked exclusion reason", call. = FALSE)
+  result$excluded$failure_reason = gsub("|", "/", reasons, fixed = TRUE)
   floor = result$selected$version
   relative = function(path) {
     root = normalizePath(dirname(inputPath))
@@ -182,8 +307,8 @@ matrixFloorRecord = function(inputPath, supportedPath, historyPath = NULL) {
     } else paste("Rejected in eligible ascending order:", paste(result$selected$rejected, collapse = ", ")),
     "", "## Full supported matrix", "", matrixEvidenceTable(supported), "",
     "## Individually evidenced exclusions", "", matrixEvidenceTable(result$excluded), "",
-    "The excluded tuples failed exact Matrix source installation (OBJECT undeclared); solver tests did not run.",
-    "Raw job IDs, artifact IDs/digests and extracted-file hashes are retained in hosted-evidence/hosted-run-<run>-1.json.",
+    "The excluded tuples failed exact Matrix source installation for the individually checked reasons above; solver tests did not run.",
+    "Original JSON manifests, checked normalized job/artifact provenance, exact CSV payloads and failed-source logs are retained in hosted-evidence/.",
     "See HOSTED-COMPATIBILITY.md for the exact compiler errors, prior attempts and independent informational full-check findings.",
     "This evidence establishes endpoint compatibility on valid tuples; it does not claim every R/Matrix/platform cross-product installs.", ""))
 }

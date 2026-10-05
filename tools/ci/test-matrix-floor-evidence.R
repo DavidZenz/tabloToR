@@ -76,6 +76,64 @@ for (mutation in c("column", "run", "r", "duplicate", "version")) {
 record = matrixFloorRecord(inputPath, supportedPath)
 evidence = file.path(directory, "MATRIX-FLOOR-EVIDENCE.md")
 pass(identical(readLines(evidence), record))
+
+# Tamper only disposable copies; trusted normalized metadata and raw artifacts
+# are checked independently from the user-submitted merged rows.
+probeDirectory = file.path(temporary, "provenance")
+dir.create(probeDirectory)
+file.copy(inputPath, file.path(probeDirectory, basename(inputPath)))
+file.copy(file.path(directory, "hosted-evidence"), probeDirectory, recursive = TRUE)
+probeInput = file.path(probeDirectory, basename(inputPath))
+probeSupported = file.path(probeDirectory, "hosted-evidence", basename(supportedPath))
+run = unique(input$run_id)
+manifest = file.path(probeDirectory, "hosted-evidence", paste0("hosted-run-", run, "-1.json"))
+originalManifest = readBin(manifest, "raw", n = file.info(manifest)$size)
+for (mutation in c("invalid JSON", "run", "attempt", "outcome", "artifact digest")) {
+  text = rawToChar(originalManifest)
+  if (mutation == "invalid JSON") text = "invalid JSON; no metadata"
+  if (mutation == "run") text = sub(run, "99999999999", text, fixed = TRUE)
+  if (mutation == "attempt") text = sub('"run_attempt": 1', '"run_attempt": 2', text, fixed = TRUE)
+  if (mutation == "outcome") text = sub('"conclusion": "success"', '"conclusion": "failure"', text, fixed = TRUE)
+  if (mutation == "artifact digest") text = sub("sha256:", "sha000:", text, fixed = TRUE)
+  writeBin(charToRaw(text), manifest)
+  reject(matrixFloorRecord(probeInput, probeSupported))
+}
+writeBin(originalManifest, manifest)
+normalizedPath = file.path(probeDirectory, "hosted-evidence", paste0("hosted-provenance-", run, "-1.csv"))
+dcfPath = sub("[.]csv$", ".dcf", normalizedPath)
+originalRows = readBin(normalizedPath, "raw", n = file.info(normalizedPath)$size)
+originalDcf = readBin(dcfPath, "raw", n = file.info(dcfPath)$size)
+for (mutation in c("run_attempt", "source_step", "solver_step", "job_conclusion",
+                    "payload_sha256", "failure_reason")) {
+  bad = read.csv(normalizedPath, colClasses = "character", check.names = FALSE)
+  index = if (mutation == "failure_reason") which(bad$source_step == "failure")[[1L]] else 1L
+  bad[index, mutation] = switch(mutation, run_attempt = "2", source_step = "failure",
+    solver_step = "failure", job_conclusion = "failure", payload_sha256 = "",
+    failure_reason = "invented compiler error")
+  write.csv(bad, normalizedPath, row.names = FALSE)
+  # First reject the broken normalization digest. Then reseal only its table
+  # hash to exercise the independent semantic and retained-payload checks.
+  reject(matrixFloorRecord(probeInput, probeSupported))
+  metadata = read.dcf(dcfPath)
+  metadata[1L, "RowsMD5"] = unname(tools::md5sum(normalizedPath))
+  write.dcf(metadata, dcfPath)
+  reject(matrixFloorRecord(probeInput, probeSupported))
+  writeBin(originalRows, normalizedPath)
+  writeBin(originalDcf, dcfPath)
+}
+bad = read.csv(normalizedPath, colClasses = "character", check.names = FALSE)
+payloadPath = file.path(probeDirectory, "hosted-evidence", bad$payload_file[[1L]])
+payload = readBin(payloadPath, "raw", n = file.info(payloadPath)$size)
+writeBin(charToRaw("altered artifact CSV"), payloadPath)
+reject(matrixFloorRecord(probeInput, probeSupported))
+writeBin(payload, payloadPath)
+unlink(payloadPath)
+reject(matrixFloorRecord(probeInput, probeSupported))
+writeBin(payload, payloadPath)
+failurePath = file.path(probeDirectory, "hosted-evidence",
+  bad$failure_log_file[which(bad$source_step == "failure")[[1L]]])
+writeLines("error: forged compiler reason", failurePath)
+reject(matrixFloorRecord(probeInput, probeSupported))
 description = file.path(temporary, "DESCRIPTION")
 readme = file.path(temporary, "README.md")
 writeLines(c("Package: GEModelR", "Imports: Matrix (>= 1.6-5), Rcpp"), description)

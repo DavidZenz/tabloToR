@@ -1,0 +1,29 @@
+Matrix source archive: https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz 
+Requested Matrix version: 1.6-5 
+Target library: D:/a/_temp/GEModelR-library 
+trying URL 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'
+Content type 'application/x-gzip' length 2883851 bytes (2.8 MB)
+==================================================
+downloaded 2.8 MB
+
+Downloaded Matrix source archive: https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz 
+Source install with active R: R version 4.6.1 (2026-06-24 ucrt) 
+* installing *source* package 'Matrix' ...
+** this is package 'Matrix' version '1.6-5'
+** package 'Matrix' successfully unpacked and MD5 sums checked
+** using staged installation
+** libs
+using C compiler: 'gcc.exe (GCC) 14.3.0'
+gcc  -I"C:/R/include" -DNDEBUG -I./SuiteSparse_config -DNTIMER    -I"C:/rtools45/x86_64-w64-mingw32.static.posix/include"      -O2 -Wall -std=gnu2x  -mfpmath=sse -msse2 -mstackrealign   -c Csparse.c -o Csparse.o
+In file included from Csparse.c:1:
+Csparse.c: In function 'Csparse_MatrixMarket':
+Mdefines.h:210:14: error: implicit declaration of function 'OBJECT' [-Wimplicit-function-declaration]
+  210 |         if (!OBJECT(_X_)) \
+      |              ^~~~~~
+Csparse.c:288:17: note: in expansion of macro 'ERROR_INVALID_CLASS'
+  288 |                 ERROR_INVALID_CLASS(obj, __func__);
+      |                 ^~~~~~~~~~~~~~~~~~~
+make: *** [C:/R/etc/x64/Makeconf:297: Csparse.o] Error 1
+ERROR: compilation failed for package 'Matrix'
+* removing 'D:/a/_temp/GEModelR-library/Matrix'
+Matrix source installer: Matrix source installation failed
