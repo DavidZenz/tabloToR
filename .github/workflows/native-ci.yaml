@@ -11,8 +11,36 @@ permissions:
   contents: read
 
 jobs:
+  matrix-endpoint:
+    name: Resolve exact current Matrix source once
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.current.outputs.version }}
+      source: ${{ steps.current.outputs.source }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Set up resolver R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          r-version: release
+      - name: Resolve official CRAN source index
+        id: current
+        shell: bash
+        run: Rscript --vanilla tools/ci/resolve-matrix-current.R
+      - name: Preserve exact per-run current endpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: matrix-current-${{ github.run_id }}-${{ github.run_attempt }}
+          path: matrix-current-endpoint.txt
+          if-no-files-found: error
+          retention-days: 30
+
   native-core:
-    name: ${{ matrix.platform }} / R ${{ matrix.r }} / Matrix ${{ matrix.matrix-version }} (${{ matrix.candidate }}) / ${{ matrix.build }}
+    needs: matrix-endpoint
+    name: ${{ matrix.platform }} / R ${{ matrix.r }} / Matrix ${{ matrix.candidate }} / ${{ matrix.build }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
@@ -26,31 +54,31 @@ jobs:
         include:
           - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: macOS, os: macos-latest, r: release, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: release, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: release, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: release, build: openmp, openmp: required, candidate: current}
           - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: macOS, os: macos-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: Windows, os: windows-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: Windows, os: windows-latest, r: oldrel-1, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: macOS, os: macos-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current}
           - {platform: Linux, os: ubuntu-latest, r: devel, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
           - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: devel, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: macOS, os: macos-latest, r: devel, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: devel, build: serial, openmp: forbidden, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
-          - {platform: Windows, os: windows-latest, r: devel, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: devel, build: openmp, openmp: required, candidate: current}
     env:
       GEModelR_EXPECT_OPENMP: ${{ matrix.openmp }}
-      GEModelR_EXPECT_MATRIX_VERSION: ${{ matrix.matrix-version }}
+      GEModelR_EXPECT_MATRIX_VERSION: ${{ matrix.candidate == 'current' && needs.matrix-endpoint.outputs.version || matrix.matrix-version }}
       GEModelR_SETUP_R_ALIAS: ${{ matrix.r }}
       GEModelR_CANDIDATE_LABEL: ${{ matrix.candidate }}
       GEModelR_PLATFORM: ${{ matrix.platform }}
@@ -114,11 +142,11 @@ jobs:
           install-pandoc: false
           install-quarto: false
 
-      - name: Source-install exact provisional Matrix endpoint
+      - name: Source-install exact Matrix endpoint
         id: matrix-source
         shell: bash
         env:
-          MATRIX_SOURCE_URL: ${{ matrix.matrix-url }}
+          MATRIX_SOURCE_URL: ${{ matrix.candidate == 'current' && needs.matrix-endpoint.outputs.source || matrix.matrix-url }}
         run: |
           set -o pipefail
           Rscript --vanilla tools/ci/install-matrix-source.R "$MATRIX_SOURCE_URL" "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY" 2>&1 | tee "$GEModelR_EVIDENCE_DIR/matrix-source-install.log"
@@ -165,13 +193,14 @@ jobs:
           retention-days: 30
 
   representative-check:
+    needs: matrix-endpoint
     name: Representative R CMD check baseline (informational, non-required)
     runs-on: ubuntu-latest
     timeout-minutes: 45
     # Independent informational check: no needs edge to the supported matrix.
     env:
       GEModelR_EXPECT_OPENMP: forbidden
-      GEModelR_EXPECT_MATRIX_VERSION: '1.7-6'
+      GEModelR_EXPECT_MATRIX_VERSION: ${{ needs.matrix-endpoint.outputs.version }}
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -211,7 +240,9 @@ jobs:
 
       - name: Source-install representative exact current Matrix
         shell: bash
-        run: Rscript --vanilla tools/ci/install-matrix-source.R https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY"
+        env:
+          MATRIX_SOURCE_URL: ${{ needs.matrix-endpoint.outputs.source }}
+        run: Rscript --vanilla tools/ci/install-matrix-source.R "$MATRIX_SOURCE_URL" "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY"
 
       - name: Full R CMD check baseline (informational, non-required)
         id: full-check
