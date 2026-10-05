@@ -1,10 +1,10 @@
 ---
 schema_version: 1
-open_count: 2
+open_count: 4
 waived_count: 0
 fixed_count: 17
-total_count: 19
-last_updated: 2026-08-27T14:04:25.806Z
+total_count: 21
+last_updated: 2026-10-05T08:31:03.603Z
 ---
 
 # Broken Windows Ledger
@@ -34,6 +34,8 @@ last_updated: 2026-08-27T14:04:25.806Z
 | 17 | 01 | deviation | .planning/STATE.md |  | Reconciled human-readable progress after the SDK skipped derived fields for an unscoped phase. | fixed |  | 2026-08-27T10:59:25.379Z | 2026-08-27T10:59:49.477Z |
 | 18 | 01 | unmet-truth | .planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md |  | Final rtk R CMD check . fails because Linuxbrew binutils require GLIBC symbols unavailable on the Debian 10 host; Plan 01-11 remains halted. | fixed |  | 2026-08-27T12:09:32.553Z | 2026-08-27T14:04:25.806Z |
 | 19 | 01 | deviation | .planning/STATE.md |  | Reconciled halted Plan 01-11 metadata after roadmap.update-plan-progress marked it executed and raised completed plans to 11. | fixed |  | 2026-08-27T12:11:08.874Z | 2026-08-27T12:11:28.869Z |
+| 25 | 05 | fixme | tests/testthat/test-model-serialization.R |  | The hosted R 4.6.1 representative check retains nine predecessor serialization assertions across test-model-serialization.R and test-serialization-leaf-types.R; qualify and resolve these in Phase 06. | open |  | 2026-10-05T08:31:03.603Z |  |
+| 26 | 05 | todo | .github/workflows/native-ci.yaml |  | The hosted representative R CMD check lacks pdflatex, producing a PDF-related ERROR and WARNING; include TeX tooling or document the runner strategy during Phase 06 release qualification. | open |  | 2026-10-05T08:31:03.603Z |  |
 
 ````json
 [
@@ -264,6 +266,30 @@ last_updated: 2026-08-27T14:04:25.806Z
     "reason": "",
     "recorded_at": "2026-08-27T12:11:08.874Z",
     "resolved_at": "2026-08-27T12:11:28.869Z"
+  },
+  {
+    "id": 25,
+    "kind": "fixme",
+    "phase": "05",
+    "file": "tests/testthat/test-model-serialization.R",
+    "line": null,
+    "description": "The hosted R 4.6.1 representative check retains nine predecessor serialization assertions across test-model-serialization.R and test-serialization-leaf-types.R; qualify and resolve these in Phase 06.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-05T08:31:03.603Z",
+    "resolved_at": null
+  },
+  {
+    "id": 26,
+    "kind": "todo",
+    "phase": "05",
+    "file": ".github/workflows/native-ci.yaml",
+    "line": null,
+    "description": "The hosted representative R CMD check lacks pdflatex, producing a PDF-related ERROR and WARNING; include TeX tooling or document the runner strategy during Phase 06 release qualification.",
+    "status": "open",
+    "reason": "",
+    "recorded_at": "2026-10-05T08:31:03.603Z",
+    "resolved_at": null
   }
 ]
 ````
