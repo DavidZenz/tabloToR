@@ -120,8 +120,8 @@ if (!requireNamespace("HARr", quietly = TRUE)) {
     call. = FALSE
   )
 }
-if (!requireNamespace("tabloToR", quietly = TRUE)) {
-  stop("Install tabloToR before running this benchmark.", call. = FALSE)
+if (!requireNamespace("GEModelR", quietly = TRUE)) {
+  stop("Install GEModelR before running this benchmark.", call. = FALSE)
 }
 
 sets_path <- find_input(data_dir, c("sets.har", "gsdgset.har"), "GTAP sets")
@@ -136,7 +136,7 @@ gtapdata <- HARr::read_har(data_path)
 gtapparm <- HARr::read_har(parm_path)
 read_seconds <- proc.time()[[3L]] - read_start
 
-model <- tabloToR::GEModel$new()
+model <- GEModelR::GEModel$new()
 load_tablo_start <- proc.time()[[3L]]
 model$loadTablo(tablo_path)
 load_tablo_seconds <- proc.time()[[3L]] - load_tablo_start

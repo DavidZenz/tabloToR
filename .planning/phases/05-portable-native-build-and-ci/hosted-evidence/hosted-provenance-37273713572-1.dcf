@@ -1,0 +1,8 @@
+RunID: 37273713572
+RunAttempt: 1
+HeadSHA: 98e626aaad0824db07a2012ed1cacfbcaef74a22
+RunURL: https://github.com/DavidZenz/tabloToR/actions/runs/37273713572
+ManifestMD5: c010f4df4b67ea6e0ebe2d917ece588c
+RowsFile: hosted-provenance-37273713572-1.csv
+RowsMD5: 08c572fda15998a7aef7315f1ab4bf45
+Normalization: strict-json-and-artifact-sha256-v1

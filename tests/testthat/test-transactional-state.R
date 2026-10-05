@@ -1,0 +1,593 @@
+test_that("sparse second-substep failure is transactionally invisible", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  failTransactionAt("after-substep", occurrence = 2L)
+
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 3, engine = "sparse", postsim = FALSE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected after-substep failure"
+  )
+
+  expectTransactionalStateIdentical(before, model)
+  expect_identical(model$lastDiagnostics$status, "numerical_failed")
+  expect_identical(model$lastDiagnostics$failure_phase, "after-substep")
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_false(model$lastDiagnostics$retryable_postsim)
+  expect_true(length(model$lastDiagnostics$true_residual_history) > 0L)
+  expect_true(is.list(model$lastDiagnostics$capability_evidence))
+  expect_identical(model$lastDiagnostics$cleanup_status$status, "complete")
+})
+
+test_that("sparse simulation-update failure does not publish working state", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "variableValues", c(2, 0, 0))
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  failTransactionAt("simulation-update")
+
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected simulation-update failure"
+  )
+
+  expectTransactionalStateIdentical(before, model)
+  expect_identical(model$lastDiagnostics$failure_phase, "simulation-update")
+})
+
+test_that("accepted sparse solve commits exactly once", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  commits = 0L
+  localTransactionFault(function(phase, context) {
+    if (identical(phase, "commit-accepted-state")) {
+      commits <<- commits + 1L
+    }
+    invisible(NULL)
+  })
+
+  model$solveModel(
+    iter = 1, steps = 3, engine = "sparse", postsim = FALSE,
+    diagnostics = TRUE, output = "full", reduction = "off"
+  )
+
+  expect_identical(commits, 1L)
+  expect_equal(unname(model$solution), c(1, 3, -2), tolerance = 3e-2)
+  expect_identical(model$lastDiagnostics$status, "succeeded")
+  expect_true(model$lastDiagnostics$accepted_numerical_state)
+  expect_false(model$lastDiagnostics$retryable_postsim)
+})
+
+test_that("transaction commit seam remains internal", {
+  exported = getNamespaceExports("GEModelR")
+  expect_true(exists(".commit_accepted_state", mode = "function"))
+  expect_false(".commit_accepted_state" %in% exported)
+
+  manifest = loadCompatibilityManifest()
+  row = manifest[
+    manifest$kind == "internal" &
+      manifest$name == ".commit_accepted_state",
+    , drop = FALSE
+  ]
+  expect_equal(nrow(row), 1L)
+  expect_identical(row$tier, "internal")
+})
+
+test_that("accepted-state commit failures have a stable condition class", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(1, 2, -1))
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  failTransactionAt("commit-accepted-state")
+
+  error = tryCatch(model$solveModel(
+    iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+    diagnostics = TRUE, reduction = "off"
+  ), error = identity)
+
+  expect_identical(class(error)[[1L]],
+                   "GEModelR_committed_state_error")
+  expect_identical(error$requested_engine, "sparse")
+  expect_identical(error$requested_backend, "Matrix")
+  expect_identical(error$failure_phase, "commit-accepted-state")
+  expect_false(error$accepted_numerical_state)
+  expect_false(error$retryable_postsim)
+  expect_true(is.list(error$remediation))
+  expect_identical(model$lastDiagnostics$status, "committed_state_failed")
+  expect_identical(
+    model$lastDiagnostics$condition_class,
+    "GEModelR_committed_state_error"
+  )
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_identical(model$lastDiagnostics$implementation, "r")
+  expect_identical(model$lastDiagnostics$cleanup_status$status, "complete")
+  expect_true(length(model$lastDiagnostics$true_residual_history) > 0L)
+  expectTransactionalStateIdentical(before, model)
+})
+
+test_that("sparse numerical rejection matrix preserves committed state", {
+  phases = c(
+    "compilation", "factorization", "convergence", "finiteness",
+    "residual", "simulation-update"
+  )
+  for (phase in phases) {
+    model = make_three_region_model()
+    set_three_region_shocks(model, "preferred", c(1, 2, -1))
+    before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+    failTransactionAt(phase)
+
+    error = tryCatch(model$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+        diagnostics = TRUE, reduction = "off"
+      ), error = identity)
+    expect_match(
+      conditionMessage(error), paste("injected", phase, "failure"),
+      info = phase
+    )
+    expect_identical(class(error)[[1L]], "GEModelR_numerical_error",
+                     info = phase)
+    expect_identical(error$requested_engine, "sparse", info = phase)
+    expect_identical(error$requested_backend, "Matrix", info = phase)
+    expect_identical(error$failure_phase, phase, info = phase)
+    expect_false(error$accepted_numerical_state, info = phase)
+    expect_true(is.list(error$remediation), info = phase)
+    expectTransactionalStateIdentical(before, model)
+    expect_identical(
+      model$lastDiagnostics$status, "numerical_failed", info = phase
+    )
+    expect_identical(model$lastDiagnostics$failure_phase, phase, info = phase)
+    expect_false(model$lastDiagnostics$accepted_numerical_state, info = phase)
+  }
+})
+
+test_that("C++ residual rejection cannot publish its structural cache", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  model = make_cpp_structured_model()
+  partition = function(index, state) {
+    list(
+      stages = list(NULL),
+      external = sparse_external_block_partition(index, state)
+    )
+  }
+  before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+  expect_identical(model$sparseState$.solver_cache, list())
+  failTransactionAt("residual")
+
+  expect_error(
+    testthat::with_mocked_bindings(
+      model$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+        diagnostics = TRUE, backend = "StructuredSchurFGMRESCpp"
+      ),
+      sparse_gtap_elimination_partition = partition,
+      .package = "GEModelR"
+    ),
+    "injected residual failure"
+  )
+
+  expectTransactionalStateIdentical(before, model)
+  expect_identical(model$sparseState$.solver_cache, list())
+})
+
+
+test_that("legacy rejection matrix runs on an isolated copy", {
+  phases = c(
+    "compilation", "factorization", "convergence", "finiteness",
+    "residual", "simulation-update"
+  )
+  for (phase in phases) {
+    model = make_three_region_model(engine = "legacy")
+    set_three_region_shocks(model, "preferred", c(1, 2, -1))
+    before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+    failTransactionAt(phase)
+
+    expect_error(
+      model$solveModel(iter = 1, steps = 1, engine = "legacy"),
+      paste("injected", phase, "failure"),
+      info = phase
+    )
+    expectTransactionalStateIdentical(before, model)
+    expect_identical(
+      model$lastDiagnostics$status, "numerical_failed", info = phase
+    )
+    expect_identical(model$lastDiagnostics$engine, "legacy", info = phase)
+    expect_identical(model$lastDiagnostics$failure_phase, phase, info = phase)
+  }
+})
+
+test_that("failed legacy solves do not consume either public shock source", {
+  for (api in c("preferred", "variableValues")) {
+    model = make_three_region_model(engine = "legacy")
+    set_three_region_shocks(model, api, c(1, 0, 0))
+    source_before = list(
+      explicitShocks = model$explicitShocks,
+      variableValues = model$variableValues
+    )
+    failTransactionAt("factorization")
+
+    expect_error(
+      model$solveModel(iter = 1, steps = 1, engine = "legacy"),
+      "injected factorization failure",
+      info = api
+    )
+    expect_identical(model$explicitShocks, source_before$explicitShocks)
+    expect_identical(model$variableValues, source_before$variableValues)
+
+    localTransactionFault(NULL)
+    model$solveModel(iter = 1, steps = 1, engine = "legacy")
+    expect_equal(unname(model$solution), c(1, 0, 0), tolerance = 1e-12)
+    model$solveModel(iter = 1, steps = 1, engine = "legacy")
+    expect_equal(unname(model$solution), c(1, 0, 0), tolerance = 1e-12)
+  }
+})
+
+test_that("post failures preserve accepted solve and prior complete output", {
+  for (phase in c("post-update", "output-projection")) {
+    model = make_three_region_model()
+    set_three_region_shocks(model, "preferred", c(1, 0, 0))
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, output = "compact", variables = "stock",
+      reduction = "off"
+    )
+    prior_data = model$data
+    prior_output = model$compactOutput
+
+    set_three_region_shocks(model, "preferred", c(2, 0, 0))
+    recordTransactionPhases(fail_phase = phase)
+    error = tryCatch(model$solveModel(
+        iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+        diagnostics = TRUE, output = "compact", variables = "stock",
+        reduction = "off"
+      ), error = identity)
+    expect_match(
+      conditionMessage(error), paste("injected", phase, "failure"),
+      info = phase
+    )
+    expect_identical(class(error)[[1L]],
+                     "GEModelR_retryable_postsim_error", info = phase)
+    expect_identical(error$requested_engine, "sparse", info = phase)
+    expect_identical(error$requested_backend, "Matrix", info = phase)
+    expect_identical(error$failure_phase, phase, info = phase)
+    expect_true(error$accepted_numerical_state, info = phase)
+    expect_true(error$retryable_postsim, info = phase)
+    expect_true(is.list(error$remediation), info = phase)
+
+    expect_equal(unname(model$solution), c(2, 0, 0), tolerance = 1e-12)
+    expect_identical(model$data, prior_data)
+    expect_identical(model$compactOutput, prior_output)
+    expect_identical(model$lastDiagnostics$status, "postsim_failed")
+    expect_true(model$lastDiagnostics$accepted_numerical_state)
+    expect_true(model$lastDiagnostics$retryable_postsim)
+    expect_identical(model$lastDiagnostics$failure_phase, phase)
+    expect_true(length(model$.postsimRecord) > 0L)
+
+    localTransactionFault(NULL)
+    expected = make_three_region_model()
+    set_three_region_shocks(expected, "preferred", c(1, 0, 0))
+    expected$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, output = "compact", variables = "stock",
+      reduction = "off"
+    )
+    set_three_region_shocks(expected, "preferred", c(2, 0, 0))
+    expected$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, output = "compact", variables = "stock",
+      reduction = "off"
+    )
+
+    retry_phases = recordTransactionPhases()
+    returned = withVisible(model$retryPostsim(diagnostics = TRUE))
+    numerical = c(
+      "compilation", "factorization", "convergence", "finiteness",
+      "residual", "simulation-update", "after-substep",
+      "commit-accepted-state"
+    )
+    expect_false(any(retry_phases() %in% numerical), info = phase)
+    expect_false(returned$visible)
+    expect_identical(returned$value, model)
+    expect_identical(model$data, expected$data)
+    expect_identical(model$compactOutput, expected$compactOutput)
+    expect_identical(model$lastDiagnostics$status, "succeeded")
+    expect_false(model$lastDiagnostics$retryable_postsim)
+    expect_identical(model$.postsimRecord, list())
+  }
+})
+
+test_that("C++ post failures and retries retain native backend provenance", {
+  capability = numericalBackendCapability("StructuredSchurFGMRESCpp")
+  skipOptionalCapability(capability)
+  partition = function(index, state) {
+    list(
+      stages = list(NULL),
+      external = sparse_external_block_partition(index, state)
+    )
+  }
+
+  for (phase in c("post-update", "output-projection")) {
+    model = make_cpp_structured_model()
+    failTransactionAt(phase)
+    expect_error(
+      testthat::with_mocked_bindings(
+        model$solveModel(
+          iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+          diagnostics = TRUE, output = "compact", variables = "x",
+          backend = "StructuredSchurFGMRESCpp"
+        ),
+        sparse_gtap_elimination_partition = partition,
+        .package = "GEModelR"
+      ),
+      paste("injected", phase, "failure"),
+      info = phase
+    )
+
+    expect_identical(
+      model$lastDiagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(model$lastDiagnostics$solver_backend_impl, "cpp")
+    expect_identical(
+      model$.postsimRecord$diagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(
+      model$.postsimRecord$diagnostics$solver_backend_impl, "cpp"
+    )
+
+    localTransactionFault(NULL)
+    model$retryPostsim(diagnostics = TRUE)
+    expect_identical(
+      model$lastDiagnostics$solver_backend,
+      "StructuredSchurFGMRESCpp",
+      info = phase
+    )
+    expect_identical(model$lastDiagnostics$solver_backend_impl, "cpp")
+  }
+})
+
+test_that("retryPostsim without an accepted record never enters the solver", {
+  model = make_three_region_model()
+  recorder = recordTransactionPhases()
+
+  expect_error(
+    model$retryPostsim(),
+    "No retryable post-simulation record"
+  )
+  expect_identical(recorder(), character())
+})
+
+test_that("a later numerical failure preserves an older retry record", {
+  model = make_three_region_model()
+  set_three_region_shocks(model, "preferred", c(2, 0, 0))
+  failTransactionAt("post-update")
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected post-update failure"
+  )
+  accepted_solution = model$solution
+  accepted_record = serialize(model$.postsimRecord, NULL, version = 3L)
+
+  localTransactionFault(NULL)
+  failTransactionAt("compilation")
+  expect_error(
+    model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = TRUE,
+      diagnostics = TRUE, reduction = "off"
+    ),
+    "injected compilation failure"
+  )
+
+  expect_identical(model$solution, accepted_solution)
+  expect_identical(
+    serialize(model$.postsimRecord, NULL, version = 3L),
+    accepted_record
+  )
+  expect_identical(model$lastDiagnostics$status, "numerical_failed")
+  expect_false(model$lastDiagnostics$accepted_numerical_state)
+  expect_true(model$lastDiagnostics$retryable_postsim)
+  expect_identical(model$lastDiagnostics$failure_phase, "compilation")
+})
+
+test_that("post retry API and internal helper are tiered explicitly", {
+  exported = getNamespaceExports("GEModelR")
+  expect_true("retryPostsim" %in% GEModel$methods())
+  expect_identical(
+    names(formals(GEModel$methods("retryPostsim"))),
+    "diagnostics"
+  )
+  expect_identical(
+    paste(deparse(formals(GEModel$methods("retryPostsim"))$diagnostics),
+          collapse = ""),
+    "FALSE"
+  )
+  expect_true(exists(".retry_postsim_from_record", mode = "function"))
+  expect_false(any(c(
+    ".commit_accepted_state", ".retry_postsim_from_record"
+  ) %in% exported))
+
+  manifest = loadCompatibilityManifest()
+  retry_method = manifest[
+    manifest$kind == "method" & manifest$name == "retryPostsim",
+    , drop = FALSE
+  ]
+  retry_helper = manifest[
+    manifest$kind == "internal" &
+      manifest$name == ".retry_postsim_from_record",
+    , drop = FALSE
+  ]
+  expect_equal(nrow(retry_method), 1L)
+  expect_identical(retry_method$tier, "supported")
+  expect_equal(nrow(retry_helper), 1L)
+  expect_identical(retry_helper$tier, "internal")
+})
+
+test_that("public option replacement registry is exact and NULL-aware", {
+  expected = expectedPublicOptionReplacements()
+  expect_identical(.identity_public_option_replacements, expected)
+
+  registry = read.dcf(optionReplacementRegistryPath())
+  expect_identical(
+    colnames(registry), c("Schema", "Old-Option", "Replacement")
+  )
+  expect_identical(nrow(registry), 12L)
+  expect_true(all(
+    registry[, "Schema"] == "gemodelr-option-replacements-v1"
+  ))
+  registered = stats::setNames(
+    registry[, "Replacement"], registry[, "Old-Option"]
+  )
+  expect_identical(registered, expected)
+
+  old_key = names(expected)[[1L]]
+  explicit_null = stats::setNames(list(NULL), old_key)
+  expect_error(
+    .identity_guard_old_options(old_key, .options = explicit_null),
+    paste0(old_key, ".*", expected[[old_key]], ".*MIGRATION.md")
+  )
+})
+
+test_that("non-serialization predecessor options fail at local consumers", {
+  replacements = expectedPublicOptionReplacements()
+
+  modelOperation = function(old_key, operation) {
+    model = make_three_region_model()
+    set_three_region_shocks(model, "preferred", c(1, 2, -1))
+    before = transactionalModelSnapshot(model, include_diagnostics = FALSE)
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() operation(model), before,
+      function() transactionalModelSnapshot(
+        model, include_diagnostics = FALSE
+      )
+    )
+  }
+
+  modelOperation(
+    "tabloToR.sparse.lu_order",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "Matrix", reduction = "off"
+    )
+  )
+  modelOperation(
+    "tabloToR.sparse.structured_residual_tolerance",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "Matrix", reduction = "off"
+    )
+  )
+  modelOperation(
+    "tabloToR.sparse.schur_cpp_threads",
+    function(model) model$solveModel(
+      iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "StructuredSchurFGMRESCpp", reduction = "off"
+    )
+  )
+
+  expectOldPublicOptionRejected(
+    "tabloToR.sparse.suite_sparse_ordering",
+    replacements[["tabloToR.sparse.suite_sparse_ordering"]],
+    function() sparse_suite_sparse_solver(
+      Matrix::Diagonal(1L), 1
+    )
+  )
+
+  schur_keys = c(
+    "tabloToR.sparse.schur_max_iterations",
+    "tabloToR.sparse.schur_panel_size",
+    "tabloToR.sparse.schur_region_batch_size",
+    "tabloToR.sparse.schur_restart",
+    "tabloToR.sparse.schur_tolerance"
+  )
+  for (old_key in schur_keys) {
+    expectOldPublicOptionRejected(
+      old_key, replacements[[old_key]],
+      function() sparse_exact_structured_solve(
+        Matrix::Diagonal(1L), 1, list(), reduced_solver = "schur"
+      )
+    )
+  }
+
+  old_key = "tabloToR.sparse.schur_refinement_iterations"
+  expectOldPublicOptionRejected(
+    old_key, replacements[[old_key]],
+    function() sparse_exact_schur_solve(
+      Matrix::Diagonal(1L), 1, 0L, 0L, 1L, 1L
+    )
+  )
+})
+
+test_that("private hooks attributes and diagnostics use GEModelR identity", {
+  root = normalizePath(
+    testthat::test_path("..", ".."), winslash = "/", mustWork = TRUE
+  )
+  paths = file.path(root, c(
+    "R/GEModel.R",
+    "R/sparseElimination.R",
+    "R/sparseSolver.R",
+    "R/sparseSchurComplement.R",
+    "R/sparseSuiteSparse.R",
+    "R/zzzSparseSchurCpp.R",
+    "R/zzzzSparseSchurOpenMP.R",
+    "inst/tools/accept_phase02_baselines.R",
+    "tests/testthat/helper-transactional-state.R",
+    "tests/testthat/test-transactional-state.R",
+    "tests/testthat/test-baseline-artifacts.R"
+  ))
+  testthat::skip_if_not(
+    all(file.exists(paths)), "private identity audit requires the source tree"
+  )
+  source_text = paste(vapply(paths, function(path) {
+    paste(readLines(path, warn = FALSE, encoding = "UTF-8"), collapse = "\n")
+  }, character(1)), collapse = "\n")
+  private_suffixes = c(
+    ".legacy.transaction.working",
+    ".transaction.fault",
+    ".accepted_numerical_state",
+    ".sparse.sum_vectorized_limit",
+    ".sparse.vectorized",
+    ".sparse.elimination_pivot_tolerance",
+    ".sparse.schur_validation_chunk_size",
+    ".sparse.schur_progress",
+    ".sparse.schur_true_residual_frequency",
+    ".phase02.acceptance.fault",
+    "_dense_qr_factor"
+  )
+  predecessor = paste0(paste0("tablo", "ToR"), private_suffixes)
+  current = paste0("GEModelR", private_suffixes)
+
+  expect_false(any(vapply(
+    predecessor, grepl, logical(1), x = source_text, fixed = TRUE
+  )))
+  expect_true(all(vapply(
+    current, grepl, logical(1), x = source_text, fixed = TRUE
+  )))
+
+  phases = character()
+  withr::local_options(
+    GEModelR.transaction.fault = function(phase, context) {
+      phases <<- c(phases, phase)
+      invisible(NULL)
+    }
+  )
+  .transaction_fault("identity-probe")
+  expect_identical(phases, "identity-probe")
+
+  factor = sparse_dense_factor(diag(c(2, 3)), name = "identity probe")
+  expect_s3_class(factor, "GEModelR_dense_qr_factor")
+  expect_equal(
+    as.numeric(sparse_exact_schur_solve_factor(factor, c(4, 9))),
+    c(2, 3), tolerance = 1e-12
+  )
+})

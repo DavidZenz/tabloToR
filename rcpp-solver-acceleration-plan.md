@@ -60,7 +60,7 @@ This phase establishes how much time is S4 dispatch, sparse slicing, numeric fac
 
 Implement a small, serial Rcpp kernel before porting the full builder:
 
-    tabloToR_sparse_lu_solve(factor, rhs)
+    GEModelR_sparse_lu_solve(factor, rhs)
 
 The kernel consumes Matrix's existing sparseLU representation:
 
@@ -84,7 +84,7 @@ This drop-in kernel is a correctness and profiling milestone. It is not the fina
 
 Implement a native batch kernel such as:
 
-    tabloToR_schur_accumulate_batch(
+    GEModelR_schur_accumulate_batch(
       factors, left_blocks, right_blocks, target_metadata,
       panel_size, output_layout
     )

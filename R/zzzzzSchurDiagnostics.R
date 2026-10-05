@@ -1,5 +1,61 @@
 # Aggregate diagnostics for both structured Schur implementations.
 
+.gemodelr_diagnostics_fields = c(
+  "schema_version", "engine", "requested_backend", "implementation",
+  "status", "condition_class", "accepted_numerical_state",
+  "retryable_postsim", "failure_phase", "failure_reason",
+  "cleanup_status"
+)
+
+.gemodelr_diagnostics_details = function(diagnostics) {
+  if (!is.list(diagnostics) || !length(diagnostics)) return(list())
+  diagnostics[setdiff(names(diagnostics), c(
+    .gemodelr_diagnostics_fields, "requested_engine", "diagnostics_schema_version"
+  ))]
+}
+
+.gemodelr_diagnostics_envelope = function(
+    engine = NULL, requested_backend = NULL, implementation = NULL,
+    status = "running", condition_class = NULL,
+    accepted_numerical_state = FALSE, retryable_postsim = FALSE,
+    failure_phase = NULL, failure_reason = NULL,
+    cleanup_status = list(status = "not-run"), details = list()) {
+  envelope = list(
+    schema_version = 1L,
+    engine = engine,
+    requested_backend = requested_backend,
+    implementation = implementation,
+    status = status,
+    condition_class = condition_class,
+    accepted_numerical_state = isTRUE(accepted_numerical_state),
+    retryable_postsim = isTRUE(retryable_postsim),
+    failure_phase = failure_phase,
+    failure_reason = failure_reason,
+    cleanup_status = cleanup_status
+  )
+  if (is.list(details) && length(details)) {
+    details = details[setdiff(names(details), c(
+      .gemodelr_diagnostics_fields, "requested_engine",
+      "diagnostics_schema_version"
+    ))]
+    envelope = c(envelope, details)
+  }
+  envelope
+}
+
+.gemodelr_diagnostics_status = function(condition_class) {
+  switch(
+    condition_class,
+    GEModelR_validation_error = "validation_failed",
+    GEModelR_capability_error = "capability_failed",
+    GEModelR_postsim_error = "postsim_failed",
+    GEModelR_retryable_postsim_error = "postsim_failed",
+    GEModelR_committed_state_error = "committed_state_failed",
+    GEModelR_numerical_error = "numerical_failed",
+    "numerical_failed"
+  )
+}
+
 .sparse_reference_schur_metrics = new.env(parent = emptyenv())
 .sparse_reference_schur_metrics$active = FALSE
 .sparse_reference_schur_metrics$current = NULL
@@ -134,9 +190,12 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
     dimensions, backend, reduction, memory_budget
   )
   if (isTRUE(diagnostics)) {
-    model$lastDiagnostics$diagnostics_schema_version = 2L
+    model$lastDiagnostics$schema_version = 1L
     if (is.null(model$lastDiagnostics$solver_backend_impl)) {
       model$lastDiagnostics$solver_backend_impl = "r"
+    }
+    if (is.null(model$lastDiagnostics$implementation)) {
+      model$lastDiagnostics$implementation = "r"
     }
     if (is.null(model$lastDiagnostics$max_full_relative_residual)) {
       residuals = vapply(model$lastDiagnostics$true_residual_history,

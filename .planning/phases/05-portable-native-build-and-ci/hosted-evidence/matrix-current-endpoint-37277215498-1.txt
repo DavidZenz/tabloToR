@@ -1,0 +1,4 @@
+version=1.7-6
+source=https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz
+resolved_utc=2026-10-05 07:21:17 UTC
+requires=R (>= 4.4), methods

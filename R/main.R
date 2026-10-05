@@ -1,7 +1,7 @@
 #' #' @export
 #' #' @param tabloFileName Path to the tablo file
 #' #' @param filePaths A list of paths to all files mentioned in the tablo file
-#' tabloToR = function(tabloFileName, filePaths) {
+#' GEModelR = function(tabloFileName, filePaths) {
 #'
 #'   # Read all definitions from the tablo file and return a series of R objects
 #'   # all coefficients

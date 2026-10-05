@@ -5,19 +5,24 @@
 .sparse_schur_cpp_runtime$initialized = FALSE
 .sparse_schur_cpp_runtime$capabilities = NULL
 .sparse_schur_cpp_runtime$live_dense_factors = list()
+.sparse_schur_cpp_runtime$last_cleanup_status = list(
+  status = "not-run", scope = "solve",
+  resources = "no native solve is active"
+)
 .sparse_schur_cpp_runtime$build_diagnostics = list()
+.sparse_schur_cpp_runtime$acceptance_history = list()
 
 .sparse_schur_cpp_symbols = c(
-  "_tabloToR_tabloToR_schur_cpp_capabilities",
-  "_tabloToR_tabloToR_sparse_lu_solve",
-  "_tabloToR_tabloToR_sparse_pattern_hash",
-  "_tabloToR_tabloToR_schur_accumulate_global",
-  "_tabloToR_tabloToR_schur_accumulate_batch",
-  "_tabloToR_tabloToR_dense_lu_factor",
-  "_tabloToR_tabloToR_dense_lu_solve",
-  "_tabloToR_tabloToR_dense_lu_release",
-  "_tabloToR_tabloToR_eliminate_blocks",
-  "_tabloToR_tabloToR_reconstruct_blocks"
+  "_GEModelR_GEModelR_schur_cpp_capabilities",
+  "_GEModelR_GEModelR_sparse_lu_solve",
+  "_GEModelR_GEModelR_sparse_pattern_hash",
+  "_GEModelR_GEModelR_schur_accumulate_global",
+  "_GEModelR_GEModelR_schur_accumulate_batch",
+  "_GEModelR_GEModelR_dense_lu_factor",
+  "_GEModelR_GEModelR_dense_lu_solve",
+  "_GEModelR_GEModelR_dense_lu_release",
+  "_GEModelR_GEModelR_eliminate_blocks",
+  "_GEModelR_GEModelR_reconstruct_blocks"
 )
 
 .sparse_schur_cpp_reset = function() {
@@ -26,65 +31,90 @@
   invisible(NULL)
 }
 
+.sparse_schur_cpp_wrapper_arities = c(
+  .GEModelR_dense_lu_factor = 1L,
+  .GEModelR_dense_lu_solve = 2L,
+  .GEModelR_dense_lu_release = 1L,
+  GEModelR_eliminate_blocks = 6L,
+  GEModelR_reconstruct_blocks = 7L,
+  .GEModelR_schur_cpp_capabilities = 0L,
+  .GEModelR_sparse_lu_solve = 2L,
+  .GEModelR_sparse_pattern_hash = 1L,
+  .GEModelR_schur_accumulate_batch_parallel = 9L,
+  .GEModelR_schur_accumulate_global = 7L,
+  .GEModelR_schur_accumulate_batch = 9L
+)
+
 .sparse_schur_cpp_require_impl = function(expected_abi = 1L, threads = 1L) {
   threads = suppressWarnings(as.integer(threads)[1L])
-  fail = function(message) {
-    stop(sprintf(
+  fail = function(cause, remediation = paste(
+      "reinstall or rebuild GEModelR so the native library and generated",
+      "Rcpp wrappers match the package sources")) {
+    message = sprintf(
       paste0(
-        "backend='StructuredSchurFGMRESCpp' initialization failed: %s. ",
-        "No fallback was attempted."
-      ), message
-    ), call. = FALSE)
+        "Requested backend 'StructuredSchurFGMRESCpp' failed preflight: %s. ",
+        "Remediation: %s. No fallback was attempted."
+      ), cause, remediation
+    )
+    stop(.gemodelr_solve_condition(
+      simpleError(message), "sparse", "StructuredSchurFGMRESCpp",
+      primary_class = "GEModelR_capability_error",
+      failure_phase = "capability-preflight",
+      remediation = list(action = remediation)
+    ))
   }
-  if (is.na(threads) || threads < 1L) fail("thread count must be positive")
+  if (is.na(threads) || threads < 1L) {
+    fail(
+      "thread count must be positive",
+      "set GEModelR.sparse.schur_cpp_threads to a positive supported count"
+    )
+  }
   if (isTRUE(.sparse_schur_cpp_runtime$initialized)) {
     capabilities = .sparse_schur_cpp_runtime$capabilities
   } else {
     missing = .sparse_schur_cpp_symbols[!vapply(
       .sparse_schur_cpp_symbols,
-      is.loaded, logical(1), PACKAGE = "tabloToR"
+      is.loaded, logical(1), PACKAGE = "GEModelR"
     )]
     if (length(missing)) {
-      fail(sprintf("registered native routine is missing: %s", missing[[1L]]))
+      fail(
+        sprintf("registered native routine is missing: %s", missing[[1L]]),
+        "reinstall GEModelR with all registered native routines"
+      )
     }
-    wrappers = list(
-      .tabloToR_schur_cpp_capabilities = 0L,
-      .tabloToR_sparse_lu_solve = 2L,
-      .tabloToR_sparse_pattern_hash = 1L,
-      .tabloToR_schur_accumulate_global = 7L,
-      .tabloToR_schur_accumulate_batch = 9L,
-      .tabloToR_dense_lu_factor = 1L,
-      .tabloToR_dense_lu_solve = 2L,
-      .tabloToR_dense_lu_release = 1L
-    )
-    for (name in names(wrappers)) {
+    for (name in names(.sparse_schur_cpp_wrapper_arities)) {
       fun = get0(name, mode = "function", inherits = TRUE)
-      if (!is.function(fun) || length(formals(fun)) != wrappers[[name]]) {
-        fail(sprintf("private wrapper %s has an incompatible arity", name))
+      if (!is.function(fun) ||
+          length(formals(fun)) != .sparse_schur_cpp_wrapper_arities[[name]]) {
+        fail(sprintf("registered wrapper %s has an incompatible arity", name))
       }
     }
     capabilities = tryCatch(
-      .tabloToR_schur_cpp_capabilities(),
+      .GEModelR_schur_cpp_capabilities(),
       error = function(error) fail(conditionMessage(error))
     )
     required = c("abi", "matrix_contract", "lapack", "openmp",
                  "max_threads", "kernels")
     if (!is.list(capabilities) ||
         !all(required %in% names(capabilities))) {
-      fail("native capability payload is incomplete")
+      fail("native capability payload is incomplete",
+           "rebuild GEModelR with the Phase 4 native capability contract")
     }
     if (!identical(as.integer(capabilities$abi), as.integer(expected_abi))) {
       fail(sprintf("ABI %s is incompatible with expected ABI %s",
-                   capabilities$abi, expected_abi))
+                   capabilities$abi, expected_abi),
+           "install matching GEModelR R and native package sources")
     }
     if (!identical(as.character(capabilities$matrix_contract),
                    "sparseLU-v1") || !isTRUE(capabilities$lapack)) {
-      fail("Matrix sparseLU or LAPACK capability is incompatible")
+      fail("Matrix sparseLU or LAPACK capability is incompatible",
+           "install matching Matrix, R, and GEModelR native builds")
     }
     required_kernels = c("sparse_lu_solve", "schur_global", "schur_batch",
                          "dense_lu", "pattern_hash")
     if (!all(required_kernels %in% as.character(capabilities$kernels))) {
-      fail("required native kernels are unavailable")
+      fail("required native kernels are unavailable",
+           "rebuild GEModelR with the structured Schur native kernels")
     }
     contract = tryCatch({
       A = Matrix::sparseMatrix(
@@ -93,7 +123,7 @@
       )
       factor = Matrix::lu(A, order = 1L)
       rhs = c(5, 6)
-      native = as.numeric(.tabloToR_sparse_lu_solve(factor, rhs))
+      native = as.numeric(.GEModelR_sparse_lu_solve(factor, rhs))
       reference = as.numeric(Matrix::solve(factor, rhs))
       isTRUE(max(abs(native - reference)) <= 1e-12)
     }, error = function(error) error)
@@ -101,18 +131,22 @@
       message = if (inherits(contract, "error")) {
         conditionMessage(contract)
       } else "deterministic sparseLU self-test disagreed with Matrix"
-      fail(message)
+      fail(message,
+           "install matching Matrix and GEModelR native builds")
     }
     .sparse_schur_cpp_runtime$capabilities = capabilities
     .sparse_schur_cpp_runtime$initialized = TRUE
   }
   maximum = suppressWarnings(as.integer(capabilities$max_threads)[1L])
   if (threads > 1L && !isTRUE(capabilities$openmp)) {
-    fail("multiple threads were requested from a serial build")
+    fail(sprintf("requested %s threads from a serial build (native maximum is 1)",
+                 threads),
+         "set GEModelR.sparse.schur_cpp_threads to 1L or install an OpenMP build")
   }
   if (is.na(maximum) || maximum < 1L || threads > maximum) {
     fail(sprintf("requested %s threads but the native maximum is %s",
-                 threads, maximum))
+                 threads, maximum),
+         "set GEModelR.sparse.schur_cpp_threads within the native maximum")
   }
   capabilities$threads_requested = threads
   capabilities$threads_effective = threads
@@ -120,6 +154,104 @@
 }
 
 .sparse_schur_cpp_runtime$require = .sparse_schur_cpp_require_impl
+
+.sparse_backend_registry$StructuredSchurFGMRESCpp = list(
+  requested_backend = "StructuredSchurFGMRESCpp",
+  implementation = "cpp",
+  preflight = function(requested_backend = "StructuredSchurFGMRESCpp",
+                       structured_partition = NULL, ...) {
+    .identity_guard_old_options(c(
+      "tabloToR.sparse.schur_cpp_threads", "tabloToR.sparse.lu_order"
+    ))
+    if (!is.null(structured_partition) &&
+        !is.list(structured_partition)) {
+      .sparse_backend_unavailable(
+        requested_backend,
+        "the structured elimination partition is invalid",
+        "reload the model's sparse structures before selecting this backend"
+      )
+    }
+    lu_order = suppressWarnings(as.integer(getOption(
+      "GEModelR.sparse.lu_order", 3L
+    ))[1L])
+    if (is.na(lu_order) || lu_order < 0L || lu_order > 3L) {
+      .sparse_backend_unavailable(
+        requested_backend,
+        "GEModelR.sparse.lu_order must be an integer from 0 to 3",
+        "set GEModelR.sparse.lu_order to a supported ordering"
+      )
+    }
+    threads = getOption("GEModelR.sparse.schur_cpp_threads", 1L)
+    capabilities = tryCatch(
+      .sparse_schur_cpp_runtime$require(
+        expected_abi = 1L, threads = threads
+      ),
+      error = function(error) {
+        message = conditionMessage(error)
+        if (startsWith(message, sprintf(
+          "Requested backend '%s'", requested_backend
+        ))) {
+          stop(error)
+        }
+        .sparse_backend_unavailable(
+          requested_backend, message,
+          "reinstall the matching GEModelR native build or correct its thread option"
+        )
+      }
+    )
+    list(
+      requested_backend = requested_backend,
+      implementation = "cpp",
+      available = TRUE,
+      capability = "registered structured Schur C++ kernels",
+      native_capabilities = capabilities,
+      effective_capabilities = list(
+        abi = capabilities$abi,
+        kernels = as.character(capabilities$kernels),
+        openmp = isTRUE(capabilities$openmp),
+        threads_requested = capabilities$threads_requested,
+        threads_effective = capabilities$threads_effective
+      ),
+      preflight_checks = list(
+        registered_symbols = .sparse_schur_cpp_symbols,
+        wrapper_arities = .sparse_schur_cpp_wrapper_arities,
+        matrix_self_test = "sparseLU-v1 passed"
+      ),
+      lu_order = lu_order
+    )
+  },
+  solve = function(coefficient_matrix, rhs, reduction,
+                   requested_backend = "StructuredSchurFGMRESCpp",
+                   implementation = "cpp", capability_evidence,
+                   structured_partition = NULL, ...) {
+    started = proc.time()[[3L]]
+    exact_result = sparse_exact_structured_solve(
+      coefficient_matrix, rhs, structured_partition,
+      lu_order = capability_evidence$lu_order,
+      pivot_tolerance = getOption(
+        "GEModelR.sparse.elimination_pivot_tolerance", 1e-12
+      ),
+      reduced_solver = "schur"
+    )
+    elapsed_seconds = proc.time()[[3L]] - started
+    candidate = .sparse_backend_candidate_record(
+      exact_result$solution, coefficient_matrix, rhs,
+      requested_backend, implementation, capability_evidence,
+      elapsed_seconds
+    )
+    candidate$solver_diagnostics = exact_result
+    candidate
+  },
+  cleanup = function(requested_backend = "StructuredSchurFGMRESCpp", ...) {
+    .sparse_cpp_release_live_factors()
+    list(
+      status = "complete",
+      scope = "solve",
+      resources = "native dense factors and solve-scoped numeric workspaces released",
+      structural_metadata = "model-scoped cache retained"
+    )
+  }
+)
 
 .sparse_make_state_reference = sparse_make_state
 sparse_make_state = function(data) {
@@ -146,7 +278,7 @@ sparse_set_closure_state = function(model, exogenous_variables) {
   }
   if (is.null(state$.solver_cache)) state$.solver_cache = list()
   key = "StructuredSchurFGMRESCpp"
-  pattern_hash = as.character(.tabloToR_sparse_pattern_hash(A))
+  pattern_hash = as.character(.GEModelR_sparse_pattern_hash(A))
   index_key = .sparse_schur_cpp_runtime$index_key
   previous = state$.solver_cache[[key]]
   reasons = character()
@@ -211,7 +343,7 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 .sparse_cpp_dense_factor = function(matrix, name) {
   started = proc.time()[[3L]]
   pointer = tryCatch(
-    .tabloToR_dense_lu_factor(as.matrix(matrix)),
+    .GEModelR_dense_lu_factor(as.matrix(matrix)),
     error = function(error) {
       stop(sprintf("Dense factorization failed for %s: %s",
                    name, conditionMessage(error)), call. = FALSE)
@@ -226,18 +358,46 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 
 .sparse_cpp_release_live_factors = function() {
   factors = .sparse_schur_cpp_runtime$live_dense_factors
+  errors = character()
   if (length(factors)) for (factor in factors) {
-    try(.tabloToR_dense_lu_release(factor), silent = TRUE)
+    result = tryCatch(
+      .GEModelR_dense_lu_release(factor),
+      error = function(error) error
+    )
+    if (inherits(result, "error")) {
+      errors = c(errors, conditionMessage(result))
+    }
   }
   .sparse_schur_cpp_runtime$live_dense_factors = list()
-  invisible(NULL)
+  if (length(errors)) {
+    cleanup_status = list(
+      status = "failed",
+      scope = "solve",
+      resources = "native dense factors and solve-scoped numeric workspaces released",
+      structural_metadata = "model-scoped cache retained",
+      error = paste(unique(errors), collapse = "; ")
+    )
+    .sparse_schur_cpp_runtime$last_cleanup_status = cleanup_status
+    stop(sprintf(
+      "Native dense factor cleanup failed: %s",
+      paste(unique(errors), collapse = "; ")
+    ), call. = FALSE)
+  }
+  cleanup_status = list(
+    status = "complete",
+    scope = "solve",
+    resources = "native dense factors and solve-scoped numeric workspaces released",
+    structural_metadata = "model-scoped cache retained"
+  )
+  .sparse_schur_cpp_runtime$last_cleanup_status = cleanup_status
+  invisible(cleanup_status)
 }
 
 .sparse_exact_schur_solve_factor_reference = sparse_exact_schur_solve_factor
 sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
-  if (inherits(factor, "tabloToR_dense_lu")) {
+  if (inherits(factor, "GEModelR_dense_lu")) {
     result = tryCatch(
-      .tabloToR_dense_lu_solve(factor, rhs),
+      .GEModelR_dense_lu_solve(factor, rhs),
       error = function(error) error
     )
     if (inherits(result, "error")) {
@@ -254,7 +414,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   if (isTRUE(.sparse_schur_cpp_runtime$active) &&
       methods::is(factor, "sparseLU")) {
     result = tryCatch(
-      .tabloToR_sparse_lu_solve(factor, rhs),
+      .GEModelR_sparse_lu_solve(factor, rhs),
       error = function(error) error
     )
     if (inherits(result, "error")) {
@@ -309,8 +469,9 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   lu_order = suppressWarnings(as.integer(lu_order)[1L])
   region_batch_size = suppressWarnings(as.integer(region_batch_size)[1L])
   panel_size = suppressWarnings(as.integer(panel_size)[1L])
+  .identity_guard_old_options("tabloToR.sparse.schur_cpp_threads")
   threads = suppressWarnings(as.integer(getOption(
-    "tabloToR.sparse.schur_cpp_threads", 1L
+    "GEModelR.sparse.schur_cpp_threads", 1L
   ))[1L])
   if (is.na(lu_order) || lu_order < 0L || lu_order > 3L ||
       is.na(region_batch_size) || region_batch_size < 1L ||
@@ -379,7 +540,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     length.out = length(external_rows_by_group[[region_count + 1L]])
   )
   native_start = proc.time()[[3L]]
-  global_result = .tabloToR_schur_accumulate_global(
+  global_result = .GEModelR_schur_accumulate_global(
     local_factors, left, right, D, region_positions,
     as.integer(global_position), panel_size
   )
@@ -391,7 +552,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     batch = seq.int(
       batch_start, min(region_count, batch_start + region_batch_size - 1L)
     )
-    result = .tabloToR_schur_accumulate_batch(
+    result = .GEModelR_schur_accumulate_batch(
       local_factors, left, right, D, region_positions,
       as.integer(global_position), as.integer(batch), panel_size, threads
     )
@@ -516,13 +677,28 @@ sparse_exact_schur_solve = function(...) {
 sparse_solve_one_step = function(state, model, index, shocks, backend,
                                  reduction, measure = FALSE,
                                  structured_partition = NULL) {
-  result = .sparse_solve_one_step_reference(
-    state, model, index, shocks, backend, reduction, measure,
+  requested_backend = if (
+    isTRUE(.sparse_schur_cpp_runtime$active) &&
+      identical(backend, "StructuredSchurFGMRES")
+  ) "StructuredSchurFGMRESCpp" else backend
+  old_state = .sparse_schur_cpp_runtime$state
+  if (isTRUE(.sparse_schur_cpp_runtime$active)) {
+    .sparse_schur_cpp_runtime$state = state
+    on.exit({ .sparse_schur_cpp_runtime$state = old_state }, add = TRUE)
+  }
+  result = .sparse_solve_one_step_impl(
+    state, model, index, shocks, requested_backend, reduction, measure,
     structured_partition
   )
   if (isTRUE(.sparse_schur_cpp_runtime$active) &&
       !is.null(result$solver_diagnostics)) {
     result$solver_diagnostics$solution = NULL
+  }
+  if (isTRUE(.sparse_schur_cpp_runtime$active) &&
+      !is.null(result$acceptance_diagnostics)) {
+    history = .sparse_schur_cpp_runtime$acceptance_history
+    history[[length(history) + 1L]] = result$acceptance_diagnostics
+    .sparse_schur_cpp_runtime$acceptance_history = history
   }
   result
 }
@@ -569,37 +745,121 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
       dimensions, backend, reduction, memory_budget
     ))
   }
-  threads = getOption("tabloToR.sparse.schur_cpp_threads", 1L)
-  capabilities = .sparse_schur_cpp_runtime$require(
-    expected_abi = 1L, threads = threads
+  model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+    engine = "sparse",
+    requested_backend = "StructuredSchurFGMRESCpp",
+    implementation = "cpp",
+    cleanup_status = list(
+      status = "not-run", scope = "solve",
+      resources = "native solve resources not allocated"
+    )
   )
+  .sparse_schur_cpp_runtime$last_cleanup_status = list(
+    status = "not-run", scope = "solve",
+    resources = "native solve resources not allocated"
+  )
+  preflight = .sparse_backend_preflight("StructuredSchurFGMRESCpp")
+  capabilities = preflight$capability_evidence$native_capabilities
   .sparse_schur_cpp_runtime$active = TRUE
-  .sparse_schur_cpp_runtime$state = model$sparseState
+  .sparse_schur_cpp_runtime$state = NULL
   .sparse_schur_cpp_runtime$index_key = sparse_pattern_key(model$sparseIndex)
   .sparse_schur_cpp_runtime$build_diagnostics = list()
+  .sparse_schur_cpp_runtime$acceptance_history = list()
   on.exit({
     .sparse_schur_cpp_runtime$active = FALSE
     .sparse_schur_cpp_runtime$state = NULL
     .sparse_schur_cpp_runtime$index_key = NULL
-    .sparse_cpp_release_live_factors()
+    cleanup = tryCatch(
+      .sparse_cpp_release_live_factors(), error = identity
+    )
+    cleanup_status = if (inherits(cleanup, "error")) {
+      .sparse_schur_cpp_runtime$last_cleanup_status
+    } else cleanup
+    if (is.list(model$lastDiagnostics)) {
+      model$lastDiagnostics$cleanup_status = cleanup_status
+    }
+    if (inherits(cleanup, "error")) {
+      accepted = isTRUE(model$lastDiagnostics$accepted_numerical_state)
+      stop(.gemodelr_solve_condition(
+        cleanup, "sparse", "StructuredSchurFGMRESCpp",
+        primary_class = "GEModelR_committed_state_error",
+        failure_phase = "native-cleanup",
+        accepted_numerical_state = accepted,
+        retryable_postsim = FALSE,
+        remediation = list(
+          action = "Inspect native factor cleanup and rebuild the native backend if needed"
+        )
+      ))
+    }
   }, add = TRUE)
-  result = .sparse_solve_model_reference(
-    model, iter, steps, postsim, diagnostics, output, variables,
-    dimensions, "StructuredSchurFGMRES", reduction, memory_budget
+  result = tryCatch(
+    .sparse_solve_model_reference(
+      model, iter, steps, postsim, diagnostics, output, variables,
+      dimensions, "StructuredSchurFGMRES", reduction, memory_budget
+    ),
+    error = function(error) {
+      error = .gemodelr_solve_condition(
+        error, "sparse", "StructuredSchurFGMRESCpp"
+      )
+      prior = model$lastDiagnostics
+      cleanup = .sparse_schur_cpp_runtime$last_cleanup_status
+      if (is.null(cleanup)) cleanup = prior$cleanup_status
+      details = if (isTRUE(diagnostics)) {
+        .gemodelr_diagnostics_details(prior)
+      } else list()
+      if (isTRUE(diagnostics)) {
+        details$capability_evidence = preflight$capability_evidence
+        details$native = list(
+          requested = TRUE,
+          available = TRUE,
+          initialized = TRUE,
+          abi_version = capabilities$abi,
+          openmp_compiled = capabilities$openmp,
+          threads_requested = capabilities$threads_requested,
+          threads_effective = capabilities$threads_effective
+        )
+      }
+      model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+        engine = "sparse",
+        requested_backend = "StructuredSchurFGMRESCpp",
+        implementation = "cpp",
+        status = .gemodelr_diagnostics_status(class(error)[[1L]]),
+        condition_class = class(error)[[1L]],
+        accepted_numerical_state = error$accepted_numerical_state,
+        retryable_postsim = error$retryable_postsim,
+        failure_phase = error$failure_phase,
+        failure_reason = conditionMessage(error),
+        cleanup_status = cleanup,
+        details = details
+      )
+      if (isTRUE(diagnostics) && is.list(error$diagnostic_evidence)) {
+        model$lastDiagnostics[names(error$diagnostic_evidence)] =
+          error$diagnostic_evidence
+      }
+      stop(error)
+    }
   )
+  model$lastDiagnostics$requested_backend = "StructuredSchurFGMRESCpp"
+  model$lastDiagnostics$implementation = "cpp"
   if (isTRUE(diagnostics)) {
     builds = .sparse_schur_cpp_runtime$build_diagnostics
     aggregate = .sparse_cpp_aggregate_diagnostics(builds)
     residuals = vapply(model$lastDiagnostics$true_residual_history,
                        function(value) value$metrics$relative_l2, numeric(1))
-    model$lastDiagnostics$diagnostics_schema_version = 2L
-    model$lastDiagnostics$solver_backend = "StructuredSchurFGMRESCpp"
-    model$lastDiagnostics$solver_backend_impl = "cpp"
-    model$lastDiagnostics$max_full_relative_residual = if (length(residuals)) {
+    details = .gemodelr_diagnostics_details(model$lastDiagnostics)
+    details$capability_evidence = preflight$capability_evidence
+    details$solver_backend = "StructuredSchurFGMRESCpp"
+    details$solver_backend_impl = "cpp"
+    acceptances = .sparse_schur_cpp_runtime$acceptance_history
+    details$candidate_acceptance = if (length(acceptances)) {
+      acceptances[[length(acceptances)]]
+    } else NULL
+    details$max_full_relative_residual = if (length(residuals)) {
       max(residuals)
     } else NA_real_
-    model$lastDiagnostics$schur_build = aggregate
-    model$lastDiagnostics$native = list(
+    details$schur_build = aggregate
+    details$effective_thread_count = capabilities$threads_effective
+    details$native = list(
       requested = TRUE,
       available = TRUE,
       initialized = TRUE,
@@ -613,6 +873,16 @@ sparse_solve_model = function(model, iter = 3, steps = c(1, 3),
         aggregate$structural_cache_rebuild_reasons,
       numeric_refactorizations = aggregate$numeric_refactorizations,
       workspace_peak_bytes = aggregate$peak_panel_buffer_bytes
+    )
+    model$lastDiagnostics = .gemodelr_diagnostics_envelope(
+      engine = "sparse",
+      requested_backend = "StructuredSchurFGMRESCpp",
+      implementation = "cpp",
+      status = "succeeded",
+      accepted_numerical_state = TRUE,
+      retryable_postsim = FALSE,
+      cleanup_status = .sparse_schur_cpp_runtime$last_cleanup_status,
+      details = details
     )
   }
   invisible(result)

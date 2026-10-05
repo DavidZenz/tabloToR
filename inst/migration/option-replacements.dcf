@@ -1,0 +1,47 @@
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.serialization.max_bytes
+Replacement: GEModelR.serialization.max_bytes
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.serialization.max_elements
+Replacement: GEModelR.serialization.max_elements
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.lu_order
+Replacement: GEModelR.sparse.lu_order
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_cpp_threads
+Replacement: GEModelR.sparse.schur_cpp_threads
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_max_iterations
+Replacement: GEModelR.sparse.schur_max_iterations
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_panel_size
+Replacement: GEModelR.sparse.schur_panel_size
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_refinement_iterations
+Replacement: GEModelR.sparse.schur_refinement_iterations
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_region_batch_size
+Replacement: GEModelR.sparse.schur_region_batch_size
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_restart
+Replacement: GEModelR.sparse.schur_restart
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.schur_tolerance
+Replacement: GEModelR.sparse.schur_tolerance
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.structured_residual_tolerance
+Replacement: GEModelR.sparse.structured_residual_tolerance
+
+Schema: gemodelr-option-replacements-v1
+Old-Option: tabloToR.sparse.suite_sparse_ordering
+Replacement: GEModelR.sparse.suite_sparse_ordering

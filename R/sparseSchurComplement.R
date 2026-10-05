@@ -142,7 +142,7 @@ sparse_dense_factor = function(block, order = 3L, name = "block") {
            call. = FALSE)
     }
     return(structure(list(qr = factor),
-                     class = "tabloToR_dense_qr_factor"))
+                     class = "GEModelR_dense_qr_factor"))
   }
   factor = tryCatch(
     Matrix::lu(block, order = order),
@@ -157,7 +157,7 @@ sparse_dense_factor = function(block, order = 3L, name = "block") {
 
 sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   result = tryCatch(
-    if (inherits(factor, "tabloToR_dense_qr_factor")) {
+    if (inherits(factor, "GEModelR_dense_qr_factor")) {
       qr.coef(factor[["qr"]], rhs)
     } else Matrix::solve(factor, rhs),
     error = function(error) error
@@ -205,10 +205,10 @@ sparse_exact_schur_validate_partition = function(A, row_group, column_group,
          call. = FALSE)
   }
   validation_chunk_size = suppressWarnings(as.integer(getOption(
-    "tabloToR.sparse.schur_validation_chunk_size", 4096L
+    "GEModelR.sparse.schur_validation_chunk_size", 4096L
   ))[1L])
   if (is.na(validation_chunk_size) || validation_chunk_size < 1L) {
-    stop("tabloToR.sparse.schur_validation_chunk_size must be positive",
+    stop("GEModelR.sparse.schur_validation_chunk_size must be positive",
          call. = FALSE)
   }
   for (first_column in seq.int(1L, n, by = validation_chunk_size)) {
@@ -451,7 +451,7 @@ sparse_exact_schur_build = function(
     rm(batch_blocks, batch_region_global, batch_global_region,
        target_positions, target_groups, target_local)
     gc(verbose = FALSE)
-    if (isTRUE(getOption("tabloToR.sparse.schur_progress", FALSE))) {
+    if (isTRUE(getOption("GEModelR.sparse.schur_progress", FALSE))) {
       cat("Schur regional batch ", batch_start, "-", batch_end,
           "/", region_count, "\n", sep = "")
     }
@@ -652,6 +652,16 @@ sparse_exact_schur_solve = function(
     region_batch_size = 8L, panel_size = 64L, restart = 80L,
     max_iterations = 500L, tolerance = 2e-7,
     true_residual_frequency = 1L) {
+  .identity_guard_old_options(
+    "tabloToR.sparse.schur_refinement_iterations"
+  )
+  refinement_limit = suppressWarnings(as.integer(
+    getOption("GEModelR.sparse.schur_refinement_iterations", 3L)
+  )[1L])
+  if (is.na(refinement_limit) || refinement_limit < 0L) {
+    stop("GEModelR.sparse.schur_refinement_iterations must be non-negative",
+         call. = FALSE)
+  }
   system = sparse_exact_schur_build(
     A, row_group, column_group, local_count, region_count, global_group,
     rhs = rhs, lu_order = lu_order, region_batch_size = region_batch_size,
@@ -670,13 +680,6 @@ sparse_exact_schur_solve = function(
   residual_relative = residual_absolute / max(1, sparse_schur_norm(rhs))
   refinement_iterations = 0L
   refinement_history = numeric()
-  refinement_limit = suppressWarnings(as.integer(
-    getOption("tabloToR.sparse.schur_refinement_iterations", 3L)
-  )[1L])
-  if (is.na(refinement_limit) || refinement_limit < 0L) {
-    stop("tabloToR.sparse.schur_refinement_iterations must be non-negative",
-         call. = FALSE)
-  }
   refinement_tolerance = max(
     .Machine$double.eps * 10,
     min(tolerance * 0.01, 1e-11)

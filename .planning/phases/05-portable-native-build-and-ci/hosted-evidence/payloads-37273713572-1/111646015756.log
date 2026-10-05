@@ -1,0 +1,32 @@
+Matrix source archive: https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz 
+Requested Matrix version: 1.6-5 
+Target library: /Users/runner/work/_temp/GEModelR-library 
+trying URL 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'
+Content type 'application/x-gzip' length 2883851 bytes (2.8 MB)
+==================================================
+downloaded 2.8 MB
+
+Downloaded Matrix source archive: https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz 
+Source install with active R: R Under development (unstable) (2026-10-03 r90638) 
+* installing *source* package ‘Matrix’ ...
+** this is package ‘Matrix’ version ‘1.6-5’
+** package ‘Matrix’ successfully unpacked and MD5 sums checked
+** using staged installation
+( cd Source ; make clean )
+( cd Source ; make clean )
+( cd Lib ; make clean )
+** libs
+using C compiler: ‘Apple clang version 21.0.0 (clang-2100.1.1.101)’
+using SDK: ‘MacOSX26.5.sdk’
+clang -arch arm64 -I"/Library/Frameworks/R.framework/Resources/include" -DNDEBUG -I./SuiteSparse_config -DNTIMER  -I/opt/R/arm64/include -I/opt/homebrew/opt/gettext/include   -fvisibility=hidden -fPIC  -falign-functions=64 -Wall -g -O2  -c Csparse.c -o Csparse.o
+Csparse.c:288:3: error: call to undeclared function 'OBJECT'; ISO C99 and later do not support implicit function declarations [-Wimplicit-function-declaration]
+  288 |                 ERROR_INVALID_CLASS(obj, __func__);
+      |                 ^
+./Mdefines.h:210:7: note: expanded from macro 'ERROR_INVALID_CLASS'
+  210 |         if (!OBJECT(_X_)) \
+      |              ^
+1 error generated.
+make: *** [Csparse.o] Error 1
+ERROR: compilation failed for package ‘Matrix’
+* removing ‘/Users/runner/work/_temp/GEModelR-library/Matrix’
+Matrix source installer: Matrix source installation failed

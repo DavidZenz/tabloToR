@@ -1,5 +1,7 @@
 ^\.benchmark-data$
 ^\.git$
+^\.planning$
 ^\.Rcheck$
 ^\.Rproj.user$
+^benchmarks/\.
 ^rcpp-solver-acceleration-plan\.md$

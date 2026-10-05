@@ -39,17 +39,17 @@ dense[local_positions, external_positions] <- coupling
 dense[external_positions, local_positions] <- t(coupling) * 0.7
 A <- Matrix::Matrix(dense, sparse = TRUE)
 rhs <- rnorm(n)
-runtime <- getFromNamespace(".sparse_schur_cpp_runtime", "tabloToR")
-runtime$state <- getFromNamespace("sparse_make_state", "tabloToR")(list())
+runtime <- getFromNamespace(".sparse_schur_cpp_runtime", "GEModelR")
+runtime$state <- getFromNamespace("sparse_make_state", "GEModelR")(list())
 runtime$index_key <- "schur-microbenchmark"
 on.exit({
   runtime$active <- FALSE
   runtime$state <- NULL
   runtime$index_key <- NULL
 }, add = TRUE)
-r_builder <- getFromNamespace(".sparse_exact_schur_build_reference", "tabloToR")
-cpp_builder <- getFromNamespace(".sparse_exact_schur_build_cpp", "tabloToR")
-release <- getFromNamespace(".sparse_cpp_release_live_factors", "tabloToR")
+r_builder <- getFromNamespace(".sparse_exact_schur_build_reference", "GEModelR")
+cpp_builder <- getFromNamespace(".sparse_exact_schur_build_cpp", "GEModelR")
+release <- getFromNamespace(".sparse_cpp_release_live_factors", "GEModelR")
 run <- function(implementation) {
   fun <- if (implementation == "R") r_builder else cpp_builder
   times <- numeric(warmups + repetitions)

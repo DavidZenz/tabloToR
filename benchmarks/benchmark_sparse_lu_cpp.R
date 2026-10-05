@@ -10,7 +10,7 @@ repetitions <- benchmark_integer(
   benchmark_get_arg(args, "--repetitions"), 30L, 1L
 )
 output <- benchmark_get_arg(args, "--output", tempfile(fileext = ".csv"))
-native_solve <- getFromNamespace(".tabloToR_sparse_lu_solve", "tabloToR")
+native_solve <- getFromNamespace(".GEModelR_sparse_lu_solve", "GEModelR")
 set.seed(191)
 results <- list()
 for (size in c(512L, 2469L)) {

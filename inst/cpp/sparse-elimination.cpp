@@ -210,7 +210,7 @@ static SEXP tablo_sparse_matrix(std::vector<TabloTriplet> &triplets,
 }
 
 // [[Rcpp::export]]
-Rcpp::List tabloToR_eliminate_blocks(SEXP matrix_sexp, Rcpp::NumericVector rhs,
+Rcpp::List GEModelR_eliminate_blocks(SEXP matrix_sexp, Rcpp::NumericVector rhs,
                                      Rcpp::IntegerVector row_group,
                                      Rcpp::IntegerVector column_group,
                                      int n_groups, double pivot_tolerance) {
@@ -378,7 +378,7 @@ Rcpp::List tabloToR_eliminate_blocks(SEXP matrix_sexp, Rcpp::NumericVector rhs,
 }
 
 // [[Rcpp::export]]
-Rcpp::NumericVector tabloToR_reconstruct_blocks(
+Rcpp::NumericVector GEModelR_reconstruct_blocks(
     SEXP matrix_sexp, Rcpp::NumericVector rhs,
     Rcpp::NumericVector reduced_solution,
     Rcpp::IntegerVector row_group, Rcpp::IntegerVector column_group,

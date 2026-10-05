@@ -1,4 +1,4 @@
 library(testthat)
-library(tabloToR)
+library(GEModelR)
 
-test_check("tabloToR")
+test_check("GEModelR")

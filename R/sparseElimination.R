@@ -1,50 +1,11 @@
 # Exact structured elimination for large GTAP-like TABLO systems.
 
-sparse_elimination_cpp = local({
-  compiled = NULL
-  function() {
-    if (!is.null(compiled)) return(compiled)
-    if (is.loaded(
-      "_tabloToR_tabloToR_eliminate_blocks", PACKAGE = "tabloToR"
-    )) {
-      eliminate = get0(
-        "tabloToR_eliminate_blocks", envir = environment(),
-        mode = "function", inherits = TRUE
-      )
-      reconstruct = get0(
-        "tabloToR_reconstruct_blocks", envir = environment(),
-        mode = "function", inherits = TRUE
-      )
-      if (is.function(eliminate) && is.function(reconstruct)) {
-        compiled <<- list(eliminate = eliminate, reconstruct = reconstruct)
-        return(compiled)
-      }
-    }
-    if (!requireNamespace("Rcpp", quietly = TRUE)) {
-      stop(
-        "The structured sparse backend requires the optional Rcpp package",
-        call. = FALSE
-      )
-    }
-    path = system.file(
-      "cpp/sparse-elimination.cpp", package = "tabloToR"
-    )
-    if (!nzchar(path)) path = file.path(
-      "inst", "cpp", "sparse-elimination.cpp"
-    )
-    if (!file.exists(path)) {
-      stop("The structured sparse elimination helper is unavailable",
-           call. = FALSE)
-    }
-    environment = new.env(parent = parent.frame())
-    Rcpp::sourceCpp(file = path, env = environment, showOutput = FALSE)
-    compiled <<- list(
-      eliminate = get("tabloToR_eliminate_blocks", environment),
-      reconstruct = get("tabloToR_reconstruct_blocks", environment)
-    )
-    compiled
-  }
-})
+sparse_elimination_cpp = function() {
+  list(
+    eliminate = GEModelR_eliminate_blocks,
+    reconstruct = GEModelR_reconstruct_blocks
+  )
+}
 
 sparse_elimination_sequence = function(domains, index, selected_sets, n,
                                        variable = FALSE) {
@@ -337,8 +298,17 @@ sparse_exact_structured_solve = function(A, rhs, partition,
                                          lu_order = 3L,
                                          pivot_tolerance = 1e-12,
                                          reduced_solver = c("btf", "schur")) {
-  compiled = sparse_elimination_cpp()
   reduced_solver = match.arg(reduced_solver)
+  if (identical(reduced_solver, "schur")) {
+    .identity_guard_old_options(c(
+      "tabloToR.sparse.schur_region_batch_size",
+      "tabloToR.sparse.schur_panel_size",
+      "tabloToR.sparse.schur_restart",
+      "tabloToR.sparse.schur_max_iterations",
+      "tabloToR.sparse.schur_tolerance"
+    ))
+  }
+  compiled = sparse_elimination_cpp()
   rhs = as.numeric(rhs)
   if (length(rhs) != nrow(A) || nrow(A) != ncol(A)) {
     stop("Structured sparse solve received incompatible dimensions",
@@ -474,13 +444,13 @@ sparse_exact_structured_solve = function(A, rhs, partition,
       external$commodity_count, external$region_count,
       external$global_group,
       lu_order = lu_order,
-      region_batch_size = getOption("tabloToR.sparse.schur_region_batch_size", 8L),
-      panel_size = getOption("tabloToR.sparse.schur_panel_size", 64L),
-      restart = getOption("tabloToR.sparse.schur_restart", 80L),
-      max_iterations = getOption("tabloToR.sparse.schur_max_iterations", 500L),
-      tolerance = getOption("tabloToR.sparse.schur_tolerance", 2e-7),
+      region_batch_size = getOption("GEModelR.sparse.schur_region_batch_size", 8L),
+      panel_size = getOption("GEModelR.sparse.schur_panel_size", 64L),
+      restart = getOption("GEModelR.sparse.schur_restart", 80L),
+      max_iterations = getOption("GEModelR.sparse.schur_max_iterations", 500L),
+      tolerance = getOption("GEModelR.sparse.schur_tolerance", 2e-7),
       true_residual_frequency = getOption(
-        "tabloToR.sparse.schur_true_residual_frequency", 1L
+        "GEModelR.sparse.schur_true_residual_frequency", 1L
       )
     )
     if (!isTRUE(reduced_result$converged)) {

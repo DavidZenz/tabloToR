@@ -1,0 +1,9 @@
+matrix_version,source_url,requires_r,release_order,description_file,description_md5,source_sha256
+1.6-5,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz,3.5.0,1,Matrix_1.6-5.DESCRIPTION,dead28547ab9f4749a4630fa7e7881e4,726c8d46626e73d1d6e76a74679813c6df96ffdee1aee45d94e7014cb4ceb97d
+1.7-0,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-0.tar.gz,4.4.0,2,Matrix_1.7-0.DESCRIPTION,92c3a065d79c5ad365dc9416841788f5,fb97bba0df370222eb4f7e2da2e94dd01053b5e054b1c51829ff9a6efc08ad37
+1.7-1,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-1.tar.gz,4.4.0,3,Matrix_1.7-1.DESCRIPTION,264d65dd60c72e9acf112fa2367044d3,a2cabbf04e4e2cafbd0a04281f130bb58e4f7653a91951368a404ef8682b38a1
+1.7-2,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-2.tar.gz,4.4,4,Matrix_1.7-2.DESCRIPTION,02c069289788b819ff2b37ebe6cce535,7f019d9ae5d69b799c929cacc3b17e06b09fa65e2db9e007be4753751e96c650
+1.7-3,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-3.tar.gz,4.4,5,Matrix_1.7-3.DESCRIPTION,792a75115f4e6a5e8c642a19a71f0f5a,6642e9db8cddf32a051972fd5a634bf7edbdc925c5c2d139bf71e92df00fb44e
+1.7-4,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-4.tar.gz,4.4,6,Matrix_1.7-4.DESCRIPTION,6ac4a52297bb54b0729e3ee1f323f128,7b131ecb6a21ff09a33691dac7bf8a7bc2eab9fd1dd09ef14856d74346eb4779
+1.7-5,https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.7-5.tar.gz,4.4,7,Matrix_1.7-5.DESCRIPTION,cb4e0478682b6e6e945b0091c2f42d62,308b0edd7bcb023a8bb50cc5cec98e66b3658c94a5badfb1ce6024e595fa8a83
+1.7-6,https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz,4.4,8,Matrix_1.7-6.DESCRIPTION,9a2d736dab18b5eb32e4ac35077056ea,694239dbe47e659d6d39a49af95157f46bd94977c283df00c4e8a016601cf143

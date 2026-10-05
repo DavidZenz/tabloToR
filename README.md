@@ -1,18 +1,85 @@
-# Package `tabloToR`
+# GEModelR
 
-A package that can interpret GEMPACK-style TABLO models in R and solve them
+GEModelR interprets GEMPACK-style TABLO models in R and solves them through the
+established `GEModel` workflow.
 
-# To install, you can try the following: 
+## Provenance and redistribution status
 
-```R
-install.packages('devtools')
-devtools::install_git('https://github.com/mivanic/tabloToR.git')
+This package derives from the public
+[`mivanic/tabloToR`](https://github.com/mivanic/tabloToR) repository at audited
+commit
+[`7e063c65a19713857ed13023f8b77dad45b15c90`](https://github.com/mivanic/tabloToR/tree/7e063c65a19713857ed13023f8b77dad45b15c90).
+Maros Ivanic authored that upstream baseline and David Zenz authored the
+reviewed post-baseline sparse and native solver work. The upstream baseline has
+an accepted public-domain/CC0 basis; it is credited here even though CC0 does
+not require attribution.
+
+The current package identity is `GEModelR`. Public redistribution remains
+blocked: the dependency compatibility audit needed to finalize the package
+license is still pending. The identity migration does not authorize
+publication.
+
+The evidence-to-role mapping is in
+[`docs/provenance/ATTRIBUTION.md`](docs/provenance/ATTRIBUTION.md), the accepted
+rights basis and scope are in
+[`docs/provenance/RIGHTS.md`](docs/provenance/RIGHTS.md), and the reviewed source
+ledger is in
+[`docs/provenance/PROVENANCE.csv`](docs/provenance/PROVENANCE.csv).
+
+Reviewed attribution evidence keys:
+
+- `R/GEModel.R::GEModel$loadTablo`
+- `R/GEModel.R::GEModel$solveModel`
+- `R/processTablo.R::processTablo`
+- `R/sparseCompiler.R::sparse_compile_spec`
+- `R/sparseSolver.R::sparse_solve_model`
+- `src/sparse-schur.cpp::GEModelR_schur_accumulate_global`
+
+## Migrating from the predecessor package
+
+[Migrate from `tabloToR`](MIGRATION.md) for exact library, namespace,
+dependency, `renv`, runtime-option, installation, and saved-state instructions.
+GEModelR is an immediate replacement and does not provide a compatibility shim.
+
+## Installation
+
+From a local GEModelR checkout:
+
+```sh
+R CMD INSTALL .
 ```
 
-# To perform a simulation, you can try the following:
+### Matrix compatibility
 
-```R
-model = tabloToR::GEModel$new()
+**Matrix support: 1.6-5 through 1.7-6** (current CRAN endpoint verified on
+2026-10-05). The support policy covers every Matrix version in this interval
+on R/platform combinations where its exact source release installs. CI tests
+the minimum and current endpoints with R `oldrel-1`, release and devel on
+Linux, macOS and Windows serial builds, plus Linux and Windows OpenMP builds.
+The current endpoint is refreshed from the official CRAN source index once
+per CI run, then shared as an exact version and source URL across its jobs;
+installed tests assert that exact version and the declared minimum.
+
+Matrix 1.6-5 passed source installation and the installed solver contract on
+all five `oldrel-1` platform/build pairings at R 4.5.3. On release R 4.6.1
+and devel R 4.7.0, its source failed on macOS serial and Windows serial/OpenMP
+with an `OBJECT` compiler error. Those six tuples are explicitly excluded;
+the Linux minimum tuples and all current endpoint tuples passed. This is
+not a promise that every R/Matrix/platform cross-product can be installed.
+See the [validated floor evidence](.planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md)
+and [retained tuple outcomes](.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md).
+
+When the oldest supported R window advances, the floor advances to the
+oldest compatible Matrix source release that passes the same installed
+solver contract on all five required platform/build pairings. Failed
+candidates and any tuple exclusions remain recorded before the dependency
+minimum changes. Full package checks are reported separately; the native
+core matrix does not resolve the outstanding release/provenance findings.
+
+## Running a simulation
+
+```r
+model = GEModelR::GEModel$new()
 
 # You need to have the model, such as gtap.tab 
 model$loadTablo('gtap.tab')
@@ -104,7 +171,7 @@ model$data$ev
 The legacy solver remains the default. For large, unaggregated GTAP runs, opt into the integer-indexed sparse engine after loading the TABLO recipe and HAR data:
 
 ```r
-model <- tabloToR::GEModel$new()
+model <- GEModelR::GEModel$new()
 model$loadTablo("gtapv7.tab")
 
 model$setClosure(c("tm", "tms", "qo", "pop"))
@@ -138,14 +205,13 @@ model$compactOutput
 
 Use `model$setMemoryBudget(bytes)` or `memory_budget = bytes` to make the solver fail during preflight when the estimate exceeds the available budget. `setClosure()` accepts base variable names; indexed labels belong in `setShocks()`. Existing `variableValues` initialization remains supported when `setShocks()` is omitted.
 
-The sparse path uses Matrix sparse LU with fill-reducing ordering by default. For systems where SuperLU runs out of fill workspace, use the optional SuiteSparse/UMFPACK backend:
+The sparse path uses Matrix sparse LU with fill-reducing ordering by default. SuiteSparse remains a recognized backend ID but is unavailable in supported installed builds pending portable support. An explicit SuiteSparse request fails capability preflight before matrix emission or runtime compilation. Explicitly select `backend = "Matrix"` for a supported sparse solve:
 
 ```r
-options(tabloToR.sparse.suite_sparse_ordering = "amd")
-model$solveModel(engine = "sparse", backend = "SuiteSparse")
+model$solveModel(engine = "sparse", backend = "Matrix")
 ```
 
-The SuiteSparse ordering can be `cholmod`, `amd`, `metis`, `best`, or `natural`; it requires Rcpp and a system SuiteSparse installation. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
+Installing system SuiteSparse libraries or setting its reserved ordering option does not enable this backend. SparseM remains available as `backend = "SparseM"` for comparison. DuckDB is intentionally not a solver dependency: it may be useful for staging or aggregating HAR-derived data, but the indexed equation compiler still requires direct numeric access to the model arrays.
 
 For the unaggregated GTAP layout, the opt-in `StructuredSchur` backend performs exact staged elimination of the local production, bilateral, and (when nonsingular) endowment blocks, then solves the remaining sparse system in block-triangular form. Singular local blocks are retained in the reduced system and reconstructed exactly after solving:
 
@@ -159,7 +225,7 @@ model$solveModel(
 )
 ```
 
-Its native elimination helper is compiled during package installation, so solves do not invoke a compiler at runtime. The backend keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should use Matrix, SuiteSparse, or SparseM.
+Its native elimination helper is compiled during package installation, so solves do not invoke a compiler at runtime. The backend keeps the reduced system sparse, and refuses to apply a result whose true residual exceeds the configured tolerance. It is intentionally opt-in and recognizes the GTAP family layout; other TABLO models should explicitly select Matrix or SparseM.
 
 When the remaining BTF block is numerically difficult, use the matrix-free regional Schur backend:
 
@@ -167,14 +233,14 @@ When the remaining BTF block is numerically difficult, use the matrix-free regio
 model$solveModel(engine = "sparse", backend = "StructuredSchurFGMRES", iter = 1, steps = 1, diagnostics = TRUE)
 ```
 
-It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(tabloToR.sparse.structured_residual_tolerance = 1e-7, tabloToR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune tabloToR.sparse.schur_region_batch_size, tabloToR.sparse.schur_panel_size, tabloToR.sparse.schur_restart, and tabloToR.sparse.schur_max_iterations, and tabloToR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
+It eliminates commodity blocks exactly, preconditions the external system with condensed regional blocks and the global arrowhead, and verifies the true residual. The default structured residual guard is 2e-7 for the ill-conditioned full GTAP system; set options(GEModelR.sparse.structured_residual_tolerance = 1e-7, GEModelR.sparse.schur_tolerance = 1e-7) for a stricter check. Tune GEModelR.sparse.schur_region_batch_size, GEModelR.sparse.schur_panel_size, GEModelR.sparse.schur_restart, GEModelR.sparse.schur_max_iterations, and GEModelR.sparse.schur_refinement_iterations only after checking convergence diagnostics.
 
 ## Experimental native structured backend
 
 The C++ acceleration remains opt-in while the R implementation is the correctness reference. It preserves the exact matrix-free operator and uses native sparse triangular solves, fused Schur accumulation, and LAPACK only for dense regional and global factors:
 
 ```r
-options(tabloToR.sparse.schur_cpp_threads = 4L)
+options(GEModelR.sparse.schur_cpp_threads = 4L)
 model$solveModel(
   engine = "sparse",
   backend = "StructuredSchurFGMRESCpp",

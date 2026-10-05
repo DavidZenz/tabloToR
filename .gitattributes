@@ -1,0 +1,3 @@
+# Retained hosted/CRAN evidence is checked by exact byte digests on every OS.
+.planning/phases/05-portable-native-build-and-ci/hosted-evidence/** -text
+.planning/phases/05-portable-native-build-and-ci/matrix-candidate-evidence.csv -text

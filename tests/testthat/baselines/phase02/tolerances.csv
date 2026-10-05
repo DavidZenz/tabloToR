@@ -1,0 +1,4 @@
+"fixture","conditioning","tier","solution_atol","solution_rtol","residual_rtol","rationale","reviewer"
+"three-region","ordinary","strict",1e-10,1e-08,1e-10,"Transparent synthetic diagonal system with exact integer coefficients and no conditioning exception","Phase 02 Plan 03"
+"full-gtap-external","ill-conditioned","external",1e-10,2e-07,2e-07,"Existing fingerprinted full-scale evidence; external only and never a backend-specific exception","Phase 02 reviewed benchmark evidence"
+"tiny-structured","ordinary","strict",1e-10,1e-08,1e-10,"Deterministic seven-position structured system with exact identity blocks and no conditioning exception","Phase 02 Plan 03"

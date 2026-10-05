@@ -1,0 +1,13 @@
+Schema: gemodelr-serialization-bugfix-v1
+Finding: CR-04
+Change-Kind: BUGFIX
+Source-Path: R/modelSerialization.R
+Before-Commit: 72f59acd4f98791a99ee72cc2d9af9b6d8121cd0
+Before-SHA256: 957f15724e76cbd9c43132b224f0e8e4ae9a1e1f68206a8c7af2fadc2d55da1a
+After-SHA256: c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e
+Patch-Path: inst/migration/serialization-bugfix.patch
+Patch-SHA256: 87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f
+Allowed-Functions: .serialization_promote_reconstructed_fields;.serialization_validate_structure;.validate_reconstructed_logical_state;validate_projection
+Review-State: approved
+Reviewer: David Zenz
+Reviewed-UTC: 2026-09-18T12:26:01Z

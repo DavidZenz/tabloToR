@@ -1,0 +1,267 @@
+name: Native portability
+
+'on':
+  pull_request:
+  push:
+    branches: [master]
+  schedule:
+    - cron: '23 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  matrix-endpoint:
+    name: Resolve exact current Matrix source once
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.current.outputs.version }}
+      source: ${{ steps.current.outputs.source }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - name: Set up resolver R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          r-version: release
+      - name: Resolve official CRAN source index
+        id: current
+        shell: bash
+        run: Rscript --vanilla tools/ci/resolve-matrix-current.R
+      - name: Verify declared floor and recorded compatibility interval
+        shell: bash
+        run: |
+          Rscript --vanilla tools/ci/verify-matrix-floor-evidence.R --verify-final-metadata --evidence .planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md
+          Rscript --vanilla tools/ci/test-matrix-floor-evidence.R --expect-final-metadata
+      - name: Preserve exact per-run current endpoint
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: matrix-current-${{ github.run_id }}-${{ github.run_attempt }}
+          path: matrix-current-endpoint.txt
+          if-no-files-found: error
+          retention-days: 30
+
+  native-core:
+    needs: matrix-endpoint
+    name: ${{ matrix.platform }} / R ${{ matrix.r }} / Matrix ${{ matrix.candidate }} / ${{ matrix.build }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      # Run 37273713572, attempt 1, recorded all 30 provisional tuples.
+      # Its six exact Matrix 1.6-5 source failures (OBJECT undeclared) exclude
+      # release/devel on macOS serial and Windows serial/OpenMP only.
+      # All five oldrel-1 / 1.6-5 pairings passed and remain explicit below.
+      # Raw failed rows/logs: hosted-evidence/hosted-run-37273713572-1.json.
+      matrix:
+        include:
+          - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: release, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: release, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: release, build: openmp, openmp: required, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: macOS, os: macos-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: oldrel-1, build: openmp, openmp: required, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: serial, openmp: forbidden, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: minimum, matrix-version: '1.6-5', matrix-url: 'https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_1.6-5.tar.gz'}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: macOS, os: macos-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Windows, os: windows-latest, r: devel, build: serial, openmp: forbidden, candidate: current}
+          - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: current}
+          - {platform: Windows, os: windows-latest, r: devel, build: openmp, openmp: required, candidate: current}
+    env:
+      GEModelR_EXPECT_OPENMP: ${{ matrix.openmp }}
+      GEModelR_EXPECT_MATRIX_VERSION: ${{ matrix.candidate == 'current' && needs.matrix-endpoint.outputs.version || matrix.matrix-version }}
+      GEModelR_SETUP_R_ALIAS: ${{ matrix.r }}
+      GEModelR_CANDIDATE_LABEL: ${{ matrix.candidate }}
+      GEModelR_PLATFORM: ${{ matrix.platform }}
+      GEModelR_BUILD_MODE: ${{ matrix.build }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Initialize candidate evidence before R setup
+        shell: bash
+        env:
+          R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-native
+          GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-library
+          GEModelR_EVIDENCE_DIR: ${{ runner.temp }}/matrix-candidate
+        run: |
+          printf '%s\n' "R_MAKEVARS_USER=$R_MAKEVARS_USER" "GEModelR_TEST_LIBRARY=$GEModelR_TEST_LIBRARY" "GEModelR_EVIDENCE_DIR=$GEModelR_EVIDENCE_DIR" >> "$GITHUB_ENV"
+          mkdir -p "$GEModelR_EVIDENCE_DIR"
+          printf '%s\n' 'setup_r_alias,resolved_r_version,os,build_mode,candidate_label,matrix_version,source_install_result,solver_test_result,run_id' > "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv"
+          printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' "$GEModelR_SETUP_R_ALIAS" unresolved "$GEModelR_PLATFORM" "$GEModelR_BUILD_MODE" "$GEModelR_CANDIDATE_LABEL" "$GEModelR_EXPECT_MATRIX_VERSION" not_run not_run "$GITHUB_RUN_ID" >> "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv"
+
+      - name: Set up R
+        id: setup-r
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          r-version: ${{ matrix.r }}
+          use-public-rspm: true
+
+      - name: Configure native build and record resolved R
+        shell: Rscript --vanilla {0}
+        run: |
+          expectation = Sys.getenv("GEModelR_EXPECT_OPENMP")
+          stopifnot(expectation %in% c("required", "forbidden"))
+          flags = if (identical(expectation, "forbidden")) {
+            "SHLIB_OPENMP_CXXFLAGS ="
+          } else {
+            character()
+          }
+          writeLines(flags, Sys.getenv("R_MAKEVARS_USER"))
+          cat(paste0("GEModelR_EXPECT_R_VERSION=", getRversion(), "\n"),
+              file = Sys.getenv("GITHUB_ENV"), append = TRUE)
+          cat("Resolved setup-r alias:", Sys.getenv("GEModelR_SETUP_R_ALIAS"),
+              "to", as.character(getRversion()), "\n")
+
+      - name: Provide gettext headers for macOS source builds
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install gettext
+          gettext_prefix="$(brew --prefix gettext)"
+          test -f "$gettext_prefix/include/libintl.h"
+          test -f "$gettext_prefix/lib/libintl.dylib"
+          printf '%s\n' "CPPFLAGS += -I$gettext_prefix/include" "LDFLAGS += -L$gettext_prefix/lib" >> "$R_MAKEVARS_USER"
+
+      - name: Install package dependencies
+        uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          packages: deps::.
+          cache: false
+          install-pandoc: false
+          install-quarto: false
+
+      - name: Source-install exact Matrix endpoint
+        id: matrix-source
+        shell: bash
+        env:
+          MATRIX_SOURCE_URL: ${{ matrix.candidate == 'current' && needs.matrix-endpoint.outputs.source || matrix.matrix-url }}
+        run: |
+          set -o pipefail
+          Rscript --vanilla tools/ci/install-matrix-source.R "$MATRIX_SOURCE_URL" "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY" 2>&1 | tee "$GEModelR_EVIDENCE_DIR/matrix-source-install.log"
+
+      - name: Install GEModelR with tests against exact Matrix
+        id: package-install
+        shell: bash
+        env:
+          R_LIBS: ${{ env.GEModelR_TEST_LIBRARY }}
+        run: |
+          set -o pipefail
+          R CMD INSTALL --preclean --install-tests --library="$GEModelR_TEST_LIBRARY" . 2>&1 | tee "$GEModelR_EVIDENCE_DIR/package-install.log"
+
+      - name: Run installed core contracts
+        id: solver-tests
+        shell: bash
+        run: |
+          set -o pipefail
+          Rscript --vanilla -e 'stopifnot(identical(as.character(getRversion()), Sys.getenv("GEModelR_EXPECT_R_VERSION"))); source("tools/ci/run-installed-core-tests.R")' 2>&1 | tee "$GEModelR_EVIDENCE_DIR/installed-core-tests.log"
+
+      - name: Record candidate success or failure in CSV and job summary
+        if: always() && steps.setup-r.outcome == 'success'
+        shell: Rscript --vanilla {0}
+        env:
+          GEModelR_SOURCE_INSTALL_RESULT: ${{ steps.matrix-source.outcome }}
+          GEModelR_SOLVER_TEST_RESULT: ${{ steps.solver-tests.outcome }}
+        run: source("tools/ci/record-matrix-candidate.R")
+
+      - name: Report unresolved R setup as incomplete evidence
+        if: always() && steps.setup-r.outcome != 'success'
+        shell: bash
+        run: |
+          printf '%s\n' '## Provisional candidate: R setup did not complete' '' 'Exact R version remains unresolved; source install and solver tests did not run.' '' >> "$GITHUB_STEP_SUMMARY"
+          cat "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv" >> "$GITHUB_STEP_SUMMARY"
+          printf '%s\n' '' 'No final Matrix floor is selected.' >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Preserve every provisional candidate row and logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
+        with:
+          name: matrix-candidate-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.r }}-${{ matrix.candidate }}-${{ matrix.platform }}-${{ matrix.build }}
+          path: ${{ env.GEModelR_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+
+  representative-check:
+    needs: matrix-endpoint
+    name: Representative R CMD check baseline (informational, non-required)
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    # Independent informational check: no needs edge to the supported matrix.
+    env:
+      GEModelR_EXPECT_OPENMP: forbidden
+      GEModelR_EXPECT_MATRIX_VERSION: ${{ needs.matrix-endpoint.outputs.version }}
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Initialize representative temporary paths
+        shell: bash
+        env:
+          R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-representative
+          GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-check-library
+          GEModelR_CHECK_ARTIFACT_DIR: ${{ runner.temp }}/representative-check
+        run: |
+          printf '%s\n' "R_MAKEVARS_USER=$R_MAKEVARS_USER" "GEModelR_TEST_LIBRARY=$GEModelR_TEST_LIBRARY" "GEModelR_CHECK_ARTIFACT_DIR=$GEModelR_CHECK_ARTIFACT_DIR" >> "$GITHUB_ENV"
+
+      - name: Set up representative release R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Fast package-check report contract self-test
+        shell: bash
+        run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --self-test
+
+      - name: Configure representative serial build
+        shell: Rscript --vanilla {0}
+        run: writeLines("SHLIB_OPENMP_CXXFLAGS =", Sys.getenv("R_MAKEVARS_USER"))
+
+      - name: Install representative package dependencies
+        uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
+        with:
+          packages: deps::.
+          cache: false
+          install-pandoc: false
+          install-quarto: false
+
+      - name: Source-install representative exact current Matrix
+        shell: bash
+        env:
+          MATRIX_SOURCE_URL: ${{ needs.matrix-endpoint.outputs.source }}
+        run: Rscript --vanilla tools/ci/install-matrix-source.R "$MATRIX_SOURCE_URL" "$GEModelR_EXPECT_MATRIX_VERSION" "$GEModelR_TEST_LIBRARY"
+
+      - name: Full R CMD check baseline (informational, non-required)
+        id: full-check
+        continue-on-error: true
+        shell: bash
+        # RTK wraps this exact Rscript command locally; hosted runners use Rscript.
+        run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --run
+
+      - name: Preserve complete current check log and directory even on failure
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
+        with:
+          name: representative-check-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.GEModelR_CHECK_ARTIFACT_DIR }}
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30

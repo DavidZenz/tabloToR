@@ -1,0 +1,37 @@
+citHeader("To cite GEModelR and its reviewed predecessor basis in publications use:")
+
+bibentry(
+  bibtype = "Manual",
+  title = meta[["Title"]],
+  author = as.person(meta[["Author"]]),
+  note = paste0(
+    "R package version ", meta[["Version"]],
+    "; reviewed current-work author: David Zenz; attribution evidence: ",
+    "R/sparseCompiler.R::sparse_compile_spec; ",
+    "R/sparseSolver.R::sparse_solve_model; ",
+    "src/sparse-schur.cpp::GEModelR_schur_accumulate_global"
+  )
+)
+
+bibentry(
+  bibtype = "Misc",
+  title = "tabloToR upstream source baseline",
+  author = person("Maros", "Ivanic"),
+  url = paste0(
+    "https://github.com/mivanic/tabloToR/tree/",
+    "7e063c65a19713857ed13023f8b77dad45b15c90"
+  ),
+  note = paste0(
+    "Reviewed predecessor author: Maros Ivanic; public-domain/CC0 evidence in ",
+    "docs/provenance/ATTRIBUTION.md and docs/provenance/RIGHTS.md; ",
+    "source evidence: R/GEModel.R::GEModel$loadTablo; ",
+    "R/GEModel.R::GEModel$solveModel; ",
+    "R/processTablo.R::processTablo"
+  )
+)
+
+citFooter(paste(
+  "The current package identity is GEModelR.",
+  "The separately cited tabloToR baseline remains credited as predecessor source,",
+  "and public release remains blocked pending the dependency compatibility audit."
+))

@@ -1,0 +1,8 @@
+Schema: gemodelr-identity-reseal-review-v1
+Before-Allowlist-SHA256: 514417bba0b7845a91fdf426c007ebace80f62da6b5054af6b8376978192cb27
+Approved-Allowlist-SHA256: 1bf1d3117bce193ef4ca6018ac6dec2fc55e2605f9fb89939d894cba82ae60ac
+Policy-SHA256: 882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e
+Scope: Exact post-03-21 provenance line-digest reseal: one allowlist row changed after the approved 291-row ledger application; all other identity rows and workflow policy remain unchanged.
+Reviewer: David Zenz
+Reviewed-UTC: 2026-09-25T11:08:46Z
+Review-State: approved
