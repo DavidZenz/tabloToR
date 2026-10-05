@@ -52,15 +52,12 @@ jobs:
           - {platform: Linux, os: ubuntu-latest, r: devel, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
           - {platform: Windows, os: windows-latest, r: devel, build: openmp, openmp: required, candidate: current, matrix-version: '1.7-6', matrix-url: 'https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz'}
     env:
-      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-native
-      GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-library
       GEModelR_EXPECT_OPENMP: ${{ matrix.openmp }}
       GEModelR_EXPECT_MATRIX_VERSION: ${{ matrix.matrix-version }}
       GEModelR_SETUP_R_ALIAS: ${{ matrix.r }}
       GEModelR_CANDIDATE_LABEL: ${{ matrix.candidate }}
       GEModelR_PLATFORM: ${{ matrix.platform }}
       GEModelR_BUILD_MODE: ${{ matrix.build }}
-      GEModelR_EVIDENCE_DIR: ${{ runner.temp }}/matrix-candidate
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -69,7 +66,12 @@ jobs:
 
       - name: Initialize candidate evidence before R setup
         shell: bash
+        env:
+          R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-native
+          GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-library
+          GEModelR_EVIDENCE_DIR: ${{ runner.temp }}/matrix-candidate
         run: |
+          printf '%s\n' "R_MAKEVARS_USER=$R_MAKEVARS_USER" "GEModelR_TEST_LIBRARY=$GEModelR_TEST_LIBRARY" "GEModelR_EVIDENCE_DIR=$GEModelR_EVIDENCE_DIR" >> "$GITHUB_ENV"
           mkdir -p "$GEModelR_EVIDENCE_DIR"
           printf '%s\n' 'setup_r_alias,resolved_r_version,os,build_mode,candidate_label,matrix_version,source_install_result,solver_test_result,run_id' > "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv"
           printf '%s,%s,%s,%s,%s,%s,%s,%s,%s\n' "$GEModelR_SETUP_R_ALIAS" unresolved "$GEModelR_PLATFORM" "$GEModelR_BUILD_MODE" "$GEModelR_CANDIDATE_LABEL" "$GEModelR_EXPECT_MATRIX_VERSION" not_run not_run "$GITHUB_RUN_ID" >> "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv"
@@ -161,16 +163,22 @@ jobs:
     timeout-minutes: 45
     # Independent informational check: no needs edge to the supported matrix.
     env:
-      R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-representative
-      GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-check-library
       GEModelR_EXPECT_OPENMP: forbidden
       GEModelR_EXPECT_MATRIX_VERSION: '1.7-6'
-      GEModelR_CHECK_ARTIFACT_DIR: ${{ runner.temp }}/representative-check
     steps:
       - name: Check out source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           persist-credentials: false
+
+      - name: Initialize representative temporary paths
+        shell: bash
+        env:
+          R_MAKEVARS_USER: ${{ runner.temp }}/Makevars-representative
+          GEModelR_TEST_LIBRARY: ${{ runner.temp }}/GEModelR-check-library
+          GEModelR_CHECK_ARTIFACT_DIR: ${{ runner.temp }}/representative-check
+        run: |
+          printf '%s\n' "R_MAKEVARS_USER=$R_MAKEVARS_USER" "GEModelR_TEST_LIBRARY=$GEModelR_TEST_LIBRARY" "GEModelR_CHECK_ARTIFACT_DIR=$GEModelR_CHECK_ARTIFACT_DIR" >> "$GITHUB_ENV"
 
       - name: Set up representative release R
         uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
