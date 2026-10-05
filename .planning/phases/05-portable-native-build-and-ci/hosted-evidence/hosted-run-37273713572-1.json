@@ -1,0 +1,3223 @@
+{
+  "run_id": "37273713572",
+  "run_attempt": 1,
+  "head_sha": "98e626aaad0824db07a2012ed1cacfbcaef74a22",
+  "event": "pull_request",
+  "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572",
+  "conclusion": "failure",
+  "artifacts": [
+    {
+      "id": 11329728038,
+      "name": "representative-check-37273713572-1",
+      "digest": "sha256:b8a9b262344f14a0d4d14572f1f70a8041e55a3c0ccdfc80c1e4785f0e4e7f20",
+      "size_in_bytes": 6398047,
+      "created_at": "2026-10-05T06:49:11Z",
+      "expires_at": "2026-11-04T06:49:09Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329728038/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/representative-check-37273713572-1",
+      "files": {
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/.github/workflows/native-ci.yaml": "c84c18c887a388d995b6a43614fa34266d3be434f3745cd9dc099e6a5e6f8183",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/CONTRIBUTORS.md": "9ea186b1d76e14d44e3081c0bb08a94d9e0720bb8bed836358bc9f59f75188f5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/DESCRIPTION": "05205643b9bd1c6a72e50aa4a12722ccf7ea33efe8098f3ed42a6f69416e8635",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/GOVERNANCE.md": "67671bc75cdaf5cee7ec12c1270ae5cf9c07f37f834fe05c0ecd4ffbbccb91be",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/MIGRATION.md": "d1f974f8498e8d70c7bb6186e5595013f0f5dfb7eb6d29f6750d4496cfce1472",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/NAMESPACE": "1d48319025ee7bd1f9fae51491645aa31fbe3318d3577d212da22a2ca6ea6b33",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/NEWS.md": "95c4eefd76d46fff38373c66618dc2524d679655527a8194b39491838dd2771c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/GEModel.R": "32905167fa4f088cac810f3d74c8e8a43e1488eabfbe3eac0155a0736d61e750",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/RcppExports.R": "456cd12980f564a7886599c8bb8c872ada5c44bd86ae343ce30befd25b3140b5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/apiDocumentation.R": "db3fa126a819f4dc3200f343ff0b9538ae5a271f3072829b8e0c0333e45d7460",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/coefficientProcessing.R": "d7f2f7b77ee5df684818635d0c44845ca0375f3712f140741e410e2dfff358db",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/equationLevelGenerator.R": "32420e3ba7fbc65100044db259c1e01aeb7235a8960ac51c8d7b779a38994177",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/equationMatrixProcessing.R": "b79caf40480bfdfb75c1aa6761b9c233bef497bd0a02a08dc099724ab446fe7c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/equationProcessing.R": "2526046dfb3d3349ec75ba4ef3eb94d088176fd8c889343b9081f438487f1f2f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/formulaProcessing.R": "1040784ea6d3556468a4a5fe188a31874b085878064850f58e30db4381f95e06",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/helpers.R": "f71f235d9e6774ac80cf914c025ced54b76f853b4e7c0976e95a4640bed124b8",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/identityMigration.R": "c7abdd6b0fc7e2f90eabe0d280502840abc58aff6c64a49e753c2d76915b4efb",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/main.R": "89f67a544eeb9827e7dbb6f234354a2fad20b492703a9d9ed07932cb3fb6a68a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/modelSerialization.R": "d96bfc6ac84f1e9fc5642aebc0b640c664f64319b0141a30f9c68dcaf5c69f0d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processCoefficientStatement.R": "7fe653c1cc24555de748a8c6c12619e3076542b722cc2739870f15f102ddecc1",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processEquationSetupStatement.R": "7d98a1a1b2bed178942e37a7f154d4f201e39f85cf87eff09faecec8e24de4be",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processEquationStatement.R": "e85fce29bdda8842f4c5475418b3b82f45a329fe8b3e5981f76705beee22af29",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processFormulaStatement.R": "ca85f8e2e8677a21f37519058da56803930393f743f3ec629cb91078e2da5c83",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processReadStatement.R": "f350b9a86593875f13109e08e77accbfb72c1ffd422178506a554df64c039f90",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processSetStatement.R": "7441e92ab1b0fd58fa20ed21356ac92b28617f0d8062c1ba4a777f6ce9874a7c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processTablo.R": "28b6b76ed4b3a08c36d6244d682373fc41c4d22894d2cae019f82425c211e936",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/processUpdateStatement.R": "6f0265b5f6737e7745b251527ccd0ebfe9cd43d5aa9324d73cc3df48c303dd06",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/readProcessing.R": "1ad55d7b66e2c133561b53fe6255d82bd37c5e7e1b8fe3a5a5c57eaa09958fa2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/setProcessing.R": "1b4d8388321c279bea7392764e9a29aa7455d0dcca806bf87301ccdad87dc700",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/skeletonGenerator.R": "d79a9c1e47bfad17f3d9ee32f242771ba86cb7c668ab310306a3ae4cb3adad86",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseCompiler.R": "4bc6ec62f04a2b7e9dd91ab25f82fcad881a4cd9f2325c32393269a429826dae",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseElimination.R": "307d2cb89d2ba42dea9d8e9be61916cd03b9262664b908d4461900c778955f08",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparsePartition.R": "851bbb2eb882f973496ec03214aa7fe3bfa61d5934f06aa96db862bdbdb02c46",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseSchur.R": "a9b3d680db13eafdef0baccccf3a32aa0e09d9370596e2a29d55ed6aa6f84718",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseSchurComplement.R": "11e0ea5a822a7c9c190e77c0d1fd3406c150d2ad9cfa7b2121f4d9d17fc6a569",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseSolver.R": "e171308fba133ba8cf6f159de1f16a654b68c22a00d4723a94abc88acf89a9c5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/sparseSuiteSparse.R": "8a68ee7d68ae1b7b2f62ad3fc9dcb03d789820144d81d9dca679b91dab91b23b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/tabloToStatements.R": "108ffef3506bd5dadb01a6edb1c8645f92c9cf1619d83e952162fced37ea284d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/updateGenerator.R": "6a01382673584676b58adec83ff7adae1a0027c4717303f1d621f993f860c8b4",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/variableGenerator.R": "3fb89ab88183ae3617680cfda745b8da6e3e3208e933131f535743412f63997f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/zzzSparseSchurCpp.R": "8d493c2c6c54e48dc30095094a57ed4270e7752b45bdf1111ea17216026eaa8a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/zzzzSparseSchurOpenMP.R": "4ae27e21d0a344f426ff9a3b0a34878f17a3f2613155d3bdcf2ebec1759ee8c0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/R/zzzzzSchurDiagnostics.R": "f4e6c1e864d8385e3fb74036b14515104548510e4ba3032c7ec60532c70fcb8f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/README.md": "61938b2377bee86e1013cf0df5cac9ee1efc98e85d21c2b2287143baab0e4a91",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/GTAP12A_CPP_RESULTS.md": "a4eb96dd86ad2ee4ead588fe7b275e7f5916f5de6bd1d59ba0587f9cec3b48ca",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/benchmark_config.R": "6c9f9f4db59c950165cb62af83550df98991cb863b1a64d7986d416799a4408d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/benchmark_gtap12a.R": "de680402c6d1b4a9b431864bd4c34e6743ad6e594b202f9b442118debf99d875",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/benchmark_gtap12a_run.R": "dee3f24099f1a1fddea45c8747f8511575a381f5296a8615712ac9f51396cca5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/benchmark_schur_cpp.R": "4d2ecfbdf7ae6e372255173bbe2323deb08272ebd26d1b20293d7a95e7f6e968",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/benchmark_sparse_lu_cpp.R": "bd1b800a1937acbed6d891040b57eeeaf91cdc4c01dce5b55c93af1f13da2b5a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/check_benchmark_gate.R": "d62ed9df3ab4833c73fc6522b648bc956b6b184b015cbbaacc9e3ed38e8d045b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/run_gtap12a_ab.R": "600c5bc79a6352896d40003c44d45f10adee49c4415d1a7142aae5ce1d22a010",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/run_gtap12a_scaling.R": "da13701fe90dc7658d480bf38cbae49256750ad7371f32e35ace9053251a2abe",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/run_gtap12a_sweep.R": "0fcdf6a099674326add10f832cae605df55471864b7147c77dfff65d098776d0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/benchmarks/sparse-schur-prototype.R": "3d40386515388656266488cf40c45bc902cbaac917190912240c75ac334f907d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/migration/PHASE03-EVIDENCE-LIFECYCLE.md": "15918989ebaf814777bc72c2a028bb36cfbb6da2a9686582fe0318e30fbaa64b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/ATTRIBUTION.md": "fba2bb62e4962a2f9b390d564b259647b45acafa14ff1a0a97efa5eceb241e5a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/CLEANROOM.md": "01ccbf0fb1b78678be578cab27eec9553d1625fc46b3de957b9822b3730eaad1",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/EXPECTED-KEYS.csv": "7db15ff6d81f07109b4e5be6b7c34890e66a54f83f288a32397b9e8c727c6d8d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/HASH-REVIEW.md": "5ecb70d82656cd827f0b9cc0917103bb65172a514a6fc92bfc1ed92eb02f6b85",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/INVENTORY-REVIEW.csv": "b85a767e1b2e3ee7b4aaeb285326c821531f8f9df55c949de3a33d295cde7a65",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/LICENSE-DECISION.md": "2e84b4c7bc89d9d77fbfd7c346343ab6de8a7f85178d9e7afdc5aa84df20e459",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/PROVENANCE.csv": "a13facb7df2072dcd61f45645f0e1424cb66449d1e5d7e63bbc55bb7542a3218",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/RIGHTS.md": "b8f26104d15500e44d021efe16b4bc8fb714e723ed9a292008366a1355bbf3a7",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/UPSTREAM-REQUEST.md": "9374801844d6681f074ccdbfef5a434062a2526981674b86c95801e291fb8dcd",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/provenance/UPSTREAM-RESPONSE.md": "4b385dfec147bee9983d16625b8b12e414ba48f351799c48cb6adc85cfddae2d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/release/NAME-CHECK.md": "89fb07ff67feaf2763a275521f674a3d5aa48a7dc62ff414fc7a93ad0c881c40",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/release/RELEASE-GATES.md": "3e0242cc4412706ddc51401bb3ef30f41a12529cee93d52f9cc95893ab62c45e",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/docs/release/REPOSITORY.md": "cfa2b4b33afe372a68a81930a9038029d6ac6c69ad4819502832d72d7febb755",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/CITATION": "ee9ec06f8c86a6d21afcdf297a29d7e5ffcd2586e7d32e79e67121ea54ba31e2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/benchmarks/benchmark_config.R": "6c9f9f4db59c950165cb62af83550df98991cb863b1a64d7986d416799a4408d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/benchmarks/benchmark_gtap12a_run.R": "dee3f24099f1a1fddea45c8747f8511575a381f5296a8615712ac9f51396cca5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/benchmarks/check_benchmark_gate.R": "d62ed9df3ab4833c73fc6522b648bc956b6b184b015cbbaacc9e3ed38e8d045b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/benchmarks/run_gtap12a_scaling.R": "da13701fe90dc7658d480bf38cbae49256750ad7371f32e35ace9053251a2abe",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/benchmarks/run_gtap12a_sweep.R": "0fcdf6a099674326add10f832cae605df55471864b7147c77dfff65d098776d0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/BASELINE-PROCESS.md": "1418f00146d107fd6d7038fcbae0cbb59f1f75136a54987626bcd60e3770f8bc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/FAILURE-SEMANTICS.md": "2f3f5f3e58db9410af9783eaaeaffe58f1479f176c6bb2a55f507057ceb45ebc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/GEModel-contract.csv": "09debfda7e6259e56625898daf53c8e71e34b3a44d7160223f68db4557b77d6e",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/MANIFEST.md": "3c1ac00999c7275807ca55d151c8b9461ae68da11b2ca3458406b3fbae229fc2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/SERIALIZATION.md": "35f980c69a188eb79b2dd7c1dec6e0ddd5fcd424e9182ccfae8c5c3c1cee616c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/compatibility/WORKFLOWS.md": "7626be00c07eab91393f8e1c1b7488249fac6c819133db114f769eda04098fcc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/cpp/sparse-elimination.cpp": "1785be0998c4b0bd59baa88a1ef0b15db5e9637e504f4fc38e83e713a2397107",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/benchmark-identity-map.dcf": "ab22940ea1f27568e02007cf841abafabaf48767d12ed520698320f1128e7be7",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/historical-evidence.dcf": "1ef7e42f6af7ca02b71d68744530afcc673d6f8d985c89021e5258ed14f56673",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/identity-reseal-review.dcf": "8114457463acf8096405eefdaf10b9ef7afc7ce8764b1d0f3b3b465df6fb19a6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/old-identity-allowlist.csv": "1bf1d3117bce193ef4ca6018ac6dec2fc55e2605f9fb89939d894cba82ae60ac",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/option-replacements.dcf": "dae5ffb948a1a6f3d743af445fc85d5bf590270559e1b4c1f9779caea7812c51",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/predecessor-fingerprints.dcf": "d1f21078810e2531069080904b9370d39e2ed43c1c68906982fd6ed7ab0fad84",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/serialization-bugfix.dcf": "d90948247e41b763dc740dc1f043a04f8b490d7507e13af44e39e6cad74904e6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/serialization-bugfix.patch": "87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/workflow-evidence-policy-review.dcf": "f4d9eb52a8c47af913e87ab72bf8d887c6089b40da3a1cfa67c4f14ff07cd6d3",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/migration/workflow-evidence-policy.csv": "882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/tools/accept_phase02_baselines.R": "6cc0d8676fa3ad9090286313f15905d8d4a8e8fc212ac23e1f4358be6c115db4",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/inst/tools/refresh_phase02_baselines.R": "8db5ba9d25908bb884edad3cac5f3cfb4750596ca41f41ccc9e57b5b0170a3f0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/man/GEModel.Rd": "2ae5cadcce7aee931f43631cc18059813b44bcb90b62c6cb228cd962c0e90ae4",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/man/GEModelR-package.Rd": "28c4947e182b10391a1bc6454b140adfa15f572d83056edee8ff3797eec70f48",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/specs/cleanroom/README.md": "5a556157258d1cbfdd7eee3bc401d5207291880a62c30706458bb1c8c0363ee6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/GEModelR.so": "d851a4803dd8d98bb79afb4e23bd008b6b111d2cad856dbe3f60438853c15cb7",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/Makevars": "033d45c57261d3294a9125c766c3ab64276168c4a3c35f83ca00a6192ff4a92f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/Makevars.win": "033d45c57261d3294a9125c766c3ab64276168c4a3c35f83ca00a6192ff4a92f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/RcppExports.cpp": "b83903118b7f9f5182058a1bcdf17c736f2e96bd65c1193ea34955e19ef447d2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/RcppExports.o": "399363be02fae0349323df162a1533d7a5158a8cad5ed978fefce5d9684131df",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/dense-schur.cpp": "400de6c3f9f3e4284ca44edf8a75fb2c4b63f264e80368af84e8e80ffe46cea2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/dense-schur.o": "c4fc94ac5b5a490a904c6636d450735826b51d953feb354317552e34ec65f82d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-elimination.cpp": "1785be0998c4b0bd59baa88a1ef0b15db5e9637e504f4fc38e83e713a2397107",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-elimination.o": "b3aac07d08f8fbae81288ce21693f343e6c10a13a18996e173448df35a84994b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-lu.cpp": "ce0c3097790e58a0b14b65666633906f6a87f8a760366fbd3557279b66c5bca1",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-lu.o": "3657d4ff235839d982b4fa4942c9ed78d9dbbce607ace4d891497ce960e26d6c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-schur-openmp.cpp": "f56541d27d6806f8fd478c0e96bdf1678fb77e2592f0fd6f994f9244efcafbe5",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-schur-openmp.o": "b6d8117a794acecca7148119253ac60c88f6efa47e787fcee5e898d4f30e2e80",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-schur.cpp": "1c3261cb840bba153775cbbf412cf67411ed5d999e7fcf49ce533a055ab8b6d6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/sparse-schur.o": "3fb5b09aa85c5a5a132752e8217d2732ab82102dba846c1ee9a574c857070dfe",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/symbols.rds": "4b920edfeff87460cb341c8eb39abe023b147eb4c2ff07361c907c6a15e6f06f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/src/tablo-sparse-lu.h": "619ab3c59692fb990fec2249eb5b9911c73900d3ca7c6f5b625faa6b6d68fafc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/baselines/phase02/ACCEPTANCE.md": "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/baselines/phase02/expectations.csv": "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/baselines/phase02/fingerprints.dcf": "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/baselines/phase02/tolerances.csv": "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/fixtures/PROVENANCE.md": "25253d663aaa76188167cc1acbec10df634c67879433673cac6be987c6d49f12",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds": "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/fixtures/synthetic.tab": "d1a8c2c62b98294d828c3bcc7ed65da5237de96d53627a6bb96ebb914539ee7b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/fixtures/three-region.tab": "9324e4f86938deb3283f61b28aec05a47425127dd9890a18e819ef1e6801a38b",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/fixtures/update.tab": "83b9ed195dc1dbc6d64d39ec69de88283e3fcc270da878dc22b87c962c7a0df6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-compatibility.R": "03254da4ab4e2ac5df5cf3f0a5c2ff02193751ee750fec19f86f6c40199870d4",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-native-portability.R": "15f3f18ac5b21adac5d829568cd66e53a862fab75f33c42cc0cd91ad19dad039",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-numerical-baseline.R": "fc759ea02de656851507f235e3f34e7df47fcf4086c148f31f4be26bca0f7196",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-serialization.R": "4916a3ea9f3b256c17825b429cec40c12d2e17f02b177d882c16a1bc423f1f44",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-sparse-cpp-fixtures.R": "cce78570a33d239c93f280de965ef3797ff7cf83c6d21a325c886424c009e1d8",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-statement.R": "e45257074231f1359c3a4eca5c9e341b459ee173d253b9b1f886c346ae9b3375",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-synthetic-model.R": "f191e37af261579855122832fb70a53db1cfbe140bc426594c526ccb828d830a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-three-region.R": "b841b2202d03a931a3f110d30a3128c3564705cc9a10e8638bc9cd0bda446585",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/helper-transactional-state.R": "17b67f40b74b2e88c0c46f04db687b5f69022a915ec82a5cd1f43d15bbf45cea",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-api-documentation.R": "dbc0929912e63b0ad5b6881e7aba10f4f0b5fff71712db593fa18d2556fb354a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-attribution-contract.R": "34b8944e03779bb8c0364e09e79ce490aa4f2cd5aaeef88a3aafa8976fab88e3",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-baseline-artifacts.R": "e66463d8bae0816f6903c75197f5c36d7a97e0da0fcbfeee0ac60de9a113fed6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-benchmark-correctness-gate.R": "a2635568f22028b6d4705e1cb059cf020a1c43128cb6b2e22cff130ce6185e94",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-benchmark-harness.R": "ef49a90c61fc5d8654a354ec2c56b171cb3ff44e28ba3ac409ea57005ab587ab",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-compatibility-helpers.R": "6a5a7b858f335d30d5f1a90f1007fe58e0a3ea0eb3ba8d168b0336e8ba16ff43",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-compatibility-manifest.R": "545c2ec5cf3f91b34eeb2a0b8fff4afec45baa6f5ae1832745de5bd8ec5c58cb",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-documented-workflow.R": "2a7c0aa774da6815ac5825885513933915c4260fae3812c2123725cb06e9796f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-identity-migration.R": "7c97d69dec02c2ab1f33d1d1dc0f02c8f17f7fc6095b27ec7e3a7eddfbc7b435",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-installed-benchmark-execution.R": "aad3727b5c66c0c7e727b95aa3e119b7d689885a9ea0b5487b96ebe6a076cf82",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-lifecycle-contract.R": "71403460c9688b0c2d9c341889b8dbe4fb7f316c994272dcaa04020fac57cc2f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-matrix-compatibility.R": "0c421ea515e38b0bbd27071c4c3f246f57c96be75e1bbfa9f049f28ac888204f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-model-serialization.R": "a367980d536ed3f29b97bd0e6bc3c5644316c5c273180cee81a4d6acff049681",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-name-availability.R": "5afb73e76e4ad383aef3ff9940f7693f32d28a76efe78a285dd4b33184a5f9c0",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-native-portability.R": "efe3ef949c625dfe5bcd1d0950c86f2e4d94dcf8a46087da17981de5329122a3",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-numerical-baseline.R": "c9d65aeaceff966bf719b65ec903aa8f08099fce2ecf655dcb2a0105d5921145",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-phase02-original-gate.R": "92ec74eede90f62967af590b9b5262d01dd5349c0eb5f5e70c25a2bf9cb2e68c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-phase03-identity-reseal.R": "9b65349b3c40331fcbfda9d0409781a19189892d58b6a415f05ea5fdbc781a71",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-phase03-qualification-harness.R": "46980874fb212614d45a16c9d7743dd4452944bd995a5b487dda0c451b8bbc4f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-provenance-inventory.R": "5965a0aef57ed319da9d632279d48c17eea81a3adbff0778ab3cb0d3712a9061",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-public-cpp-backend.R": "305096f0f7b90750c8193271a919d49e6466bf687cb836758b68a3e3e3abe0eb",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-public-solver-contract.R": "d84378989ad5099d26ebba2f5df9cfc620c21d71c13b09b6bab061645cbc83e9",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-release-gates.R": "79cb2d36ffd9cd01f5544a5a12bbba07531e1ee7e8b2e202d8fe5cdf4512368a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-serialization-bugfix-review.R": "20b99dd2971eee06c0459dca55defdc1c08482686e82b0b24510558edf131ea2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-serialization-leaf-types.R": "b9fd12afdbe9d4acbc0cd798bb19cf0f9698bca8738f71bda767c1dc52b23b52",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-sparse-core.R": "04216686267197dbe941279e71158e85db3bd829008340d1b15e585cee4568e3",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-sparse-cpp-cache.R": "06b3406113d4300e30c7697150c8757040c5cc31e6b16e2076e97b8d6753c1a6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-sparse-lu-cpp.R": "eb169fbd77257bbb1384e03be74d430bd3b317822d441f3237cfb1b2699809e2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-sparse-schur-cpp.R": "da8a7f6fb847919cf5dc4db95b6ba505540c46ce44081624c670d859b7c59dce",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-sparse-schur-openmp.R": "7c51ea8b9ce77e87c6fcd6d317cfb862e4b6946c4b0e46e4689bc14c335a862d",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-suite-sparse-unsupported.R": "ad056da90b0c7b3409f9729a6d890edd80e21610b9a436a87f3295c0adaeb8f6",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-transactional-state.R": "d8d3e388962b68214789de4d4d5bf14b18fa3c2f85aac5d59a99b7026d21c465",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat/test-workflow-identity-policy.R": "1cbca7360b9233e7bf2c232c9d24c3ebf1dfbf92f0f863938f98c26480f918fb",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tests/testthat.R": "95dfa3a0d785d50489a812a9a5d52c2d77790c5a0f7328764f401c1fce32c966",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/accept_phase02_baselines.R": "35fccf4ab5157c71804a101eb24787d11e16c3154d3dc48ff877debbdc715e0a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_identity_migration.R": "1781f4dff68caa75eb91c99445ab2b4382b79894f5014d3544a05d60034f4365",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_name_availability.R": "886f7add58be7d39c6f99db5ff0c753065713f4b9483c8f531f1a7c4cb6bc3fc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_predecessor_bridge.R": "260caa93c1562eeda060b8741a6cd517d5daef7f1b201fdb78d60223a1578393",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_release_gates.R": "783a666a1bd31b579d4636f7a7994f1deb85e7fee8ac12fd4a96b6c475d72649",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_serialization_bugfix.R": "bf936dcff8032299ea2e1de7283334c84b3b74c85115dde2ecf694586221faf4",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/check_workflow_identity_policy.R": "a6d3abfc8567a1e55c08bde51049550c4f5ae959b71b82e6b6ae7326b42e2781",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/ci/install-matrix-source.R": "9d693d3422e1e86cfd8886fa438609502da5e3f9ca3cb7ed381039664b2bb20a",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/ci/record-matrix-candidate.R": "0204507aae103bd166d9223fc720996dff7df95aa3a68c0a1ff7ef51eec6939c",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/ci/run-installed-core-tests.R": "0ed1c9660b7795973f2c7fb17bea137fb0922f0a413795d5f67898cf788041f2",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/ci/summarize-r-cmd-check.R": "12a9653705101dff8c914b23435beb2606832bf311d5e9279cd508bf38b686cc",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/ci/test-matrix-source-download.R": "81f64705f399dc50d9b5148940dc33831e25ae7dc1136ae9cf4aac45ce409857",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/provenance_inventory.R": "c175bc9caf3a60f061a23afa8b9a84009196200fa7526432724a56c2e3ad8b9f",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/qualify_phase03_migration.R": "876b343ab76e8facda85babffd18e57d86a4c3161f4f46b9e35f4b8fd778fa36",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/refresh_phase02_baselines.R": "2ae844f8041e424a7e89b1df755bcd9a9fed5d2ebdfa1006be190479d1f1d21e",
+        "GEModelR.Rcheck/00_pkg_src/GEModelR/tools/seal_phase03_identity.R": "970bd5ed69bb29ed84a4b0122fa86be072073c217c47cd32d3a62c5272f0f22a",
+        "GEModelR.Rcheck/00check.log": "1b2545b1bbee374758d533e9757fca90aca745e9f1074f08aed91e289911b049",
+        "GEModelR.Rcheck/00install.out": "1a4c68ca88384fcc94c38613b59f75051874ad2af3e39570aed38ce23853abb6",
+        "GEModelR.Rcheck/GEModelR-manual.tex": "6cd4b311d910da8f6990bc343f218fd53249b06bb48207825c62daa49f41115a",
+        "GEModelR.Rcheck/Rdlatex.log": "17ef9793b2c7857c8e36c287876ffb896ed4dc0c101e37ed7b30c7d80d94a317",
+        "GEModelR.Rcheck/tests/startup.Rs": "fed9cfb12d26f8f863e56bef227d03225c75e2129cc8e5a0495ec651e7c51fb3",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-model-serialization-688.R": "079ba6d4f1a85700c9eaa29b19d94019912d487bcb0bc307d0171f917e81a9db",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-271.R": "857784b29f92048da9caa3ed5b8caa83ebad7f4d0c4e86f3444faf959b5b15c8",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-274.R": "ef400c0f093da0ed98e190262e35fb17c8194cc3a20bd4b3789d3e8414cb604e",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-281.R": "de439c6c49661befb6bbcccb2654d572c94a06bb62d50ddf901b15820c9cd079",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-285.R": "d37739e3dc39144a9215580bcca84a1b3e4455e67877e534242051c60498e338",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-291.R": "9606ed03d4f0f762e08ded0d21d6f4b8213ae57d0425dc81031b494ae113ed89",
+        "GEModelR.Rcheck/tests/testthat/_problems/test-serialization-leaf-types-415.R": "8aafa40a3a896e379a689ed9e8ec7e8e1efa8d7f325d13f8ce8bd3c841ba4ead",
+        "GEModelR.Rcheck/tests/testthat/baselines/phase02/ACCEPTANCE.md": "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113",
+        "GEModelR.Rcheck/tests/testthat/baselines/phase02/expectations.csv": "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+        "GEModelR.Rcheck/tests/testthat/baselines/phase02/fingerprints.dcf": "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+        "GEModelR.Rcheck/tests/testthat/baselines/phase02/tolerances.csv": "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+        "GEModelR.Rcheck/tests/testthat/fixtures/PROVENANCE.md": "25253d663aaa76188167cc1acbec10df634c67879433673cac6be987c6d49f12",
+        "GEModelR.Rcheck/tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds": "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b",
+        "GEModelR.Rcheck/tests/testthat/fixtures/synthetic.tab": "d1a8c2c62b98294d828c3bcc7ed65da5237de96d53627a6bb96ebb914539ee7b",
+        "GEModelR.Rcheck/tests/testthat/fixtures/three-region.tab": "9324e4f86938deb3283f61b28aec05a47425127dd9890a18e819ef1e6801a38b",
+        "GEModelR.Rcheck/tests/testthat/fixtures/update.tab": "83b9ed195dc1dbc6d64d39ec69de88283e3fcc270da878dc22b87c962c7a0df6",
+        "GEModelR.Rcheck/tests/testthat/helper-compatibility.R": "03254da4ab4e2ac5df5cf3f0a5c2ff02193751ee750fec19f86f6c40199870d4",
+        "GEModelR.Rcheck/tests/testthat/helper-native-portability.R": "15f3f18ac5b21adac5d829568cd66e53a862fab75f33c42cc0cd91ad19dad039",
+        "GEModelR.Rcheck/tests/testthat/helper-numerical-baseline.R": "fc759ea02de656851507f235e3f34e7df47fcf4086c148f31f4be26bca0f7196",
+        "GEModelR.Rcheck/tests/testthat/helper-serialization.R": "4916a3ea9f3b256c17825b429cec40c12d2e17f02b177d882c16a1bc423f1f44",
+        "GEModelR.Rcheck/tests/testthat/helper-sparse-cpp-fixtures.R": "cce78570a33d239c93f280de965ef3797ff7cf83c6d21a325c886424c009e1d8",
+        "GEModelR.Rcheck/tests/testthat/helper-statement.R": "e45257074231f1359c3a4eca5c9e341b459ee173d253b9b1f886c346ae9b3375",
+        "GEModelR.Rcheck/tests/testthat/helper-synthetic-model.R": "f191e37af261579855122832fb70a53db1cfbe140bc426594c526ccb828d830a",
+        "GEModelR.Rcheck/tests/testthat/helper-three-region.R": "b841b2202d03a931a3f110d30a3128c3564705cc9a10e8638bc9cd0bda446585",
+        "GEModelR.Rcheck/tests/testthat/helper-transactional-state.R": "17b67f40b74b2e88c0c46f04db687b5f69022a915ec82a5cd1f43d15bbf45cea",
+        "GEModelR.Rcheck/tests/testthat/test-api-documentation.R": "dbc0929912e63b0ad5b6881e7aba10f4f0b5fff71712db593fa18d2556fb354a",
+        "GEModelR.Rcheck/tests/testthat/test-attribution-contract.R": "34b8944e03779bb8c0364e09e79ce490aa4f2cd5aaeef88a3aafa8976fab88e3",
+        "GEModelR.Rcheck/tests/testthat/test-baseline-artifacts.R": "e66463d8bae0816f6903c75197f5c36d7a97e0da0fcbfeee0ac60de9a113fed6",
+        "GEModelR.Rcheck/tests/testthat/test-benchmark-correctness-gate.R": "a2635568f22028b6d4705e1cb059cf020a1c43128cb6b2e22cff130ce6185e94",
+        "GEModelR.Rcheck/tests/testthat/test-benchmark-harness.R": "ef49a90c61fc5d8654a354ec2c56b171cb3ff44e28ba3ac409ea57005ab587ab",
+        "GEModelR.Rcheck/tests/testthat/test-compatibility-helpers.R": "6a5a7b858f335d30d5f1a90f1007fe58e0a3ea0eb3ba8d168b0336e8ba16ff43",
+        "GEModelR.Rcheck/tests/testthat/test-compatibility-manifest.R": "545c2ec5cf3f91b34eeb2a0b8fff4afec45baa6f5ae1832745de5bd8ec5c58cb",
+        "GEModelR.Rcheck/tests/testthat/test-documented-workflow.R": "2a7c0aa774da6815ac5825885513933915c4260fae3812c2123725cb06e9796f",
+        "GEModelR.Rcheck/tests/testthat/test-identity-migration.R": "7c97d69dec02c2ab1f33d1d1dc0f02c8f17f7fc6095b27ec7e3a7eddfbc7b435",
+        "GEModelR.Rcheck/tests/testthat/test-installed-benchmark-execution.R": "aad3727b5c66c0c7e727b95aa3e119b7d689885a9ea0b5487b96ebe6a076cf82",
+        "GEModelR.Rcheck/tests/testthat/test-lifecycle-contract.R": "71403460c9688b0c2d9c341889b8dbe4fb7f316c994272dcaa04020fac57cc2f",
+        "GEModelR.Rcheck/tests/testthat/test-matrix-compatibility.R": "0c421ea515e38b0bbd27071c4c3f246f57c96be75e1bbfa9f049f28ac888204f",
+        "GEModelR.Rcheck/tests/testthat/test-model-serialization.R": "a367980d536ed3f29b97bd0e6bc3c5644316c5c273180cee81a4d6acff049681",
+        "GEModelR.Rcheck/tests/testthat/test-name-availability.R": "5afb73e76e4ad383aef3ff9940f7693f32d28a76efe78a285dd4b33184a5f9c0",
+        "GEModelR.Rcheck/tests/testthat/test-native-portability.R": "efe3ef949c625dfe5bcd1d0950c86f2e4d94dcf8a46087da17981de5329122a3",
+        "GEModelR.Rcheck/tests/testthat/test-numerical-baseline.R": "c9d65aeaceff966bf719b65ec903aa8f08099fce2ecf655dcb2a0105d5921145",
+        "GEModelR.Rcheck/tests/testthat/test-phase02-original-gate.R": "92ec74eede90f62967af590b9b5262d01dd5349c0eb5f5e70c25a2bf9cb2e68c",
+        "GEModelR.Rcheck/tests/testthat/test-phase03-identity-reseal.R": "9b65349b3c40331fcbfda9d0409781a19189892d58b6a415f05ea5fdbc781a71",
+        "GEModelR.Rcheck/tests/testthat/test-phase03-qualification-harness.R": "46980874fb212614d45a16c9d7743dd4452944bd995a5b487dda0c451b8bbc4f",
+        "GEModelR.Rcheck/tests/testthat/test-provenance-inventory.R": "5965a0aef57ed319da9d632279d48c17eea81a3adbff0778ab3cb0d3712a9061",
+        "GEModelR.Rcheck/tests/testthat/test-public-cpp-backend.R": "305096f0f7b90750c8193271a919d49e6466bf687cb836758b68a3e3e3abe0eb",
+        "GEModelR.Rcheck/tests/testthat/test-public-solver-contract.R": "d84378989ad5099d26ebba2f5df9cfc620c21d71c13b09b6bab061645cbc83e9",
+        "GEModelR.Rcheck/tests/testthat/test-release-gates.R": "79cb2d36ffd9cd01f5544a5a12bbba07531e1ee7e8b2e202d8fe5cdf4512368a",
+        "GEModelR.Rcheck/tests/testthat/test-serialization-bugfix-review.R": "20b99dd2971eee06c0459dca55defdc1c08482686e82b0b24510558edf131ea2",
+        "GEModelR.Rcheck/tests/testthat/test-serialization-leaf-types.R": "b9fd12afdbe9d4acbc0cd798bb19cf0f9698bca8738f71bda767c1dc52b23b52",
+        "GEModelR.Rcheck/tests/testthat/test-sparse-core.R": "04216686267197dbe941279e71158e85db3bd829008340d1b15e585cee4568e3",
+        "GEModelR.Rcheck/tests/testthat/test-sparse-cpp-cache.R": "06b3406113d4300e30c7697150c8757040c5cc31e6b16e2076e97b8d6753c1a6",
+        "GEModelR.Rcheck/tests/testthat/test-sparse-lu-cpp.R": "eb169fbd77257bbb1384e03be74d430bd3b317822d441f3237cfb1b2699809e2",
+        "GEModelR.Rcheck/tests/testthat/test-sparse-schur-cpp.R": "da8a7f6fb847919cf5dc4db95b6ba505540c46ce44081624c670d859b7c59dce",
+        "GEModelR.Rcheck/tests/testthat/test-sparse-schur-openmp.R": "7c51ea8b9ce77e87c6fcd6d317cfb862e4b6946c4b0e46e4689bc14c335a862d",
+        "GEModelR.Rcheck/tests/testthat/test-suite-sparse-unsupported.R": "ad056da90b0c7b3409f9729a6d890edd80e21610b9a436a87f3295c0adaeb8f6",
+        "GEModelR.Rcheck/tests/testthat/test-transactional-state.R": "d8d3e388962b68214789de4d4d5bf14b18fa3c2f85aac5d59a99b7026d21c465",
+        "GEModelR.Rcheck/tests/testthat/test-workflow-identity-policy.R": "1cbca7360b9233e7bf2c232c9d24c3ebf1dfbf92f0f863938f98c26480f918fb",
+        "GEModelR.Rcheck/tests/testthat/testthat-problems.rds": "885638ae13fa76572819e72571bcdb2ed6e967981015e8ed5cc05148061208ab",
+        "GEModelR.Rcheck/tests/testthat.R": "95dfa3a0d785d50489a812a9a5d52c2d77790c5a0f7328764f401c1fce32c966",
+        "GEModelR.Rcheck/tests/testthat.Rout.fail": "8f9ec2c2ba08d7c6ba8b559d418b37888b4ee0284af02f4a1ae47418c9277120",
+        "GEModelR_0.1.0.tar.gz": "920c41f6a1676c8b80dfa6836c10f156b277437acd296c141a391a533c565910",
+        "Makevars-serial": "028b741bcaf9e649df012554435ac617eaf303331576014f88e338046f35534c",
+        "R-CMD-build.log": "741b9f65917a551a81fa9528f0f4323a91cc2a5864b6dacac02c3803ea75b1e9",
+        "R-CMD-check.log": "b40150c90310a6c48d57062c0a90fede49e479ce72dab5f4efa7de17697573e9",
+        "build-exit-status.txt": "9a271f2a916b0b6ee6cecb2426f0b3206ef074578be55d9bc94f6f3fe3ab86aa",
+        "check-exit-status.txt": "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865",
+        "job-summary.md": "d0b2b1b29e3806ba6d29ccbbe54a496f1fb8450bbf6ebba734601da6110b3e75",
+        "source/.Rbuildignore": "28e2e0a53c44fe4bc385d41841f2c2c189ccd08275f5dc2b9d4faa10786a15a3",
+        "source/.github/workflows/native-ci.yaml": "c84c18c887a388d995b6a43614fa34266d3be434f3745cd9dc099e6a5e6f8183",
+        "source/.gitignore": "8be1ededf072a806ac8470e4258e405e456c7354b6b6dbc9db08f72b12af73e7",
+        "source/CONTRIBUTORS.md": "9ea186b1d76e14d44e3081c0bb08a94d9e0720bb8bed836358bc9f59f75188f5",
+        "source/DESCRIPTION": "148fdeee24994926a3833aedef43daa66ac68b7f7d390e884a974a58a6ca67f6",
+        "source/GOVERNANCE.md": "67671bc75cdaf5cee7ec12c1270ae5cf9c07f37f834fe05c0ecd4ffbbccb91be",
+        "source/MIGRATION.md": "d1f974f8498e8d70c7bb6186e5595013f0f5dfb7eb6d29f6750d4496cfce1472",
+        "source/NAMESPACE": "1d48319025ee7bd1f9fae51491645aa31fbe3318d3577d212da22a2ca6ea6b33",
+        "source/NEWS.md": "95c4eefd76d46fff38373c66618dc2524d679655527a8194b39491838dd2771c",
+        "source/R/GEModel.R": "32905167fa4f088cac810f3d74c8e8a43e1488eabfbe3eac0155a0736d61e750",
+        "source/R/RcppExports.R": "456cd12980f564a7886599c8bb8c872ada5c44bd86ae343ce30befd25b3140b5",
+        "source/R/apiDocumentation.R": "db3fa126a819f4dc3200f343ff0b9538ae5a271f3072829b8e0c0333e45d7460",
+        "source/R/coefficientProcessing.R": "d7f2f7b77ee5df684818635d0c44845ca0375f3712f140741e410e2dfff358db",
+        "source/R/equationLevelGenerator.R": "32420e3ba7fbc65100044db259c1e01aeb7235a8960ac51c8d7b779a38994177",
+        "source/R/equationMatrixProcessing.R": "b79caf40480bfdfb75c1aa6761b9c233bef497bd0a02a08dc099724ab446fe7c",
+        "source/R/equationProcessing.R": "2526046dfb3d3349ec75ba4ef3eb94d088176fd8c889343b9081f438487f1f2f",
+        "source/R/formulaProcessing.R": "1040784ea6d3556468a4a5fe188a31874b085878064850f58e30db4381f95e06",
+        "source/R/helpers.R": "f71f235d9e6774ac80cf914c025ced54b76f853b4e7c0976e95a4640bed124b8",
+        "source/R/identityMigration.R": "c7abdd6b0fc7e2f90eabe0d280502840abc58aff6c64a49e753c2d76915b4efb",
+        "source/R/main.R": "89f67a544eeb9827e7dbb6f234354a2fad20b492703a9d9ed07932cb3fb6a68a",
+        "source/R/modelSerialization.R": "d96bfc6ac84f1e9fc5642aebc0b640c664f64319b0141a30f9c68dcaf5c69f0d",
+        "source/R/processCoefficientStatement.R": "7fe653c1cc24555de748a8c6c12619e3076542b722cc2739870f15f102ddecc1",
+        "source/R/processEquationSetupStatement.R": "7d98a1a1b2bed178942e37a7f154d4f201e39f85cf87eff09faecec8e24de4be",
+        "source/R/processEquationStatement.R": "e85fce29bdda8842f4c5475418b3b82f45a329fe8b3e5981f76705beee22af29",
+        "source/R/processFormulaStatement.R": "ca85f8e2e8677a21f37519058da56803930393f743f3ec629cb91078e2da5c83",
+        "source/R/processReadStatement.R": "f350b9a86593875f13109e08e77accbfb72c1ffd422178506a554df64c039f90",
+        "source/R/processSetStatement.R": "7441e92ab1b0fd58fa20ed21356ac92b28617f0d8062c1ba4a777f6ce9874a7c",
+        "source/R/processTablo.R": "28b6b76ed4b3a08c36d6244d682373fc41c4d22894d2cae019f82425c211e936",
+        "source/R/processUpdateStatement.R": "6f0265b5f6737e7745b251527ccd0ebfe9cd43d5aa9324d73cc3df48c303dd06",
+        "source/R/readProcessing.R": "1ad55d7b66e2c133561b53fe6255d82bd37c5e7e1b8fe3a5a5c57eaa09958fa2",
+        "source/R/setProcessing.R": "1b4d8388321c279bea7392764e9a29aa7455d0dcca806bf87301ccdad87dc700",
+        "source/R/skeletonGenerator.R": "d79a9c1e47bfad17f3d9ee32f242771ba86cb7c668ab310306a3ae4cb3adad86",
+        "source/R/sparseCompiler.R": "4bc6ec62f04a2b7e9dd91ab25f82fcad881a4cd9f2325c32393269a429826dae",
+        "source/R/sparseElimination.R": "307d2cb89d2ba42dea9d8e9be61916cd03b9262664b908d4461900c778955f08",
+        "source/R/sparsePartition.R": "851bbb2eb882f973496ec03214aa7fe3bfa61d5934f06aa96db862bdbdb02c46",
+        "source/R/sparseSchur.R": "a9b3d680db13eafdef0baccccf3a32aa0e09d9370596e2a29d55ed6aa6f84718",
+        "source/R/sparseSchurComplement.R": "11e0ea5a822a7c9c190e77c0d1fd3406c150d2ad9cfa7b2121f4d9d17fc6a569",
+        "source/R/sparseSolver.R": "e171308fba133ba8cf6f159de1f16a654b68c22a00d4723a94abc88acf89a9c5",
+        "source/R/sparseSuiteSparse.R": "8a68ee7d68ae1b7b2f62ad3fc9dcb03d789820144d81d9dca679b91dab91b23b",
+        "source/R/tabloToStatements.R": "108ffef3506bd5dadb01a6edb1c8645f92c9cf1619d83e952162fced37ea284d",
+        "source/R/updateGenerator.R": "6a01382673584676b58adec83ff7adae1a0027c4717303f1d621f993f860c8b4",
+        "source/R/variableGenerator.R": "3fb89ab88183ae3617680cfda745b8da6e3e3208e933131f535743412f63997f",
+        "source/R/zzzSparseSchurCpp.R": "8d493c2c6c54e48dc30095094a57ed4270e7752b45bdf1111ea17216026eaa8a",
+        "source/R/zzzzSparseSchurOpenMP.R": "4ae27e21d0a344f426ff9a3b0a34878f17a3f2613155d3bdcf2ebec1759ee8c0",
+        "source/R/zzzzzSchurDiagnostics.R": "f4e6c1e864d8385e3fb74036b14515104548510e4ba3032c7ec60532c70fcb8f",
+        "source/README.md": "61938b2377bee86e1013cf0df5cac9ee1efc98e85d21c2b2287143baab0e4a91",
+        "source/benchmarks/.block-all-tail.R": "a7ef55a618f05b31c2c718341a95bf6341cd8178df9e6b96b715e2017638d704",
+        "source/benchmarks/.block-eliminate-run.R": "29d2787c084c1310466093708b069d13a3e6fb5990ff0240b234e85c93935e57",
+        "source/benchmarks/.block-eliminate.cpp": "70ad7960d3621708fcd6237dc792799ec27663e3c8d2c8482df83273530b646e",
+        "source/benchmarks/.block-gmres-run.R": "fd029211981dc915ad40da09795625dfc1d6eb9c2c84adb2afef5c22524174f3",
+        "source/benchmarks/.block-gmres.cpp": "92fc2ffa407cea65e6cab814ed8eee9127b0317f61c0879dd7c860e6e0557afc",
+        "source/benchmarks/.block-stats.cpp": "1e3be21c131ed1c29b9dc3e0e0d916b17e4997558af44c73327aa90935981ffd",
+        "source/benchmarks/.block-tail.R": "30ace39c71beeb8a1d942b4cd4c7ab9974469b118bc476aab8d3b7be7d0c1ae1",
+        "source/benchmarks/.btf-core-solve.R": "f00eac52900c7afc926d45c97a30b3b59fef383f8ba4911deca8d472e71cfc01",
+        "source/benchmarks/.btf-solve.R": "242af974141b15307ad579e7158753871db737e8a2a145e6409a59a36b9305a7",
+        "source/benchmarks/.coarse-tail.R": "c1ebb59d2c87204678b686c16addbe082f95e958e931337c4a7c5867567e37fe",
+        "source/benchmarks/.commodity-block.R": "a5165de6752d8989b5f76078e9924ef874ce1ce1c5c0fee61706ef785809a3aa",
+        "source/benchmarks/.commodity-region-block.R": "d49e44202f68cf798908e0710d19a2e009c0e71a8accd99c4f99d05fc1bfcf19",
+        "source/benchmarks/.commodity-region-graph.R": "c08b38bd0c0adbe5e75ce9444214413d6e62842d3f55733dd2929d61162a70c5",
+        "source/benchmarks/.commodity-region-pair.R": "d84afcc8b1f8eb4580b202e7b7f9fe059535a5ec497b997651ffba9ecff34c50",
+        "source/benchmarks/.diagonal-structure.R": "8155ad159c48619c1c635717f2f8ffa27c6381d81dd02ec4d7c8e57c7f5f4d30",
+        "source/benchmarks/.eigen-block-gmres.cpp": "8ba1a13c6c22749dcac17afef7007c2769aeec368f15f748b194b0d152a4b8d2",
+        "source/benchmarks/.eigen-block.cpp": "c5b2546c032285e3b5e257eac9e7aa2730b6040ec312cc967b4020cfc7fdeeae",
+        "source/benchmarks/.eigen-ilut.cpp": "24d086faf51af2be1a721601ef7ccff97cfd5ed18c78da1d0405e539e1ca9cb2",
+        "source/benchmarks/.eigen-one-direct.cpp": "eab811175221c6f80466a5fa699f93f6576b423a2feafa940e23845c070939ba",
+        "source/benchmarks/.eigen-tail.R": "8c0c69cb154ddf0428a338c754b84674c1700f87de5db3bb141a99e91aec7cdd",
+        "source/benchmarks/.factor-commodity-one.R": "7feee9112400201588667c64f31cb135d5d791c1458073db56797c91ecd67f58",
+        "source/benchmarks/.global-dmperm.R": "819d6bb16801d10bf096f06d42885bd31e7816602944cd2c77b4e917b0803be4",
+        "source/benchmarks/.gmres-tail.R": "38f9fec9afd5e45ad1470b3becf0d36f1bdf8cf8c988abf650eb1043fb826a2c",
+        "source/benchmarks/.inspect-large.R": "f7acd2279115a295a126a12956fb27b44d2e1f6c95231af2c90d8c6fa90674a8",
+        "source/benchmarks/.level-stats.R": "cfef2d299a55748c04a8a6e1eefd1dd730609625b55f3f2cae29506b777798d2",
+        "source/benchmarks/.matrix-incidence.cpp": "ce9151d6e45b7b435d82b7fead952ed0c7c1ef1b5af21948fc9f3a1b43a4750b",
+        "source/benchmarks/.noncomm-reg-dmperm.R": "573a63237bd759ec43ac6a4ff8fe96909e57faad40d08c6616ee0d51b63fdaa2",
+        "source/benchmarks/.partial-activity.R": "2343ee720a992090a90f1bde7e90393cc9125236b405b97db72ff1d2b4a434de",
+        "source/benchmarks/.partial-one-family.R": "a9419742913b9a1a3a36bc1507537979c3486759c53f2d49cca32a1ef3951157",
+        "source/benchmarks/.probe-remaining-families.R": "ab9f41b74335ef9a0f5e300b7d45c3ff6b7e960d511f8dd9d2a6f993db1fd63c",
+        "source/benchmarks/.reconstruct-btf.R": "a0138980929f20ad40bb096a13e137b1f4f3c66d3757ae701d7c27cbe9885020",
+        "source/benchmarks/.reconstruct-two-level.R": "a74df90c7cac0415541ab5b7f7f61d1dc3ac2e149df78ef516630356daffc71e",
+        "source/benchmarks/.reduced-block-gmres.R": "8226e820bbbfc36e465c4b4ee4b1144d8d32c9a8e7e0b606980079a13c6697e0",
+        "source/benchmarks/.reduced-klu.R": "19d271b85a13c99ac29208bea73bcbc6d107cbeb244c6a562f1c187175f139c0",
+        "source/benchmarks/.reduced-solve.R": "e1688be446b91ee2794a6427bec843c16b93f7865495b1020b024e80f1a90357",
+        "source/benchmarks/.reduced-umfpack.R": "c73d90c913dfa25ace6bd77494ee2e07d52587db52bd798ecb0e4868bd91aeb0",
+        "source/benchmarks/.regional-rank.R": "48bab9a50fc50bb752819beba17f1ac72110b21d675151c704062624a0e95302",
+        "source/benchmarks/.saved-block-tail.R": "697aa0395c0608e67ddfd336bf57c9d82f1040d8a0d6535932cceb692cb3e996",
+        "source/benchmarks/.saved-eigen-block-gmres.R": "0a89ee5741760b43f988b9d9e8a9b69a7bb7eb0bdd7c67802368ffae2fcdbfca",
+        "source/benchmarks/.saved-eigen-ilut.R": "8325f7853332e33b8570a3ac302c732c55c71a9f079958a5cf2e50cb8f8d3a62",
+        "source/benchmarks/.saved-eigen-one.R": "b30a0adf923d120216fa0fc052b97907efca091e2ceeaa210b7ff046c62cc1e2",
+        "source/benchmarks/.saved-eigen-twolevel.R": "48db6a956e57a60a8665433aeabdace9eda11ae5a1f2891ad3c4bf1607d9a2ba",
+        "source/benchmarks/.saved-tail.R": "7b1f6aba466256464e4c7da1c153b1b5034cc5eeac7167ef1af6957a2935e89d",
+        "source/benchmarks/.schur-fgmres-run.R": "6eb478aa705b6dd03d79af2237b068465596d5b8e03ae9a7a424e0aa5b3d0547",
+        "source/benchmarks/.second-block-eigen.R": "fad7193062cae8e6f6017264072b59a0410d75d21c0196d7e80d77e9961d5210",
+        "source/benchmarks/.second-eliminate-run.R": "bd53471c603a0d27db345f8ae3f61cb21353d965ec99ce1579cf50652ce76cac",
+        "source/benchmarks/.second-ilut.R": "9f84b8b8df607d70c05dd77db709a1817a56a2606871321a5467c77231a936f6",
+        "source/benchmarks/.second-structure.R": "7b028c34d1cb173d185bb999d709a24ca3776096b6bcf1047cc2d4793c6cad8e",
+        "source/benchmarks/.sparse-krylov.R": "d2896fef525630c4582132c5e006f31fbb14ca60264d4f89fa03d7ea3d66291f",
+        "source/benchmarks/GTAP12A_CPP_RESULTS.md": "a4eb96dd86ad2ee4ead588fe7b275e7f5916f5de6bd1d59ba0587f9cec3b48ca",
+        "source/benchmarks/benchmark_config.R": "6c9f9f4db59c950165cb62af83550df98991cb863b1a64d7986d416799a4408d",
+        "source/benchmarks/benchmark_gtap12a.R": "de680402c6d1b4a9b431864bd4c34e6743ad6e594b202f9b442118debf99d875",
+        "source/benchmarks/benchmark_gtap12a_run.R": "dee3f24099f1a1fddea45c8747f8511575a381f5296a8615712ac9f51396cca5",
+        "source/benchmarks/benchmark_schur_cpp.R": "4d2ecfbdf7ae6e372255173bbe2323deb08272ebd26d1b20293d7a95e7f6e968",
+        "source/benchmarks/benchmark_sparse_lu_cpp.R": "bd1b800a1937acbed6d891040b57eeeaf91cdc4c01dce5b55c93af1f13da2b5a",
+        "source/benchmarks/check_benchmark_gate.R": "d62ed9df3ab4833c73fc6522b648bc956b6b184b015cbbaacc9e3ed38e8d045b",
+        "source/benchmarks/run_gtap12a_ab.R": "600c5bc79a6352896d40003c44d45f10adee49c4415d1a7142aae5ce1d22a010",
+        "source/benchmarks/run_gtap12a_scaling.R": "da13701fe90dc7658d480bf38cbae49256750ad7371f32e35ace9053251a2abe",
+        "source/benchmarks/run_gtap12a_sweep.R": "0fcdf6a099674326add10f832cae605df55471864b7147c77dfff65d098776d0",
+        "source/benchmarks/sparse-schur-prototype.R": "3d40386515388656266488cf40c45bc902cbaac917190912240c75ac334f907d",
+        "source/docs/migration/PHASE03-EVIDENCE-LIFECYCLE.md": "15918989ebaf814777bc72c2a028bb36cfbb6da2a9686582fe0318e30fbaa64b",
+        "source/docs/provenance/ATTRIBUTION.md": "fba2bb62e4962a2f9b390d564b259647b45acafa14ff1a0a97efa5eceb241e5a",
+        "source/docs/provenance/CLEANROOM.md": "01ccbf0fb1b78678be578cab27eec9553d1625fc46b3de957b9822b3730eaad1",
+        "source/docs/provenance/EXPECTED-KEYS.csv": "7db15ff6d81f07109b4e5be6b7c34890e66a54f83f288a32397b9e8c727c6d8d",
+        "source/docs/provenance/HASH-REVIEW.md": "5ecb70d82656cd827f0b9cc0917103bb65172a514a6fc92bfc1ed92eb02f6b85",
+        "source/docs/provenance/INVENTORY-REVIEW.csv": "b85a767e1b2e3ee7b4aaeb285326c821531f8f9df55c949de3a33d295cde7a65",
+        "source/docs/provenance/LICENSE-DECISION.md": "2e84b4c7bc89d9d77fbfd7c346343ab6de8a7f85178d9e7afdc5aa84df20e459",
+        "source/docs/provenance/PROVENANCE.csv": "a13facb7df2072dcd61f45645f0e1424cb66449d1e5d7e63bbc55bb7542a3218",
+        "source/docs/provenance/RIGHTS.md": "b8f26104d15500e44d021efe16b4bc8fb714e723ed9a292008366a1355bbf3a7",
+        "source/docs/provenance/UPSTREAM-REQUEST.md": "9374801844d6681f074ccdbfef5a434062a2526981674b86c95801e291fb8dcd",
+        "source/docs/provenance/UPSTREAM-RESPONSE.md": "4b385dfec147bee9983d16625b8b12e414ba48f351799c48cb6adc85cfddae2d",
+        "source/docs/release/NAME-CHECK.md": "89fb07ff67feaf2763a275521f674a3d5aa48a7dc62ff414fc7a93ad0c881c40",
+        "source/docs/release/RELEASE-GATES.md": "3e0242cc4412706ddc51401bb3ef30f41a12529cee93d52f9cc95893ab62c45e",
+        "source/docs/release/REPOSITORY.md": "cfa2b4b33afe372a68a81930a9038029d6ac6c69ad4819502832d72d7febb755",
+        "source/inst/CITATION": "ee9ec06f8c86a6d21afcdf297a29d7e5ffcd2586e7d32e79e67121ea54ba31e2",
+        "source/inst/benchmarks/benchmark_config.R": "6c9f9f4db59c950165cb62af83550df98991cb863b1a64d7986d416799a4408d",
+        "source/inst/benchmarks/benchmark_gtap12a_run.R": "dee3f24099f1a1fddea45c8747f8511575a381f5296a8615712ac9f51396cca5",
+        "source/inst/benchmarks/check_benchmark_gate.R": "d62ed9df3ab4833c73fc6522b648bc956b6b184b015cbbaacc9e3ed38e8d045b",
+        "source/inst/benchmarks/run_gtap12a_scaling.R": "da13701fe90dc7658d480bf38cbae49256750ad7371f32e35ace9053251a2abe",
+        "source/inst/benchmarks/run_gtap12a_sweep.R": "0fcdf6a099674326add10f832cae605df55471864b7147c77dfff65d098776d0",
+        "source/inst/compatibility/BASELINE-PROCESS.md": "1418f00146d107fd6d7038fcbae0cbb59f1f75136a54987626bcd60e3770f8bc",
+        "source/inst/compatibility/FAILURE-SEMANTICS.md": "2f3f5f3e58db9410af9783eaaeaffe58f1479f176c6bb2a55f507057ceb45ebc",
+        "source/inst/compatibility/GEModel-contract.csv": "09debfda7e6259e56625898daf53c8e71e34b3a44d7160223f68db4557b77d6e",
+        "source/inst/compatibility/MANIFEST.md": "3c1ac00999c7275807ca55d151c8b9461ae68da11b2ca3458406b3fbae229fc2",
+        "source/inst/compatibility/SERIALIZATION.md": "35f980c69a188eb79b2dd7c1dec6e0ddd5fcd424e9182ccfae8c5c3c1cee616c",
+        "source/inst/compatibility/WORKFLOWS.md": "7626be00c07eab91393f8e1c1b7488249fac6c819133db114f769eda04098fcc",
+        "source/inst/cpp/sparse-elimination.cpp": "1785be0998c4b0bd59baa88a1ef0b15db5e9637e504f4fc38e83e713a2397107",
+        "source/inst/migration/benchmark-identity-map.dcf": "ab22940ea1f27568e02007cf841abafabaf48767d12ed520698320f1128e7be7",
+        "source/inst/migration/historical-evidence.dcf": "1ef7e42f6af7ca02b71d68744530afcc673d6f8d985c89021e5258ed14f56673",
+        "source/inst/migration/identity-reseal-review.dcf": "8114457463acf8096405eefdaf10b9ef7afc7ce8764b1d0f3b3b465df6fb19a6",
+        "source/inst/migration/old-identity-allowlist.csv": "1bf1d3117bce193ef4ca6018ac6dec2fc55e2605f9fb89939d894cba82ae60ac",
+        "source/inst/migration/option-replacements.dcf": "dae5ffb948a1a6f3d743af445fc85d5bf590270559e1b4c1f9779caea7812c51",
+        "source/inst/migration/predecessor-fingerprints.dcf": "d1f21078810e2531069080904b9370d39e2ed43c1c68906982fd6ed7ab0fad84",
+        "source/inst/migration/serialization-bugfix.dcf": "d90948247e41b763dc740dc1f043a04f8b490d7507e13af44e39e6cad74904e6",
+        "source/inst/migration/serialization-bugfix.patch": "87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f",
+        "source/inst/migration/workflow-evidence-policy-review.dcf": "f4d9eb52a8c47af913e87ab72bf8d887c6089b40da3a1cfa67c4f14ff07cd6d3",
+        "source/inst/migration/workflow-evidence-policy.csv": "882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e",
+        "source/inst/tools/accept_phase02_baselines.R": "6cc0d8676fa3ad9090286313f15905d8d4a8e8fc212ac23e1f4358be6c115db4",
+        "source/inst/tools/refresh_phase02_baselines.R": "8db5ba9d25908bb884edad3cac5f3cfb4750596ca41f41ccc9e57b5b0170a3f0",
+        "source/man/GEModel.Rd": "2ae5cadcce7aee931f43631cc18059813b44bcb90b62c6cb228cd962c0e90ae4",
+        "source/man/GEModelR-package.Rd": "28c4947e182b10391a1bc6454b140adfa15f572d83056edee8ff3797eec70f48",
+        "source/rcpp-solver-acceleration-plan.md": "31f5fd41db28d5b2ee6ab0cc03289afe0b8267aad2b667ca6cbae62599327483",
+        "source/specs/cleanroom/README.md": "5a556157258d1cbfdd7eee3bc401d5207291880a62c30706458bb1c8c0363ee6",
+        "source/src/Makevars": "033d45c57261d3294a9125c766c3ab64276168c4a3c35f83ca00a6192ff4a92f",
+        "source/src/Makevars.win": "033d45c57261d3294a9125c766c3ab64276168c4a3c35f83ca00a6192ff4a92f",
+        "source/src/RcppExports.cpp": "b83903118b7f9f5182058a1bcdf17c736f2e96bd65c1193ea34955e19ef447d2",
+        "source/src/dense-schur.cpp": "400de6c3f9f3e4284ca44edf8a75fb2c4b63f264e80368af84e8e80ffe46cea2",
+        "source/src/sparse-elimination.cpp": "1785be0998c4b0bd59baa88a1ef0b15db5e9637e504f4fc38e83e713a2397107",
+        "source/src/sparse-lu.cpp": "ce0c3097790e58a0b14b65666633906f6a87f8a760366fbd3557279b66c5bca1",
+        "source/src/sparse-schur-openmp.cpp": "f56541d27d6806f8fd478c0e96bdf1678fb77e2592f0fd6f994f9244efcafbe5",
+        "source/src/sparse-schur.cpp": "1c3261cb840bba153775cbbf412cf67411ed5d999e7fcf49ce533a055ab8b6d6",
+        "source/src/tablo-sparse-lu.h": "619ab3c59692fb990fec2249eb5b9911c73900d3ca7c6f5b625faa6b6d68fafc",
+        "source/tests/testthat/baselines/phase02/ACCEPTANCE.md": "4e8ab0c70d662abe8a1328a5c66f76938a3d610b630de400a057af14153f7113",
+        "source/tests/testthat/baselines/phase02/expectations.csv": "0efdc7e3093be07e89dc5f5335b7732e8a21ca0dcf0b41ca030161ff9855fa2c",
+        "source/tests/testthat/baselines/phase02/fingerprints.dcf": "49ed115d2cfac35b11b04e86421c236686e132abcb5d8f40d58aafd69ce9b2b0",
+        "source/tests/testthat/baselines/phase02/tolerances.csv": "b8aad6ea259d8b4629e296205902b9b280a5702286bbbf06a798c55cd0fc6c16",
+        "source/tests/testthat/fixtures/PROVENANCE.md": "25253d663aaa76188167cc1acbec10df634c67879433673cac6be987c6d49f12",
+        "source/tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds": "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b",
+        "source/tests/testthat/fixtures/synthetic.tab": "d1a8c2c62b98294d828c3bcc7ed65da5237de96d53627a6bb96ebb914539ee7b",
+        "source/tests/testthat/fixtures/three-region.tab": "9324e4f86938deb3283f61b28aec05a47425127dd9890a18e819ef1e6801a38b",
+        "source/tests/testthat/fixtures/update.tab": "83b9ed195dc1dbc6d64d39ec69de88283e3fcc270da878dc22b87c962c7a0df6",
+        "source/tests/testthat/helper-compatibility.R": "03254da4ab4e2ac5df5cf3f0a5c2ff02193751ee750fec19f86f6c40199870d4",
+        "source/tests/testthat/helper-native-portability.R": "15f3f18ac5b21adac5d829568cd66e53a862fab75f33c42cc0cd91ad19dad039",
+        "source/tests/testthat/helper-numerical-baseline.R": "fc759ea02de656851507f235e3f34e7df47fcf4086c148f31f4be26bca0f7196",
+        "source/tests/testthat/helper-serialization.R": "4916a3ea9f3b256c17825b429cec40c12d2e17f02b177d882c16a1bc423f1f44",
+        "source/tests/testthat/helper-sparse-cpp-fixtures.R": "cce78570a33d239c93f280de965ef3797ff7cf83c6d21a325c886424c009e1d8",
+        "source/tests/testthat/helper-statement.R": "e45257074231f1359c3a4eca5c9e341b459ee173d253b9b1f886c346ae9b3375",
+        "source/tests/testthat/helper-synthetic-model.R": "f191e37af261579855122832fb70a53db1cfbe140bc426594c526ccb828d830a",
+        "source/tests/testthat/helper-three-region.R": "b841b2202d03a931a3f110d30a3128c3564705cc9a10e8638bc9cd0bda446585",
+        "source/tests/testthat/helper-transactional-state.R": "17b67f40b74b2e88c0c46f04db687b5f69022a915ec82a5cd1f43d15bbf45cea",
+        "source/tests/testthat/test-api-documentation.R": "dbc0929912e63b0ad5b6881e7aba10f4f0b5fff71712db593fa18d2556fb354a",
+        "source/tests/testthat/test-attribution-contract.R": "34b8944e03779bb8c0364e09e79ce490aa4f2cd5aaeef88a3aafa8976fab88e3",
+        "source/tests/testthat/test-baseline-artifacts.R": "e66463d8bae0816f6903c75197f5c36d7a97e0da0fcbfeee0ac60de9a113fed6",
+        "source/tests/testthat/test-benchmark-correctness-gate.R": "a2635568f22028b6d4705e1cb059cf020a1c43128cb6b2e22cff130ce6185e94",
+        "source/tests/testthat/test-benchmark-harness.R": "ef49a90c61fc5d8654a354ec2c56b171cb3ff44e28ba3ac409ea57005ab587ab",
+        "source/tests/testthat/test-compatibility-helpers.R": "6a5a7b858f335d30d5f1a90f1007fe58e0a3ea0eb3ba8d168b0336e8ba16ff43",
+        "source/tests/testthat/test-compatibility-manifest.R": "545c2ec5cf3f91b34eeb2a0b8fff4afec45baa6f5ae1832745de5bd8ec5c58cb",
+        "source/tests/testthat/test-documented-workflow.R": "2a7c0aa774da6815ac5825885513933915c4260fae3812c2123725cb06e9796f",
+        "source/tests/testthat/test-identity-migration.R": "7c97d69dec02c2ab1f33d1d1dc0f02c8f17f7fc6095b27ec7e3a7eddfbc7b435",
+        "source/tests/testthat/test-installed-benchmark-execution.R": "aad3727b5c66c0c7e727b95aa3e119b7d689885a9ea0b5487b96ebe6a076cf82",
+        "source/tests/testthat/test-lifecycle-contract.R": "71403460c9688b0c2d9c341889b8dbe4fb7f316c994272dcaa04020fac57cc2f",
+        "source/tests/testthat/test-matrix-compatibility.R": "0c421ea515e38b0bbd27071c4c3f246f57c96be75e1bbfa9f049f28ac888204f",
+        "source/tests/testthat/test-model-serialization.R": "a367980d536ed3f29b97bd0e6bc3c5644316c5c273180cee81a4d6acff049681",
+        "source/tests/testthat/test-name-availability.R": "5afb73e76e4ad383aef3ff9940f7693f32d28a76efe78a285dd4b33184a5f9c0",
+        "source/tests/testthat/test-native-portability.R": "efe3ef949c625dfe5bcd1d0950c86f2e4d94dcf8a46087da17981de5329122a3",
+        "source/tests/testthat/test-numerical-baseline.R": "c9d65aeaceff966bf719b65ec903aa8f08099fce2ecf655dcb2a0105d5921145",
+        "source/tests/testthat/test-phase02-original-gate.R": "92ec74eede90f62967af590b9b5262d01dd5349c0eb5f5e70c25a2bf9cb2e68c",
+        "source/tests/testthat/test-phase03-identity-reseal.R": "9b65349b3c40331fcbfda9d0409781a19189892d58b6a415f05ea5fdbc781a71",
+        "source/tests/testthat/test-phase03-qualification-harness.R": "46980874fb212614d45a16c9d7743dd4452944bd995a5b487dda0c451b8bbc4f",
+        "source/tests/testthat/test-provenance-inventory.R": "5965a0aef57ed319da9d632279d48c17eea81a3adbff0778ab3cb0d3712a9061",
+        "source/tests/testthat/test-public-cpp-backend.R": "305096f0f7b90750c8193271a919d49e6466bf687cb836758b68a3e3e3abe0eb",
+        "source/tests/testthat/test-public-solver-contract.R": "d84378989ad5099d26ebba2f5df9cfc620c21d71c13b09b6bab061645cbc83e9",
+        "source/tests/testthat/test-release-gates.R": "79cb2d36ffd9cd01f5544a5a12bbba07531e1ee7e8b2e202d8fe5cdf4512368a",
+        "source/tests/testthat/test-serialization-bugfix-review.R": "20b99dd2971eee06c0459dca55defdc1c08482686e82b0b24510558edf131ea2",
+        "source/tests/testthat/test-serialization-leaf-types.R": "b9fd12afdbe9d4acbc0cd798bb19cf0f9698bca8738f71bda767c1dc52b23b52",
+        "source/tests/testthat/test-sparse-core.R": "04216686267197dbe941279e71158e85db3bd829008340d1b15e585cee4568e3",
+        "source/tests/testthat/test-sparse-cpp-cache.R": "06b3406113d4300e30c7697150c8757040c5cc31e6b16e2076e97b8d6753c1a6",
+        "source/tests/testthat/test-sparse-lu-cpp.R": "eb169fbd77257bbb1384e03be74d430bd3b317822d441f3237cfb1b2699809e2",
+        "source/tests/testthat/test-sparse-schur-cpp.R": "da8a7f6fb847919cf5dc4db95b6ba505540c46ce44081624c670d859b7c59dce",
+        "source/tests/testthat/test-sparse-schur-openmp.R": "7c51ea8b9ce77e87c6fcd6d317cfb862e4b6946c4b0e46e4689bc14c335a862d",
+        "source/tests/testthat/test-suite-sparse-unsupported.R": "ad056da90b0c7b3409f9729a6d890edd80e21610b9a436a87f3295c0adaeb8f6",
+        "source/tests/testthat/test-transactional-state.R": "d8d3e388962b68214789de4d4d5bf14b18fa3c2f85aac5d59a99b7026d21c465",
+        "source/tests/testthat/test-workflow-identity-policy.R": "1cbca7360b9233e7bf2c232c9d24c3ebf1dfbf92f0f863938f98c26480f918fb",
+        "source/tests/testthat.R": "95dfa3a0d785d50489a812a9a5d52c2d77790c5a0f7328764f401c1fce32c966",
+        "source/tools/accept_phase02_baselines.R": "35fccf4ab5157c71804a101eb24787d11e16c3154d3dc48ff877debbdc715e0a",
+        "source/tools/check_identity_migration.R": "1781f4dff68caa75eb91c99445ab2b4382b79894f5014d3544a05d60034f4365",
+        "source/tools/check_name_availability.R": "886f7add58be7d39c6f99db5ff0c753065713f4b9483c8f531f1a7c4cb6bc3fc",
+        "source/tools/check_predecessor_bridge.R": "260caa93c1562eeda060b8741a6cd517d5daef7f1b201fdb78d60223a1578393",
+        "source/tools/check_release_gates.R": "783a666a1bd31b579d4636f7a7994f1deb85e7fee8ac12fd4a96b6c475d72649",
+        "source/tools/check_serialization_bugfix.R": "bf936dcff8032299ea2e1de7283334c84b3b74c85115dde2ecf694586221faf4",
+        "source/tools/check_workflow_identity_policy.R": "a6d3abfc8567a1e55c08bde51049550c4f5ae959b71b82e6b6ae7326b42e2781",
+        "source/tools/ci/install-matrix-source.R": "9d693d3422e1e86cfd8886fa438609502da5e3f9ca3cb7ed381039664b2bb20a",
+        "source/tools/ci/record-matrix-candidate.R": "0204507aae103bd166d9223fc720996dff7df95aa3a68c0a1ff7ef51eec6939c",
+        "source/tools/ci/run-installed-core-tests.R": "0ed1c9660b7795973f2c7fb17bea137fb0922f0a413795d5f67898cf788041f2",
+        "source/tools/ci/summarize-r-cmd-check.R": "12a9653705101dff8c914b23435beb2606832bf311d5e9279cd508bf38b686cc",
+        "source/tools/ci/test-matrix-source-download.R": "81f64705f399dc50d9b5148940dc33831e25ae7dc1136ae9cf4aac45ce409857",
+        "source/tools/provenance_inventory.R": "c175bc9caf3a60f061a23afa8b9a84009196200fa7526432724a56c2e3ad8b9f",
+        "source/tools/qualify_phase03_migration.R": "876b343ab76e8facda85babffd18e57d86a4c3161f4f46b9e35f4b8fd778fa36",
+        "source/tools/refresh_phase02_baselines.R": "2ae844f8041e424a7e89b1df755bcd9a9fed5d2ebdfa1006be190479d1f1d21e",
+        "source/tools/seal_phase03_identity.R": "970bd5ed69bb29ed84a4b0122fa86be072073c217c47cd32d3a62c5272f0f22a"
+      }
+    },
+    {
+      "id": 11329697492,
+      "name": "matrix-candidate-37273713572-1-release-current-Linux-serial",
+      "digest": "sha256:8871f36671cc94dccf01ea6f0afc4a8021dad916d46d7d46b119934b6185151c",
+      "size_in_bytes": 10664,
+      "created_at": "2026-10-05T06:45:23Z",
+      "expires_at": "2026-11-04T06:45:22Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329697492/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "39854019415ee607114a9920ec717e62ef8d204ea55de41b7a0d18c2f371f431",
+        "matrix-candidate-evidence.csv": "29186bc12b5fc7831b0f993460901d9b4760004392b2cea25b5ea0b24e68b2dc",
+        "matrix-source-install.log": "1be5d92344587c83bd57b973c06cdfde0a5aaf7d49dae50bddde0a6bc6e6d521",
+        "package-install.log": "b21e8659a0be1cd9e9ad63430736242c813793b9e01c6ae32c46504edf2a1046"
+      }
+    },
+    {
+      "id": 11329681370,
+      "name": "matrix-candidate-37273713572-1-release-minimum-Windows-openmp",
+      "digest": "sha256:9285ec071c71ab0946490aafd6d9d2838546c289dfeacc40458ee45385b4a0ee",
+      "size_in_bytes": 1637,
+      "created_at": "2026-10-05T06:43:21Z",
+      "expires_at": "2026-11-04T06:43:20Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329681370/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-minimum-Windows-openmp",
+      "files": {
+        "job-summary.md": "936a5422ee3609747d2233a5107025aa9a2658d53761056ef641e7803f07c7be",
+        "matrix-candidate-evidence.csv": "2d54a54d82c053353d1449f8cbd1415a5ab902e482fd7c527737b221ef5913fd",
+        "matrix-source-install.log": "d5281a29834d9d6b187c9e52b07b4eeb844ccdb708fed70c666647c71b185ac6"
+      }
+    },
+    {
+      "id": 11329593104,
+      "name": "matrix-candidate-37273713572-1-devel-minimum-macOS-serial",
+      "digest": "sha256:1963329e7ad0585b61cfd61a2d2d86c1645c38c485bc61b11ccc11a037025840",
+      "size_in_bytes": 1708,
+      "created_at": "2026-10-05T06:46:20Z",
+      "expires_at": "2026-11-04T06:46:19Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329593104/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-minimum-macOS-serial",
+      "files": {
+        "job-summary.md": "beb0cc186918f3cdf4c5ad1918408bd6fbff21c40ff9ffd7477372cd172d661a",
+        "matrix-candidate-evidence.csv": "cd81e0450777acaa137d0a9d622829622caf18f7ba42bdf48b25b6a4e7ac8b1f",
+        "matrix-source-install.log": "aa5dcdcc51708c40716d2805ec77919b3b595abb3d318039fdb26097abbcbd93"
+      }
+    },
+    {
+      "id": 11329592553,
+      "name": "matrix-candidate-37273713572-1-devel-minimum-Windows-openmp",
+      "digest": "sha256:f7d63c0b3a3a7e4cb30ea14cf10cff87695f706b1489214e5a8f2e766502373f",
+      "size_in_bytes": 1654,
+      "created_at": "2026-10-05T06:43:00Z",
+      "expires_at": "2026-11-04T06:42:59Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329592553/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-minimum-Windows-openmp",
+      "files": {
+        "job-summary.md": "1eb7bd706b9961530c69243850f69452c6a027f46c4472cd76c30c6e9cf5e7e0",
+        "matrix-candidate-evidence.csv": "60600231ff591779827d050a0ab3840994d6e365d82f4edd59b994f84dae2986",
+        "matrix-source-install.log": "b145830378ecabb8b5c16c93c4b6760b71651f3520a65cdbc68b2ab150ab621e"
+      }
+    },
+    {
+      "id": 11329572979,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-minimum-Linux-openmp",
+      "digest": "sha256:20da708f9ea0a0a3a5526881c80567edfd7daaf7ff10be3123664ae8080a45e3",
+      "size_in_bytes": 6065,
+      "created_at": "2026-10-05T06:45:22Z",
+      "expires_at": "2026-11-04T06:45:22Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329572979/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "f2036baafb200497d5b9820786310805719600955afc6591c4d40be0844d68f8",
+        "job-summary.md": "5c10b5b82d1f9aa49392fbd32e439e2f87c5c159b1fc083d21ed130d54595df9",
+        "matrix-candidate-evidence.csv": "efab6082b2341d9d159c0e0e004f9b8c5ad399dbe9041fd10bacf527d7195ace",
+        "matrix-source-install.log": "8fe14a0541b4d694ee72a057f4f420edf6b64e50ba138ed71eda14635af0e47f",
+        "package-install.log": "4c57347b8ea15b41fedd1c18a7869f56f579d773417b78168f506dee5eb31303"
+      }
+    },
+    {
+      "id": 11329553246,
+      "name": "matrix-candidate-37273713572-1-devel-current-Linux-serial",
+      "digest": "sha256:8ca32bba0d7b3f519cc69191c87d11f5387eb0da2dd14ddfe6faac6b8e0a4ea3",
+      "size_in_bytes": 10674,
+      "created_at": "2026-10-05T06:46:49Z",
+      "expires_at": "2026-11-04T06:46:49Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329553246/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "45c5026e10430fb45abbfddc00e47295c2d31c52d4874556ebdea20516209c4c",
+        "matrix-candidate-evidence.csv": "35208b6586f58c1c217786a33d2565e37e779df7b86d05f8793d51ace45d061a",
+        "matrix-source-install.log": "ff8107967f6862b7bcf5d8cd4872d9224b9850500c2d412110c15249ccee26e4",
+        "package-install.log": "02bde7cffcf96777cf1d890628d26365abe2e117eb5cc803745ba1fd2dc112f4"
+      }
+    },
+    {
+      "id": 11329477254,
+      "name": "matrix-candidate-37273713572-1-devel-current-Windows-openmp",
+      "digest": "sha256:0f9a8cac715872d8bb5a98d67cd889a5c662bacc0f9d584e53c0fb2e1cd52a7b",
+      "size_in_bytes": 10921,
+      "created_at": "2026-10-05T06:47:32Z",
+      "expires_at": "2026-11-04T06:47:32Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329477254/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "cbfcf8f0c1976c0502692772d6b04837cecf5db50ccaee294d9d67c63089a0f2",
+        "matrix-candidate-evidence.csv": "f1a8750ac4e48b7cb7261b7074a1dc4924ab760f06ad44913d625d2bf8a31038",
+        "matrix-source-install.log": "e7e632c7fede88ce00da1f760d8624475b4f32416161e877ccf32fb01380852b",
+        "package-install.log": "52dfd2056b67b40963a0dfde860003e343d98774508cee98bbe003be53b2c383"
+      }
+    },
+    {
+      "id": 11329467506,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-current-Windows-openmp",
+      "digest": "sha256:4376c9c7e68bcec070e9c9e2433eaaf5775e4a49629c00a2b7039b4373e1dfc2",
+      "size_in_bytes": 10896,
+      "created_at": "2026-10-05T06:49:12Z",
+      "expires_at": "2026-11-04T06:49:11Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329467506/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "90722c5aeb53c29608565372563b8536d534485f1798b374b76eb3f5b115c6eb",
+        "matrix-candidate-evidence.csv": "7fa882a7b21520911d6a3eb3c038e5fd6a0bef2e6c6c285d5700e062b1f3dd3e",
+        "matrix-source-install.log": "a0a853c8a197a777b16412e05d5dc696f225a624b7f9277b937147617318e5c6",
+        "package-install.log": "59a1583ffb69de6961a5a864f335604bb0cbbecdb8df105fac06ebe4ea22c5f8"
+      }
+    },
+    {
+      "id": 11329433110,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-minimum-Windows-serial",
+      "digest": "sha256:5cfadbacea9a3d155650ed3e2aa91a80aba3b352d01fbd5fd09255e5ad1249cf",
+      "size_in_bytes": 14027,
+      "created_at": "2026-10-05T06:45:57Z",
+      "expires_at": "2026-11-04T06:45:57Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329433110/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-minimum-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "ab6b9e5cf8a49c1a67fcc7f9aa649a62eb08e619abee428e080eb12d0e3b7727",
+        "job-summary.md": "2aea9e5d5a34264915835db8008b94a955aa43c0caa6ed44395c9331a3b18015",
+        "matrix-candidate-evidence.csv": "765b25ce8e7abf8ae61ec2f8e237c3a6ddd12f4a9657455e55633f532f6fbaaa",
+        "matrix-source-install.log": "1e001c362dcff05ee163bd45d6a05137d35829ab72eecd416c41f6e51e6d7714",
+        "package-install.log": "008aa397e91523f8e4dd31253b713ce139f25fac86dbabd5bc8d3ba7a5b0b0d3"
+      }
+    },
+    {
+      "id": 11329423527,
+      "name": "matrix-candidate-37273713572-1-devel-current-Windows-serial",
+      "digest": "sha256:cf0ff36e8a7f64d9cdfafa750fd6ad70400b9c996a3b2d1165c2b6d5d0a41a48",
+      "size_in_bytes": 10957,
+      "created_at": "2026-10-05T06:47:25Z",
+      "expires_at": "2026-11-04T06:47:23Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329423527/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "9ce891b090e29eae702f53b6c0106d8878e5687a3da2b6cbbdb3ee29690336d3",
+        "job-summary.md": "b74ffe7d70a2667fb8a36120cd3f700d1e745a533f4e99887e933141d80c74fd",
+        "matrix-candidate-evidence.csv": "8ee7a1c903cc11e350ed6259aea5c53e1687ab38f1a4f7c213cd2f1a0868f704",
+        "matrix-source-install.log": "484454a50df453dec0212078fe64f7600cae3d0429cd7b0a2c56f90b09c862f0",
+        "package-install.log": "9ce8d47a724769f2e65683e95cac6ba78c287cb6cc4fee6251f67038bb2aaf5b"
+      }
+    },
+    {
+      "id": 11329413781,
+      "name": "matrix-candidate-37273713572-1-devel-current-Linux-openmp",
+      "digest": "sha256:49c67173f9c16a1cbe72c6413138a9333df655ac2a8822cd01d053ffd8ec6add",
+      "size_in_bytes": 10632,
+      "created_at": "2026-10-05T06:48:26Z",
+      "expires_at": "2026-11-04T06:48:26Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329413781/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "64bf52ff2f54c704968d099bf06394a41fda9c0a5c639c13dcf195b36272382a",
+        "job-summary.md": "157bb5f495b9884f2a166cac552f66f88338e0f8d478faf610cd0479a1b2cc16",
+        "matrix-candidate-evidence.csv": "cde9f66486edc186215e0ee38137d4b16616c80ac9dd20c02742f83d8ad961ab",
+        "matrix-source-install.log": "82df8df955fee96d0e7842e999e68895877252d67611cdbf95ba175345b51bb9",
+        "package-install.log": "885c2b51d0af6dca5784273c90cf3424295c4110a60fbdeb054e4eb471777ce8"
+      }
+    },
+    {
+      "id": 11329393628,
+      "name": "matrix-candidate-37273713572-1-release-current-Windows-openmp",
+      "digest": "sha256:b89309de9820f03c1fdfc96fcc3afd6448472ca2fbb8b4e4feb6ece2e0dff3e9",
+      "size_in_bytes": 10896,
+      "created_at": "2026-10-05T06:47:54Z",
+      "expires_at": "2026-11-04T06:47:53Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329393628/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "c60e1f66f990c19b4d8f9136d4cc8c3767c36d9e4a8786b68d30fa3bb3f18f31",
+        "matrix-candidate-evidence.csv": "70bee4fb7ccfd5d09cf4a64ff7f4fbe6d7f4a00e9bd2587c68daba6302b40eb4",
+        "matrix-source-install.log": "5698580f4827c4241e0e2b3452d1fdf2d95eeb2fafbd570945530b2595e22596",
+        "package-install.log": "52dfd2056b67b40963a0dfde860003e343d98774508cee98bbe003be53b2c383"
+      }
+    },
+    {
+      "id": 11329317222,
+      "name": "matrix-candidate-37273713572-1-devel-minimum-Linux-serial",
+      "digest": "sha256:7955da9cf90c103aae2a00262d2808c3be7a878b90045057352a44bd6e4a7ad5",
+      "size_in_bytes": 7919,
+      "created_at": "2026-10-05T06:45:59Z",
+      "expires_at": "2026-11-04T06:45:59Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329317222/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "f47603506d7730f46b9efb8fc29ab4335903cfef6189dbdcb2cbf3c82df6a055",
+        "matrix-candidate-evidence.csv": "b154e949b0906fb05f06e0e37216e3166290d8234d442f68f452bc9b86d8164a",
+        "matrix-source-install.log": "957b69e787edd64bee93043ed2751368a180f34c22b6b9152d25c14fd6c96445",
+        "package-install.log": "02bde7cffcf96777cf1d890628d26365abe2e117eb5cc803745ba1fd2dc112f4"
+      }
+    },
+    {
+      "id": 11329308426,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-minimum-macOS-serial",
+      "digest": "sha256:31ac520e9bff1715a4d53c3b0beb6a3d8b463a1876a24bb8e1919d30d1c71bd8",
+      "size_in_bytes": 13004,
+      "created_at": "2026-10-05T06:44:57Z",
+      "expires_at": "2026-11-04T06:44:56Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329308426/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-minimum-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "956090ae046e2800bde01949c2b00c6fb746a342a3df593761f2859a1309e54c",
+        "job-summary.md": "615f097739db7437f80b5de20958834dd4ab9c64afac3dc346187072fe033f9a",
+        "matrix-candidate-evidence.csv": "166f1fd8a2a7d52af3821f74c9fb61d962c1497f6ec26de2ce3eca1905907775",
+        "matrix-source-install.log": "28819fce4bb6840065129a73e9333838d6aec19de0a0b535a1b36fec6285a444",
+        "package-install.log": "d30128da7523d834ed1eeb1e0b13a1f1b5a037cd6e50926f921175fb6007770b"
+      }
+    },
+    {
+      "id": 11329262550,
+      "name": "matrix-candidate-37273713572-1-devel-current-macOS-serial",
+      "digest": "sha256:b8e174154a58720e8f78068123682335482787e8966da619ab6af025a70eefd1",
+      "size_in_bytes": 11036,
+      "created_at": "2026-10-05T06:47:49Z",
+      "expires_at": "2026-11-04T06:47:48Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329262550/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "e63d199cc012b5f5f797b14bd650051174d4f8a633eccb079aa31192fa38b083",
+        "job-summary.md": "0a041a7394840ca2f21c018bdeda7d8f53ebd798de55f9f1f6527c35a570546f",
+        "matrix-candidate-evidence.csv": "6e3d889c4d1049aa9541e3d7fd41164aaf0fac5b17c11ed4119aa84fa183890c",
+        "matrix-source-install.log": "2adb54970b5e661e916fc986e88a69d96b5afa0bb30a1f1abcf64ca8eda958df",
+        "package-install.log": "7ab7926fd3e3e7dfc37572ba615895567f08cedcca36fe76650bca5f00c644e0"
+      }
+    },
+    {
+      "id": 11329228133,
+      "name": "matrix-candidate-37273713572-1-devel-minimum-Windows-serial",
+      "digest": "sha256:0031b8663fe6b1a6bb357855f9d3bf02cfe8be96db469b8786d0dab0af2dcff3",
+      "size_in_bytes": 1653,
+      "created_at": "2026-10-05T06:42:58Z",
+      "expires_at": "2026-11-04T06:42:58Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329228133/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-minimum-Windows-serial",
+      "files": {
+        "job-summary.md": "9466ea48c5077b745b29ceaf0416d111d4980d58a3fcce7e7dd245849f0f5a94",
+        "matrix-candidate-evidence.csv": "280873e88ce0f46e54528df256695641103b2c6b1918dbfd3667bcf115d09b50",
+        "matrix-source-install.log": "b145830378ecabb8b5c16c93c4b6760b71651f3520a65cdbc68b2ab150ab621e"
+      }
+    },
+    {
+      "id": 11329223885,
+      "name": "matrix-candidate-37273713572-1-release-minimum-macOS-serial",
+      "digest": "sha256:78beeb82447823abe3cb385c551eeeb87ea7b86419e70553df206414c9d7d14c",
+      "size_in_bytes": 1692,
+      "created_at": "2026-10-05T06:46:43Z",
+      "expires_at": "2026-11-04T06:46:42Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329223885/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-minimum-macOS-serial",
+      "files": {
+        "job-summary.md": "6772ab49ea46e7736f85a90d8eada09ef1a4e8ae529acd256356e98509aa94c9",
+        "matrix-candidate-evidence.csv": "98612d4e8492a4059a75548ed56ccdf0ae1e7abc6d95c1cfdb4f8b8c98d6d66f",
+        "matrix-source-install.log": "524ccba83f96f8e69844d5f6602e7773b0a5785caedeefbe7f7dd3a47c21fb88"
+      }
+    },
+    {
+      "id": 11329194017,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-current-Windows-serial",
+      "digest": "sha256:2d610a88f275dab75e89e001f6cb8097105e87d41737b06808371551acc81414",
+      "size_in_bytes": 10940,
+      "created_at": "2026-10-05T06:48:04Z",
+      "expires_at": "2026-11-04T06:48:03Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329194017/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "9ce891b090e29eae702f53b6c0106d8878e5687a3da2b6cbbdb3ee29690336d3",
+        "job-summary.md": "b2c722b94aa42d7223dc942e909bc9657e4d260eec8e93845c52a6b51e9476b4",
+        "matrix-candidate-evidence.csv": "eaafe7eebb213d0824d995132428b0889ca37413754a098816926abe5bd9743f",
+        "matrix-source-install.log": "051e78102ce2cde91f195578ec9ef67bc2dfc2379f5812e996e87d73698bb4c1",
+        "package-install.log": "008aa397e91523f8e4dd31253b713ce139f25fac86dbabd5bc8d3ba7a5b0b0d3"
+      }
+    },
+    {
+      "id": 11329167317,
+      "name": "matrix-candidate-37273713572-1-release-minimum-Linux-serial",
+      "digest": "sha256:9bb81efb6e8e4ea2ebeaaf8806179765ceb9c535cfd141765204fe6e7473d0d4",
+      "size_in_bytes": 7902,
+      "created_at": "2026-10-05T06:45:04Z",
+      "expires_at": "2026-11-04T06:45:04Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329167317/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "fd2c28d9d50d5b6dd647266a24cd98847c69b456ab3147ec8af991fc33cc7b01",
+        "matrix-candidate-evidence.csv": "8920a5f9f8904de685d1a1f6e631f798fdcc711b17b3b30b8e4d1eb22a6ba299",
+        "matrix-source-install.log": "7467565c9270a109ea87d0128b32904ff4348016aa667926558842e24e1bc9a4",
+        "package-install.log": "b21e8659a0be1cd9e9ad63430736242c813793b9e01c6ae32c46504edf2a1046"
+      }
+    },
+    {
+      "id": 11329123563,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-minimum-Linux-serial",
+      "digest": "sha256:5b0ad9aaad7116d6a3813a2cdb4f9b297c796e2afaa3707b44be570303effff6",
+      "size_in_bytes": 6110,
+      "created_at": "2026-10-05T06:44:30Z",
+      "expires_at": "2026-11-04T06:44:29Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329123563/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "b36a12c0c728a1e9c9fbfa253aecba9914b36734fc5c42f9751dc64f6ce8d72c",
+        "matrix-candidate-evidence.csv": "2e30d540d627c358035e99ae67d51d4c863a1bf49e9d63538c577735de6c6046",
+        "matrix-source-install.log": "0e6e2fa66abf4c95afbc61ea6a67a5be30e9d41e1243c7029fe67e032e6d8643",
+        "package-install.log": "7723cb350dbc67c8ab8c8d877cf8cf414fbf0a204984609b1250e8816044a508"
+      }
+    },
+    {
+      "id": 11329108889,
+      "name": "matrix-candidate-37273713572-1-release-current-Linux-openmp",
+      "digest": "sha256:10d1ba8137ba505f6e4a4f56535ca5fa9138f2a6d547626cfcee5d5c7b8be737",
+      "size_in_bytes": 10616,
+      "created_at": "2026-10-05T06:46:24Z",
+      "expires_at": "2026-11-04T06:46:23Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329108889/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "1627b8ebf7fdfd5cc7eeb708e3aede8ae8cdff0fc5e8ed3ebffe4d3b4fe2cf46",
+        "job-summary.md": "1a6aa01935195f93da3d9128d20b9cb98289ca888df54b5efbb6e117e53698d5",
+        "matrix-candidate-evidence.csv": "6ca393d0a8afa901b683b23c14a45497eda5694b4d1479c6852ee630972609df",
+        "matrix-source-install.log": "4fb6e410379f1288c13c48c53ef9d6de3d9f28107b1b5eacb7a20d81f72c1619",
+        "package-install.log": "de3cb8aa6d178df8373d041ddc7e698bfdb3d9a6027803956e801c52e06420fd"
+      }
+    },
+    {
+      "id": 11329104071,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-minimum-Windows-openmp",
+      "digest": "sha256:ae80a21994677d83fa4f94e50774357dd8934771f1d90b272e5abf11291eefd7",
+      "size_in_bytes": 13982,
+      "created_at": "2026-10-05T06:46:33Z",
+      "expires_at": "2026-11-04T06:46:32Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329104071/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-minimum-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "ad2c3832059f2a7c8fc8ff9d6468f115c6e6d67291918c5e430d1f563b6d9e52",
+        "job-summary.md": "49352042420998e10b597be56c3a8065d48b8daa980b5c9c8b55bd82db656fb8",
+        "matrix-candidate-evidence.csv": "ac8f22b0f0aaa65f175d9d64c6ff9c14cb28864a7f8c1e2f5bd2af96b87cbffc",
+        "matrix-source-install.log": "8d2ee11f5de2707532ff1ff34f4ffdd26ca92a447df02018726a9077b38e9342",
+        "package-install.log": "59a1583ffb69de6961a5a864f335604bb0cbbecdb8df105fac06ebe4ea22c5f8"
+      }
+    },
+    {
+      "id": 11329049181,
+      "name": "matrix-candidate-37273713572-1-release-current-Windows-serial",
+      "digest": "sha256:6d518c86f43dac8f4b9c9020b4a9677c1086c1b530faf0513f792660281f35a9",
+      "size_in_bytes": 10934,
+      "created_at": "2026-10-05T06:47:36Z",
+      "expires_at": "2026-11-04T06:47:35Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329049181/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "9ce891b090e29eae702f53b6c0106d8878e5687a3da2b6cbbdb3ee29690336d3",
+        "job-summary.md": "965d2eda7ed74e9fff143a4f25ef39e0f9f87587a05561943dc7f02992229b2d",
+        "matrix-candidate-evidence.csv": "2e2d02024c9d3f6fc54e8ca0cd3d15bf074497e4b332692134ffb8bc0d42da6f",
+        "matrix-source-install.log": "e7a16dc5453232e968cd170bbc80ce8a0024b613ac9e860dc62223edf418a5fc",
+        "package-install.log": "9ce8d47a724769f2e65683e95cac6ba78c287cb6cc4fee6251f67038bb2aaf5b"
+      }
+    },
+    {
+      "id": 11329007660,
+      "name": "matrix-candidate-37273713572-1-devel-minimum-Linux-openmp",
+      "digest": "sha256:3be76210d46acc03694934e9519de3d2564566afa12eaf0eea6e1a7b864ce477",
+      "size_in_bytes": 7878,
+      "created_at": "2026-10-05T06:46:18Z",
+      "expires_at": "2026-11-04T06:46:17Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329007660/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-devel-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "d5c26df29af0cced619f2043b1a1a707121df0c3690a2ad60619876a4d2a4ecb",
+        "job-summary.md": "3b4d4d6d3374e7b4a01436c184f9bb2ddf0e45b65a34eb6edc42827fb76f42ac",
+        "matrix-candidate-evidence.csv": "0270dbc9451bb2edf56aaa1359bc6c508ac3d04d11b1ea77116821f3fe96a74e",
+        "matrix-source-install.log": "f3ecbb03c04b60dc4748d088cb15c4e314fc49de2095975fdd515e186b7e6639",
+        "package-install.log": "885c2b51d0af6dca5784273c90cf3424295c4110a60fbdeb054e4eb471777ce8"
+      }
+    },
+    {
+      "id": 11328894358,
+      "name": "matrix-candidate-37273713572-1-release-minimum-Linux-openmp",
+      "digest": "sha256:d85f0eb9fb2b0264d7123dd5cee943f715433753c078b12ca201a8ec8883c537",
+      "size_in_bytes": 7865,
+      "created_at": "2026-10-05T06:45:09Z",
+      "expires_at": "2026-11-04T06:45:08Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328894358/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "d5c26df29af0cced619f2043b1a1a707121df0c3690a2ad60619876a4d2a4ecb",
+        "job-summary.md": "77d471ead42d158a987468f35a8e108181b6ce40185e6b715e13967d9b5c3964",
+        "matrix-candidate-evidence.csv": "ff2dad4223fceb119dd1fba487334d07b1c2fe75c0e2448cd745dd56c059ddfd",
+        "matrix-source-install.log": "65cab18041c4c734125f7e9baa455f1163d6f1dec57a8add35c9104281b238cd",
+        "package-install.log": "de3cb8aa6d178df8373d041ddc7e698bfdb3d9a6027803956e801c52e06420fd"
+      }
+    },
+    {
+      "id": 11328864556,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-current-Linux-openmp",
+      "digest": "sha256:f5d9cab64403067804919aa88bc3163859774a9aa52c631dc9d4a76cd5c2ca32",
+      "size_in_bytes": 10617,
+      "created_at": "2026-10-05T06:46:15Z",
+      "expires_at": "2026-11-04T06:46:14Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328864556/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "1627b8ebf7fdfd5cc7eeb708e3aede8ae8cdff0fc5e8ed3ebffe4d3b4fe2cf46",
+        "job-summary.md": "6b40335597a42ba431078bd8863dccb6beb840298ef28b2d611474ebf03e6791",
+        "matrix-candidate-evidence.csv": "3eefad5ec1899bd5a6d858a952719b9a6943033c8d702fce45be191c279def17",
+        "matrix-source-install.log": "3e194eb7c3fb8b705500f0e66ad3a8200208d17cde4cc8f80eb39400a9270c5a",
+        "package-install.log": "4c57347b8ea15b41fedd1c18a7869f56f579d773417b78168f506dee5eb31303"
+      }
+    },
+    {
+      "id": 11328844543,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-current-Linux-serial",
+      "digest": "sha256:5904c3127683ef1ccc3b469ab7b4262e94b48034cc7b7004761e1cb3d288c3e9",
+      "size_in_bytes": 10663,
+      "created_at": "2026-10-05T06:46:03Z",
+      "expires_at": "2026-11-04T06:46:02Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328844543/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "7c36c1dba7231974eae5547c074f335e19e40bdef2e3a6ce3b416858341789fd",
+        "matrix-candidate-evidence.csv": "c15271c1e0325d99d85da94fc0c16b09b6140102425f1a478a1d121fc564fe68",
+        "matrix-source-install.log": "f5394d201e1be72e2ccccd6b0aae66cac328fda309270d85cbc03134c82945b9",
+        "package-install.log": "7723cb350dbc67c8ab8c8d877cf8cf414fbf0a204984609b1250e8816044a508"
+      }
+    },
+    {
+      "id": 11328824698,
+      "name": "matrix-candidate-37273713572-1-oldrel-1-current-macOS-serial",
+      "digest": "sha256:5f02570525feafb3e82a2e0dec304e10eb189bd54857de5439c138524404c695",
+      "size_in_bytes": 11146,
+      "created_at": "2026-10-05T06:45:58Z",
+      "expires_at": "2026-11-04T06:45:57Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328824698/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-oldrel-1-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "e63d199cc012b5f5f797b14bd650051174d4f8a633eccb079aa31192fa38b083",
+        "job-summary.md": "4507a988c8e6f35af07783eaac80625f50f2189652fb0321445743678596f272",
+        "matrix-candidate-evidence.csv": "b1147f6e70225d0069f18b8c7142153f6b06f431c7dc097fa1dbe9a92eb2e4f2",
+        "matrix-source-install.log": "70b9d749d6f35ecad44fc0107be48b9f3228a69f509cfdd96fa78eaa17c97ef8",
+        "package-install.log": "d30128da7523d834ed1eeb1e0b13a1f1b5a037cd6e50926f921175fb6007770b"
+      }
+    },
+    {
+      "id": 11328759892,
+      "name": "matrix-candidate-37273713572-1-release-current-macOS-serial",
+      "digest": "sha256:68d2cc8063c9472170a2ee432dba0a0df72442d2fc637572b55c2c4badd3b69f",
+      "size_in_bytes": 11083,
+      "created_at": "2026-10-05T06:45:59Z",
+      "expires_at": "2026-11-04T06:45:59Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328759892/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "e63d199cc012b5f5f797b14bd650051174d4f8a633eccb079aa31192fa38b083",
+        "job-summary.md": "f6eeb218fd166e6639faad5337de8dea891a920254707b58f56413477a02c25c",
+        "matrix-candidate-evidence.csv": "7bbc2a931bd7f526c097c33d9fd45d679003945aca9d5ef386487353a1b4c442",
+        "matrix-source-install.log": "d053c28b601e72e06fe1b73229d18f70fd9c8a327924c7cd7635d6f2e11e6c8d",
+        "package-install.log": "efe6b31b5f1e39e5dffb275334a184d4f2f762be520eb5fcd26332316460443a"
+      }
+    },
+    {
+      "id": 11328703324,
+      "name": "matrix-candidate-37273713572-1-release-minimum-Windows-serial",
+      "digest": "sha256:d12cb89711668f290b3b3912618230168f7c6186a5581bf2363138f6c8bbf131",
+      "size_in_bytes": 1634,
+      "created_at": "2026-10-05T06:44:09Z",
+      "expires_at": "2026-11-04T06:44:08Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328703324/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37273713572/artifacts-final/matrix-candidate-37273713572-1-release-minimum-Windows-serial",
+      "files": {
+        "job-summary.md": "5eeed4800b9833c7cfdf6bee55fb21e40ab09db779855d7d1c2f841dabfc2bb1",
+        "matrix-candidate-evidence.csv": "c83a2df88da0b0aee53ade019d9bbf6698c2c6e1c0f39db3d3a8e8250bbe50aa",
+        "matrix-source-install.log": "d5281a29834d9d6b187c9e52b07b4eeb844ccdb708fed70c666647c71b185ac6"
+      }
+    }
+  ],
+  "jobs": [
+    {
+      "id": 111646015305,
+      "name": "Representative R CMD check baseline (informational, non-required)",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015305",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize representative temporary paths",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up representative release R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Fast package-check report contract self-test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure representative serial build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install representative package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install representative exact current Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Full R CMD check baseline (informational, non-required)",
+          "conclusion": "success"
+        },
+        {
+          "name": "Preserve complete current check log and directory even on failure",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install representative package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015630,
+      "name": "Linux / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015630",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015645,
+      "name": "macOS / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015645",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015648,
+      "name": "Windows / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015648",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015652,
+      "name": "Linux / R devel / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015652",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015660,
+      "name": "macOS / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015660",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015671,
+      "name": "Windows / R oldrel-1 / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015671",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015673,
+      "name": "Windows / R release / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015673",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015676,
+      "name": "Linux / R release / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015676",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015685,
+      "name": "Windows / R devel / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015685",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015690,
+      "name": "Linux / R devel / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015690",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015693,
+      "name": "Linux / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015693",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015695,
+      "name": "Linux / R release / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015695",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015703,
+      "name": "Windows / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015703",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015706,
+      "name": "Linux / R devel / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015706",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015707,
+      "name": "Windows / R oldrel-1 / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015707",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015708,
+      "name": "Linux / R release / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015708",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015711,
+      "name": "Windows / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015711",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015718,
+      "name": "Windows / R devel / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015718",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015722,
+      "name": "Windows / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015722",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015731,
+      "name": "Windows / R release / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015731",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015737,
+      "name": "macOS / R release / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015737",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015741,
+      "name": "macOS / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015741",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015756,
+      "name": "macOS / R devel / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015756",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015757,
+      "name": "Windows / R devel / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015757",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015759,
+      "name": "Windows / R release / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "failure",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015759",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "failure"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015772,
+      "name": "Linux / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015772",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015776,
+      "name": "macOS / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015776",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015780,
+      "name": "Linux / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015780",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015789,
+      "name": "Linux / R oldrel-1 / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015789",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111646015860,
+      "name": "Linux / R oldrel-1 / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37273713572/job/111646015860",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
