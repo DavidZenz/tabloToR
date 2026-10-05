@@ -28,6 +28,14 @@ These are tuple-specific exact-source failures. Linux release/devel Matrix 1.6-5
 
 Both candidate runs preserve an independent Linux/release/current-Matrix/serial check at R 4.6.1 / Matrix 1.7.6. Original exit status is **1**: **1,868 passes, nine failures, 164 skips, two ERRORs, two WARNINGs, one NOTE**. Their report copies are in `hosted-evidence/representative-check-<run>-1.md`; raw check/build logs, status, source archive and complete check directory remain in each downloadable representative artifact and local download.
 
-The nine test failures involve untouched predecessor serialization fixtures and leaf metadata (`test-model-serialization.R:688`; `test-serialization-leaf-types.R:269,272,278,282,291,413`). The manual fails in the hosted LaTeX environment, and DESCRIPTION's provisional license is reported separately. These informational findings do not gate the installed core matrix and have not been repaired or represented as resolved by Phase 05.
+The nine test failures involve untouched predecessor serialization fixtures and leaf metadata (`test-model-serialization.R:688`; `test-serialization-leaf-types.R:269,272,278,282,291,413`). The manual reports `pdflatex is not available`, and DESCRIPTION's provisional license is reported separately. These informational findings do not gate the installed core matrix and have not been repaired or represented as resolved by Phase 05. See `deferred-items.md` for the exact outstanding items.
 
 Each report separately preserves the exact inherited Phase 04 baseline: **2,364 passes, 19 failures, 65 skips, one ERROR, four WARNINGs, four NOTEs**. Different R/Matrix and packaged/source contexts prevent attributing count differences to Phase 05 fixes.
+
+## Final supported matrix
+
+Run [37274723569, attempt 1](https://github.com/DavidZenz/tabloToR/actions/runs/37274723569), commit `c9292607ea74b527e492b7c0b37f5966cee2696c`, passed **all 24 supported candidate jobs**. Exact source installs and installed solver contracts both report `success` in every row, including all five oldrel-1 / Matrix 1.6-5 pairings. The 24 authentic CSV rows are retained separately in `hosted-evidence/matrix-candidate-evidence-37274723569-1.csv`; the primary 30-row input continues to retain failed candidate evidence from the preceding full candidate run.
+
+All 24 candidate artifacts were downloaded and checked against their corresponding job names and source-install/solver step outcomes. Their run/attempt artifact IDs/digests and extracted-file hashes are recorded in `hosted-evidence/hosted-run-37274723569-1.json`; complete raw logs remain in `/tmp/gemodelr-hosted-37274723569/artifacts-final/`.
+
+At this artifact capture, only the duplicate representative check (job `111649136092`) remained running. It was left running and has no invented result in this snapshot. Task 05-06-T3 is fulfilled by the two completed representative reports above. This record is a candidate evidence handoff to Plan 05-07, not a final Matrix floor or whole-phase completion claim.

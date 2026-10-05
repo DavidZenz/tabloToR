@@ -1,0 +1,2205 @@
+{
+  "run_id": "37274723569",
+  "run_attempt": 1,
+  "head_sha": "c9292607ea74b527e492b7c0b37f5966cee2696c",
+  "event": "pull_request",
+  "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569",
+  "status_at_capture": "in_progress",
+  "conclusion": null,
+  "artifacts": [
+    {
+      "id": 11330355369,
+      "name": "matrix-candidate-37274723569-1-devel-current-Linux-serial",
+      "digest": "sha256:1ae89d412c88757fbc97c656e3128a56f14d9cc5a87864d86a38d2ed5dfc38b4",
+      "size_in_bytes": 10681,
+      "created_at": "2026-10-05T06:59:29Z",
+      "expires_at": "2026-11-04T06:59:29Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330355369/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "03b53ad0a9b85834f6563a0ab3d4466a87c505e4bc79e6917e305e90aaa9d2f2",
+        "matrix-candidate-evidence.csv": "85a8ad5b759c961d7ac85ec611f68ec4f26299166addd598608534c6db595c2f",
+        "matrix-source-install.log": "b28ca07249e50f8f3ef86d6e4f2ad1342098dacf580a2f36b7626749b76e429a",
+        "package-install.log": "02bde7cffcf96777cf1d890628d26365abe2e117eb5cc803745ba1fd2dc112f4"
+      }
+    },
+    {
+      "id": 11330265065,
+      "name": "matrix-candidate-37274723569-1-release-current-Linux-openmp",
+      "digest": "sha256:993fbc6118886be5d6dfd3adaae9e3e20e2d49d0b4d340ced710e8d9b62c8e57",
+      "size_in_bytes": 10618,
+      "created_at": "2026-10-05T06:58:11Z",
+      "expires_at": "2026-11-04T06:58:11Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330265065/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "64bf52ff2f54c704968d099bf06394a41fda9c0a5c639c13dcf195b36272382a",
+        "job-summary.md": "4ebd8c8b2e9dc0c112dc773c95b2d782224ebea81a17e4d190a814cab1e11427",
+        "matrix-candidate-evidence.csv": "13d87466412746326aea67aa234d72654d6faac15d88162f25e9a1615f3c38bf",
+        "matrix-source-install.log": "c6d5d64a0b038e8242ae52ffdb0eaccbf8ffb74abff931294e007706446ba754",
+        "package-install.log": "de3cb8aa6d178df8373d041ddc7e698bfdb3d9a6027803956e801c52e06420fd"
+      }
+    },
+    {
+      "id": 11330260620,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-current-Windows-openmp",
+      "digest": "sha256:187cd5e337eaa60563bac736c0315143dcd16522d5ddaa2b9f8cf139b2369a37",
+      "size_in_bytes": 10906,
+      "created_at": "2026-10-05T06:59:36Z",
+      "expires_at": "2026-11-04T06:59:35Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330260620/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "b650727ea9cfc765064f720c1da72ce5de76adc9e0987358f9330b5295116bad",
+        "matrix-candidate-evidence.csv": "ef11b46c9a87b443040d4aaa6aa684e8b3ab2bb0680891918ee53e911bd5bae3",
+        "matrix-source-install.log": "aba4cb595d5d5a08eb31567932964e7ff8ab1c92b4c0ac126750ef59a7fee6b6",
+        "package-install.log": "59a1583ffb69de6961a5a864f335604bb0cbbecdb8df105fac06ebe4ea22c5f8"
+      }
+    },
+    {
+      "id": 11330250330,
+      "name": "matrix-candidate-37274723569-1-release-minimum-Linux-serial",
+      "digest": "sha256:fd82b22a4bcff63b468511669c6ac1b9d826f8a8e0e9859d39bffd399d8e1ddc",
+      "size_in_bytes": 7904,
+      "created_at": "2026-10-05T06:57:23Z",
+      "expires_at": "2026-11-04T06:57:23Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330250330/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "e75652d8a9fc8c974e561a87a0d6f28657da3b8118e7d6357f9153d59655c882",
+        "matrix-candidate-evidence.csv": "5ebfbce2d2a900f1ce12b178e2ae1cf9177c1d491bf341347c7be3399a3cd4f5",
+        "matrix-source-install.log": "32fdb821e5e1ccabf86fe52d7a654a9f7d61d5fd56656944220ce2a5c0680524",
+        "package-install.log": "b21e8659a0be1cd9e9ad63430736242c813793b9e01c6ae32c46504edf2a1046"
+      }
+    },
+    {
+      "id": 11330215400,
+      "name": "matrix-candidate-37274723569-1-release-current-macOS-serial",
+      "digest": "sha256:ba7cc9e68a02c674a1e665b7cb3d16f871902d6e13bf65ffcab5233a94184d46",
+      "size_in_bytes": 11085,
+      "created_at": "2026-10-05T06:57:20Z",
+      "expires_at": "2026-11-04T06:57:19Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330215400/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "e63d199cc012b5f5f797b14bd650051174d4f8a633eccb079aa31192fa38b083",
+        "job-summary.md": "3e716f20a534ad2c402c700a8b93cbde70e8af785af37fc12c7c4638d1eb5954",
+        "matrix-candidate-evidence.csv": "792a672566e30ceeb80d597686319c875cdd07d9c28304a2cee04b2349215a93",
+        "matrix-source-install.log": "d053c28b601e72e06fe1b73229d18f70fd9c8a327924c7cd7635d6f2e11e6c8d",
+        "package-install.log": "efe6b31b5f1e39e5dffb275334a184d4f2f762be520eb5fcd26332316460443a"
+      }
+    },
+    {
+      "id": 11330180398,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-minimum-Windows-openmp",
+      "digest": "sha256:559d2426fc02fcc5d7f259ec8fa1cbd90d351cbf795e78e6e0279d2b2d5026b3",
+      "size_in_bytes": 13983,
+      "created_at": "2026-10-05T06:56:35Z",
+      "expires_at": "2026-11-04T06:56:34Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330180398/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-minimum-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "ad2c3832059f2a7c8fc8ff9d6468f115c6e6d67291918c5e430d1f563b6d9e52",
+        "job-summary.md": "ad5a1c6155a8eed43ad4c8f1bb3c38b8ced82758653de1650656d4581f083b8c",
+        "matrix-candidate-evidence.csv": "eec9128ef888064aade88e3b60a9fdbc7f3416af032bb2cd74ec05a21884fef2",
+        "matrix-source-install.log": "aba5a2fbf1fe654a2f5d39ba4af39b13b5ee78d5b2383d48ed60b43b1673d5ca",
+        "package-install.log": "59a1583ffb69de6961a5a864f335604bb0cbbecdb8df105fac06ebe4ea22c5f8"
+      }
+    },
+    {
+      "id": 11330096103,
+      "name": "matrix-candidate-37274723569-1-devel-minimum-Linux-serial",
+      "digest": "sha256:a0009b164d00561fefde9999acbd299061223f7a5886ab9376b66be5813e55ce",
+      "size_in_bytes": 7917,
+      "created_at": "2026-10-05T06:59:37Z",
+      "expires_at": "2026-11-04T06:59:37Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330096103/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "b0664854d3f8b11b61295741fb5bf6fe7e07c926433f842b622bb3f9bd6e5bc4",
+        "matrix-candidate-evidence.csv": "c627881ec2a0fccb36f9224bb981761a30d748dfcb79a6917c1be164247f73a3",
+        "matrix-source-install.log": "a6d387006dc7cf7eba67e6052eb8fe91b0bb3a256bc2a49d37ec6ff301784809",
+        "package-install.log": "02bde7cffcf96777cf1d890628d26365abe2e117eb5cc803745ba1fd2dc112f4"
+      }
+    },
+    {
+      "id": 11330070758,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-minimum-macOS-serial",
+      "digest": "sha256:2f3e7e4415a32bf532ea1ecde7751b4b9b7f5bce1c0dbfcb59779cd09d97d12e",
+      "size_in_bytes": 13005,
+      "created_at": "2026-10-05T06:57:00Z",
+      "expires_at": "2026-11-04T06:56:59Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330070758/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-minimum-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "956090ae046e2800bde01949c2b00c6fb746a342a3df593761f2859a1309e54c",
+        "job-summary.md": "3ffb1eb6ca7b425ed7cc784de190bb7a9b16c0add833bb7dc27609229278e30d",
+        "matrix-candidate-evidence.csv": "b1958be5ee945aeb8b320aeae5d8b0ac790711cc1ce56ae1b7b1c7d9391584cf",
+        "matrix-source-install.log": "28819fce4bb6840065129a73e9333838d6aec19de0a0b535a1b36fec6285a444",
+        "package-install.log": "d30128da7523d834ed1eeb1e0b13a1f1b5a037cd6e50926f921175fb6007770b"
+      }
+    },
+    {
+      "id": 11330031502,
+      "name": "matrix-candidate-37274723569-1-devel-current-Linux-openmp",
+      "digest": "sha256:4c688ae2038580134755dff489aa1f4ae34acace69ce7c25211b947751df733e",
+      "size_in_bytes": 10631,
+      "created_at": "2026-10-05T07:00:31Z",
+      "expires_at": "2026-11-04T07:00:31Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11330031502/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "64bf52ff2f54c704968d099bf06394a41fda9c0a5c639c13dcf195b36272382a",
+        "job-summary.md": "232666c62edf946ea9dd0f6ae3b60b3433f05244fa135f69fd9042c75281c021",
+        "matrix-candidate-evidence.csv": "d911db0ce88c884bce5f4a5091f45a391cffa512bd48c166d095b219a53cc7d4",
+        "matrix-source-install.log": "f0960a97073d0e09e0dbf86a57cf080ee51d10b8666768dbc471b7b2564b6fd6",
+        "package-install.log": "885c2b51d0af6dca5784273c90cf3424295c4110a60fbdeb054e4eb471777ce8"
+      }
+    },
+    {
+      "id": 11329981669,
+      "name": "matrix-candidate-37274723569-1-devel-current-Windows-serial",
+      "digest": "sha256:c9e8fb99bd78dce59774e0084f87ca5334887dbfb021bc209992de3c892b8f5e",
+      "size_in_bytes": 10997,
+      "created_at": "2026-10-05T06:59:48Z",
+      "expires_at": "2026-11-04T06:59:48Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329981669/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "4bbc154d76d8cc2f81f986256c23b3239cf6ed426dbb374655e00fcf0f11a6b2",
+        "job-summary.md": "0048139043f4feee4a0f8173eb0d321e0ae9528d76c13f58f60f518fc2d22c03",
+        "matrix-candidate-evidence.csv": "2726683c4f3e0b7800d48fb45f37926aadcc78f70744b6b9d6673b81dce3a89e",
+        "matrix-source-install.log": "c76a100aad238c4fa988a60d7e8eadd8a0b29e555d7ae8e2c56c2900e4cd5429",
+        "package-install.log": "9ce8d47a724769f2e65683e95cac6ba78c287cb6cc4fee6251f67038bb2aaf5b"
+      }
+    },
+    {
+      "id": 11329896909,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-minimum-Windows-serial",
+      "digest": "sha256:4d4f25031c5c656155a3e8425c3613ee31406c481b6628c1c69fa7e9188854de",
+      "size_in_bytes": 14027,
+      "created_at": "2026-10-05T06:57:14Z",
+      "expires_at": "2026-11-04T06:57:14Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329896909/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-minimum-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "ab6b9e5cf8a49c1a67fcc7f9aa649a62eb08e619abee428e080eb12d0e3b7727",
+        "job-summary.md": "3600085cf08863d703391bbf923b3be58b9b7186fa1fec5fa5734eef75a61b54",
+        "matrix-candidate-evidence.csv": "cbce7f83b39b4e5b8ff7d3b7819920b0b2985048e2a1ca465c9a2be66de3ed43",
+        "matrix-source-install.log": "0a1789e89bf5d5c8dc7757f3f6cc6b81215b6fc5511a1e7483252c547987c2ad",
+        "package-install.log": "008aa397e91523f8e4dd31253b713ce139f25fac86dbabd5bc8d3ba7a5b0b0d3"
+      }
+    },
+    {
+      "id": 11329784230,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-current-Linux-openmp",
+      "digest": "sha256:c3716c78403bad5492024268e4c73535cbc1c57ee711d10d0a3a4e76f68e7b99",
+      "size_in_bytes": 10624,
+      "created_at": "2026-10-05T06:57:21Z",
+      "expires_at": "2026-11-04T06:57:21Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329784230/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-current-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "1627b8ebf7fdfd5cc7eeb708e3aede8ae8cdff0fc5e8ed3ebffe4d3b4fe2cf46",
+        "job-summary.md": "c8eb39fdf5111dc35a46827c330e3a8ce587678719216ccac8b8b46ddfb0e64c",
+        "matrix-candidate-evidence.csv": "2c3e522955975e2c57497fd8a2a8a2cb6e0f5bf3142512871a6b247ef628408d",
+        "matrix-source-install.log": "f59b7f55625a0d90f2d8faafa27d8fc84dad34c7cdfde6d2a14039a5916e0ccf",
+        "package-install.log": "4c57347b8ea15b41fedd1c18a7869f56f579d773417b78168f506dee5eb31303"
+      }
+    },
+    {
+      "id": 11329737878,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-minimum-Linux-serial",
+      "digest": "sha256:6dc64ba76c51be293f4f3a9d047adaffaa221f12abad45ed872f2e1dcb9077a6",
+      "size_in_bytes": 6109,
+      "created_at": "2026-10-05T06:57:15Z",
+      "expires_at": "2026-11-04T06:57:15Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329737878/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-minimum-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "aaa40bc9d18a16c07751064af91280f1714aaa7af4c116641f8a63313950bd2e",
+        "job-summary.md": "d3bd7ee92f42398056907034b5b5f27799ed879bffbc00c47e0bc893f600b84a",
+        "matrix-candidate-evidence.csv": "d286f30480d985d723d49742e0682bf7f3b5720f0a975030c28d72e5b4ce5192",
+        "matrix-source-install.log": "a6d7eb5b30a3a9a545f6aa559daad99337f2f0facffede9a4d5efc3f230cd65b",
+        "package-install.log": "7723cb350dbc67c8ab8c8d877cf8cf414fbf0a204984609b1250e8816044a508"
+      }
+    },
+    {
+      "id": 11329707923,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-current-Linux-serial",
+      "digest": "sha256:99c7238c39f709640bf3b50753ba48ec0a799bff3c0eb0e956f1177f8d22e0ac",
+      "size_in_bytes": 10658,
+      "created_at": "2026-10-05T06:57:55Z",
+      "expires_at": "2026-11-04T06:57:55Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329707923/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "6d6a0babbf0fa1bc39548180e04a5f99631cd51c93d31930a6132049019f0e47",
+        "matrix-candidate-evidence.csv": "61f3172bc764d92ba7d6bdc14a6893a9592c8bbf0dabfabff2e4f89e4127e273",
+        "matrix-source-install.log": "920d4324dbe838344a52f4a3298b6a319241c710211327b296f21f6a992008e8",
+        "package-install.log": "7723cb350dbc67c8ab8c8d877cf8cf414fbf0a204984609b1250e8816044a508"
+      }
+    },
+    {
+      "id": 11329694495,
+      "name": "matrix-candidate-37274723569-1-release-current-Linux-serial",
+      "digest": "sha256:ec52249eaa68416609303f7038241dc3cf547fcf85cb0b72f522155c25b9104b",
+      "size_in_bytes": 10663,
+      "created_at": "2026-10-05T06:57:55Z",
+      "expires_at": "2026-11-04T06:57:54Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329694495/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-current-Linux-serial",
+      "files": {
+        "installed-core-tests.log": "346dc78548f9d4d0aef36c9fa61deccc5160ccd8180c7ba6005b3997d3a740e2",
+        "job-summary.md": "75fa701f2015a44be355f87670c067784dd646033c337f83fff56a25f4582078",
+        "matrix-candidate-evidence.csv": "299b9aeb10a28afd878729842eee637efe1d858253aaf125a96a40d38a36dc38",
+        "matrix-source-install.log": "d62c6f6f9d2af38ef690ed04bc0997377bde21a98813aa81e7f5c68801e48686",
+        "package-install.log": "b21e8659a0be1cd9e9ad63430736242c813793b9e01c6ae32c46504edf2a1046"
+      }
+    },
+    {
+      "id": 11329679810,
+      "name": "matrix-candidate-37274723569-1-devel-minimum-Linux-openmp",
+      "digest": "sha256:432c27e9afe952051bcf583b00a5dfc7c15f94aa5e1615632d9138989d7b3680",
+      "size_in_bytes": 7879,
+      "created_at": "2026-10-05T06:59:17Z",
+      "expires_at": "2026-11-04T06:59:16Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329679810/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "d5c26df29af0cced619f2043b1a1a707121df0c3690a2ad60619876a4d2a4ecb",
+        "job-summary.md": "e72ab2d7982a35895b28b60025a164cf88ed7ef2b35240f44f038ce57118e835",
+        "matrix-candidate-evidence.csv": "45d3ab75a8ec8873266887ce4f7ee5756b582549ce90c290808ce5669d842727",
+        "matrix-source-install.log": "36dd75ff4022de2da097d57e787ff5ed6ec10fbe24a946e181d2252b5d8e65db",
+        "package-install.log": "885c2b51d0af6dca5784273c90cf3424295c4110a60fbdeb054e4eb471777ce8"
+      }
+    },
+    {
+      "id": 11329548355,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-current-macOS-serial",
+      "digest": "sha256:2a4a6fa151dcb804f86a7fbb0956abbfa3c79a4ce06f8f002661ef19c73ea66b",
+      "size_in_bytes": 11159,
+      "created_at": "2026-10-05T06:57:56Z",
+      "expires_at": "2026-11-04T06:57:54Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329548355/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "8853b105175d63836c4dd89d7be4d20b24adbe1daf9fed71ea46a9c2cd7abf52",
+        "job-summary.md": "4f917540387981938a4d0fd53631d44fe9cf26d34a6ef3767635925200202e35",
+        "matrix-candidate-evidence.csv": "e8bf308ee8d2e42e9664bc3d7b2cbfc654ca2b0d7aaec2cda6d59ef9acb6db63",
+        "matrix-source-install.log": "70b9d749d6f35ecad44fc0107be48b9f3228a69f509cfdd96fa78eaa17c97ef8",
+        "package-install.log": "d30128da7523d834ed1eeb1e0b13a1f1b5a037cd6e50926f921175fb6007770b"
+      }
+    },
+    {
+      "id": 11329463577,
+      "name": "matrix-candidate-37274723569-1-devel-current-Windows-openmp",
+      "digest": "sha256:0a5af92483ed2d62cbdcb5ecb6e1d984e42d2814af9108cbe579f369db5a8871",
+      "size_in_bytes": 10922,
+      "created_at": "2026-10-05T06:59:17Z",
+      "expires_at": "2026-11-04T06:59:16Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329463577/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "f3b1ed190794847ea5ce5e0034fcce6567497ea25752376d413929634c7a3420",
+        "matrix-candidate-evidence.csv": "105ab61c7b8792c320810c3e25543be914991c51a7359c604b7cd6d7fbc3b652",
+        "matrix-source-install.log": "5c909a084986ce6a73bd98e0fc190bb63ff4cd44af1593e153372941f5eaf9d2",
+        "package-install.log": "52dfd2056b67b40963a0dfde860003e343d98774508cee98bbe003be53b2c383"
+      }
+    },
+    {
+      "id": 11329449990,
+      "name": "matrix-candidate-37274723569-1-release-minimum-Linux-openmp",
+      "digest": "sha256:0a54cc6ae50ad4d7e951b95ab79dafbb50cb65daaf69118a0f9fac97aa1ffc83",
+      "size_in_bytes": 7860,
+      "created_at": "2026-10-05T06:57:33Z",
+      "expires_at": "2026-11-04T06:57:32Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329449990/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "6ccfae96293b91cfc3fb65e08830caa57f04f8a643ff171e56ad486de631a9ae",
+        "job-summary.md": "a2821bbe1964ff5cacccdd6b62e28cb76e636f0b97438569795399128822b218",
+        "matrix-candidate-evidence.csv": "4ca41bfaad5b7511840f10ce7c8fdfe9b91b6a935dd23e13b3160be766a52504",
+        "matrix-source-install.log": "c74a6cbf40318219420b5bb6ba3758daf6d04874b51adfd99266fe3af3c938af",
+        "package-install.log": "de3cb8aa6d178df8373d041ddc7e698bfdb3d9a6027803956e801c52e06420fd"
+      }
+    },
+    {
+      "id": 11329273890,
+      "name": "matrix-candidate-37274723569-1-release-current-Windows-serial",
+      "digest": "sha256:f2bfbdb634ac56bcb59142118c1fce340bab27f4043142f492f3d8ef8810848b",
+      "size_in_bytes": 10938,
+      "created_at": "2026-10-05T06:58:31Z",
+      "expires_at": "2026-11-04T06:58:30Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329273890/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "9ce891b090e29eae702f53b6c0106d8878e5687a3da2b6cbbdb3ee29690336d3",
+        "job-summary.md": "b8e2e5991c428acd3afea6da21907b248bc66a1670d2a29bac442c37a6754ec0",
+        "matrix-candidate-evidence.csv": "f33209d360e80c273982431bb8e574da64a5b5a57a54d68075c33efee098cd7a",
+        "matrix-source-install.log": "5650ac2b98ea72c8aa3a52eaacdb25fbee58eeb589674e9452195bc0cc6e2a68",
+        "package-install.log": "9ce8d47a724769f2e65683e95cac6ba78c287cb6cc4fee6251f67038bb2aaf5b"
+      }
+    },
+    {
+      "id": 11329233654,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-minimum-Linux-openmp",
+      "digest": "sha256:352e1d811d8a357363969c12688b88e438d1f83ad180ce424de425f9158856f1",
+      "size_in_bytes": 6067,
+      "created_at": "2026-10-05T06:57:10Z",
+      "expires_at": "2026-11-04T06:57:10Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329233654/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-minimum-Linux-openmp",
+      "files": {
+        "installed-core-tests.log": "6ccfae96293b91cfc3fb65e08830caa57f04f8a643ff171e56ad486de631a9ae",
+        "job-summary.md": "329661e2343f420f6afbc9f936f8f8fd4ce3a73ea597b5c1a8e0b3445c58f63a",
+        "matrix-candidate-evidence.csv": "35399fbb338ced4ac972cf4d38bfff43ae8fd4f2731ebe4ce31262cc95f1f446",
+        "matrix-source-install.log": "1b4dea8122bd429a0057af7d85df750aff34126c3941446edd3f35dc8faa36b1",
+        "package-install.log": "4c57347b8ea15b41fedd1c18a7869f56f579d773417b78168f506dee5eb31303"
+      }
+    },
+    {
+      "id": 11329059214,
+      "name": "matrix-candidate-37274723569-1-devel-current-macOS-serial",
+      "digest": "sha256:8b4458d97a6cad863fa6df8a4a7bfd5d89df89372b74c8c6dd378b06c1deefca",
+      "size_in_bytes": 11038,
+      "created_at": "2026-10-05T06:59:36Z",
+      "expires_at": "2026-11-04T06:59:35Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329059214/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-devel-current-macOS-serial",
+      "files": {
+        "installed-core-tests.log": "e63d199cc012b5f5f797b14bd650051174d4f8a633eccb079aa31192fa38b083",
+        "job-summary.md": "ec610b09bce8c3e1d788b976ddd364a0b4f4f0bc61be83fb11219b0a8986c5ac",
+        "matrix-candidate-evidence.csv": "77010a1155e7ad5e7357bd28163830fbc9e42b449b356c2aa42384336200871e",
+        "matrix-source-install.log": "2adb54970b5e661e916fc986e88a69d96b5afa0bb30a1f1abcf64ca8eda958df",
+        "package-install.log": "7ab7926fd3e3e7dfc37572ba615895567f08cedcca36fe76650bca5f00c644e0"
+      }
+    },
+    {
+      "id": 11329044129,
+      "name": "matrix-candidate-37274723569-1-oldrel-1-current-Windows-serial",
+      "digest": "sha256:4b1526312b011f798a727486ce9d2200eb3179fc6f3eb5435aa719802532b761",
+      "size_in_bytes": 10947,
+      "created_at": "2026-10-05T06:58:19Z",
+      "expires_at": "2026-11-04T06:58:18Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11329044129/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-oldrel-1-current-Windows-serial",
+      "files": {
+        "installed-core-tests.log": "9ce891b090e29eae702f53b6c0106d8878e5687a3da2b6cbbdb3ee29690336d3",
+        "job-summary.md": "0c2fd0cbbf838ee4b635e819f31b6c8150fcac8e21f41b3a9892a6ddfded4d25",
+        "matrix-candidate-evidence.csv": "52d52816ea254e1e454868c0547ad7b24ff4e8ad5a46b5ae73cc613c87d89055",
+        "matrix-source-install.log": "4b1837e5242455bf5c9cc041441b4dd7c024d0fcbf422825142bb589372e776d",
+        "package-install.log": "008aa397e91523f8e4dd31253b713ce139f25fac86dbabd5bc8d3ba7a5b0b0d3"
+      }
+    },
+    {
+      "id": 11328734994,
+      "name": "matrix-candidate-37274723569-1-release-current-Windows-openmp",
+      "digest": "sha256:8a6dbbfa5f7ec284ca339604864d51dc7bfc1c4011fc02dd542db2176e120e86",
+      "size_in_bytes": 10895,
+      "created_at": "2026-10-05T06:59:17Z",
+      "expires_at": "2026-11-04T06:59:17Z",
+      "archive_download_url": "https://api.github.com/repos/DavidZenz/tabloToR/actions/artifacts/11328734994/zip",
+      "local_directory": "/tmp/gemodelr-hosted-37274723569/artifacts-final/matrix-candidate-37274723569-1-release-current-Windows-openmp",
+      "files": {
+        "installed-core-tests.log": "fee9e8ad23f35d483828bf56f9bccfdccaddea9b8016e5680b47db5cba33c45e",
+        "job-summary.md": "4387100813ccb295c1ff8ba129df0bd6d0b284c9e5f3a28e67722433e05af517",
+        "matrix-candidate-evidence.csv": "d475bce04362eeaff5fe889c0c83b8f67ca9d9d4a8437bf270e976e5542db5dc",
+        "matrix-source-install.log": "aa2d1cc5365e03ff695e4c2ab4fc9271324f4f58732a338d1fa663866d630b14",
+        "package-install.log": "52dfd2056b67b40963a0dfde860003e343d98774508cee98bbe003be53b2c383"
+      }
+    }
+  ],
+  "jobs": [
+    {
+      "id": 111649136092,
+      "name": "Representative R CMD check baseline (informational, non-required)",
+      "conclusion": null,
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136092",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize representative temporary paths",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up representative release R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Fast package-check report contract self-test",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure representative serial build",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install representative package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install representative exact current Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Full R CMD check baseline (informational, non-required)",
+          "conclusion": null
+        },
+        {
+          "name": "Preserve complete current check log and directory even on failure",
+          "conclusion": null
+        },
+        {
+          "name": "Post Install representative package dependencies",
+          "conclusion": null
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": null
+        }
+      ]
+    },
+    {
+      "id": 111649136303,
+      "name": "Linux / R devel / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136303",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136335,
+      "name": "Linux / R release / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136335",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136339,
+      "name": "Windows / R oldrel-1 / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136339",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136351,
+      "name": "Windows / R oldrel-1 / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136351",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136369,
+      "name": "Linux / R oldrel-1 / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136369",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136370,
+      "name": "Windows / R release / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136370",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136374,
+      "name": "Linux / R release / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136374",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136375,
+      "name": "Windows / R devel / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136375",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136379,
+      "name": "Linux / R release / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136379",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136385,
+      "name": "Linux / R oldrel-1 / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136385",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136392,
+      "name": "macOS / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136392",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136398,
+      "name": "Linux / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136398",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136401,
+      "name": "Linux / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136401",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136403,
+      "name": "macOS / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136403",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136405,
+      "name": "Linux / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136405",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136407,
+      "name": "Windows / R release / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136407",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136429,
+      "name": "Windows / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136429",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136431,
+      "name": "Windows / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136431",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136466,
+      "name": "Linux / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136466",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136474,
+      "name": "macOS / R oldrel-1 / Matrix 1.6-5 (minimum) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136474",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136478,
+      "name": "Windows / R oldrel-1 / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136478",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136512,
+      "name": "Linux / R devel / Matrix 1.6-5 (minimum) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136512",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136533,
+      "name": "macOS / R devel / Matrix 1.7-6 (current) / serial",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136533",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 111649136593,
+      "name": "Linux / R devel / Matrix 1.7-6 (current) / openmp",
+      "conclusion": "success",
+      "url": "https://github.com/DavidZenz/tabloToR/actions/runs/37274723569/job/111649136593",
+      "steps": [
+        {
+          "name": "Set up job",
+          "conclusion": "success"
+        },
+        {
+          "name": "Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Initialize candidate evidence before R setup",
+          "conclusion": "success"
+        },
+        {
+          "name": "Set up R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Configure native build and record resolved R",
+          "conclusion": "success"
+        },
+        {
+          "name": "Provide gettext headers for macOS source builds",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Source-install exact provisional Matrix endpoint",
+          "conclusion": "success"
+        },
+        {
+          "name": "Install GEModelR with tests against exact Matrix",
+          "conclusion": "success"
+        },
+        {
+          "name": "Run installed core contracts",
+          "conclusion": "success"
+        },
+        {
+          "name": "Record candidate success or failure in CSV and job summary",
+          "conclusion": "success"
+        },
+        {
+          "name": "Report unresolved R setup as incomplete evidence",
+          "conclusion": "skipped"
+        },
+        {
+          "name": "Preserve every provisional candidate row and logs",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Install package dependencies",
+          "conclusion": "success"
+        },
+        {
+          "name": "Post Check out source",
+          "conclusion": "success"
+        },
+        {
+          "name": "Complete job",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ]
+}
