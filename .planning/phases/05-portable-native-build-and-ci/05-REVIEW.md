@@ -1,10 +1,11 @@
 ---
 phase: 05-portable-native-build-and-ci
-reviewed: 2026-10-04T21:27:01Z
+reviewed: 2026-10-05T07:30:12Z
 depth: standard
-files_reviewed: 21
+files_reviewed: 26
 files_reviewed_list:
   - .github/workflows/native-ci.yaml
+  - DESCRIPTION
   - R/apiDocumentation.R
   - R/sparseElimination.R
   - R/sparseSolver.R
@@ -23,11 +24,15 @@ files_reviewed_list:
   - tests/testthat/test-suite-sparse-unsupported.R
   - tools/ci/install-matrix-source.R
   - tools/ci/record-matrix-candidate.R
+  - tools/ci/resolve-matrix-current.R
   - tools/ci/run-installed-core-tests.R
   - tools/ci/summarize-r-cmd-check.R
+  - tools/ci/test-matrix-floor-evidence.R
+  - tools/ci/test-matrix-source-download.R
+  - tools/ci/verify-matrix-floor-evidence.R
 findings:
-  critical: 1
-  warning: 1
+  critical: 2
+  warning: 0
   info: 0
   total: 2
 status: issues_found
@@ -35,82 +40,56 @@ status: issues_found
 
 # Phase 05: Code Review Report
 
-**Reviewed:** 2026-10-04T21:27:01Z
+**Reviewed:** 2026-10-05T07:30:12Z
 **Depth:** standard
-**Files Reviewed:** 21
+**Files Reviewed:** 26
 **Status:** issues_found
 
 ## Summary
 
-Reviewed the explicitly submitted Phase 05 files against `8c684f5`, reading their complete contents and following the installed native wrappers, backend preflight, test helpers, dependency installation, candidate reporting, and representative package-check flow. Findings concern a reproduced serial-build test failure and the lifetime of the pinned CRAN source URL used by scheduled jobs.
+Reviewed the explicit 26-file scope against `8c684f5`, including runtime dispatch, installed tests, exact source installation, the shared per-run endpoint resolver, workflow reporting, floor selection, and final metadata verification. Two reproduced validator defects remain: provenance manifests are only checked for existence, and fallback history can omit an eligible earlier release.
 
-This is a preparatory source review before hosted execution. The thirty provisional hosted rows, their downloaded artifacts, and Plan 05-07 floor validation/final metadata remain deliberately pending. Their absence is not a finding, and this report makes no Matrix floor or hosted platform support claim. The supplied successful local full-check result used explicit serial expectations; it does not exercise the missing-expectation defect below.
+The authentic five oldrel-1 pairings for Matrix 1.6-5 establish the current floor. These findings do not invalidate those passing outcomes or the genuine six source-install exclusions in the candidate run. The fallback defect applies if the provisional floor fails and a successor is selected. Pending artifacts for the latest metadata CI run are not an implementation finding. Informational representative-check failures identified as inherited are outside the introduced-defect scope.
 
-No structural pre-pass was supplied. Existing native artifacts, temporary installations, user libraries, unrelated working-tree changes, and source files were preserved. One focused reproduction used the existing disposable serial installation and an unrelated temporary working directory; no package installation or full check was performed by this reviewer.
+The previous local serial/OpenMP finding and same-version CRAN relocation warning were repaired in `4b9dbbe` and `2ab0c28`; neither remains active. The current workflow resolves the current endpoint once per run and shares its exact version and URL. Local serial capability handling preserves strict explicit CI expectations.
+
+No structural pre-pass was supplied. Complete file reads from the earlier review were retained for unchanged scoped files; newly added and changed files were read in this review, with cross-file contract tracing. Bounded R probes used copied evidence in temporary storage or in-memory data frames. Official CRAN release metadata was consulted read-only. No package installation, full package check, hosted execution, source change, or commit was performed by this reviewer. Existing native outputs, libraries, and unrelated working-tree changes were preserved.
 
 ## Narrative Findings (AI reviewer)
 
 ## Critical Issues
 
-### CR-01: Ordinary serial package checks incorrectly require OpenMP
+### CR-02: Floor and metadata validation never inspect retained provenance manifests
 
 **Classification:** BLOCKER
 
-**File:** `/home/zenz/R/tabloToR/tests/testthat/helper-native-portability.R:19-24`
+**File:** `/home/zenz/R/tabloToR/tools/ci/verify-matrix-floor-evidence.R:141-155`
 
-**Affected callers:** `/home/zenz/R/tabloToR/tests/testthat/test-sparse-schur-openmp.R:13-21`, `/home/zenz/R/tabloToR/tests/testthat/test-sparse-schur-openmp.R:47-50`, and `/home/zenz/R/tabloToR/tests/testthat/test-public-cpp-backend.R:148-151`.
+**Affected flow:** `matrixFloorRecord()` and `verifyMatrixFinalMetadata()` at lines 200-202; exclusion reporting at line 185.
 
-**Issue:** `nativeOpenmpExpectation()` intentionally returns `NULL` when an ordinary local test run has no expectation and is not in CI. `nativeOpenmpCapabilities()` nevertheless sends that `NULL` through its `else` branch, asserting `openmp = TRUE` and at least two native threads. The parallel comparison skips only for the literal `"forbidden"`, so the same local serial run subsequently calls the unavailable two-thread kernel. Supported serial installations therefore fail their package tests unless the caller supplies a bespoke CI expectation. The new serial public-backend test also fails its helper assertions and returns before exercising the local serial contract. This is a test-reliability defect, not a numerical mismatch.
+**Issue:** The provenance gate requires a JSON manifest to exist but never reads it. It compares the submitted CSV only with another retained CSV. A malformed manifest, mismatched run/attempt, inconsistent job outcomes, or artifact CSV digest mismatch therefore cannot cause rejection. The fast metadata verifier regenerates the record through this same gate, so it also accepts this missing provenance validation. The retained manifests already contain run, job, artifact, and file-hash information, but none of that binds the accepted rows to their recorded hosted outcomes. In addition, every accepted source failure is labeled `OBJECT undeclared` without checking the retained failure reason.
 
-**Evidence:** Reproduced using the existing serial installation at `/tmp/gemodelr-05-05-od9s1kub/library`, which reports `openmp = FALSE` and `max_threads = 1L`. Unsetting all CI/expectation/library markers and running the installed `sparse-schur-openmp` group produced four failed assertions and one error: `Parallel Schur accumulation is unavailable in this build`.
+**Evidence:** Copied the genuine candidate CSV and the two retained run CSVs into a temporary directory, replaced both required manifest files with the literal non-JSON text `invalid JSON; no run/job/artifact metadata`, and called `matrixFloorRecord(input, supported)`. It succeeded and returned `Selected floor: 1.6-5`. No original evidence file was changed. This proves that manifest contents are outside the validation gate; it does not imply the actual retained manifests or current floor are false.
 
-```r
-Sys.unsetenv(c(
-  "CI", "GITHUB_ACTIONS", "GEModelR_EXPECT_OPENMP",
-  "GEModelR_CI_LIBRARY", "GEModelR_TEST_LIBRARY"
-))
-lib = "/tmp/gemodelr-05-05-od9s1kub/library"
-.libPaths(c(lib, .libPaths()))
-library(GEModelR, lib.loc = lib)
-setwd(tempdir())
-testthat::test_package(
-  "GEModelR", filter = "^sparse-schur-openmp$",
-  reporter = "summary", stop_on_failure = FALSE
-)
-```
+**Fix:** Keep the validator offline and usable with base R, without consulting installed Matrix. Parse a checked provenance representation, or retain normalized DCF/CSV provenance alongside the JSON. Require valid matching run/attempt metadata; bind each accepted tuple/version/outcome to its retained job and artifact; verify the artifact CSV digest and compare the accepted row against its retained payload. Record and validate exclusion reasons tied to that source artifact before emitting a specific compiler-error claim. Reject malformed or mismatched manifests and digests. This requires consistency with the retained provenance, not an impossible guarantee against coordinated replacement of all trusted local files.
 
-**Fix:** Preserve the existing missing/invalid expectation rejection in CI and explicitly selected CI-library runs. For the permitted local `NULL` expectation, return measured capabilities without asserting an OpenMP build; skip only the parallel-only comparison when that local capability is absent. Run the serial default/over-request contract locally when measured capability is serial. Required CI jobs must still fail on absent OpenMP, and forbidden jobs must still assert a serial DLL before their sole allowed parallel-test skip. For example, add this handling to the helper before its required/forbidden assertions:
+### CR-03: Fallback selection can skip eligible earlier releases and claim the oldest passing floor
 
-```r
-if (is.null(expectation)) return(capabilities)
-```
+**Classification:** BLOCKER
 
-Then use this additional local-only guard in the parallel comparison after capability validation:
+**File:** `/home/zenz/R/tabloToR/tools/ci/verify-matrix-floor-evidence.R:46-66`
 
-```r
-if (is.null(expectation) && !isTRUE(capabilities$openmp)) {
-  skip("Local serial build has no OpenMP-only execution")
-}
-```
+**Affected flow:** Candidate iteration and early acceptance at lines 69-77; fallback record claim at line 182.
 
-## Warnings
+**Issue:** The validator derives its candidate list entirely from supplied test rows. Its history then only has to repeat that same list, assert eligibility, and number those entries consecutively. Nothing checks that the list includes every official eligible Matrix release between 1.6-5 and the selected successor, or that the supplied R requirements came from the actual source descriptions. Dropping an intervening candidate and renumbering the remaining history therefore passes. The resulting record claims ascending eligible rejection history even though an earlier eligible release was never tried, contradicting the promised oldest eligible passing floor.
 
-### WR-01: Scheduled exact-version installs depend on a transient CRAN location
+**Evidence:** Starting with copies of the genuine candidate rows, changed one minimum oldrel-1 solver outcome to failure and relabeled the genuine current 1.7-6 rows as fallback. Supplied a two-entry history containing only 1.6-5 and 1.7-6, with canonical archive URLs, R requirements 3.5 and 4.4, and release orders 1 and 2. `selectMatrixFloor()` accepted it, selected 1.7-6, and recorded only 1.6-5 as rejected. These were in-memory changes, not modifications to retained evidence.
 
-**Classification:** WARNING
+At least Matrix 1.7-0 is an actual omitted eligible release: the [official CRAN archive](https://cran.r-project.org/src/contrib/Archive/Matrix/) lists it after 1.6-5, and its [archived source DESCRIPTION](https://raw.githubusercontent.com/cran/Matrix/1.7-0/DESCRIPTION) requires R >= 4.4.0, which the recorded oldrel-1 R 4.5.3 satisfies. No assumption that a release named 1.6-6 exists is needed to establish this gap.
 
-**File:** `/home/zenz/R/tabloToR/tools/ci/install-matrix-source.R:108-111`
-
-**Affected configuration:** `/home/zenz/R/tabloToR/.github/workflows/native-ci.yaml:29-33`, the remaining `candidate: current` rows, and `/home/zenz/R/tabloToR/.github/workflows/native-ci.yaml:197-199`.
-
-**Issue:** The workflow pins the current snapshot to `Matrix_1.7-6.tar.gz` in CRAN's `src/contrib` location, while its PR, push, and weekly events reuse that literal URL. There is no per-run endpoint refresh. The installer makes only one `download.file()` call. When a newer Matrix release supersedes this snapshot, the pinned source remains obtainable from CRAN Archive but its original current-package URL can return HTTP 404. All fifteen current candidate jobs then fail before GEModelR installation and installed solver testing; the representative job fails before its informational full-check step as well. This is an avoidable dependency-location failure rather than evidence that those R/Matrix combinations are incompatible. Earlier Matrix releases are retained in the official [Matrix source archive](https://cran.r-project.org/src/contrib/Archive/Matrix/).
-
-**Evidence:** The current rows and representative job contain literal `src/contrib/Matrix_1.7-6.tar.gz` inputs. `matrixSourceInstall()` has no recovery path before a download error reaches its CLI error handler. Matrix URL validation already admits both the current location and `Archive/Matrix/` for exactly the same version, so location recovery can retain the existing source/version contract. This review does not assert that the current URL has already disappeared; the trigger is a routine subsequent CRAN release while scheduled runs or reruns still use this pinned workflow.
-
-**Fix:** Try the supplied official exact-version source URL first. If that current-package location is missing, retry only its canonical `https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_<same-version>.tar.gz` location, record the actual URL, and apply the existing source-content, DESCRIPTION, installed-version, and isolated-library checks. Never substitute another version, a binary, or an ambient installation. Keep any deliberate endpoint-version refresh explicit and ensure recorded expectations/evidence use that same resolved version.
+**Fix:** At evidence collection, retain an authoritative ordered CRAN release catalog and source DESCRIPTION R requirements, together with provenance for that snapshot. The offline base-R validator should derive eligibility for the recorded oldrel-1 R from that catalog and require a complete prefix of eligible releases through the selected floor. Every earlier eligible candidate must have the five required rejecting outcomes; reject omissions, nonexistent versions, or unsupported eligibility assertions. Keep exact version/source URLs and the prohibition on binary or version substitution. The final metadata check should consume this retained evidence without loading ambient Matrix.
 
 ---
 
-_Reviewed: 2026-10-04T21:27:01Z_
-_Reviewer: the agent (gsd-code-reviewer)_
+_Reviewer: gsd-code-reviewer_
 _Depth: standard_
