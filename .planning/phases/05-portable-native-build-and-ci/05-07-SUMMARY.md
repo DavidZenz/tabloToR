@@ -125,9 +125,9 @@ Complete raw check logs, original status, source archive and check directory sta
 
 ## Issues and readiness
 
-No authentication gate or manual setup arose during final artifact collection. The earlier hosted checkpoint was satisfied by authentic completed evidence. No remaining task-blocking stub or unrun verification exists. Existing informational package-check findings are already tracked in `deferred-items.md`; the orchestrator retains ownership of the cross-phase ledger and final phase gates.
+No authentication gate or manual setup arose during final artifact collection. The earlier hosted checkpoint was satisfied by authentic completed evidence. Phase verification passed at 22/22 distinct must-haves; no human verification remains. Existing informational package-check findings are tracked in `deferred-items.md` and the cross-phase WINDOWS ledger.
 
-The package's dependency promise is traceable to actual pre- and post-metadata hosted evidence. Final phase verification, state advancement, aggregate push and PR disposition remain with the orchestrator.
+The package's dependency promise is traceable to actual pre- and post-metadata hosted evidence. GSD tracking advanced to Phase 6; the remaining orchestrator closeout is to update the authorized draft PR and push the aggregate branch.
 
 ## Self-Check: PASSED
 
