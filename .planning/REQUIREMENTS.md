@@ -34,10 +34,10 @@
 
 ### Portability and Quality
 
-- [ ] **PORT-01**: The package installs and passes its core tests on Linux, macOS, and Windows with OpenMP unavailable.
-- [ ] **PORT-02**: OpenMP acceleration is optional, capability-reported, bounded, and numerically equivalent across supported thread counts.
-- [ ] **PORT-03**: Supported installed workflows do not compile native code at solve time or depend on hard-coded Linux SuiteSparse paths.
-- [ ] **CI-01**: CI checks R release, oldrel, and devel across an appropriate Linux/macOS/Windows matrix and exercises native/serial capability paths.
+- [x] **PORT-01**: The package installs and passes its core tests on Linux, macOS, and Windows with OpenMP unavailable.
+- [x] **PORT-02**: OpenMP acceleration is optional, capability-reported, bounded, and numerically equivalent across supported thread counts.
+- [x] **PORT-03**: Supported installed workflows do not compile native code at solve time or depend on hard-coded Linux SuiteSparse paths.
+- [x] **CI-01**: CI checks R release, oldrel, and devel across an appropriate Linux/macOS/Windows matrix and exercises native/serial capability paths.
 - [ ] **CI-02**: Built source archives pass package checks without errors, warnings, or unexplained significant notes before release.
 
 ### Documentation and Release
@@ -88,10 +88,10 @@
 | MIGR-02 | Phase 3 | Complete |
 | API-01 | Phase 4 | Complete |
 | API-02 | Phase 4 | Complete |
-| PORT-01 | Phase 5 | Pending |
-| PORT-02 | Phase 5 | Pending |
-| PORT-03 | Phase 5 | Pending |
-| CI-01 | Phase 5 | Pending |
+| PORT-01 | Phase 5 | Complete |
+| PORT-02 | Phase 5 | Complete |
+| PORT-03 | Phase 5 | Complete |
+| CI-01 | Phase 5 | Complete |
 | CI-02 | Phase 6 | Pending |
 | DOCS-01 | Phase 4 | Complete |
 | DOCS-02 | Phase 6 | Pending |

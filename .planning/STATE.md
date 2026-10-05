@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 05
-current_phase_name: Portable Native Build and CI
-status: verifying
-stopped_at: 05-06 complete; continuing final Matrix floor plan 05-07
-last_updated: "2026-10-05T08:11:57.731Z"
-last_activity: 2026-10-01
-last_activity_desc: Phase 05 execution started
-state_head: a9c2361cd390d09d34c7f8c3c34ed2f2d4ac6c52
+current_phase: 6
+current_phase_name: Documentation and Release Qualification
+status: planning
+stopped_at: Phase 05 complete, ready to plan Phase 6
+last_updated: "2026-10-05T08:27:29.863Z"
+last_activity: 2026-10-05
+last_activity_desc: Phase 05 complete, transitioned to Phase 6
+state_head: 2feafe046eecb8a15abebff7311e3f7b537349dc
 progress:
   total_phases: 7
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 51
   completed_plans: 51
 milestone_name: milestone
@@ -21,19 +21,19 @@ milestone_name: milestone
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-10-01)
+See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 05 — Portable Native Build and CI
+**Current focus:** Phase 6 — Documentation and Release Qualification
 
 ## Current Position
 
-Phase: 05 (Portable Native Build and CI) — EXECUTING
-Plan: 7 of 7
-Status: Verifying Phase 05 goal after all seven plans completed
-Last activity: 2026-10-01 — Phase 05 execution started
+Phase: 6 — Documentation and Release Qualification
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-05 — Phase 05 complete, transitioned to Phase 6
 
-Progress: Phase 05: 7/7 plans executed; verification pending; 44 plans completed before this phase.
+Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans completed before this phase.
 
 ## Performance Metrics
 
@@ -165,6 +165,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 04]: Publish lifecycle state only after successful setup and invalidate closure- and shock-dependent state separately.
 - [Phase 04]: Validate exact output selectors and allocation budgets before compact projection while retaining full-output compatibility.
 - [Phase 04]: Use a fixed version-1 diagnostics envelope on every solve attempt; detailed telemetry remains opt-in.
+- [Phase 05]: Set Matrix 1.6-5 as the minimum only after all five oldrel-1 platform/build pairings passed authentic installed hosted checks.
+- [Phase 05]: Keep SuiteSparse recognized but unavailable, and keep full package checks informational until Phase 06 release qualification.
 
 ### Pending Todos
 
@@ -175,7 +177,8 @@ None yet.
 - Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; the license decision and attribution alias still need reviewed dispositions.
 - Phase 1: A fresh GEModelR name availability check remains required immediately before release.
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
-- Phase 4: Full source tests and `R CMD check .` remain non-clean. The package check reports 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; failures are in benchmark/source-tree, provenance-inventory, and release-gate groups. See `04-VERIFICATION.md`.
+- Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
+- Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
 
 ## Deferred Items
 
@@ -187,6 +190,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-05T07:07:58.838Z
-Stopped at: 05-06 complete; continuing final Matrix floor plan 05-07
-Resume file: .planning/phases/05-portable-native-build-and-ci/05-07-PLAN.md
+Last session: 2026-10-05T10:31:00+02:00
+Stopped at: Phase 05 complete and verified; ready to plan Phase 6
+Resume file: None
