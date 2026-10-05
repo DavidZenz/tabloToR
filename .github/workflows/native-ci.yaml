@@ -99,6 +99,16 @@ jobs:
           cat("Resolved setup-r alias:", Sys.getenv("GEModelR_SETUP_R_ALIAS"),
               "to", as.character(getRversion()), "\n")
 
+      - name: Provide gettext headers for macOS source builds
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          brew install gettext
+          gettext_prefix="$(brew --prefix gettext)"
+          test -f "$gettext_prefix/include/libintl.h"
+          test -f "$gettext_prefix/lib/libintl.dylib"
+          printf '%s\n' "CPPFLAGS += -I$gettext_prefix/include" "LDFLAGS += -L$gettext_prefix/lib" >> "$R_MAKEVARS_USER"
+
       - name: Install package dependencies
         uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
         with:
