@@ -1,8 +1,8 @@
 ---
 phase: 05-portable-native-build-and-ci
-fixed_at: 2026-10-04T21:35:45Z
+fixed_at: 2026-10-05T07:48:49Z
 review_path: .planning/phases/05-portable-native-build-and-ci/05-REVIEW.md
-iteration: 1
+iteration: 2
 findings_in_scope: 2
 fixed: 2
 skipped: 0
@@ -11,66 +11,78 @@ status: all_fixed
 
 # Phase 05: Code Review Fix Report
 
-**Fixed at:** 2026-10-04T21:35:45Z
-**Source review:** `.planning/phases/05-portable-native-build-and-ci/05-REVIEW.md`
-**Iteration:** 1
+**Source review:** `.planning/phases/05-portable-native-build-and-ci/05-REVIEW.md` (commit `417dd50`)
+**Iteration:** 2
 
-**Summary:** Two findings in scope, two fixed, zero skipped. These fixes and the successful local check do not establish hosted platform support or the final Matrix dependency floor.
+Two blockers were fixed in separate commits; zero skipped. Earlier iteration 1 is preserved in Git history (`2ed32f0`). A separate narrowly scoped portability adjunct was also authorized and committed. This pass did not install packages, run a full package check, edit the workflow or declared floor, push a branch, or fabricate hosted candidate results.
 
 ## Fixed Issues
 
-### CR-01: Ordinary serial package checks incorrectly require OpenMP
+### CR-02: Floor and metadata validation never inspect retained provenance manifests
 
-**Files modified:** `tests/testthat/helper-native-portability.R`, `tests/testthat/test-sparse-schur-openmp.R`, `tests/testthat/test-public-cpp-backend.R`
-**Commit:** `4b9dbbe`
+**Files modified:** `tools/ci/verify-matrix-floor-evidence.R`, `tools/ci/test-matrix-floor-evidence.R`, new `tools/ci/normalize-matrix-provenance.py`, regenerated `MATRIX-FLOOR-EVIDENCE.md`, and checked provenance/payloads under `hosted-evidence/`.
+**Commit:** `70555e6` (68 scoped files)
 **Status:** fixed: requires human verification
-**Applied fix:** Return measured capabilities for the permitted local NULL expectation. Skip the parallel-only comparison when an ordinary local build has no OpenMP; exercise the public serial default and unsupported-thread contract in that case. Preserve explicit required/forbidden assertions and reject missing expectations for either CI-library marker. Add a deterministic local serial helper regression assertion and ensure the capability test remains nonempty locally.
 
-**Verification:** Modified sections were read and all three R files parsed successfully. Focused installed `public-cpp-backend` and `sparse-schur-openmp` groups passed with copied temporary installations and updated installed tests:
+The collection adjunct strictly parses original JSON (including duplicate-key rejection), matches each tuple to one job and artifact, verifies step outcomes, and checks extracted CSV and failed-source log SHA256 values against the manifest. It retains checked normalized CSV/DCF provenance and exact artifact payloads. The offline base-R gate binds the normalization to the original JSON using its digest, validates run/attempt and job/artifact identity, checks normalized-table and payload digests, compares accepted rows to retained artifact rows, and checks step/job outcomes. Missing files, malformed or changed manifests, contradictory outcomes, and digest mismatches are rejected.
 
-| Mode | Passes | Failures | Errors | Skips |
-| --- | ---: | ---: | ---: | ---: |
-| Ordinary serial, all CI/expectation/library markers unset | 103 | 0 | 0 | 1 |
-| Explicit serial (`forbidden`) | 109 | 0 | 0 | 1 |
-| OpenMP (`required`) | 80 | 0 | 0 | 0 |
+Specific exclusion reasons are now derived from checked retained source logs instead of the unconditional `OBJECT undeclared` sentence.
 
-The serial skips are solely the parallel-only comparison. Each invocation also passed seven negative guard checks: missing expectation under `CI`, `GITHUB_ACTIONS`, `GEModelR_TEST_LIBRARY`, or `GEModelR_CI_LIBRARY`; two invalid expectation values; and the wrong explicit expectation for the measured build. Script: `/tmp/gemodelr-reviewfix05-targeted.R`. Installed temporary copies: `/tmp/gemodelr-reviewfix05-targeted/serial` and `/tmp/gemodelr-reviewfix05-targeted/openmp`. Namespace paths were asserted before testing. The full ordinary serial package check below additionally exercises the freshly built package with all five CI/expectation/library markers unset.
+New evidence is scoped to authentic candidate run `37273713572` (30 rows) and supported run `37274723569` (24 rows), both attempt 1: four normalized CSV/DCF files, 54 original artifact CSV payloads, and six small failed-source logs. Payloads/logs total 22,902 bytes. Existing original JSON and merged CSVs are unchanged; archives, native binaries and full check directories are not committed.
 
-### WR-01: Scheduled exact-version installs depend on a transient CRAN location
+Modified sections were reread; R files and Python adjunct parse. At this commit, all **50 probes** passed: original 30 plus 20 provenance checks. These cover the exact malformed-manifest reproduction; changed JSON run, attempt, outcome, and artifact digest; changed normalized attempt, source/solver/job outcomes, missing SHA256 and reason, tested before and after resealing only its table hash; changed/missing artifact CSV; and changed failed-source log.
 
-**Files modified:** `tools/ci/install-matrix-source.R`, `tools/ci/test-matrix-source-download.R` (new regression script)
-**Commit:** `2ab0c28`
+### CR-03: Fallback selection can skip eligible earlier releases and claim the oldest passing floor
+
+**Files modified:** `tools/ci/verify-matrix-floor-evidence.R`, `tools/ci/test-matrix-floor-evidence.R`, new `tools/ci/collect-matrix-catalog.py`, regenerated `MATRIX-FLOOR-EVIDENCE.md`, and `hosted-evidence/cran-catalog/`.
+**Commit:** `8bfb52c` (15 scoped files)
 **Status:** fixed: requires human verification
-**Applied fix:** Try the supplied URL first. Only an HTTP 404 at the official current source URL triggers one retry at the official Matrix Archive URL for the identical version. Remove any partial current download before retrying and log the URL that successfully supplied the source. Other failures, already archived inputs, and arbitrary hosts cannot trigger a fallback. Existing input validation, source-only archive validation, metadata/version checks, isolated-library checks, and exact installed-version verification remain in the install flow.
 
-**Verification:** Modified sections were read and both R files parsed. `rtk proxy Rscript tools/ci/test-matrix-source-download.R` passed eleven deterministic mocked scenarios without network access or package installation: direct success; error-based 404 recovery and partial-file removal; no fallback for 403, 500, TLS failure, or timeout; no fallback from an Archive URL or arbitrary host; both official locations missing; status-based 404 recovery; and recovered source with a mismatched DESCRIPTION version rejected before target-library creation. Assertions verify the exact attempted URL sequence and actual-source log.
+The collector retains the [official CRAN archive index](https://cran.r-project.org/src/contrib/Archive/Matrix/), ordered release catalog, and actual DESCRIPTION metadata read from exact official source tarballs. The offline gate checks snapshot/catalog/description digests, compares the complete release sequence against the retained index, validates source URL/description identities, and derives R requirements from those descriptions.
 
-## Full Local Verification
+Selection requires a complete eligible ascending prefix through the selected candidate for the exact recorded oldrel-1 R. Every earlier candidate must provide all five required pairings and fail the all-five-pass condition before a successor can be selected. Nonexistent versions, skipped eligible candidates, forged requirements, renumbered history/catalog entries, missing descriptions, and arbitrary source URLs are rejected.
 
-After both atomic fixes, a fresh tracked-source copy excluded `.git`, `.planning`, `.gsd`, private runtime directories, and generated native objects/libraries. Serial compilation used a temporary Makevars file with `SHLIB_OPENMP_CXXFLAGS` empty. `R CMD check` used an explicitly created temporary library via `--library=...`; no build or install ran in the source checkout or user library.
+The official snapshot was collected `2026-10-05T07:42:48Z` and includes eight actual releases: `1.6-5`, then `1.7-0` through `1.7-6`. Actual source requirements are R >= 3.5.0 for 1.6-5 and R >= 4.4/4.4.0 for successors. Eleven retained files total 79,721 bytes: archive HTML, eight DESCRIPTION files, releases CSV and snapshot DCF. Source archive SHA256 values and exact URLs are recorded; tarballs are not retained.
 
-All of `CI`, `GITHUB_ACTIONS`, `GEModelR_EXPECT_OPENMP`, `GEModelR_TEST_LIBRARY`, and `GEModelR_CI_LIBRARY` were unset throughout the check. R 4.3.0, Matrix 1.6.3, measured native `openmp=FALSE`, `max_threads=1L`.
+Modified sections were reread; both R files and the Python collector parse. All **71 probes** pass: original 30, 20 provenance probes, and 21 catalog/order/eligibility probes. The review's omitted-release reproduction now specifically fails with `Missing complete eligible CRAN candidate prefix`. A complete synthetic rejection-prefix positive probe remains only in memory. Other probes cover omitted earlier pairings, forged history requirements, ineligible successors, renumbered history, omitted/nonexistent/renumbered catalog entries, arbitrary source URLs and changed/missing source DESCRIPTION. Catalog mutations are checked both before and after resealing only the table hash. The old nonexistent 1.6-6 success fixture is replaced with actual 1.7-0.
 
-**Result:** exit status **0**, **1,889 passes**, **0 failures**, **164 skips**, **0 ERROR**, **0 WARNING**, **3 NOTEs**. These ordinary-local counts differ from the earlier explicitly configured serial run because local capability measurements do not add required/forbidden CI assertions.
+## Portability Adjunct
 
-Artifacts retained separately at `/tmp/gemodelr-reviewfix05-ordinary-serial-check/`:
+**File:** new `.gitattributes`
+**Commit:** `45d724c`
 
-- `R-CMD-build.log`, `R-CMD-check.log`, `build-exit-status.txt`, `check-exit-status.txt`
-- `job-summary.md`, `environment.txt`, source archive, `GEModelR.Rcheck/`
-- Disposable source, explicit library, and serial Makevars
+The orchestrator requested a bounded Windows checkout check. No existing attribute protection was present. Narrow `-text` rules now protect checksum-bound files under this phase's `hosted-evidence/` and its input `matrix-candidate-evidence.csv` from newline conversion.
 
-Check driver: `/tmp/gemodelr-reviewfix05-full-check.R`. Earlier Phase 05 check artifacts were preserved.
+Git attribute checks report `text: unset`. With `core.autocrlf=true`, filtered and unfiltered object hashes match. A disposable checkout-index export at `/tmp/gemodelr-reviewfix05-autocrlf-export/` preserves all **84 protected evidence files byte-for-byte**. All **71 probes and metadata verification pass** from that export too. No host Git setting was modified.
 
-## Execution Context
+## Verification and Execution Context
 
-The orchestrator authorized a temporary per-invocation `workflow.use_worktrees=false` opt-out to honor already negotiated sequential execution. All edits, syntax checks, and mocked-download checks ran in the main checkout; installed tests ran against disposable installation copies and the full package check ran entirely from its disposable source/library. No git worktree or temporary branch was created. No other agent edited the owned files during this invocation.
+All code edits, collection, syntax checks, and bounded gates ran sequentially in the main checkout; the additional checkout conversion gate ran in the disposable export. The authorized temporary `workflow.use_worktrees=false` opt-out created no worktree or branch. Exact original config bytes were saved to `/tmp/gemodelr-reviewfix05-iteration2-config-original.json`, restored after the two finding commits, and compared byte-for-byte. SHA256: `82f6914417d8d72357125cac248abd9f825077e3c7f25618f0d0cf5f049843a2`. Config was not committed. Unrelated edits, native outputs, libraries and earlier evidence were preserved.
 
-The exact pre-existing `.planning/config.json` bytes were saved to `/tmp/gemodelr-reviewfix05-config-original.json`, then restored and compared byte-for-byte after commits. Restored SHA256: `82f6914417d8d72357125cac248abd9f825077e3c7f25618f0d0cf5f049843a2`. Config was not committed; unrelated working-tree changes, existing native outputs, and the user library were preserved.
+Passed commands:
 
-The per-finding status retains the fixer's required human-verification label for logic changes. Focused semantic regressions and the ordinary serial package check passed; hosted evidence and final phase verification remain pending.
+```sh
+rtk proxy Rscript --vanilla tools/ci/test-matrix-floor-evidence.R --expect-final-metadata
+rtk proxy Rscript --vanilla tools/ci/verify-matrix-floor-evidence.R --verify-final-metadata --evidence .planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md
+rtk proxy Rscript --vanilla -e 'source("tools/ci/test-matrix-floor-evidence.R"); stopifnot(!"Matrix" %in% loadedNamespaces())' --expect-final-metadata
+```
+
+Fast metadata regeneration passes on authentic retained evidence and selects Matrix **1.6-5**. Matrix is never loaded. DESCRIPTION/README values are unchanged. No actionlint or full package build/check is needed for this evidence-only change.
+
+## Remaining Collection Contract
+
+The latest metadata run's artifacts remain for the orchestrator's Plan 05-07 continuation. Its manifest and extracted artifacts must be normalized before offline validation:
+
+```sh
+rtk proxy python3 tools/ci/normalize-matrix-provenance.py <retained-hosted-run.json> --artifacts-root <downloaded-artifacts-directory>
+```
+
+The Python adjunct is collection tooling, not an offline runtime R dependency. The gate trusts a checked normalized representation bound to original JSON and artifact payloads. It detects inconsistent retained files; coordinated replacement of all trusted provenance is outside its contract. A candidate beyond catalog endpoint 1.7-6 needs a fresh official snapshot. Current evidence format remains attempt 1; other attempts fail closed rather than being relabeled.
+
+Per-finding human-verification labels are retained for logic fixes despite passing automated semantic probes. Final review and phase completion remain with the orchestrator.
 
 ---
 
-_Fixed: 2026-10-04T21:35:45Z_
+_Fixed: 2026-10-05T07:48:49Z_
 _Fixer: gsd-code-fixer_
-_Iteration: 1_
+_Iteration: 2_
