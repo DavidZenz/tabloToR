@@ -1,8 +1,8 @@
 ---
 phase: 05-portable-native-build-and-ci
-reviewed: 2026-10-05T07:30:12Z
+reviewed: 2026-10-05T07:56:36Z
 depth: standard
-files_reviewed: 26
+files_reviewed: 29
 files_reviewed_list:
   - .github/workflows/native-ci.yaml
   - DESCRIPTION
@@ -30,64 +30,57 @@ files_reviewed_list:
   - tools/ci/test-matrix-floor-evidence.R
   - tools/ci/test-matrix-source-download.R
   - tools/ci/verify-matrix-floor-evidence.R
+  - .gitattributes
+  - tools/ci/normalize-matrix-provenance.py
+  - tools/ci/collect-matrix-catalog.py
 findings:
-  critical: 2
+  critical: 0
   warning: 0
   info: 0
-  total: 2
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 05: Code Review Report
 
-**Reviewed:** 2026-10-05T07:30:12Z
+**Reviewed:** 2026-10-05T07:56:36Z
 **Depth:** standard
-**Files Reviewed:** 26
-**Status:** issues_found
+**Files Reviewed:** 29
+**Status:** clean
 
 ## Summary
 
-Reviewed the explicit 26-file scope against `8c684f5`, including runtime dispatch, installed tests, exact source installation, the shared per-run endpoint resolver, workflow reporting, floor selection, and final metadata verification. Two reproduced validator defects remain: provenance manifests are only checked for existence, and fallback history can omit an eligible earlier release.
+All reviewed files meet quality standards within the stated scope. No active issues found.
 
-The authentic five oldrel-1 pairings for Matrix 1.6-5 establish the current floor. These findings do not invalidate those passing outcomes or the genuine six source-install exclusions in the candidate run. The fallback defect applies if the provisional floor fails and a successor is selected. Pending artifacts for the latest metadata CI run are not an implementation finding. Informational representative-check failures identified as inherited are outside the introduced-defect scope.
+This is a bounded final re-review of the CR-02 and CR-03 repairs and their necessary adjuncts. The preceding complete standard-depth analysis of the explicit 26-file scope against `8c684f5` is retained; unchanged package implementation and workflow files were not rereviewed from scratch. The scope now adds `.gitattributes`, the provenance normalizer, and the official catalog collector. The earlier findings and their evidence remain in Git history.
 
-The previous local serial/OpenMP finding and same-version CRAN relocation warning were repaired in `4b9dbbe` and `2ab0c28`; neither remains active. The current workflow resolves the current endpoint once per run and shares its exact version and URL. Local serial capability handling preserves strict explicit CI expectations.
+The authentic five oldrel-1 pairings continue to establish Matrix 1.6-5 as the floor, with current endpoint 1.7-6. No fallback was exercised for that floor. The known six source-install exclusions remain individually evidenced. The reported successful latest hosted metadata run does not replace the retained evidence used here; collecting and normalizing its final artifacts remains the orchestrator's continuation work.
 
-No structural pre-pass was supplied. Complete file reads from the earlier review were retained for unchanged scoped files; newly added and changed files were read in this review, with cross-file contract tracing. Bounded R probes used copied evidence in temporary storage or in-memory data frames. Official CRAN release metadata was consulted read-only. No package installation, full package check, hosted execution, source change, or commit was performed by this reviewer. Existing native outputs, libraries, and unrelated working-tree changes were preserved.
+No structural pre-pass was supplied. This reviewer modified only this report, performed no commits, package installations, builds, full package checks, remote mutations, or hosted execution, and preserved unrelated working-tree changes, native outputs, and libraries.
 
 ## Narrative Findings (AI reviewer)
 
-## Critical Issues
+No active BLOCKER or WARNING findings.
 
-### CR-02: Floor and metadata validation never inspect retained provenance manifests
+### Resolved findings
 
-**Classification:** BLOCKER
+- **CR-02 — provenance binding:** Reviewed the strict JSON and artifact SHA256 collection path in `normalize-matrix-provenance.py` and the offline base-R validation path in `verify-matrix-floor-evidence.R`. Checked normalized DCF/CSV metadata binds the original manifest, table, exact artifact row payloads, job/step outcomes, and failed-source logs. Exclusion reasons now come from the retained checked logs. The former malformed-manifest reproduction is rejected.
+- **CR-03 — complete eligible fallback history:** Reviewed the official archive/source DESCRIPTION collector and retained eight-release catalog, then followed catalog validation into floor selection. The validator derives eligibility from actual source R requirements and requires the complete eligible candidate prefix with all five pairings for each earlier rejection. The former skipped-release reproduction is rejected.
+- **Earlier CR-01 and WR-01:** The previous local serial/OpenMP and exact-version CRAN relocation fixes remain resolved; these were unchanged by the evidence repairs.
 
-**File:** `/home/zenz/R/tabloToR/tools/ci/verify-matrix-floor-evidence.R:141-155`
+### Verification and limits
 
-**Affected flow:** `matrixFloorRecord()` and `verifyMatrixFinalMetadata()` at lines 200-202; exclusion reporting at line 185.
+Read `05-REVIEW-FIX.md`, both complete Python adjuncts, the changed R validator and regression probe script, normalized provenance samples, and the retained catalog metadata. The narrow `-text` attributes protect checksum-bound evidence against checkout newline conversion; the fixer also reports an 84-file byte-preserving export with `core.autocrlf=true`. That Windows conversion export was not repeated in this bounded re-review.
 
-**Issue:** The provenance gate requires a JSON manifest to exist but never reads it. It compares the submitted CSV only with another retained CSV. A malformed manifest, mismatched run/attempt, inconsistent job outcomes, or artifact CSV digest mismatch therefore cannot cause rejection. The fast metadata verifier regenerates the record through this same gate, so it also accepts this missing provenance validation. The retained manifests already contain run, job, artifact, and file-hash information, but none of that binds the accepted rows to their recorded hosted outcomes. In addition, every accepted source failure is labeled `OBJECT undeclared` without checking the retained failure reason.
+Ran:
 
-**Evidence:** Copied the genuine candidate CSV and the two retained run CSVs into a temporary directory, replaced both required manifest files with the literal non-JSON text `invalid JSON; no run/job/artifact metadata`, and called `matrixFloorRecord(input, supported)`. It succeeded and returned `Selected floor: 1.6-5`. No original evidence file was changed. This proves that manifest contents are outside the validation gate; it does not imply the actual retained manifests or current floor are false.
+```sh
+rtk proxy Rscript --vanilla -e 'source("tools/ci/test-matrix-floor-evidence.R"); stopifnot(!"Matrix" %in% loadedNamespaces())' --expect-final-metadata
+```
 
-**Fix:** Keep the validator offline and usable with base R, without consulting installed Matrix. Parse a checked provenance representation, or retain normalized DCF/CSV provenance alongside the JSON. Require valid matching run/attempt metadata; bind each accepted tuple/version/outcome to its retained job and artifact; verify the artifact CSV digest and compare the accepted row against its retained payload. Record and validate exclusion reasons tied to that source artifact before emitting a specific compiler-error claim. Reject malformed or mismatched manifests and digests. This requires consistency with the retained provenance, not an impossible guarantee against coordinated replacement of all trusted local files.
+All **71 probes passed**, including malformed JSON, changed run/attempt/outcome/digest, changed normalized outcomes, changed or missing artifact payloads/logs, omitted or renumbered catalog/history entries, forged R requirements, and the former incomplete fallback prefix. Final DESCRIPTION/README metadata verification passed, and Matrix was not loaded. Mutation probes used disposable copies or in-memory synthetic rows; they did not alter retained evidence.
 
-### CR-03: Fallback selection can skip eligible earlier releases and claim the oldest passing floor
-
-**Classification:** BLOCKER
-
-**File:** `/home/zenz/R/tabloToR/tools/ci/verify-matrix-floor-evidence.R:46-66`
-
-**Affected flow:** Candidate iteration and early acceptance at lines 69-77; fallback record claim at line 182.
-
-**Issue:** The validator derives its candidate list entirely from supplied test rows. Its history then only has to repeat that same list, assert eligibility, and number those entries consecutively. Nothing checks that the list includes every official eligible Matrix release between 1.6-5 and the selected successor, or that the supplied R requirements came from the actual source descriptions. Dropping an intervening candidate and renumbering the remaining history therefore passes. The resulting record claims ascending eligible rejection history even though an earlier eligible release was never tried, contradicting the promised oldest eligible passing floor.
-
-**Evidence:** Starting with copies of the genuine candidate rows, changed one minimum oldrel-1 solver outcome to failure and relabeled the genuine current 1.7-6 rows as fallback. Supplied a two-entry history containing only 1.6-5 and 1.7-6, with canonical archive URLs, R requirements 3.5 and 4.4, and release orders 1 and 2. `selectMatrixFloor()` accepted it, selected 1.7-6, and recorded only 1.6-5 as rejected. These were in-memory changes, not modifications to retained evidence.
-
-At least Matrix 1.7-0 is an actual omitted eligible release: the [official CRAN archive](https://cran.r-project.org/src/contrib/Archive/Matrix/) lists it after 1.6-5, and its [archived source DESCRIPTION](https://raw.githubusercontent.com/cran/Matrix/1.7-0/DESCRIPTION) requires R >= 4.4.0, which the recorded oldrel-1 R 4.5.3 satisfies. No assumption that a release named 1.6-6 exists is needed to establish this gap.
-
-**Fix:** At evidence collection, retain an authoritative ordered CRAN release catalog and source DESCRIPTION R requirements, together with provenance for that snapshot. The offline base-R validator should derive eligibility for the recorded oldrel-1 R from that catalog and require a complete prefix of eligible releases through the selected floor. Every earlier eligible candidate must have the five required rejecting outcomes; reject omissions, nonexistent versions, or unsupported eligibility assertions. Keep exact version/source URLs and the prohibition on binary or version substitution. The final metadata check should consume this retained evidence without loading ambient Matrix.
+The offline gate relies on the checked normalization produced at collection, bound by exact local digests to retained original manifests and payloads. Coordinated replacement of all trusted provenance is outside this contract. A candidate beyond the retained catalog endpoint requires a fresh official snapshot; unsupported run attempts fail closed. This review does not independently rerun hosted jobs or assert compatibility for invalid R/Matrix/platform cross-products. Known inherited representative-check failures and pending final artifact collection are not introduced implementation findings.
 
 ---
 
