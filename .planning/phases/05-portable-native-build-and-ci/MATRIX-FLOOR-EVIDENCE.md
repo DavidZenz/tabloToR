@@ -8,6 +8,9 @@ Current source: https://cran.r-project.org/src/contrib/Matrix_1.7-6.tar.gz
 Input CSV: matrix-candidate-evidence.csv
 Supported CSV: hosted-evidence/matrix-candidate-evidence-37274723569-1.csv
 History CSV: none
+Catalog snapshot: hosted-evidence/cran-catalog/snapshot.dcf
+Catalog MD5: 4f62fa460ac7631ce6c8fb10d4ea4908
+Catalog collected at: 2026-10-05T07:42:48Z
 Input MD5: caea8d87ebaa570fe92de20a2265ca52
 Supported MD5: 371fa58f45b4a9ce73930b9b5faa5db6
 Full supported run: 37274723569 (attempt 1)

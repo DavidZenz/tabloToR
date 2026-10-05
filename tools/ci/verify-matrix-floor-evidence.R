@@ -161,11 +161,84 @@ matrixValidateRunProvenance = function(actual, directory, run) {
   matched
 }
 
-selectMatrixFloor = function(rows, history = NULL) {
+readMatrixReleaseCatalog = function(directory) {
+  metadata = matrixEvidenceDcf(file.path(directory, "snapshot.dcf"),
+    c("ArchiveURL", "ArchiveFile", "ArchiveMD5", "Through", "CatalogFile",
+      "CatalogMD5", "CollectedAt", "Collection"))
+  if (metadata$ArchiveURL != "https://cran.r-project.org/src/contrib/Archive/Matrix/" ||
+      metadata$ArchiveFile != "archive-index.html" || metadata$CatalogFile != "releases.csv" ||
+      !grepl("^[0-9]+[.][0-9]+[-.][0-9]+$", metadata$Through) ||
+      !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$", metadata$CollectedAt) ||
+      metadata$Collection != "official-cran-source-descriptions-v1") {
+    stop("Invalid official CRAN catalog snapshot", call. = FALSE)
+  }
+  indexPath = matrixEvidenceFile(directory, metadata$ArchiveFile)
+  matrixEvidenceDigest(indexPath, metadata$ArchiveMD5)
+  catalogPath = matrixEvidenceFile(directory, metadata$CatalogFile)
+  matrixEvidenceDigest(catalogPath, metadata$CatalogMD5)
+  catalog = read.csv(catalogPath, colClasses = "character", check.names = FALSE,
+                      stringsAsFactors = FALSE)
+  fields = c("matrix_version", "source_url", "requires_r", "release_order",
+             "description_file", "description_md5", "source_sha256")
+  if (!identical(names(catalog), fields) || !nrow(catalog) || anyNA(catalog) ||
+      any(!nzchar(as.matrix(catalog))) || anyDuplicated(catalog$matrix_version) ||
+      any(!grepl("^[0-9]+[.][0-9]+[-.][0-9]+$", catalog$matrix_version)) ||
+      any(!grepl("^[0-9]+[.][0-9]+([.][0-9]+)?$", catalog$requires_r)) ||
+      any(!grepl("^[0-9a-f]{64}$", catalog$source_sha256))) {
+    stop("Invalid retained source catalog", call. = FALSE)
+  }
+  index = paste(readLines(indexPath, warn = FALSE), collapse = "\n")
+  links = regmatches(index, gregexpr('href="Matrix_[0-9]+[.][0-9]+[-.][0-9]+[.]tar[.]gz"', index))[[1L]]
+  archived = unique(sub('^href="Matrix_(.*)[.]tar[.]gz"$', "\\1", links))
+  bounded = archived[package_version(archived) >= package_version("1.6-5") &
+                       package_version(archived) <= package_version(metadata$Through)]
+  expected = unique(c(bounded, metadata$Through))
+  expected = expected[order(package_version(expected))]
+  if (!identical(catalog$matrix_version, expected) ||
+      !identical(as.integer(catalog$release_order), seq_along(expected))) {
+    stop("Source catalog omits or renumbers official releases", call. = FALSE)
+  }
+  for (i in seq_len(nrow(catalog))) {
+    row = catalog[i, ]
+    prefix = if (row$matrix_version %in% archived) metadata$ArchiveURL else
+      "https://cran.r-project.org/src/contrib/"
+    if (row$source_url != paste0(prefix, "Matrix_", row$matrix_version, ".tar.gz") ||
+        row$description_file != paste0("Matrix_", row$matrix_version, ".DESCRIPTION")) {
+      stop("Source catalog URL/metadata identity mismatch", call. = FALSE)
+    }
+    path = matrixEvidenceFile(directory, row$description_file)
+    matrixEvidenceDigest(path, row$description_md5)
+    description = read.dcf(path)
+    if (nrow(description) != 1L || !all(c("Package", "Version", "Depends") %in% colnames(description)) ||
+        description[1L, "Package"] != "Matrix" || description[1L, "Version"] != row$matrix_version) {
+      stop("Retained source DESCRIPTION identity mismatch", call. = FALSE)
+    }
+    dependencies = trimws(strsplit(description[1L, "Depends"], ",", fixed = TRUE)[[1L]])
+    r = dependencies[grepl("^R[[:space:]]*\\(", dependencies)]
+    if (length(r) != 1L || !grepl("^R[[:space:]]*\\(>=[[:space:]]*[0-9]+([.][0-9]+)+\\)$", r)) {
+      stop("Unsupported source DESCRIPTION R requirement", call. = FALSE)
+    }
+    required = sub("^R[[:space:]]*\\(>=[[:space:]]*([^)]*)\\)$", "\\1", r)
+    if (required != row$requires_r) stop("Forged source R requirement", call. = FALSE)
+  }
+  attr(catalog, "snapshot") = metadata
+  catalog
+}
+
+selectMatrixFloor = function(rows, history = NULL, catalog = NULL) {
+  if (is.null(catalog)) catalog = readMatrixReleaseCatalog(
+    ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog")
   candidates = unique(rows$matrix_version[rows$candidate_label != "current"])
   candidates = candidates[order(package_version(candidates))]
   if (!length(candidates) || !identical(candidates[[1L]], "1.6-5")) {
     stop("Missing provisional candidate and earlier rejection history", call. = FALSE)
+  }
+  oldR = unique(rows$resolved_r_version[rows$setup_r_alias == "oldrel-1"])
+  if (length(oldR) != 1L) stop("Missing exact oldrel-1 R requirement context", call. = FALSE)
+  eligible = catalog[catalog$requires_r != "" &
+    package_version(catalog$requires_r) <= package_version(oldR), , drop = FALSE]
+  if (any(!candidates %in% eligible$matrix_version)) {
+    stop("Nonexistent or ineligible source candidate", call. = FALSE)
   }
   if (length(candidates) > 1L) {
     if (is.null(history) || !identical(names(history),
@@ -174,17 +247,19 @@ selectMatrixFloor = function(rows, history = NULL) {
         !identical(history$matrix_version, candidates) ||
         any(history$eligible != "true") ||
         !identical(as.integer(history$release_order), seq_along(candidates)) ||
-        any(!grepl("^[0-9]+[.][0-9]+([.][0-9]+)?$", history$requires_r)) ||
-        any(package_version(history$requires_r) >
-            package_version(unique(rows$resolved_r_version[rows$setup_r_alias == "oldrel-1"])))) {
+        !identical(history$requires_r, eligible$requires_r[match(candidates, eligible$matrix_version)])) {
       stop("Missing ordered eligible CRAN fallback history", call. = FALSE)
     }
-    urls = paste0("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_",
-                  candidates, ".tar.gz")
+    urls = eligible$source_url[match(candidates, eligible$matrix_version)]
     if (!identical(history$source_url, urls)) stop("Invalid fallback source URL", call. = FALSE)
   }
   attempts = character()
   for (candidate in candidates) {
+    prefix = eligible$matrix_version[package_version(eligible$matrix_version) <= package_version(candidate)]
+    tried = candidates[package_version(candidates) <= package_version(candidate)]
+    if (!identical(prefix, tried)) {
+      stop("Missing complete eligible CRAN candidate prefix", call. = FALSE)
+    }
     floorRows = rows[rows$setup_r_alias == "oldrel-1" &
                       rows$matrix_version == candidate & rows$candidate_label != "current", ]
     pairs = paste(floorRows$os, floorRows$build_mode, sep = "/")
@@ -199,8 +274,8 @@ selectMatrixFloor = function(rows, history = NULL) {
   stop("No candidate has five passing oldrel-1 rows", call. = FALSE)
 }
 
-validateMatrixEvidence = function(input, supported, history = NULL) {
-  selected = selectMatrixFloor(input, history)
+validateMatrixEvidence = function(input, supported, history = NULL, catalog = NULL) {
+  selected = selectMatrixFloor(input, history, catalog)
   if (any(!input$candidate_label %in% c("minimum", "current", "fallback")) ||
       any(!supported$candidate_label %in% c("minimum", "current"))) {
     stop("Invalid candidate label", call. = FALSE)
@@ -275,7 +350,8 @@ matrixFloorRecord = function(inputPath, supportedPath, historyPath = NULL) {
       checked[[length(checked) + 1L]] = matrixValidateRunProvenance(actual, directory, run)
     }
   }
-  result = validateMatrixEvidence(input, supported, history)
+  catalog = readMatrixReleaseCatalog(file.path(directory, "cran-catalog"))
+  result = validateMatrixEvidence(input, supported, history, catalog)
   provenance = do.call(rbind, checked)
   reasons = provenance$failure_reason[match(matrixEvidenceKeys(result$excluded, TRUE),
                                             matrixEvidenceKeys(provenance, TRUE))]
@@ -297,6 +373,9 @@ matrixFloorRecord = function(inputPath, supportedPath, historyPath = NULL) {
     paste0("Input CSV: ", basename(inputPath)),
     paste0("Supported CSV: ", relative(supportedPath)),
     paste0("History CSV: ", if (is.null(historyPath)) "none" else relative(historyPath)),
+    paste0("Catalog snapshot: hosted-evidence/cran-catalog/snapshot.dcf"),
+    paste0("Catalog MD5: ", attr(catalog, "snapshot")$CatalogMD5),
+    paste0("Catalog collected at: ", attr(catalog, "snapshot")$CollectedAt),
     paste0("Input MD5: ", unname(tools::md5sum(inputPath))),
     paste0("Supported MD5: ", unname(tools::md5sum(supportedPath))),
     paste0("Full supported run: ", unique(supported$run_id), " (attempt 1)"), "",
