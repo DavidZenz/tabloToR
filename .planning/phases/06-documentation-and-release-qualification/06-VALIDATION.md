@@ -22,7 +22,7 @@ created: 2026-10-05
 | **Config file** | DESCRIPTION; runner tests/testthat.R |
 | **Quick run command** | Rscript -e 'testthat::test_local()' |
 | **Full suite command** | R CMD build . && R CMD check <built-source-archive.tar.gz> |
-| **Estimated runtime** | ~1,800 seconds provisional; record measured time during the first full archive check |
+| **Estimated runtime** | Full built-archive check: ~1,800 seconds provisional; record the measured duration on the first run. The external full-scale benchmark is a separate manual gate with a historical duration near 4,680 seconds (~78 minutes); remeasure on target hardware. |
 
 ---
 
@@ -31,29 +31,42 @@ created: 2026-10-05
 - **After every task commit:** Run Rscript -e 'testthat::test_local()'
 - **After every plan wave:** Build the source archive and run R CMD check on that archive
 - **Before $gsd-verify-work:** Full source-archive check must meet CI-02
-- **Max feedback latency:** 1,800 seconds; update from the measured archive-check duration
+- **Max automated feedback latency:** 1,800 seconds provisional for package/site/archive tasks; record actual duration. External manual gates are reported separately and do not use this sampling target.
 
 ---
 
 ## Per-Task Verification Map
 
+Plans assign every requirement to concrete tasks and waves. Commands below remain pending until execution; the built-archive check is the qualification authority.
+
 Task IDs and plan waves are assigned by the planner after decomposition. Each requirement below must be linked to its implementing task before execution.
 
 | Task ID | Plan | Wave | Requirement | Threat Ref | Secure Behavior | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|------------|-----------------|-----------|-------------------|-------------|--------|
-| Pending | Pending | Pending | NUM-03 | Pending | Benchmark summary validates residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints; private inputs stay external | external gate | Existing benchmark runner and checker with user-supplied GTAP inputs | runner/checker exist | pending |
-| Pending | Pending | Pending | CI-02 | Pending | Only the built archive is qualified; existing warnings and significant notes are resolved or accurately explained | package check | R CMD build . && R CMD check <built-source-archive.tar.gz> | package check available | pending |
-| Pending | Pending | Pending | DOCS-02 | Pending | Five focused vignettes use small redistributable examples; full-scale execution is excluded from normal builds | vignette build | Built-archive R CMD check and pkgdown site build | vignettes to be created | pending |
-| Pending | Pending | Pending | DOCS-03 | Pending | Architecture and contributor guidance describe subsystem boundaries, numerical gates, native development, and data restrictions | documentation review | Site build plus source-backed content review | phase guides to be created | pending |
-| Pending | Pending | Pending | REL-01 | Pending | NEWS, SemVer/lifecycle policy, citation/provenance text, and release checklist match current package behavior and blockers | metadata review | Cross-check NEWS, DESCRIPTION, inst/CITATION, and release documents | metadata files exist | pending |
-| Pending | Pending | Pending | DATA-01 | Pending | Source archive and public CI artifacts contain no proprietary inputs, private credentials, giant solutions, or unsupported benchmark scratch | archive/artifact inspection | Inspect built archive manifest and public CI artifact contents | archive-content gate to be established | pending |
+| 06-05-T2 | 06-05 | 4 | NUM-03 | T-06-05-01, T-06-05-02 | Current benchmark evidence records required numerical, runtime, memory, hardware, and source/model identity; private inputs remain external | automated procedure review + separate external manual benchmark/signature gate (~78 minutes historically) | Confirm the repository-only procedure names `run_gtap12a_ab.R`, its explicit external `--output-dir`, `check_benchmark_gate.R`, and detached GPG sign/verify steps; run the full benchmark only with authorized inputs and signer identity | Existing runner/checker; result update planned | pending (external user setup) |
+| 06-06-T3 | 06-06 | 5 | CI-02 | T-06-06-01, T-06-06-02 | The exact guarded archive is checked with Pandoc and PDF-manual tooling; warnings remain visible | hosted source-archive qualification | Build once, inspect the tarball with the archive guard, and run full R CMD check on that same archive in the blocking workflow | Planned | pending (license gate may remain blocked) |
+| 06-01-T1 | 06-01 | 1 | DOCS-02 | T-06-01-01, T-06-01-02 | First redistributable vignette renders through the built package and read-only site artifact | archive/site build | `R CMD build . && Rscript -e 'pkgdown::build_site()' && test -s .pkgdown-site/index.html && test -f .pkgdown-site/articles/first-simulation.html` | Planned | pending |
+| 06-01-T2 | 06-01 | 1 | DOCS-02 | T-06-01-02 | Generated site output is absent from the source archive | archive manifest | Build the archive, then assert its tar member list has no `.pkgdown-site` entries | Planned | pending |
+| 06-02-T1 | 06-02 | 2 | DOCS-02 | T-06-02-01 | Migration and backend articles use redistributable fixtures and explain explicit backend behavior | vignette build | `R CMD build .` | Planned | pending |
+| 06-02-T2 | 06-02 | 2 | DOCS-02 | T-06-02-01, T-06-02-02 | Diagnostics remain lightweight and full-scale benchmark chunks remain unevaluated | archive/site/content check | `R CMD build . && Rscript -e 'pkgdown::build_site()'` plus article content review | Planned | pending |
+| 06-03-T1 | 06-03 | 3 | DOCS-03 | T-06-03-02 | Architecture and contributor guidance matches current R/native ownership and governance | archive/site build | `R CMD build . && Rscript -e 'pkgdown::build_site()' && test -s .pkgdown-site/articles/architecture.html && test -s .pkgdown-site/articles/contributing.html` | Planned | pending |
+| 06-03-T2 | 06-03 | 3 | DOCS-02, DOCS-03 | T-06-03-01, T-06-03-02 | Navigation exposes user/API/migration/maintainer guidance while release/provenance evidence stays out of the site | site/content inspection | `Rscript -e 'pkgdown::build_site()'` plus positive navigation and negative repository-evidence assertions on generated output | Planned | pending |
+| 06-04-T1 | 06-04 | 1 | REL-01 | T-06-04-01 | NEWS, citation, lifecycle semantics, and identity retain reviewed metadata and both blocker identifiers | metadata gate/archive build | Check lifecycle artifact, blocker strings, citation metadata, then run `R CMD build .` | Planned | pending |
+| 06-04-T2 | 06-04 | 1 | REL-01 | T-06-04-02 | Release checklist links executable evidence and retains intentional blocked state | release gate/content check | `Rscript --vanilla tools/check_release_gates.R --assert-blocked` plus checklist content checks | Planned | pending |
+| 06-05-T1 | 06-05 | 4 | NUM-03 | T-06-05-01, T-06-05-02 | Evidence guide defines all required metrics, redaction, and detached-signature verification; MD5 is only a fingerprint | documentation/security review | Check `docs/release/BENCHMARK-EVIDENCE.md` for runner/checker, required fields, GPG sign/verify steps, trusted public identity, and external key handling | Planned | pending |
+| 06-06-T1 | 06-06 | 5 | CI-02 | T-06-06-02 | Hosted predecessor serialization failures are repaired without weakening lineage, payload, or transactional validation | focused regressions/BUGFIX gate | Focused test files followed by `tools/check_serialization_bugfix.R --verify` | Planned | pending |
+| 06-06-T2 | 06-06 | 5 | DATA-01 | T-06-06-01 | Archive-content guard accepts clean fixtures and rejects forbidden paths, suspicious content, and oversized result data | synthetic privacy tests | `Rscript -e 'testthat::test_file("tests/testthat/test-source-archive.R")'` | Planned | pending |
 
 ---
 
 ## Wave 0 Requirements
 
 - Existing testthat edition 3 infrastructure and redistributable fixture helpers cover the package test harness; no framework installation is required.
-- The planner must assign every requirement row above to a concrete task and wave.
+- Wave mapping is explicit in the plan set: wave 1: 06-01 and 06-04; wave 2: 06-02; wave 3: 06-03; wave 4: 06-05; wave 5: 06-06.
+- Documentation and site checks require development-only `knitr`, `rmarkdown`, and `pkgdown` plus Pandoc; the full archive check also requires `pdflatex`.
+- Hosted serialization regressions must pass before archive qualification; archive/privacy tests must pass before any public CI artifact upload.
+- The full-scale NUM-03 run requires authorized external GTAP inputs, target hardware, and a maintainer-designated GPG identity. These are external gates, not Wave 0 fixtures.
+- CI-02 remains blocked while the real placeholder-license warning or unexplained significant notes remain; preserve the Phase 1 legal-gate state.
 
 ---
 
@@ -61,9 +74,11 @@ Task IDs and plan waves are assigned by the planner after decomposition. Each re
 
 | Behavior | Requirement | Why Manual | Test Instructions |
 |----------|-------------|------------|-------------------|
-| Full-scale GTAP run and evidence review | NUM-03 | Requires externally held GTAP inputs and target hardware; the repository must not bundle them. | Run the existing external benchmark workflow with authorized local inputs; use the benchmark gate; review residuals, finiteness, dense-fallback status, runtime, peak memory, hardware, and package/model fingerprints. Treat MD5 fingerprints as fingerprints, not authenticated signatures. |
+| Full-scale GTAP run and evidence review | NUM-03 | Requires externally held GTAP inputs and target hardware; the repository must not bundle them. A prior run took about 78 minutes, but the current runner and target hardware may differ. | Run the A/B workflow from `benchmarks/run_gtap12a_ab.R` with authorized local inputs and an output directory outside the repository; review the gate, residuals, finiteness, dense-fallback status, runtime, peak memory, hardware, and package/model fingerprints. Record the target duration. Treat MD5 fingerprints as fingerprints, not authenticated signatures. |
+| Detached signature identity and verification | NUM-03 | The plan does not identify a maintainer key; the signer must designate a key whose public identity can be independently verified. | Sign the final redacted summary bytes with the designated external GPG key, verify the detached signature against the trusted public key, and keep the private key outside the repository and CI. If signer identity is unavailable, leave NUM-03 pending. |
 | Architecture/contributor guide accuracy | DOCS-03 | A reader must confirm the prose matches current R/native ownership and contributor workflow. | Compare documented subsystem boundaries, numerical gates, platform build paths, and data restrictions against the implementation and CI configuration. |
 | Release and provenance wording | REL-01 | Legal clearance and attribution identity remain separately gated and cannot be inferred from a green package check. | Verify the version/lifecycle wording, citation, NEWS, and checklist against package behavior and current release-gate status; do not imply publication is cleared. |
+| Hosted release qualification | CI-02 | R, Matrix, Pandoc, and TeX availability differ from the local environment; the current license warning is a real Phase 1 blocker. | Run the blocking workflow against the built archive with full manual tooling. Preserve its warning and fail status until the legal gate is separately resolved; do not report qualification as green while the warning persists. |
 
 ---
 
