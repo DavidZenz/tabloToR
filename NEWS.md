@@ -22,6 +22,9 @@ Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
 - Renamed the package to `GEModelR`; its license remains unresolved. Apache-2.0 is
   provisional for original post-baseline code pending the dependency
   compatibility audit; this entry does not authorize a release or publication.
+- Public release remains blocked by `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
+  `ATTRIBUTION_IDENTITY_UNRESOLVED`. This development entry does not authorize
+  source redistribution or publication.
 
 See `docs/provenance/ATTRIBUTION.md`, `docs/provenance/PROVENANCE.csv`, and
 `docs/provenance/RIGHTS.md` for the evidence and scope behind these credits.
