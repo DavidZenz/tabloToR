@@ -1,0 +1,80 @@
+---
+title: "Contributing to GEModelR"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Contributing to GEModelR}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+GEModelR is an R package with compiled native code. Keep changes focused on
+the owning subsystem, preserve the public `GEModel` workflow, and support
+each behavioral change with small, deterministic evidence.
+
+## Set up and run focused checks
+
+From the package root, install the local source to compile its native code.
+Run the narrowest relevant testthat group while iterating, then build and
+check the source archive so validation covers the package users install.
+
+```sh
+R CMD INSTALL .
+Rscript --vanilla -e 'testthat::test_local(filter = "public-solver-contract")'
+R CMD build .
+R CMD check --no-manual GEModelR_0.1.0.tar.gz
+```
+
+For solver changes, include the applicable sparse-core, backend, numerical
+acceptance, cleanup, or diagnostics coverage. Use the small fixtures and
+helpers under `tests/testthat/`; do not use a legacy result as the numerical
+authority for sparse behavior. The external full-scale benchmark is a
+separate workflow and is not part of ordinary tests, package checks, or site
+builds.
+
+## Native code and generated wrappers
+
+Keep native implementations in the focused files under `src/` and their R
+capability/adaptor code in the matching sparse modules. If an Rcpp
+`// [[Rcpp::export]]` declaration changes, regenerate both wrapper files from
+the package root:
+
+```r
+Rcpp::compileAttributes()
+```
+
+`R/RcppExports.R` and `src/RcppExports.cpp` are generated outputs; do not
+hand-edit them. Rebuild or install the package after regeneration so symbol
+registration, arities, and the compiled library are checked together.
+
+The native CI matrix exercises serial builds on Linux, macOS, and Windows,
+plus OpenMP builds on Linux and Windows. It verifies both the minimum and
+current Matrix compatibility endpoints across selected R releases. Keep
+serial behavior correct and deterministic. Request multiple native threads
+only when the installed build reports OpenMP support; a serial build must
+reject an unsupported thread request clearly.
+
+## Numerical and review expectations
+
+Solver changes should preserve the candidate acceptance boundary: check
+shape and finiteness, recompute the true residual, and apply a sparse result
+only after it passes. Keep memory and allocation behavior observable through
+the supported diagnostics, and release solve-scoped native resources on
+both success and failure. Add or update a focused regression test when a
+change affects these contracts.
+
+Contributions are submitted through pull requests. Describe the behavior
+change, the relevant tests and package checks, and any minimal redistributable
+fixture needed to reproduce it. The governance process requires applicable
+CI checks before merge and does not use direct, unreviewed release changes.
+
+## Keep data private and builds reproducible
+
+Commit only small, redistributable examples and fixtures. Never add
+proprietary TABLO or HAR inputs, credentials, full-scale model outputs, or
+large benchmark scratch files to the repository. Full-scale benchmark runs
+must use locally supplied inputs outside the package and site build; submit
+only approved, redacted summaries when a benchmark result is part of a
+review.

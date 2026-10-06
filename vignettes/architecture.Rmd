@@ -1,0 +1,95 @@
+---
+title: "GEModelR architecture"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{GEModelR architecture}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This guide maps the public model workflow to the R and native subsystems that
+implement it. The supported entry point is the `GEModel` reference-class
+generator. Call its methods to load a TABLO model and data, configure a
+closure and shocks, solve, and inspect results. Compiler, index, cache, and
+source-data fields are implementation state; they are not supported mutation
+inputs.
+
+```r
+model = GEModelR::GEModel$new()
+model$loadTablo("model.tab")
+model$loadData(input_data, engine = "sparse")
+model$setClosure("tax")
+model$setShocks(setNames(4, 'tax["south"]'))
+model$solveModel(engine = "sparse", backend = "Matrix")
+```
+
+## From TABLO text to a model runtime
+
+`loadTablo()` runs the TABLO parser and prepares both the established R path
+and the sparse specification. The legacy path creates R functions for data
+skeletons, coefficients, variables, and updates. The sparse compiler turns
+supported equation and update forms into indexed structures used by the
+sparse runtime. `loadData(engine = "legacy" or "sparse")` initializes the
+selected runtime; `solveModel()` must use that same engine. The engine is the
+model runtime choice, while `backend` selects an implementation within the
+sparse runtime.
+
+| Responsibility | Main source files |
+|---|---|
+| Public orchestration and legacy solve loop | `R/GEModel.R` |
+| TABLO statements and legacy generators | `R/tabloToStatements.R`, `R/processTablo.R`, `R/*Statement.R`, `R/*Generator.R` |
+| Sparse equation and update compilation | `R/sparseCompiler.R` |
+| Sparse indexing, emission, solve acceptance, and diagnostics | `R/sparseSolver.R`, `R/sparsePartition.R`, `R/sparseElimination.R`, `R/sparseSchur*.R` |
+| Optional native capability checks and R adapters | `R/zzzSparseSchurCpp.R`, `R/zzzzSparseSchurOpenMP.R` |
+| Native sparse LU, Schur, and block-elimination kernels | `src/sparse-lu.cpp`, `src/sparse-schur*.cpp`, `src/sparse-elimination.cpp` |
+
+## Solver and native boundaries
+
+The sparse `Matrix` backend is the supported general-purpose default. The
+structured R backends use a validated partition when the model has the
+required structure. The experimental C++ structured backend is an explicit
+capability choice: its preflight checks the registered routines, ABI, Matrix
+factor contract, LAPACK, and requested thread support before solving. A
+request that cannot run fails capability checks; GEModelR does not silently
+substitute another backend. `SuiteSparse` is recognized but unavailable in
+supported installed builds. See the [backend selection guide](backend-selection.html)
+for the user-facing choices and their current tiers.
+
+Rcpp entry points are declared in the C++ sources and registered through the
+generated `R/RcppExports.R` and `src/RcppExports.cpp` files. Regenerate these
+wrappers with `Rcpp::compileAttributes()`; do not edit generated wrappers by
+hand. Native code checks dimensions, storage, and finite values before use.
+OpenMP workers operate on prepared native buffers; R API calls and R memory
+allocation stay on the main thread. Serial builds remain supported.
+
+## Numerical acceptance, diagnostics, and cleanup
+
+A sparse backend returns a candidate solution. Before that candidate is
+applied to model state, GEModelR checks its structure and finiteness and
+recomputes the true residual against the emitted full sparse system. A
+non-finite value, incompatible structure, or residual outside the configured
+tolerance rejects the candidate without applying it. This acceptance gate is
+shared across sparse backends; solver-specific diagnostics remain additional
+evidence rather than a replacement for the true-residual check.
+
+Every solve attempt replaces `model$lastDiagnostics` with a versioned outcome
+envelope. Setting `diagnostics = TRUE` adds residual history, timings,
+allocation and capability evidence, detailed cleanup status, and memory
+estimates. Solve-scoped backend cleanup is recorded on success and failure.
+Native dense factors have explicit release paths and finalizers. A
+post-simulation failure is reported separately from numerical acceptance and
+can be retried with `retryPostsim()` without another solve when the accepted
+state is retained.
+
+## Validation ownership
+
+Small, deterministic parser and solver contracts belong in
+`tests/testthat/`, with shared fixtures in `tests/testthat/fixtures/` and
+helpers in `tests/testthat/helper-*.R`. The native CI workflow checks
+installed solver contracts in serial builds on Linux, macOS, and Windows,
+and OpenMP builds on Linux and Windows. The separate `benchmarks/` harnesses
+own larger performance and full-scale comparisons; those runs use external
+inputs and do not belong in ordinary package checks or documentation builds.
