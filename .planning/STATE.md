@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-10-06T06:48:34.392Z"
+stopped_at: Completed 06-03-PLAN.md
+last_updated: "2026-10-06T09:53:00Z"
 last_activity: 2026-10-06
-last_activity_desc: Phase 06 execution started
-state_head: f222785fe867f5560d6c0fd203df78da3a1b4b3f
+last_activity_desc: Plan 06-03 complete; ready to execute Plan 06-05
+state_head: b6fafd6a340d8f0de7d7321acb8ef7db45fc02db
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 57
-  completed_plans: 52
+  completed_plans: 55
 milestone_name: milestone
 ---
 
@@ -29,9 +29,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 ## Current Position
 
 Phase: 06 (Documentation and Release Qualification) — EXECUTING
-Plan: 2 of 6
+Plan: 5 of 6
 Status: Ready to execute
-Last activity: 2026-10-06 — Phase 06 execution started
+Last activity: 2026-10-06 — Plan 06-03 complete; ready to execute Plan 06-05
 
 Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans completed before this phase.
 
@@ -80,6 +80,9 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans comple
 | Phase 05 P06 | 9h58min | 3 tasks | 13 files |
 | Phase 05 P07 | 44min | 2 tasks | 15 files |
 | Phase 06 P01 | 26 min | 2 tasks | 9 files |
+| Phase 06 P02 | 13 min | 2 tasks | 4 files |
+| Phase 06 P03 | 42 min | 2 tasks | 8 files |
+| Phase 06 P04 | Multi-turn including decision checkpoint | 3 tasks | 30 files |
 
 ## Accumulated Context
 
@@ -168,6 +171,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 04]: Use a fixed version-1 diagnostics envelope on every solve attempt; detailed telemetry remains opt-in.
 - [Phase 05]: Set Matrix 1.6-5 as the minimum only after all five oldrel-1 platform/build pairings passed authentic installed hosted checks.
 - [Phase 05]: Keep SuiteSparse recognized but unavailable, and keep full package checks informational until Phase 06 release qualification.
+- [Phase 06]: Build the pkgdown site from the inspected source archive with a site-specific homepage, omit repository-only governance/citation/contributor/news pages, and scan rendered text for embedded release/provenance markers.
 
 ### Pending Todos
 
@@ -180,6 +184,8 @@ None yet.
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
 - Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
 - Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
+- Phase 6 Plan 05: Current full-scale benchmark evidence and detached signature remain pending authorized external GTAP 12a inputs, target hardware, and the maintainer-designated signing fingerprint.
+- Phase 6 Plan 06: Source-archive qualification remains blocked until an authoritative license decision is recorded; do not suppress the current DESCRIPTION warning.
 
 ## Deferred Items
 
@@ -191,6 +197,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-10-06T06:48:34.282Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-10-06T09:53:00Z
+Stopped at: Completed 06-03-PLAN.md; next Plan 06-05
 Resume file: None
