@@ -5,7 +5,7 @@
 
 **Date:** 2026-10-05
 **Phase:** 06-Documentation and Release Qualification
-**Areas discussed:** Documentation delivery
+**Areas discussed:** Documentation delivery; release policy
 
 ---
 
@@ -54,6 +54,20 @@
 **User's choice:** Build a pkgdown GitHub Pages site with five focused vignettes, user and maintainer documentation, and a separate external-input full-scale benchmark procedure.
 
 **Notes:** The user selected the first option in each of the four decisions. Detailed release-gate and provenance evidence remains repository-only. Full-scale execution stays outside normal vignette, source-package, and site builds.
+
+## Pre-1.0 compatibility policy
+
+**Date:** 2026-10-06
+
+**Question:** Which compatibility promise should `VERSION-LIFECYCLE.md` record for 0.x releases?
+
+| Option | Description | Selected |
+|--------|-------------|----------|
+| Adopt the documented proposal | 0.x minor releases may include documented breaking changes; patches carry compatible fixes; post-1.0 follows SemVer. Deprecations name a replacement and expected removal timing when practical. | ✓ |
+| Provide an alternative policy | Record maintainer-supplied compatibility and deprecation terms. | |
+| Keep unresolved | Retain the proposal and leave REL-01 pending. | |
+
+**User's choice:** Adopt the documented proposal. Version 0.1.0 remains a development version and is not a public release.
 
 ---
 

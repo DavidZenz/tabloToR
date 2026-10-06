@@ -22,6 +22,10 @@ Documentation delivery for this phase includes a pkgdown site configured for Git
 - **D-03:** Organize the five required topics as focused vignettes: first simulation, legacy-to-sparse migration, backend selection, diagnostics and memory budgeting, and external full-scale benchmarking.
 - **D-04:** Keep ordinary vignette, source-package, and site builds runnable with small redistributable fixtures. The full-scale benchmark vignette documents the external run commands and required evidence; it does not execute the full benchmark during normal builds.
 
+### Release lifecycle policy
+
+- **D-05:** The maintainer adopted the pre-1.0 proposal on 2026-10-06: while the major version is zero, minor releases may include documented breaking changes and patch releases carry compatible fixes; after 1.0, use SemVer major/minor/patch meanings. When practical, deprecation notices identify a replacement and expected removal timing. Version 0.1.0 remains a development version, not a public release.
+
 ### the agent's Discretion
 
 - Choose the pkgdown theme, navigation details, and build wiring while keeping package documentation as the source of truth.

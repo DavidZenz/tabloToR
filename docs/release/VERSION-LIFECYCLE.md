@@ -1,19 +1,17 @@
 # Version and Compatibility Lifecycle
 
-**Status: Proposal.** Assumption A-SEMVER-01 remains unresolved until the
-maintainer approves this policy or records an alternative. Do not present the
-proposal as an established compatibility promise before that decision.
+**Status: Adopted policy.** The maintainer approved this policy on 2026-10-06.
 
 Version `0.1.0` is a development version and is not a public release.
 
-## Proposed pre-1.0 policy
+## Pre-1.0 policy
 
 While the major version is zero, minor releases may include documented
 breaking changes. Patch releases carry compatible fixes. Release notes should
 identify user-visible behavior changes and migration steps when a minor release
 changes a documented interface.
 
-## Proposed post-1.0 policy
+## Post-1.0 policy
 
 After version `1.0.0`, use Semantic Versioning meanings: patch releases contain
 compatible fixes, minor releases add backward-compatible functionality, and
@@ -27,7 +25,7 @@ deprecation consistently.
 
 ## Release boundary
 
-This proposal does not resolve the package license or attribution identity,
+This policy does not resolve the package license or attribution identity,
 clear a release gate, or authorize redistribution or publication. The current
 blockers remain `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
 `ATTRIBUTION_IDENTITY_UNRESOLVED`; see [Release Gates](RELEASE-GATES.md).
