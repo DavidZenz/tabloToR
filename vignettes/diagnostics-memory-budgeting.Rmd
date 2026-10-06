@@ -1,0 +1,94 @@
+---
+title: "Inspect diagnostics and budget sparse memory"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Inspect diagnostics and budget sparse memory}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+The sparse engine can estimate its memory needs before a solve, enforce a
+per-model memory budget, and retain additional solve diagnostics when asked.
+The examples below use the small generated fixture shared with the other
+vignettes.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+helperPath = if (file.exists("helpers.R")) {
+  "helpers.R"
+} else {
+  file.path("vignettes", "helpers.R")
+}
+source(helperPath, local = knitr::knit_global())
+fixture = makeFirstSimulationFixture()
+model = GEModelR::GEModel$new()
+model$loadTablo(fixture$tabloPath)
+model$setClosure("tax")
+model$loadData(fixture$inputData, engine = "sparse")
+model$setShocks(setNames(4, 'tax["south"]'))
+```
+
+## Estimate before solving
+
+`estimateMemory()` reports an estimate for the selected engine and whether
+post-simulation work is included. Use it as planning information for the
+model and runtime you are about to execute:
+
+```{r estimate-memory}
+memoryEstimate = model$estimateMemory(engine = "sparse", postsim = FALSE)
+print(memoryEstimate)
+```
+
+## Set a memory budget
+
+`setMemoryBudget(bytes)` stores an instance-level sparse budget. A solve fails
+during preflight if its estimate exceeds the available budget. The example
+sets a one-gibibyte budget, ample for this tiny fixture. The `memory_budget`
+argument to `solveModel()` can instead set or override the budget for one
+solve.
+
+```{r set-memory-budget}
+model$setMemoryBudget(1024^3)
+```
+
+## Request compact output and detailed diagnostics
+
+Compact output avoids materializing the full compatibility output structure.
+By default, `diagnostics = FALSE` stores the compact stable outcome envelope.
+Set `diagnostics = TRUE` when you also need residual history, timings,
+allocation and capability evidence, detailed cleanup, and memory estimates.
+
+```{r solve-with-diagnostics}
+model$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "sparse",
+  backend = "Matrix",
+  postsim = FALSE,
+  output = "compact",
+  variables = "q",
+  diagnostics = TRUE
+)
+model$compactOutput
+```
+
+The top-level diagnostics fields include the requested runtime and backend,
+the implementation selected, and the solve status:
+
+```{r inspect-diagnostics}
+model$lastDiagnostics[c(
+  "schema_version", "engine", "requested_backend", "implementation", "status"
+)]
+```
+
+For the stable field list and failure statuses, see the
+[`GEModelR` package help](GEModelR-package.html). Diagnostics add evidence to
+the record; they do not change which backend was requested or permit fallback.
