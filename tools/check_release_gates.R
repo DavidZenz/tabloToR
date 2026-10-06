@@ -1640,6 +1640,25 @@ release_gate_evaluate = function(root = ".") {
 }
 
 
+release_gate_pkgdown_url = function(root) {
+  path = file.path(root, "_pkgdown.yml")
+  if (!file.exists(path)) return(character())
+  lines = tryCatch(
+    readLines(path, warn = FALSE),
+    error = function(error) character()
+  )
+  urlLines = grep("^[[:space:]]*url:[[:space:]]*", lines, value = TRUE)
+  if (length(urlLines) != 1L) return(character())
+  value = trimws(sub("^[[:space:]]*url:[[:space:]]*", "", urlLines))
+  if (startsWith(value, "\"") && endsWith(value, "\"")) {
+    value = substring(value, 2L, nchar(value) - 1L)
+  } else if (startsWith(value, "'") && endsWith(value, "'")) {
+    value = substring(value, 2L, nchar(value) - 1L)
+  }
+  if (!grepl("^https://[^[:space:],]+$", value)) return(character())
+  value
+}
+
 release_gate_validate_description = function(
     root, governance, repository, blockers, parseStatus) {
   path = file.path(root, "DESCRIPTION")
@@ -1671,7 +1690,12 @@ release_gate_validate_description = function(
       "DESCRIPTION_IDENTITY_MISMATCH", parseStatus, "description"
     )))
   }
-  if (!identical(value("URL"), repository[["Canonical-URL"]])) {
+  descriptionUrls = trimws(strsplit(value("URL"), ",", fixed = TRUE)[[1L]])
+  expectedUrls = repository[["Canonical-URL"]]
+  pkgdownUrl = release_gate_pkgdown_url(root)
+  if (length(pkgdownUrl) == 1L) expectedUrls = c(expectedUrls, pkgdownUrl)
+  normalizeUrl = function(url) sub("/+$", "", url)
+  if (!identical(normalizeUrl(descriptionUrls), normalizeUrl(expectedUrls))) {
     return(list(error = release_gate_integrated_failure(
       "DESCRIPTION_URL_MISMATCH", parseStatus, "description"
     )))
