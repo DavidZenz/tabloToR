@@ -5,9 +5,9 @@ output:
   rmarkdown::html_vignette:
     toc: true
 vignette: >
-  %\\VignetteIndexEntry{Choose a GEModelR solver backend}
-  %\\VignetteEngine{knitr::rmarkdown}
-  %\\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Choose a GEModelR solver backend}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 The `engine` and `backend` arguments make different choices. The engine sets
@@ -88,4 +88,3 @@ model$solveModel(engine = "sparse", backend = "SuiteSparse")
 For package-name, option, and saved-state replacements from `tabloToR`, use the
 authoritative root [`MIGRATION.md`](../MIGRATION.md). Backend selection does
 not change that package identity migration.
-

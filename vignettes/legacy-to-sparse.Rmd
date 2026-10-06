@@ -5,9 +5,9 @@ output:
   rmarkdown::html_vignette:
     toc: true
 vignette: >
-  %\\VignetteIndexEntry{Move from the legacy engine to sparse execution}
-  %\\VignetteEngine{knitr::rmarkdown}
-  %\\VignetteEncoding{UTF-8}
+  %\VignetteIndexEntry{Move from the legacy engine to sparse execution}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
 ---
 
 GEModelR keeps the legacy in-memory engine as the default and offers sparse
@@ -91,4 +91,3 @@ If your code still names the predecessor package, replace `tabloToR` with
 [`MIGRATION.md`](../MIGRATION.md) is authoritative for package, option,
 environment-variable, and saved-state replacements; this vignette covers only
 the legacy-versus-sparse runtime choice.
-
