@@ -1,0 +1,94 @@
+---
+title: "Move from the legacy engine to sparse execution"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\\VignetteIndexEntry{Move from the legacy engine to sparse execution}
+  %\\VignetteEngine{knitr::rmarkdown}
+  %\\VignetteEncoding{UTF-8}
+---
+
+GEModelR keeps the legacy in-memory engine as the default and offers sparse
+execution as an explicit runtime choice. This article runs one small generated
+model through both workflows. The fixture is deterministic and contains no
+external TABLO or HAR inputs.
+
+~~~{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+helperPath = if (file.exists("helpers.R")) {
+  "helpers.R"
+} else {
+  file.path("vignettes", "helpers.R")
+}
+source(helperPath, local = knitr::knit_global())
+fixture = makeFirstSimulationFixture()
+~~~
+
+## Run the legacy workflow
+
+Load the same TABLO recipe and input arrays with `engine = "legacy"`, set the
+closure and shock, then solve with the matching engine. `postsim = FALSE` keeps
+this example focused on the numerical solution.
+
+~~~{r legacy-solve}
+legacyModel = GEModelR::GEModel$new()
+legacyModel$loadTablo(fixture$tabloPath)
+legacyModel$setClosure("tax")
+legacyModel$loadData(fixture$inputData, engine = "legacy")
+legacyModel$setShocks(setNames(4, 'tax["south"]'))
+legacyModel$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "legacy",
+  postsim = FALSE
+)
+~~~
+
+## Opt in to sparse execution
+
+To use sparse execution, load the data with `engine = "sparse"` and use that
+same engine for the solve. The Matrix backend is selected explicitly here.
+When changing an existing model to a different engine, load its data again so
+the runtime state matches the selected engine.
+
+~~~{r sparse-solve}
+sparseModel = GEModelR::GEModel$new()
+sparseModel$loadTablo(fixture$tabloPath)
+sparseModel$setClosure("tax")
+sparseModel$loadData(fixture$inputData, engine = "sparse")
+sparseModel$setShocks(setNames(4, 'tax["south"]'))
+sparseModel$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "sparse",
+  postsim = FALSE,
+  backend = "Matrix"
+)
+~~~
+
+Both runs use the same three-region model and shock. Inspect their solution
+vectors side by side:
+
+~~~{r compare-solutions}
+data.frame(
+  region = fixture$regions,
+  legacy = unname(legacyModel$solution),
+  sparse = unname(sparseModel$solution)
+)
+~~~
+
+## Package identity migration
+
+If your code still names the predecessor package, replace `tabloToR` with
+`GEModelR` directly. GEModelR does not provide a compatibility shim. The root
+[`MIGRATION.md`](../MIGRATION.md) is authoritative for package, option,
+environment-variable, and saved-state replacements; this vignette covers only
+the legacy-versus-sparse runtime choice.
+

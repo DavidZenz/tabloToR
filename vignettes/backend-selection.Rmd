@@ -1,0 +1,91 @@
+---
+title: "Choose a GEModelR solver backend"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\\VignetteIndexEntry{Choose a GEModelR solver backend}
+  %\\VignetteEngine{knitr::rmarkdown}
+  %\\VignetteEncoding{UTF-8}
+---
+
+The `engine` and `backend` arguments make different choices. The engine sets
+the model runtime; the backend selects an implementation only within sparse
+execution. The legacy engine remains the default. Within sparse execution,
+`Matrix` is the supported general-purpose backend and the default backend.
+
+This article uses the package's generated three-region fixture, so it can be
+built without external model or data files.
+
+~~~{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+helperPath = if (file.exists("helpers.R")) {
+  "helpers.R"
+} else {
+  file.path("vignettes", "helpers.R")
+}
+source(helperPath, local = knitr::knit_global())
+fixture = makeFirstSimulationFixture()
+~~~
+
+## Select the runtime and backend explicitly
+
+Select `engine = "sparse"` when loading data and solving. Then request the
+supported Matrix backend by its public identifier:
+
+~~~{r matrix-backend}
+model = GEModelR::GEModel$new()
+model$loadTablo(fixture$tabloPath)
+model$setClosure("tax")
+model$loadData(fixture$inputData, engine = "sparse")
+model$setShocks(setNames(4, 'tax["south"]'))
+model$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "sparse",
+  backend = "Matrix",
+  postsim = FALSE,
+  diagnostics = TRUE
+)
+model$lastDiagnostics[c("engine", "requested_backend", "implementation", "status")]
+~~~
+
+The legacy engine is a separate runtime choice, not a sparse backend. Changing
+`engine` requires loading the data again for that runtime. See the
+[`GEModelR` package help](GEModelR-package.html) for the complete public method
+and output contract.
+
+## Capability checks fail closed
+
+Backend identifiers are requests, not hints. GEModelR checks whether the
+requested implementation can run before dispatch. If a capability is missing
+or the model is outside a structured backend's supported layout, the solve
+reports a capability failure; it does not silently substitute another
+backend.
+
+`SuiteSparse` is recognized but unavailable in supported installed builds
+pending portable support. Installing system libraries or setting its reserved
+ordering option does not enable it. Select `backend = "Matrix"` for the
+supported general sparse path. Structured and native backends also have
+explicit capability requirements, such as a supported model layout and, for a
+native implementation, compatible compiled symbols, ABI, Matrix factors, and
+thread capabilities. An unavailable request fails preflight rather than
+falling back to Matrix.
+
+The following illustrates an unavailable request only; it is deliberately not
+run as part of the vignette:
+
+~~~{r unavailable-backend, eval=FALSE}
+model$solveModel(engine = "sparse", backend = "SuiteSparse")
+~~~
+
+For package-name, option, and saved-state replacements from `tabloToR`, use the
+authoritative root [`MIGRATION.md`](../MIGRATION.md). Backend selection does
+not change that package identity migration.
+
