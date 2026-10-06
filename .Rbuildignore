@@ -3,5 +3,6 @@
 ^\.planning$
 ^\.Rcheck$
 ^\.Rproj.user$
+^\.pkgdown-site$
 ^benchmarks/\.
 ^rcpp-solver-acceleration-plan\.md$
