@@ -10,6 +10,8 @@
 ^\.Rproj.user$
 ^\.pkgdown-site$
 ^AGENTS\.md$
+^CONTRIBUTORS\.md$
+^GOVERNANCE\.md$
 ^benchmarks/\.
 ^docs/provenance$
 ^docs/release$

@@ -19,9 +19,32 @@ const REPOSITORY_ONLY_SEGMENTS = new Set([
 const REPOSITORY_ONLY_DOCUMENTS = new Set([
   "AGENTS.md",
   "AGENTS.html",
+  "CONTRIBUTORS.md",
+  "CONTRIBUTORS.html",
+  "GOVERNANCE.md",
+  "GOVERNANCE.html",
   "rcpp-solver-acceleration-plan.md",
   "rcpp-solver-acceleration-plan.html"
 ]);
+const TEXT_FILE_EXTENSIONS = new Set([".html", ".json", ".md", ".txt", ".xml"]);
+const PRIVATE_CONTENT_MARKERS = [
+  {
+    pattern: /docs[\\/](?:provenance|release)(?:[\\/]|[?#\s"')]|$)/i,
+    reason: "repository-only release or provenance reference is present"
+  },
+  {
+    pattern: /\bDEPENDENCY_COMPATIBILITY_AUDIT_PENDING\b/,
+    reason: "release blocker identifier is present"
+  },
+  {
+    pattern: /\bATTRIBUTION_IDENTITY_UNRESOLVED\b/,
+    reason: "attribution blocker identifier is present"
+  },
+  {
+    pattern: /\b(?:Attribution-Role|Evidence-Key):/i,
+    reason: "reviewed attribution ledger content is present"
+  }
+];
 
 function fail(message) {
   throw new Error(message);
@@ -207,6 +230,17 @@ function pathViolation(entryPath) {
   return null;
 }
 
+function contentViolation(content) {
+  const normalized = content
+    .replace(/%2f/gi, "/")
+    .replace(/&#(?:x2f|47);/gi, "/")
+    .replace(/&#x5c;/gi, "\\");
+  for (const marker of PRIVATE_CONTENT_MARKERS) {
+    if (marker.pattern.test(normalized)) return marker.reason;
+  }
+  return null;
+}
+
 function inspectArchive(archivePath) {
   let compressed;
   try {
@@ -308,6 +342,18 @@ function inspectDirectory(rootPath, mode) {
           path: relative,
           reason: "unsupported filesystem entry type"
         });
+      } else if (TEXT_FILE_EXTENSIONS.has(path.extname(child.name).toLowerCase())) {
+        let content;
+        try {
+          content = fs.readFileSync(absolute, "utf8");
+        } catch (error) {
+          fail("cannot read " + mode + " content " + relative +
+            ": " + error.message);
+        }
+        const contentReason = contentViolation(content);
+        if (contentReason) {
+          violations.push({ path: relative, reason: contentReason });
+        }
       }
     }
   }
@@ -350,4 +396,11 @@ if (require.main === module) {
   }
 }
 
-module.exports = { inspect, inspectArchive, inspectDirectory, parseTar, pathViolation };
+module.exports = {
+  contentViolation,
+  inspect,
+  inspectArchive,
+  inspectDirectory,
+  parseTar,
+  pathViolation
+};

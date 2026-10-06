@@ -9,6 +9,21 @@ home:
   description: >
     Parse GEMPACK-style TABLO models and solve them in R with legacy and
     sparse engines.
+  sidebar: false
+
+search:
+  exclude:
+    - authors.html
+    - CONTRIBUTORS.html
+    - GOVERNANCE.html
+    - news/index.html
+
+llm-docs: false
+
+footer:
+  structure:
+    left: pkgdown
+    right: package
 
 navbar:
   structure:

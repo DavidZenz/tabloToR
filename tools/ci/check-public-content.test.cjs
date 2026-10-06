@@ -117,10 +117,35 @@ test("scans every generated-site path", () => {
     assert.match(result.stderr, /\.pkgdown-site/);
 
     fs.rmSync(path.join(site, "nested"), { recursive: true, force: true });
-    fs.writeFileSync(path.join(site, "AGENTS.html"), "maintainer-only\n");
+    fs.writeFileSync(path.join(site, "GOVERNANCE.html"), "maintainer-only\n");
     const repositoryOnly = runChecker(["--site", site]);
     assert.equal(repositoryOnly.status, 1);
     assert.match(repositoryOnly.stderr, /repository-only maintainer document/);
+  });
+});
+
+test("rejects repository-only provenance and release text in a generated site", () => {
+  withTempDirectory((root) => {
+    const site = path.join(root, "site");
+    fs.mkdirSync(site, { recursive: true });
+    fs.writeFileSync(path.join(site, "index.html"), "Public guide\n");
+    assert.equal(runChecker(["--site", site]).status, 0);
+
+    fs.writeFileSync(
+      path.join(site, "index.html"),
+      "See docs&#47;provenance&#47;RIGHTS.md for the reviewed evidence.\n"
+    );
+    const provenance = runChecker(["--site", site]);
+    assert.equal(provenance.status, 1);
+    assert.match(provenance.stderr, /repository-only release or provenance reference/);
+
+    fs.writeFileSync(
+      path.join(site, "index.html"),
+      "Current state: ATTRIBUTION_IDENTITY_UNRESOLVED.\n"
+    );
+    const blocker = runChecker(["--artifact-dir", site]);
+    assert.equal(blocker.status, 1);
+    assert.match(blocker.stderr, /attribution blocker identifier/);
   });
 });
 

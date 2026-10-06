@@ -38,6 +38,38 @@ if (!file.exists(file.path(siteRoot, "index.html")) ||
   stop("pkgdown output is incomplete: ", siteRoot, call. = FALSE)
 }
 
+# pkgdown renders package citation, NEWS, and repository governance/contributor
+# files by default. Those records remain in their authoritative locations but
+# are not part of this public documentation artifact.
+repositoryOnlyPages = c(
+  file.path(siteRoot, "authors.html"),
+  file.path(siteRoot, "CONTRIBUTORS.html"),
+  file.path(siteRoot, "GOVERNANCE.html"),
+  file.path(siteRoot, "news")
+)
+for (page in repositoryOnlyPages) {
+  if (file.exists(page)) {
+    removed = unlink(page, recursive = TRUE, force = TRUE)
+    if (!identical(removed, 0L)) {
+      stop("Unable to remove repository-only pkgdown output: ", page, call. = FALSE)
+    }
+  }
+}
+
+sitemap = file.path(siteRoot, "sitemap.xml")
+if (file.exists(sitemap)) {
+  if (!requireNamespace("xml2", quietly = TRUE)) {
+    stop("xml2 is required to prune removed pages from sitemap.xml", call. = FALSE)
+  }
+  sitemapXml = xml2::read_xml(sitemap)
+  locations = xml2::xml_find_all(sitemapXml, ".//*[local-name()='loc']")
+  hiddenPage = grepl("/(authors\\.html|CONTRIBUTORS\\.html|news/)", xml2::xml_text(locations))
+  if (any(hiddenPage)) {
+    xml2::xml_remove(locations[hiddenPage])
+    xml2::write_xml(sitemapXml, sitemap)
+  }
+}
+
 artifactRoot = file.path(runnerTemp, "pkgdown-site")
 unlink(artifactRoot, recursive = TRUE, force = TRUE)
 dir.create(artifactRoot, recursive = TRUE)
