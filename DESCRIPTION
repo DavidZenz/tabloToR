@@ -10,7 +10,8 @@ Authors@R: c(
     )
 Author: David Zenz [aut, cre, cph], Maros Ivanic [aut]
 Maintainer: David Zenz <zenz@wiiw.ac.at>
-URL: https://github.com/DavidZenz/GEModelR
+URL: https://github.com/DavidZenz/GEModelR,
+    https://davidzenz.github.io/GEModelR/
 BugReports: https://github.com/DavidZenz/GEModelR/issues
 Description: Interpret GEMPACK-style TABLO models in R.  The package keeps
     the original in-memory solver and adds an opt-in integer-indexed sparse
@@ -26,8 +27,12 @@ Imports:
 LinkingTo:
     Rcpp
 Suggests:
+    knitr,
+    pkgdown,
+    rmarkdown,
     testthat
 Config/testthat/edition: 3
+VignetteBuilder: knitr
 Config/Attribution-People: David Zenz; Maros Ivanic
 Config/Attribution-Record: docs/provenance/ATTRIBUTION.md
 Config/Attribution-Evidence:

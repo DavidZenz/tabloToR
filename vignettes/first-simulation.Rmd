@@ -1,0 +1,76 @@
+---
+title: "Run a first GEModelR simulation"
+author: "GEModelR maintainers"
+output:
+  rmarkdown::html_vignette:
+    toc: true
+vignette: >
+  %\VignetteIndexEntry{Run a first GEModelR simulation}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+This guide runs a small, deterministic model through the supported
+GEModelR workflow. It creates the TABLO text and input arrays locally, so the
+example does not need external HAR files or GTAP data.
+
+~~~{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  warning = FALSE,
+  message = FALSE
+)
+helperPath = if (file.exists("helpers.R")) {
+  "helpers.R"
+} else {
+  file.path("vignettes", "helpers.R")
+}
+source(helperPath, local = knitr::knit_global())
+~~~
+
+## Prepare a small model
+
+Create the model object, parse its TABLO equations, define the closure, and
+load the in-memory data with the sparse engine.
+
+~~~{r prepare-model}
+fixture = makeFirstSimulationFixture()
+model = GEModelR::GEModel$new()
+model$loadTablo(fixture$tabloPath)
+model$setClosure("tax")
+model$loadData(fixture$inputData, engine = "sparse")
+~~~
+
+## Apply a shock and solve
+
+The indexed shock changes the tax variable in the south region. The example
+selects the supported Matrix sparse backend explicitly and disables
+post-simulation updates so the reported values are only the solver result.
+
+~~~{r solve-model}
+model$setShocks(setNames(4, 'tax["south"]'))
+model$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "sparse",
+  postsim = FALSE,
+  diagnostics = TRUE,
+  output = "full",
+  backend = "Matrix",
+  reduction = "off"
+)
+~~~
+
+## Inspect the result
+
+The solution follows the fixture's region order. The diagnostics envelope
+records which engine and backend handled the solve.
+
+~~~{r inspect-result}
+data.frame(
+  region = fixture$regions,
+  solution = unname(model$solution)
+)
+model$lastDiagnostics[c("status", "engine", "requested_backend")]
+~~~
