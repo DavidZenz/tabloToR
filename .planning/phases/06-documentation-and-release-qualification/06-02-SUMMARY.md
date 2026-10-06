@@ -14,9 +14,9 @@ provides:
 affects: [phase 06 site navigation, user documentation]
 
 actuals:
-  tokens: 3464
+  tokens: 3540
   tasks: 2
-  commits: 5
+  commits: 6
 
 tech-stack:
   added: []
@@ -30,7 +30,8 @@ key-files:
     - vignettes/backend-selection.Rmd
     - vignettes/diagnostics-memory-budgeting.Rmd
     - vignettes/external-full-scale-benchmarking.Rmd
-  modified: []
+  modified:
+    - vignettes/first-simulation.Rmd
 
 key-decisions:
   - "Keep legacy as the default runtime and show sparse execution as an explicit engine choice."
@@ -125,7 +126,7 @@ The plan summary is committed separately as execution metadata.
 ## Issues Encountered
 
 - `pkgdown::build_site()` fails before rendering articles because `_pkgdown.yml` does not yet index the four new vignettes. The navigation file belongs to dependent Plan 06-03 and was left untouched as assigned. The source archive build and vignette rendering pass.
-- The already-existing `vignettes/first-simulation.Rmd` from Plan 06-01 still uses tilde-fenced R chunks, which knitr renders as literal text. It was outside this plan's file scope and needs a Plan 06-01/06-03 integration follow-up.
+- Archive inspection found the existing `vignettes/first-simulation.Rmd` used tilde-fenced R chunks. This was corrected as a Plan 06-01 integration follow-up in `e2cecee`; a subsequent archive build and HTML inspection confirmed that its fixture and diagnostics now execute.
 - `R CMD build .` emitted its existing R >= 3.5 serialization warning for a fixture; the archive still built successfully.
 
 ## User Setup Required
@@ -134,12 +135,13 @@ None. Full-scale benchmark inputs and machine resources are supplied externally 
 
 ## Next Phase Readiness
 
-Plan 06-03 should add all four article IDs to the pkgdown article index and review the first-simulation chunk fences before relying on the site build. The four Plan 06-02 articles are committed and compile from the source archive.
+Plan 06-03 should add all four article IDs to the pkgdown article index and build the complete site. The four Plan 06-02 articles and the corrected first-simulation guide compile from the source archive.
 
 ## Self-Check: PASSED
 
 - Confirmed the summary and all four vignette files exist.
 - Confirmed commits `0f0bdcc`, `0b3f722`, `791d996`, and `6c825b9` exist in Git history.
+- Confirmed the first-simulation integration correction `e2cecee` exists and its compiled HTML contains fixture output and Matrix diagnostics.
 - Confirmed the built archive contains all five vignette HTML files.
 
 ---

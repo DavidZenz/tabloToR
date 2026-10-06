@@ -159,6 +159,14 @@ None - no external service configuration required.
 - Plan 06-01 is complete. `DOCS-02` remains pending until the sibling plan covering the remaining vignette topics is complete.
 - Ready to continue the independent Phase 06 Wave 1 release documentation plan; release and legal gates remain separate.
 
+## Post-plan Integration Correction
+
+An archive review during Plan 06-02 found that the R chunks above were fenced
+with tildes, so the first-simulation HTML showed source without executing the
+example. The fences were changed to knitr backticks in `e2cecee`. A subsequent
+`R CMD build .` passed, and inspection of the packaged HTML confirmed the
+fixture output (`south` solution value `6`) and Matrix diagnostics.
+
 ---
 *Phase: 06-documentation-and-release-qualification*
 *Completed: 2026-10-06*
