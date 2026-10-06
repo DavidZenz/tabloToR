@@ -15,7 +15,7 @@ execution as an explicit runtime choice. This article runs one small generated
 model through both workflows. The fixture is deterministic and contains no
 external TABLO or HAR inputs.
 
-~~~{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -29,7 +29,7 @@ helperPath = if (file.exists("helpers.R")) {
 }
 source(helperPath, local = knitr::knit_global())
 fixture = makeFirstSimulationFixture()
-~~~
+```
 
 ## Run the legacy workflow
 
@@ -37,7 +37,7 @@ Load the same TABLO recipe and input arrays with `engine = "legacy"`, set the
 closure and shock, then solve with the matching engine. `postsim = FALSE` keeps
 this example focused on the numerical solution.
 
-~~~{r legacy-solve}
+```{r legacy-solve}
 legacyModel = GEModelR::GEModel$new()
 legacyModel$loadTablo(fixture$tabloPath)
 legacyModel$setClosure("tax")
@@ -49,7 +49,7 @@ legacyModel$solveModel(
   engine = "legacy",
   postsim = FALSE
 )
-~~~
+```
 
 ## Opt in to sparse execution
 
@@ -58,7 +58,7 @@ same engine for the solve. The Matrix backend is selected explicitly here.
 When changing an existing model to a different engine, load its data again so
 the runtime state matches the selected engine.
 
-~~~{r sparse-solve}
+```{r sparse-solve}
 sparseModel = GEModelR::GEModel$new()
 sparseModel$loadTablo(fixture$tabloPath)
 sparseModel$setClosure("tax")
@@ -71,23 +71,23 @@ sparseModel$solveModel(
   postsim = FALSE,
   backend = "Matrix"
 )
-~~~
+```
 
 Both runs use the same three-region model and shock. Inspect their solution
 vectors side by side:
 
-~~~{r compare-solutions}
+```{r compare-solutions}
 data.frame(
   region = fixture$regions,
   legacy = unname(legacyModel$solution),
   sparse = unname(sparseModel$solution)
 )
-~~~
+```
 
 ## Package identity migration
 
 If your code still names the predecessor package, replace `tabloToR` with
 `GEModelR` directly. GEModelR does not provide a compatibility shim. The root
-[`MIGRATION.md`](../MIGRATION.md) is authoritative for package, option,
+[`MIGRATION.md`](../MIGRATION.html) is authoritative for package, option,
 environment-variable, and saved-state replacements; this vignette covers only
 the legacy-versus-sparse runtime choice.

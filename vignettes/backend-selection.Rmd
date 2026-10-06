@@ -18,7 +18,7 @@ execution. The legacy engine remains the default. Within sparse execution,
 This article uses the package's generated three-region fixture, so it can be
 built without external model or data files.
 
-~~~{r setup, include=FALSE}
+```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   collapse = TRUE,
   comment = "#>",
@@ -32,14 +32,14 @@ helperPath = if (file.exists("helpers.R")) {
 }
 source(helperPath, local = knitr::knit_global())
 fixture = makeFirstSimulationFixture()
-~~~
+```
 
 ## Select the runtime and backend explicitly
 
 Select `engine = "sparse"` when loading data and solving. Then request the
 supported Matrix backend by its public identifier:
 
-~~~{r matrix-backend}
+```{r matrix-backend}
 model = GEModelR::GEModel$new()
 model$loadTablo(fixture$tabloPath)
 model$setClosure("tax")
@@ -54,11 +54,11 @@ model$solveModel(
   diagnostics = TRUE
 )
 model$lastDiagnostics[c("engine", "requested_backend", "implementation", "status")]
-~~~
+```
 
 The legacy engine is a separate runtime choice, not a sparse backend. Changing
 `engine` requires loading the data again for that runtime. See the
-[`GEModelR` package help](GEModelR-package.html) for the complete public method
+[`GEModelR` package help](../reference/GEModelR-package.html) for the complete public method
 and output contract.
 
 ## Capability checks fail closed
@@ -81,10 +81,10 @@ falling back to Matrix.
 The following illustrates an unavailable request only; it is deliberately not
 run as part of the vignette:
 
-~~~{r unavailable-backend, eval=FALSE}
+```{r unavailable-backend, eval=FALSE}
 model$solveModel(engine = "sparse", backend = "SuiteSparse")
-~~~
+```
 
 For package-name, option, and saved-state replacements from `tabloToR`, use the
-authoritative root [`MIGRATION.md`](../MIGRATION.md). Backend selection does
+authoritative root [`MIGRATION.md`](../MIGRATION.html). Backend selection does
 not change that package identity migration.
