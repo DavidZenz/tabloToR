@@ -81,6 +81,18 @@ test("rejects a source archive containing the generated site", () => {
   });
 });
 
+test("rejects repository-only workflow content in a source archive", () => {
+  withTempDirectory((root) => {
+    const archive = path.join(root, "repository-only.tar.gz");
+    fs.writeFileSync(archive, makeTarGz([
+      { path: "GEModelR/.github/workflows/native-ci.yaml", contents: "workflow\n" }
+    ]));
+    const result = runChecker(["--archive", archive]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /repository-only planning or workflow content/);
+  });
+});
+
 test("fails closed when the archive cannot be parsed", () => {
   withTempDirectory((root) => {
     const archive = path.join(root, "invalid.tar.gz");
@@ -103,6 +115,12 @@ test("scans every generated-site path", () => {
     const result = runChecker(["--site", site]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /\.pkgdown-site/);
+
+    fs.rmSync(path.join(site, "nested"), { recursive: true, force: true });
+    fs.writeFileSync(path.join(site, "AGENTS.html"), "maintainer-only\n");
+    const repositoryOnly = runChecker(["--site", site]);
+    assert.equal(repositoryOnly.status, 1);
+    assert.match(repositoryOnly.stderr, /repository-only maintainer document/);
   });
 });
 
@@ -118,5 +136,12 @@ test("scans every staged artifact path", () => {
     const result = runChecker(["--artifact-dir", staged]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /\.pkgdown-site/);
+
+    fs.rmSync(path.join(staged, ".pkgdown-site"), { recursive: true, force: true });
+    fs.mkdirSync(path.join(staged, "docs", "provenance"), { recursive: true });
+    fs.writeFileSync(path.join(staged, "docs", "provenance", "RIGHTS.md"), "evidence\n");
+    const repositoryOnly = runChecker(["--artifact-dir", staged]);
+    assert.equal(repositoryOnly.status, 1);
+    assert.match(repositoryOnly.stderr, /repository-only release or provenance evidence/);
   });
 });

@@ -1,8 +1,16 @@
 ^\.benchmark-data$
+^\.claude$
+^\.codex$
 ^\.git$
+^\.github$
+^\.gsd$
+^\.local-gtap-test$
 ^\.planning$
 ^\.Rcheck$
 ^\.Rproj.user$
 ^\.pkgdown-site$
+^AGENTS\.md$
 ^benchmarks/\.
+^docs/provenance$
+^docs/release$
 ^rcpp-solver-acceleration-plan\.md$

@@ -32,21 +32,17 @@ jobs:
           packages: deps::.
           cache: false
 
-      - name: Build pkgdown site
-        shell: Rscript {0}
-        run: pkgdown::build_site()
+      - name: Build source archive
+        run: R CMD build .
 
-      - name: Stage site artifact
-        shell: bash
-        run: |
-          mkdir -p "${{ runner.temp }}/pkgdown-site"
-          cp -a .pkgdown-site/. "${{ runner.temp }}/pkgdown-site/"
+      - name: Scan archive and build pkgdown site
+        run: Rscript --vanilla tools/ci/build-pkgdown-site.R
 
       - name: Scan generated site tree
-        run: node tools/ci/check-public-content.cjs --site .pkgdown-site
+        run: node tools/ci/check-public-content.cjs --site "$RUNNER_TEMP/pkgdown-source/GEModelR/.pkgdown-site"
 
       - name: Scan staged site artifact
-        run: node tools/ci/check-public-content.cjs --artifact-dir "${{ runner.temp }}/pkgdown-site"
+        run: node tools/ci/check-public-content.cjs --artifact-dir "$RUNNER_TEMP/pkgdown-site"
 
       - name: Upload pkgdown site artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02

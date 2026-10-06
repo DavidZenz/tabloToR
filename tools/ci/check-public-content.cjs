@@ -7,6 +7,21 @@ const zlib = require("node:zlib");
 
 const BLOCK_SIZE = 512;
 const FORBIDDEN_SEGMENT = ".pkgdown-site";
+const REPOSITORY_ONLY_SEGMENTS = new Set([
+  ".claude",
+  ".codex",
+  ".git",
+  ".github",
+  ".gsd",
+  ".local-gtap-test",
+  ".planning"
+]);
+const REPOSITORY_ONLY_DOCUMENTS = new Set([
+  "AGENTS.md",
+  "AGENTS.html",
+  "rcpp-solver-acceleration-plan.md",
+  "rcpp-solver-acceleration-plan.html"
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -170,12 +185,26 @@ function parseTar(data) {
   fail("tar stream has no complete two-block end marker");
 }
 
-function hasForbiddenSegment(entryPath) {
-  return entryPath
+function pathViolation(entryPath) {
+  const parts = entryPath
     .replace(/\\/g, "/")
     .split("/")
-    .filter((part) => part !== "" && part !== ".")
-    .includes(FORBIDDEN_SEGMENT);
+    .filter((part) => part !== "" && part !== ".");
+  if (parts.includes(FORBIDDEN_SEGMENT)) {
+    return "generated pkgdown site is nested inside the scanned output";
+  }
+  if (parts.some((part) => REPOSITORY_ONLY_SEGMENTS.has(part))) {
+    return "repository-only planning or workflow content is present";
+  }
+  const docsIndex = parts.lastIndexOf("docs");
+  if (docsIndex >= 0 &&
+      ["release", "provenance"].includes(parts[docsIndex + 1])) {
+    return "repository-only release or provenance evidence is present";
+  }
+  if (REPOSITORY_ONLY_DOCUMENTS.has(parts[parts.length - 1])) {
+    return "repository-only maintainer document is present";
+  }
+  return null;
 }
 
 function inspectArchive(archivePath) {
@@ -194,12 +223,10 @@ function inspectArchive(archivePath) {
   }
 
   const entries = parseTar(tar);
-  const violations = entries
-    .filter(hasForbiddenSegment)
-    .map((entryPath) => ({
-      path: entryPath,
-      reason: "generated pkgdown site is present in the source archive"
-    }));
+  const violations = entries.flatMap((entryPath) => {
+    const reason = pathViolation(entryPath);
+    return reason ? [{ path: entryPath, reason }] : [];
+  });
   return { entries, violations };
 }
 
@@ -253,10 +280,11 @@ function inspectDirectory(rootPath, mode) {
           ": " + error.message);
       }
       entries.push(relative);
-      if (hasForbiddenSegment(relative)) {
+      const reason = pathViolation(relative);
+      if (reason) {
         violations.push({
           path: relative,
-          reason: "generated pkgdown site is nested inside the scanned output"
+          reason
         });
       }
       if (stat.isSymbolicLink()) {
@@ -322,4 +350,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { hasForbiddenSegment, inspect, inspectArchive, inspectDirectory, parseTar };
+module.exports = { inspect, inspectArchive, inspectDirectory, parseTar, pathViolation };
