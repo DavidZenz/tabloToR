@@ -1,0 +1,20 @@
+Application-Record-Version: 1
+Application-Status: canonical-applied-and-validated
+Application-Date-UTC: 2026-10-06
+Approval-Record: REVIEW-APPROVAL.dcf
+Approval-SHA256: e2710c58571dba5195fc180b640fc8df728eb1f5f9cb5720178c68ee5ecc0a4b
+Finalization-Checksums: FINALIZATION-CHECKSUMS.sha256
+Finalization-Checksums-SHA256: 4ae10bcf10a8951089ef3e25b2ec4a6bcb0d8b577894104be0aa85615d9322c4
+Canonical-Expected-Keys-SHA256: e6bda333b05389b8f94832863510affc893971d25171f6dad6b427541751253d
+Canonical-Provenance-SHA256: ae4c1260daf6a7bba7363164cac9966514c5bba0c45813d879f0b0f061c5d9c0
+Canonical-Inventory-Review-SHA256: 4235cfb8fa46666efd4843c253e436d78175390ef0501b1896e995684a0f10d6
+Canonical-Attribution-SHA256: 1f9a7324f9df8a3239930edd41d9da6f0dafebc8bbb5e46c8502abbd6310c514
+Inventory-Tool-SHA256: fdc907dbc3336700c28d76eb04e06fb365bd7796c44b187bcd686a3f6b8abbe9
+Release-Gate-Check: assert-blocked-passed
+Release-Gate-Status: blocked
+Release-Gate-Reasons: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,
+        ATTRIBUTION_IDENTITY_UNRESOLVED
+Provenance-Check: reviewed
+Provenance-Expected-Keys: 324
+Provenance-Ledger-Rows: 324
+Prior-Approval-Status: review-fields-finalized; canonical-apply-pending-validation

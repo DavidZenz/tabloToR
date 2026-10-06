@@ -1,0 +1,3 @@
+"path","previous_symbol","proposed_symbol","definition_line_start","definition_line_end","alias_line_start","alias_line_end","prior_ledger_key_candidate","lineage_review"
+"R/sparseSolver.R",".sparse_backend_solve",".sparse_backend_solve_reference",305,445,447,447,"","No same-name reviewed ledger key; classify this saved implementation independently."
+"R/sparseSolver.R",".sparse_accept_candidate",".sparse_accept_candidate_reference",2263,2359,2361,2361,"R/sparseSolver.R::.sparse_accept_candidate","Possible continuation of the previously reviewed function; confirm against the prior accepted hash and review record."

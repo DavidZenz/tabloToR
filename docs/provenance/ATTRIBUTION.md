@@ -4,17 +4,17 @@
 
 Attribution-Schema-Version: 1
 Inventory-Path: docs/provenance/PROVENANCE.csv
-Inventory-Row-Count: 291
-Inventory-Snapshot-MD5: ee9daa3ead2b1b30181d64dc1697b525
+Inventory-Row-Count: 324
+Inventory-Snapshot-MD5: 594abc1aaf925f443b241a5588b2373d
 Inventory-Review-Path: docs/provenance/INVENTORY-REVIEW.csv
-Inventory-Review-MD5: f19029655d4e6d366901296ee771e2c3
+Inventory-Review-MD5: 1ce7e1e095d8bb591751f89922c13524
 Upstream-Repository: https://github.com/mivanic/tabloToR
 Upstream-Commit: 7e063c65a19713857ed13023f8b77dad45b15c90
 Reviewer: David Zenz
 Review-Date: 2026-09-09
 
-The inventory snapshot binds these role decisions to the reviewed Phase 01 ledger
-and the accepted Phase 02 source expansion in INVENTORY-REVIEW.csv. The MD5
+The inventory snapshot binds these role decisions to the reviewed Phase 01 ledger,
+the accepted Phase 02 expansion, and the reviewed 291-to-324 current-source transition in INVENTORY-REVIEW.csv. The MD5
 values are deterministic change detectors, not proof of authorship or ownership.
 A changed inventory requires a fresh attribution review.
 

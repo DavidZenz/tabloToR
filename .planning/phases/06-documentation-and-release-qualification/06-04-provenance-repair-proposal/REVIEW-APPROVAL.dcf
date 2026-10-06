@@ -1,0 +1,18 @@
+Approval-Version: 1
+Approval-Basis: Explicit user confirmation after review of the Phase
+        06-04 provenance repair proposal
+Approved-By: David Zenz
+Review-Date-UTC: 2026-10-06
+Candidate-Expected-MD5: e28b5b0ab4a24e9e44304c7f56f81af8
+Candidate-Provenance-MD5: f987c297c786a85dfe25744dbe2c1a58
+Candidate-Review-Delta-MD5: befc9f68d4e30cfb7511142b5ec2d9b0
+Reference-Alias-Map-MD5: 6cd545a7f731bce335c02046074dca3c
+Accepted-Hash-Changes: 32
+Accepted-New-Identities: 33
+New-Identity-Decision: new-independent; David Zenz; provisional
+        Apache-2.0 pending dependency compatibility audit
+Release-Blockers: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,
+        ATTRIBUTION_IDENTITY_UNRESOLVED remain unresolved
+Finalization-Checksums: FINALIZATION-CHECKSUMS.sha256
+Finalization-Status: review-fields-finalized;
+        canonical-apply-pending-validation

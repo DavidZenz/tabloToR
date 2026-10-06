@@ -1,0 +1,12 @@
+7db15ff6d81f07109b4e5be6b7c34890e66a54f83f288a32397b9e8c727c6d8d  docs/provenance/EXPECTED-KEYS.csv
+a13facb7df2072dcd61f45645f0e1424cb66449d1e5d7e63bbc55bb7542a3218  docs/provenance/PROVENANCE.csv
+fba2bb62e4962a2f9b390d564b259647b45acafa14ff1a0a97efa5eceb241e5a  docs/provenance/ATTRIBUTION.md
+fdc907dbc3336700c28d76eb04e06fb365bd7796c44b187bcd686a3f6b8abbe9  tools/provenance_inventory.R
+d1a798264dd5fbcb70d26a8ba717a7ffeee9739b1b65b5f694e63c06e477867c  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/generate-candidate.R
+b721ea9ef0691041055e18bbaeecba2db81e982156f01234c27558b5d5114cee  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/PROPOSAL.md
+d15d719ea0d78f798820642f623238f4937f24a1d8b3dd9ef4e716d5e0320ec8  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-source-inventory.csv
+e6bda333b05389b8f94832863510affc893971d25171f6dad6b427541751253d  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-EXPECTED-KEYS.csv
+d68be6d55f9f6c7cf4b8b07ba47068ba5cc37920ff56c8798af43a9be209de81  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv
+dfa395ff33e25dac4ce5f8e219fe14add19c43031929008839e9a6ee2a43f9bd  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-review-delta.csv
+cc9c469ce85b5962dc4dbbe2d9d4c77d68c82b4b35b6def2bbd762af00b021d3  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/reference-alias-map.csv
+096b6ad01ee2b381fc8f4d2933f8c8e8dc576bdc0ee197d8e20ebfa3389c588c  .planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md

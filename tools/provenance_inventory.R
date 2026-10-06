@@ -122,6 +122,48 @@ provenance_method_lines <- function(parse_data, method_name, fallback) {
   fallback
 }
 
+provenance_r_reference_aliases <- function(rows, expressions, references) {
+  if (is.null(rows) || !nrow(rows) || is.null(references)) return(rows)
+  for (expression_id in seq_along(expressions)) {
+    expression <- expressions[[expression_id]]
+    if (!is.call(expression) || length(expression) < 3L ||
+        !as.character(expression[[1L]]) %in% c("<-", "=")) next
+    target <- expression[[2L]]
+    value <- expression[[3L]]
+    if (!is.symbol(target) || !is.symbol(value)) next
+    alias <- as.character(target)
+    original <- as.character(value)
+    if (!grepl("_reference$", alias) ||
+        !identical(sub("_reference$", "", alias), original)) next
+
+    alias_range <- provenance_srcref_lines(references[[expression_id]])
+    original_rows <- which(rows[["symbol"]] == original)
+    before <- original_rows[
+      rows[["line_end"]][original_rows] < alias_range[[1L]]
+    ]
+    after <- original_rows[
+      rows[["line_start"]][original_rows] > alias_range[[2L]]
+    ]
+    if (!length(before) || !length(after)) next
+
+    alias_rows <- which(
+      rows[["symbol"]] == alias &
+        rows[["line_end"]] < alias_range[[1L]]
+    )
+    source_id <- if (length(alias_rows)) {
+      alias_rows[which.max(rows[["line_start"]][alias_rows])]
+    } else {
+      before[which.max(rows[["line_start"]][before])]
+    }
+    if (length(alias_rows) > 1L ||
+        any(rows[["symbol"]] == alias & seq_len(nrow(rows)) != source_id)) {
+      provenance_abort("PROVENANCE_R_REFERENCE_ALIAS_AMBIGUOUS", alias)
+    }
+    rows[["symbol"]][[source_id]] <- alias
+  }
+  rows
+}
+
 provenance_r_rows <- function(path, relative) {
   expressions <- tryCatch(
     parse(path, keep.source = TRUE),
@@ -185,7 +227,9 @@ provenance_r_rows <- function(path, relative) {
     }
   }
   if (!length(rows)) return(NULL)
-  do.call(rbind, rows)
+  provenance_r_reference_aliases(
+    do.call(rbind, rows), expressions, references
+  )
 }
 
 provenance_mask_native <- function(text) {
