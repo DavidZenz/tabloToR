@@ -43,24 +43,27 @@ coverage:
     requirement: NUM-03
     verification:
       - kind: external
-        ref: "Not run: all four authorized-input/output variables and designated signing fingerprint are unset"
+        ref: "Inputs and source package prepared locally; run not started because no maintainer-designated signer is configured"
         status: pending-user-setup
     human_judgment: false
 
 duration: 3 min
 completed: 2026-10-06
-status: awaiting-user-setup
+status: awaiting-signing-identity
 ---
 
 # Phase 06 Plan 05: Benchmark Evidence Procedure Summary
 
-**The repository-only procedure is ready; the full-scale result remains pending external benchmark inputs, hardware, and signer setup.**
+**The local inputs, closure, output directory, and exact source installation are prepared; the full-scale run remains pending a maintainer-designated signing identity.**
 
 ## Accomplishments
 
 - Documented the existing A/B runner, independent gate invocation, required NUM-03 result fields, output redaction, and unchanged acceptance thresholds.
 - Specified an armored detached GPG signature over the final summary and full-fingerprint verification against a trusted public-key source.
 - Kept MD5 values labeled as fingerprints and retained the separate Phase 1 legal and attribution blockers.
+- Staged the four runner inputs outside the repository with private permissions and created the closure RDS from the existing 53-variable GTAPinR example closure.
+- Built the source archive from commit `ae3ba3cb1e16e18ad1bd0567a91d2933580b13be` and installed GEModelR 0.1.0 into a temporary library. Archive SHA-256: `8d3774d787dcef7b8f7a95c1a85e41093161e454ac7386241da1e72b5ca372fc`.
+- Confirmed the host has 12 logical CPUs and 62 GiB RAM; the plan's four-thread setting fits.
 
 ## Task Commit
 
@@ -68,24 +71,23 @@ status: awaiting-user-setup
 
 ## Pending Task: Full-Scale External Benchmark
 
-The required environment variables are currently unset:
+The authorized input files, closure RDS, and external output directory are
+prepared on the local benchmark host. The package built and installed from the
+exact source commit into an isolated temporary library. The host has no GPG
+secret key, and `GEMODELR_BENCHMARK_SIGNING_FINGERPRINT` is unset. No
+maintainer-designated trusted public-key source has been supplied.
 
-- `GEMODELR_GTAP12A_DATA_DIR`
-- `GEMODELR_GTAP12A_TABLO`
-- `GEMODELR_GTAP12A_CLOSURE_FILE`
-- `GEMODELR_GTAP12A_OUTPUT_DIR`
-- `GEMODELR_BENCHMARK_SIGNING_FINGERPRINT`
-
-No proprietary inputs were accessed, no full-scale run was started, and no
-summary or signature was produced. NUM-03 remains pending until the authorized
-inputs and temporary output location are available outside the repository and
-the maintainer-designated key is available in the local GPG keyring.
+The full-scale run has not started, and no result summary or signature was
+produced. Plan 06-05 Task 2 remains pending because its signer precondition is
+not met; NUM-03 remains pending.
 
 ## Next Step
 
-Set the five variables in the authorized local environment, then resume Plan
-06-05 Task 2. The runner and independent checker must both pass before a
-redacted result is appended and signed.
+Provision or identify the maintainer-designated GPG key on this host and
+provide its full fingerprint plus a trusted public-key source. Then run Plan
+06-05 Task 2 with the prepared external inputs and temporary package library.
+The runner and independent checker must both pass before a redacted result is
+appended and signed.
 
 ---
 *Phase: 06-documentation-and-release-qualification*
