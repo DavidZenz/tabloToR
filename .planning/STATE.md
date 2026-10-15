@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: 06-05 Task 2 precondition: maintainer-designated signing identity unavailable
-last_updated: "2026-10-15T09:27:21Z"
+stopped_at: 06-05 Task 2: full-scale benchmark run in progress
+last_updated: "2026-10-15T13:25:28Z"
 last_activity: 2026-10-15
-last_activity_desc: Plan 06-05 benchmark inputs, closure, and source package prepared; awaiting signing identity
+last_activity_desc: Plan 06-05 inputs and source package prepared; benchmark summary will be unsigned
 state_head: 2ca2d73d3e9ba723958c14fcc3013e0ebd1a7a2a
 progress:
   total_phases: 7
@@ -30,8 +30,8 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 Phase: 06 (Documentation and Release Qualification) — EXECUTING
 Plan: 5 of 6
-Status: Awaiting maintainer-designated benchmark signing identity
-Last activity: 2026-10-15 — Plan 06-05 inputs, closure, and source package prepared; awaiting signing identity
+Status: External benchmark running; no signing identity is required
+Last activity: 2026-10-15 — Plan 06-05 external A/B runner started; unsigned evidence policy recorded
 
 Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans completed before this phase.
 
@@ -175,7 +175,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 
 ### Pending Todos
 
-Set `GEMODELR_GTAP12A_DATA_DIR`, `GEMODELR_GTAP12A_TABLO`, `GEMODELR_GTAP12A_CLOSURE_FILE`, `GEMODELR_GTAP12A_OUTPUT_DIR`, and `GEMODELR_BENCHMARK_SIGNING_FINGERPRINT` in the authorized local environment before resuming Plan 06-05 Task 2.
+Run the full-scale benchmark and independent gate against the prepared external GTAP 12a inputs. Keep detailed outputs outside the repository; append only a redacted, unsigned summary if both gates pass.
 
 ### Blockers/Concerns
 
@@ -184,7 +184,7 @@ Set `GEMODELR_GTAP12A_DATA_DIR`, `GEMODELR_GTAP12A_TABLO`, `GEMODELR_GTAP12A_CLO
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
 - Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
 - Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
-- Phase 6 Plan 05: Current full-scale benchmark evidence and detached signature remain pending authorized external GTAP 12a inputs, target hardware, and the maintainer-designated signing fingerprint; all five required environment variables are currently unset.
+- Phase 6 Plan 05: The full-scale benchmark and independent gate remain pending. Authorized inputs, closure, temporary output directory, and package installation are prepared; a GPG key is not required.
 - Phase 6 Plan 06: Source-archive qualification remains blocked until an authoritative license decision is recorded; do not suppress the current DESCRIPTION warning.
 
 ## Deferred Items
@@ -197,6 +197,6 @@ Set `GEMODELR_GTAP12A_DATA_DIR`, `GEMODELR_GTAP12A_TABLO`, `GEMODELR_GTAP12A_CLO
 
 ## Session Continuity
 
-Last session: 2026-10-06T09:56:43Z
-Stopped at: Plan 06-05 Task 2 external setup precondition
+Last session: 2026-10-15T13:25:28Z
+Stopped at: Plan 06-05 Task 2 external benchmark running
 Resume file: None

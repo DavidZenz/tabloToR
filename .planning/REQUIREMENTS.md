@@ -23,7 +23,7 @@
 
 - [x] **NUM-01**: Legacy, Matrix sparse, structured R, and optional structured C++ paths satisfy documented solution-equivalence and true-residual tolerances on redistributable fixtures.
 - [x] **NUM-02**: Solver results are applied to mutable model state only after the selected backend passes its required residual and finiteness checks.
-- [ ] **NUM-03**: The full GTAP benchmark records package/model signatures, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs.
+- [ ] **NUM-03**: The full GTAP benchmark records package/model configuration fingerprints, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs; the summary is explicitly unsigned.
 
 ### Package Migration and API
 

@@ -265,7 +265,7 @@ Plans:
   2. Vignettes demonstrate first simulation, sparse migration, solver selection, diagnostics/memory budgeting, and external full-scale benchmarking using redistributable inputs where executed.
   3. Architecture and contributor guides describe subsystem ownership, numerical gates, native development, and proprietary-data restrictions.
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
-  5. Signed full-scale benchmark summaries verify residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs.
+  5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
 **Plans**: 1/6 plans executed
 

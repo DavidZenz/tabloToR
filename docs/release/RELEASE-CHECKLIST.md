@@ -36,10 +36,9 @@ authorize a tag, repository change, release, or publication.
   `Rscript --vanilla tools/check_name_availability.R --name GEModelR --output docs/release/NAME-CHECK.md --check-kind release`.
   A prior initial report is not current release evidence.
 - [ ] Require a current result that passes
-  [`benchmarks/check_benchmark_gate.R`](../../benchmarks/check_benchmark_gate.R)
-  and verify its detached signature with
-  `gpg --verify benchmarks/GTAP12A_CPP_RESULTS.md.asc benchmarks/GTAP12A_CPP_RESULTS.md`.
-  Check the signer fingerprint and trusted-key source in the
+  [`benchmarks/check_benchmark_gate.R`](../../benchmarks/check_benchmark_gate.R).
+  The benchmark summary is intentionally unsigned; review its redaction and
+  source/package identity fields using the
   [benchmark evidence procedure](BENCHMARK-EVIDENCE.md). The checked-in result
   is historical; it does not satisfy the current full-scale benchmark
   requirement by itself.

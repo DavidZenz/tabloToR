@@ -152,7 +152,7 @@ The first blocked-state assertion reported `DESCRIPTION_URL_MISMATCH`; the gate 
 
 ## User Setup Required
 
-None for this plan. Full-scale benchmark inputs and authenticated signer identity remain prerequisites for Plan 06-05.
+At the time of completion (2026-10-06), this summary listed full-scale inputs and an authenticated signer identity as prerequisites for Plan 06-05. Update (2026-10-15): GPG signing is no longer required; inputs are now prepared locally and the benchmark run/gate remain pending.
 
 ## Next Phase Readiness
 

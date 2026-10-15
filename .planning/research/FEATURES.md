@@ -35,7 +35,7 @@
 |---------|---------------|-----------------|-------------|
 | Native backend as immediate default | Fastest measured path | Platform maturity and structured-model specificity | Keep opt-in and document selection |
 | Separate C++ solver package now | Appears architecturally clean | Internal metadata is not yet a stable boundary | Modularize internally first |
-| Full GTAP test in CI | Strong end-to-end confidence | Proprietary data, hours of runtime, >25 GiB RAM | Separate signed benchmark process |
+| Full GTAP test in CI | Strong end-to-end confidence | Proprietary data, hours of runtime, >25 GiB RAM | Separate external benchmark process |
 | Automatic backend heuristics in v1 | Easier user experience | Can hide methodological/platform changes | Explicit backend with preflight advice |
 | Database-backed equation solving | Suggests out-of-core scale | Sparse factorization requires numeric matrix access | Use databases only for optional staging |
 

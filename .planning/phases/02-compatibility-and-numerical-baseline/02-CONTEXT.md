@@ -130,7 +130,7 @@ No external specifications were referenced during discussion.
 - Package/native identity migration remains Phase 3.
 - Public API narrowing and backend interface cleanup remain Phase 4.
 - Cross-platform native build and CI remain Phase 5.
-- Signed full-scale benchmark qualification and public release artifacts remain Phases 6 and 7.
+- Full-scale benchmark qualification and public release artifacts remain Phases 6 and 7.
 
 </deferred>
 
