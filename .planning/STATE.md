@@ -175,7 +175,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 
 ### Pending Todos
 
-Run the full-scale benchmark and independent gate against the prepared external GTAP 12a inputs. Keep detailed outputs outside the repository; append only a redacted, unsigned summary if both gates pass.
+Phase 06 Plan 05: The C++-only full-scale run is complete and its detailed outputs remain external. NUM-03's matched A/B gate is still pending; do not rerun the R reference unless the user redirects this decision.
 
 ### Blockers/Concerns
 
@@ -184,7 +184,7 @@ Run the full-scale benchmark and independent gate against the prepared external 
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
 - Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
 - Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
-- Phase 6 Plan 05: The full-scale benchmark and independent gate remain pending. Authorized inputs, closure, temporary output directory, and package installation are prepared; a GPG key is not required.
+- Phase 6 Plan 05: The C++ candidate-only run completed with one warm-up and three measured runs. It used no shocks file and produced an all-zero solution; no matched reference or A/B gate was used, so NUM-03 remains pending. The user directed that the R baseline not be rerun. Detailed outputs remain external; no GPG key is required.
 - Phase 6 Plan 06: Source-archive qualification remains blocked until an authoritative license decision is recorded; do not suppress the current DESCRIPTION warning.
 
 ## Deferred Items
@@ -197,6 +197,6 @@ Run the full-scale benchmark and independent gate against the prepared external 
 
 ## Session Continuity
 
-Last session: 2026-10-15T13:25:28Z
-Stopped at: Plan 06-05 Task 2 external benchmark running
+Last session: 2026-10-15T21:50:42Z
+Stopped at: Plan 06-05 C++-only run complete; matched A/B gate pending
 Resume file: None

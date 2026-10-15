@@ -12,6 +12,7 @@ requires:
 provides:
   - Repository-only procedure for running and checking the full-scale A/B benchmark
   - Redacted public summary fields and an explicit unsigned-evidence policy
+  - Completed C++-only full-scale measurements retained outside the repository
 affects: [NUM-03, phase-06 release qualification]
 
 actuals:
@@ -44,7 +45,7 @@ coverage:
     requirement: NUM-03
     verification:
       - kind: external
-        ref: "Inputs, closure, output directory, and source package prepared locally; full-scale A/B runner is active"
+        ref: "C++-only full-scale run completed (one warm-up, three measurements); no matched reference or A/B gate was run"
         status: in-progress
     human_judgment: false
 
@@ -65,22 +66,26 @@ status: in-progress
 - Staged the four runner inputs outside the repository with private permissions and created the closure RDS from the existing 53-variable GTAPinR example closure.
 - Built the source archive from commit `ae3ba3cb1e16e18ad1bd0567a91d2933580b13be` and installed GEModelR 0.1.0 into a temporary library. Archive SHA-256: `8d3774d787dcef7b8f7a95c1a85e41093161e454ac7386241da1e72b5ca372fc`.
 - Confirmed the host has 12 logical CPUs and 62 GiB RAM; the plan's four-thread setting fits.
+- Following the user's direction, stopped the R reference run and completed one C++ warm-up plus three C++ measurements at four effective threads. The repetitions completed with finite outputs, no dense full-system operations, and identical zero-shock solutions; raw records and a redacted candidate-only summary remain outside the repository.
 
-## Pending Task: Full-Scale External Benchmark
+## Pending Task: Matched A/B Acceptance
 
-The authorized input files, closure RDS, and external output directory are
-prepared on the local benchmark host. The package built and installed from the
-exact source commit into an isolated temporary library. The user's decision is
-to keep the summary unsigned, so there is no signer setup requirement.
+The candidate-only measurements do not provide a matched reference record, so
+the A/B checker was not run and NUM-03 remains pending. The existing R baseline
+is retained as historical; it was not rerun. The C++ run had no shocks file and
+its 26,781,398-entry solution was all zero, so it is evidence only for the
+configured zero-shock run.
 
-The full-scale A/B runner is active. NUM-03 remains pending until the runner's
-gate and independent checker both pass.
+The candidate-only summary and full records are stored outside the checkout.
+The benchmark CSV's automatic `git_commit` field is `NA` because the shell's
+Homebrew Git binary cannot run against the host glibc; source commit and archive
+SHA-256 are available from the package-build record.
 
 ## Next Step
 
-After the runner exits successfully, run the independent checker against the
-same external output directory. Append a redacted, unsigned result only if
-both gates pass.
+Keep NUM-03 pending unless an approved matched-reference policy is established
+and its corresponding comparison gate passes. Do not describe the C++-only
+measurements as a current A/B acceptance result.
 
 ---
 *Phase: 06-documentation-and-release-qualification*
