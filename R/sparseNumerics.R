@@ -27,6 +27,9 @@ sparse_relative_l2 = function(residual, rhs, absolute_floor = 1) {
 }
 
 sparse_compound_percent = function(value, current) {
+  if (any(!is.finite(value)) || any(!is.finite(current))) {
+    stop("Compounded changes contain non-finite values", call. = FALSE)
+  }
   result = value + current + value * (current / 100)
   result[value == -100 | current == -100] = -100
   if (any(!is.finite(result))) {
@@ -36,6 +39,9 @@ sparse_compound_percent = function(value, current) {
 }
 
 sparse_remaining_percent = function(total, applied) {
+  if (any(!is.finite(total)) || any(!is.finite(applied))) {
+    stop("Remaining shocks contain non-finite values", call. = FALSE)
+  }
   base = 1 + applied / 100
   remaining = (total - applied) / base
   remaining[base == 0 & total == applied] = 0

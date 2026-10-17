@@ -7,6 +7,7 @@ test_that("Schur budgets include dense blocks, factors and simultaneous work", {
     expect_gte(bytes$dense_factor_bytes, 8 * 768^2)
     expect_gt(bytes$dense_workspace_bytes, 0)
     expect_gt(bytes$worker_workspace_bytes, 0)
+    expect_gt(bytes$sparse_fill_workspace_bytes, 0)
     expect_error(sparse_check_budget(
       list(estimated_peak_bytes = sum(unlist(bytes))), 2 * 1024^2),
       "above the configured")

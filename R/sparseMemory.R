@@ -5,7 +5,8 @@
 sparse_schur_memory = function(partition, backend) {
   zero = list(dense_matrix_bytes = 0, dense_factor_bytes = 0,
               dense_workspace_bytes = 0, coupling_bytes = 0,
-              worker_workspace_bytes = 0, krylov_bytes = 0)
+              worker_workspace_bytes = 0, krylov_bytes = 0,
+              sparse_fill_workspace_bytes = 0)
   external = partition$external
   if (is.null(external) || !backend %in%
       c("StructuredSchurFGMRES", "StructuredSchurFGMRESCpp")) return(zero)
@@ -30,6 +31,9 @@ sparse_schur_memory = function(partition, backend) {
     coupling_bytes = 8 * 4 * sum(regional) * global,
     worker_workspace_bytes = 8 * min(threads, max(1, length(regional))) * panel *
       (2 * max(c(0, local)) + sum(regional) + global),
-    krylov_bytes = 8 * (sum(regional) + global) * (2 * restart + 4)
+    krylov_bytes = 8 * (sum(regional) + global) * (2 * restart + 4),
+    # Allow dense fill in the local triangular factors, their owned snapshot
+    # and numeric factorization work, rather than assuming fill follows nnz(A).
+    sparse_fill_workspace_bytes = 36 * sum(as.double(local)^2) + 64 * sum(local)
   )
 }

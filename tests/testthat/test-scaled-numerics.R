@@ -39,6 +39,8 @@ test_that("tiny public shocks survive both engines and substeps", {
                 c(32, -100, -100))
   expect_equal(sparse_remaining_percent(-100, -100), 0)
   expect_error(sparse_remaining_percent(1, -100), "finite")
+  expect_error(sparse_remaining_percent(NaN, 0), "non-finite")
+  expect_error(sparse_compound_percent(1, Inf), "non-finite")
 })
 
 test_that("small scaled pivots and shocks survive native reconstruction", {
