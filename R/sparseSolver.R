@@ -3553,7 +3553,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
         )
         index = solved$index
         if (!is.null(solved$solver_diagnostics)) {
-          solved$solver_diagnostics$solution = NULL
+          if (!isTRUE(diagnostics)) solved$solver_diagnostics$solution = NULL
           solver_diagnostics_history[[
             if (isTRUE(diagnostics)) length(solver_diagnostics_history) + 1L else 1L
           ]] = solved$solver_diagnostics

@@ -14,6 +14,40 @@ test_that("Schur budgets include dense blocks, factors and simultaneous work", {
   }
 })
 
+test_that("public Schur memory guards reject known dense storage before assembly", {
+  path = tempfile(fileext = ".tab")
+  on.exit(unlink(path), add = TRUE)
+  writeLines(c("set comm (c1);", "set reg (r1);",
+    sprintf("set item (%s);", paste0("i", 1:768, collapse = ",")),
+    "variable (all,c,comm)(all,r,reg)(change) x(c,r);",
+    "variable (all,i,item)(all,r,reg)(change) y(i,r);",
+    "variable (change) z;", "variable (all,c,comm)(all,r,reg) a(c,r);",
+    "variable (all,i,item)(all,r,reg) b(i,r);", "variable d;",
+    "equation ex (all,c,comm)(all,r,reg) x(c,r) = a(c,r);",
+    "equation ey (all,i,item)(all,r,reg) y(i,r) = b(i,r);",
+    "equation ez z = d;"), path)
+  model = GEModel$new()
+  model$loadTablo(path)
+  model$setClosure(c("a", "b", "d"))
+  model$loadData(list(), engine = "sparse")
+  model$setShocks(c("a[c1,r1]" = 1, "b[i1,r1]" = 1, "d[]" = 1))
+  partition = function(index, state) list(stages = list(NULL),
+    external = sparse_external_block_partition(index, state))
+  estimate = NULL
+  check = sparse_check_budget
+  with_mocked_bindings(
+    expect_error(model$solveModel(iter = 1, steps = 1, engine = "sparse",
+      postsim = FALSE, backend = "StructuredSchurFGMRESCpp",
+      memory_budget = 2 * 1024^2), "above the configured"),
+    sparse_gtap_elimination_partition = partition,
+    sparse_check_budget = function(value, budget) {
+      estimate <<- value
+      check(value, budget)
+    }, .package = "GEModelR")
+  expect_gte(estimate$estimated_peak_bytes, 16 * 768^2)
+  expect_false(isTRUE(model$lastDiagnostics$accepted_numerical_state))
+})
+
 test_that("assembled matrices are no longer retained during simulation updates", {
   observed = FALSE
   old = options(GEModelR.transaction.fault = function(phase, context) {
@@ -54,4 +88,17 @@ test_that("structural cache survives transactions but never retains factors", {
   expect_length(model$sparseState$.solver_cache, 0L)
   solve(model)
   expect_equal(model$lastDiagnostics$native$structural_cache_misses, 1L)
+})
+
+test_that("requested detailed reference diagnostics retain their solution field", {
+  model = make_cpp_structured_model()
+  partition = function(index, state) list(stages = list(NULL),
+    external = sparse_external_block_partition(index, state))
+  with_mocked_bindings(
+    model$solveModel(iter = 1, steps = 1, engine = "sparse", postsim = FALSE,
+      backend = "StructuredSchurFGMRES", diagnostics = TRUE, output = "compact"),
+    sparse_gtap_elimination_partition = partition, .package = "GEModelR")
+  expect_length(model$lastDiagnostics$solver_diagnostics$solution,
+                 length(model$solution))
+  expect_true(all(is.finite(model$lastDiagnostics$solver_diagnostics$solution)))
 })
