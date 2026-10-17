@@ -121,6 +121,12 @@ test_that("path containment distinguishes equal child sibling and ancestor", {
   }
 })
 
+test_that("sourced baseline tools identify their own file rather than the caller", {
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  expect_identical(refresh$phase02_script_path,
+                   phase02_tool_path("refresh_phase02_baselines.R"))
+})
+
 test_that("proposal generation is explicit compact and deterministic", {
   phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")

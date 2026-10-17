@@ -8,14 +8,24 @@ phase02_max_artifact_bytes = function() 262144
 
 phase02_script_path = local({
   source_files = vapply(sys.frames(), function(frame) {
-    value = frame$ofile
-    if (is.null(value) || !length(value)) "" else as.character(value[[1L]])
+    # source() uses ofile; sys.source() keeps its own path in file. An outer
+    # Rscript's --file argument must never masquerade as this tool's path.
+    for (name in c("ofile", "file")) {
+      value = frame[[name]]
+      if (is.character(value) && length(value) == 1L && !is.na(value) &&
+          identical(basename(value), "refresh_phase02_baselines.R")) {
+        return(value)
+      }
+    }
+    ""
   }, character(1))
   source_files = source_files[nzchar(source_files)]
   file_argument = grep("^--file=", commandArgs(FALSE), value = TRUE)
   if (length(source_files)) {
     normalizePath(tail(source_files, 1L), mustWork = TRUE)
-  } else if (length(file_argument)) {
+  } else if (length(file_argument) && identical(
+      basename(sub("^--file=", "", file_argument[[1L]])),
+      "refresh_phase02_baselines.R")) {
     normalizePath(sub("^--file=", "", file_argument[[1L]]), mustWork = TRUE)
   } else NA_character_
 })
