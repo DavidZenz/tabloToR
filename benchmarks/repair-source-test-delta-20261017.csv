@@ -1,0 +1,312 @@
+file,test,before_failed,before_error,after_failed,after_error,new_failure,after_message
+test-attribution-contract.R,DESCRIPTION applies the reviewed current identity without licensing,1,FALSE,1,FALSE,False,"Expected `unname(description[[1L, ""URL""]])` to be identical to ""https://github.com/DavidZenz/GEModelR"".
+Differences:
+lines(actual) vs lines(expected)
+- ""https://github.com/DavidZenz/GEModelR,""
+- ""https://davidzenz.github.io/GEModelR/""
++ ""https://github.com/DavidZenz/GEModelR""
+"
+test-baseline-artifacts.R,accepted Phase 2 bytes have independent SHA-256 evidence,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,migration check is read-only and independent of acceptance,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,migration comparison rejects schema and canonical evidence drift,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,migration identity map has a strict reviewed schema,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,migration source gate accepts identity-only substitutions,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,migration source gate rejects every non-identity contract drift,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-baseline-artifacts.R,proposal and check modes cannot mutate accepted canonical artifacts,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
+test-identity-migration.R,every historical registry field fails closed when malformed,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-identity-migration.R,historical old-identity records reject broad or stale entries,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-identity-migration.R,historical registry freezes evidence and numerical source,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-identity-migration.R,numerical identity contracts and five assumptions stay frozen,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-identity-migration.R,"occurrence allowlist rejects active, broad, duplicate, and stale rows",0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+test-identity-migration.R,tracked identity inventory uses the exact five-category contract,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+test-model-serialization.R,migration source gate narrows only reviewed serialization source,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-model-serialization.R,restored runtime cache starts empty and can rebuild independently,0,TRUE,0,FALSE,False,
+test-phase02-original-gate.R,protected source drift fails migration while original bytes still pass,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-phase03-identity-reseal.R,final-tree check is read-only across an actual tracked Git lifecycle,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+test-phase03-identity-reseal.R,workflow-owned rows are excluded only after exact policy validation,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+test-phase03-qualification-harness.R,Phase 2 qualification accepts only reviewed identity migration,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+test-provenance-inventory.R,accepted Phase 02 inventory review remains historical evidence,11,FALSE,11,FALSE,False,"Expected `nrow(ledger)` to be identical to 291L.
+Differences:
+  `actual`: 324
+`expected`: 291
+
+Expected `nrow(fresh)` to be identical to 291L.
+Differences:
+  `actual`: 348
+`expected`: 291
+
+Expected `nrow(review)` to be identical to 39L.
+Differences:
+  `actual`: 104
+`expected`:  39
+
+Expected `sum(review$change == ""added"")` to be identical to 30L.
+Differences:
+  `actual`: 61
+`expected`: 30
+
+Expected `sum(review$change == ""expression-hash-changed"")` to be identical to 9L.
+Differences:
+  `actual`: 41
+`expected`:  9
+
+Expected `review$key` to be identical to `sort(review$key, method = ""radix"")`.
+Differences:
+actual[1:12] vs expected[1:29]
++ ""R/GEModel.R::.gemodelr_abort_validation""
++ ""R/GEModel.R::.gemodelr_condition""
++ ""R/GEModel.R::.gemodelr_match_arg""
++ ""R/GEModel.R::.gemodelr_require_runtime""
++ ""R/GEModel.R::.gemodelr_require_tablo""
++ ""R/GEModel.R::.gemodelr_validate_solve_counts""
++ ""R/GEModel.R::.gemodelr_validate_solve_flags""
++ ""R/GEModel.R::GEModel$estimateMemory""
+  ""R/GEModel.R::GEModel$loadData""
++ ""R/GEModel.R::GEModel$loadData""
+and 19 more ...
+
+actual[20:67] vs expected[37:56]
+  ""R/modelSerialization.R::.serialization_validate_structure""
+  ""R/modelSerialization.R::.validate_logical_state_payload""
+  ""R/modelSerialization.R::.validate_reconstructed_logical_state""
+- ""R/sparseSolver.R::.commit_accepted_state""
+- ""R/sparseSolver.R::.commit_legacy_state""
+- ""R/sparseSolver.R::.commit_postsim_state""
+- ""R/sparseSolver.R::.postsim_failure_diagnostics""
+- ""R/sparseSolver.R::.retry_postsim_from_record""
+- ""R/sparseSolver.R::.sparse_accept_candidate""
+- ""R/sparseSolver.R::.sparse_solve_model_impl""
+and 44 more ...
+
+actual[71:82] vs expected[60:77]
+  ""R/sparseSolver.R::.sparse_backend_solve_reference""
+  ""R/sparseSolver.R::.sparse_backend_structured_adapter""
+  ""R/sparseSolver.R::.sparse_backend_unavailable""
+  ""R/sparseSolver.R::.sparse_matrix_structure""
++ ""R/sparseSolver.R::.sparse_solve_model_impl""
+  ""R/sparseSolver.R::.sparse_solve_model_impl""
++ ""R/sparseSolver.R::.sparse_solve_one_step_impl""
+  ""R/sparseSolver.R::.sparse_solve_one_step_impl""
+  ""R/sparseSolver.R::.sparse_value_structure""
+  ""R/sparseSolver.R::.transaction_failure_diagnostics""
++ ""R/sparseSolver.R::.transaction_failure_diagnostics""
+and 8 more ...
+
+actual[85:91] vs expected[80:89]
+  ""R/sparseSolver.R::sparse_output_selector_error""
+  ""R/sparseSolver.R::sparse_output_set_names""
+  ""R/sparseSolver.R::sparse_project_outputs""
+  ""R/sparseSolver.R::sparse_set_closure_state""
++ ""R/sparseSolver.R::sparse_shocks_from_variable_values""
++ ""R/sparseSolver.R::sparse_solve_model""
+  ""R/sparseSolver.R::sparse_solve_model""
++ ""R/sparseSolver.R::sparse_solve_one_step""
+  ""R/sparseSolver.R::sparse_subset_output""
+  ""R/sparseSolver.R::sparse_true_residual""
+  ""R/sparseSolver.R::sparse_validate_output_selectors""
+
+actual[96:102] vs expected[94:102]
+  ""R/sparseSuiteSparse.R::sparse_suite_sparse_solver""
+  ""R/sparseSuiteSparse.R::sparse_suite_sparse_unavailable""
+  ""R/zzzSparseSchurCpp.R::.sparse_cpp_release_live_factors""
+  ""R/zzzSparseSchurCpp.R::.sparse_schur_cpp_require_impl""
++ ""R/zzzSparseSchurCpp.R::sparse_solve_model""
+  ""R/zzzSparseSchurCpp.R::sparse_solve_model""
++ ""R/zzzSparseSchurCpp.R::sparse_solve_one_step""
+  ""R/zzzSparseSchurCpp.R::sparse_solve_one_step""
+  ""R/zzzzzSchurDiagnostics.R::.gemodelr_diagnostics_details""
+  ""R/zzzzzSchurDiagnostics.R::.gemodelr_diagnostics_envelope""
+
+Expected `anyDuplicated(review$key) > 0L` to be FALSE.
+Differences:
+`actual`:   TRUE
+`expected`: FALSE
+
+Expected `all(review$previous_key_count == ""250"")` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+
+Expected `all(review$current_key_count == ""280"")` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+
+Expected `all(review$old_hash[review$change != ""added""] != """")` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+
+Expected `all(review$review_date == ""2026-09-09"")` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+"
+test-provenance-inventory.R,accepted native hash review remains historical evidence,3,FALSE,3,FALSE,False,"Expected `nrow(expected)` to be identical to 291L.
+Differences:
+  `actual`: 324
+`expected`: 291
+
+Expected `nrow(ledger)` to be identical to 291L.
+Differences:
+  `actual`: 324
+`expected`: 291
+
+Expected `nrow(fresh)` to be identical to 291L.
+Differences:
+  `actual`: 348
+`expected`: 291
+"
+test-provenance-inventory.R,checked-in provenance keys use the current GEModelR identity,2,FALSE,2,FALSE,False,"Expected `provenance_keys(expected)` to be identical to `provenance_keys(fresh)`.
+Differences:
+actual[109:114] vs expected[109:121]
+  ""R/sparseElimination.R::sparse_elimination_family""
+  ""R/sparseElimination.R::sparse_elimination_sequence""
+  ""R/sparseElimination.R::sparse_exact_structured_solve""
+  ""R/sparseElimination.R::sparse_gtap_elimination_partition""
++ ""R/sparseMemory.R::sparse_schur_memory""
++ ""R/sparseNumerics.R::sparse_compound_percent""
++ ""R/sparseNumerics.R::sparse_compound_rows""
++ ""R/sparseNumerics.R::sparse_l2_parts""
++ ""R/sparseNumerics.R::sparse_relative_l2""
++ ""R/sparseNumerics.R::sparse_remaining_percent""
++ ""R/sparseNumerics.R::sparse_scaled_l2""
+and 3 more ...
+
+actual[279:290] vs expected[286:309]
+  ""inst/cpp/sparse-elimination.cpp::tablo_solve""
+  ""inst/cpp/sparse-elimination.cpp::tablo_sparse_matrix""
+  ""inst/cpp/sparse-elimination.cpp::tablo_triplet_less""
+  ""inst/cpp/sparse-elimination.cpp::tablo_validate_groups""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_checked_product""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_csc_view""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_prepared_sparse_lu""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_raw_view""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_solve_inplace""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_solve_tile""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_tag""
+and 14 more ...
+
+actual[318:324] vs expected[337:348]
+  ""src/sparse-schur.cpp::tablo_region_positions""
+  ""src/sparse-schur.cpp::tablo_validate_schur_inputs""
+  ""src/tablo-sparse-lu.h::tablo_checked_product""
+  ""src/tablo-sparse-lu.h::tablo_csc_view""
++ ""src/tablo-sparse-lu.h::tablo_prepared_sparse_lu""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_raw_view""
+  ""src/tablo-sparse-lu.h::tablo_sparse_lu_solve_inplace""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_solve_tile""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_tag""
+  ""src/tablo-sparse-lu.h::tablo_sparse_lu_view""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_workspace_size""
+and 2 more ...
+
+Expected `provenance_keys(ledger)` to be identical to `provenance_keys(fresh)`.
+Differences:
+actual[109:114] vs expected[109:121]
+  ""R/sparseElimination.R::sparse_elimination_family""
+  ""R/sparseElimination.R::sparse_elimination_sequence""
+  ""R/sparseElimination.R::sparse_exact_structured_solve""
+  ""R/sparseElimination.R::sparse_gtap_elimination_partition""
++ ""R/sparseMemory.R::sparse_schur_memory""
++ ""R/sparseNumerics.R::sparse_compound_percent""
++ ""R/sparseNumerics.R::sparse_compound_rows""
++ ""R/sparseNumerics.R::sparse_l2_parts""
++ ""R/sparseNumerics.R::sparse_relative_l2""
++ ""R/sparseNumerics.R::sparse_remaining_percent""
++ ""R/sparseNumerics.R::sparse_scaled_l2""
+and 3 more ...
+
+actual[279:290] vs expected[286:309]
+  ""inst/cpp/sparse-elimination.cpp::tablo_solve""
+  ""inst/cpp/sparse-elimination.cpp::tablo_sparse_matrix""
+  ""inst/cpp/sparse-elimination.cpp::tablo_triplet_less""
+  ""inst/cpp/sparse-elimination.cpp::tablo_validate_groups""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_checked_product""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_csc_view""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_prepared_sparse_lu""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_raw_view""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_solve_inplace""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_solve_tile""
++ ""inst/cpp/tablo-sparse-lu.h::tablo_sparse_lu_tag""
+and 14 more ...
+
+actual[318:324] vs expected[337:348]
+  ""src/sparse-schur.cpp::tablo_region_positions""
+  ""src/sparse-schur.cpp::tablo_validate_schur_inputs""
+  ""src/tablo-sparse-lu.h::tablo_checked_product""
+  ""src/tablo-sparse-lu.h::tablo_csc_view""
++ ""src/tablo-sparse-lu.h::tablo_prepared_sparse_lu""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_raw_view""
+  ""src/tablo-sparse-lu.h::tablo_sparse_lu_solve_inplace""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_solve_tile""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_tag""
+  ""src/tablo-sparse-lu.h::tablo_sparse_lu_view""
++ ""src/tablo-sparse-lu.h::tablo_sparse_lu_workspace_size""
+and 2 more ...
+"
+test-provenance-inventory.R,repository extraction records stable Git evidence,2,FALSE,0,FALSE,False,
+test-public-cpp-backend.R,public native backend is opt-in and numerically equivalent,1,TRUE,0,FALSE,False,
+test-public-solver-contract.R,Matrix adapter preflights before emission and commits accepted state,7,FALSE,0,FALSE,False,
+test-public-solver-contract.R,Matrix adapter records fail closed before accepted-state commit,0,TRUE,0,FALSE,False,
+test-public-solver-contract.R,native backend preflight fails closed before solving,5,FALSE,0,FALSE,False,
+test-release-gates.R,offline readiness stays distinct from an intentional block,1,FALSE,1,FALSE,False,"Expected `any(command$output == paste0(""reason_codes="", reason))` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+"
+test-release-gates.R,synthetic clean-room fixtures never clear canonical release blockers,2,FALSE,2,FALSE,False,"Expected `canonical$repository_state` to be identical to ""blocked"".
+Differences:
+`actual`:   ""invalid""
+`expected`: ""blocked""
+
+Expected `canonical$reason_codes` to be identical to `c(""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"", ""ATTRIBUTION_IDENTITY_UNRESOLVED"")`.
+Differences:
+    actual                    | expected
+[1] ""PROVENANCE_KEY_MISMATCH"" - ""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"" [1]
+                              - ""ATTRIBUTION_IDENTITY_UNRESOLVED""        [2]
+"
+test-release-gates.R,the checked-in repository is positively recognized as blocked,6,FALSE,6,FALSE,False,"Expected `result$repository_state` to be identical to ""blocked"".
+Differences:
+`actual`:   ""invalid""
+`expected`: ""blocked""
+
+Expected `result$reason_codes` to be identical to `c(""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"", ""ATTRIBUTION_IDENTITY_UNRESOLVED"")`.
+Differences:
+    actual                    | expected
+[1] ""PROVENANCE_KEY_MISMATCH"" - ""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"" [1]
+                              - ""ATTRIBUTION_IDENTITY_UNRESOLVED""        [2]
+
+Expected `unname(result$parse_status)` to be identical to `rep(""pass"", 12L)`.
+Differences:
+    actual | expected
+[2] ""pass"" | ""pass""   [2]
+[3] ""pass"" | ""pass""   [3]
+[4] ""pass"" | ""pass""   [4]
+[5] ""fail"" - ""pass""   [5]
+           - ""pass""   [6]
+           - ""pass""   [7]
+           - ""pass""   [8]
+           - ""pass""   [9]
+           - ""pass""   [10]
+           - ""pass""   [11]
+... ...      ...      and 1 more ...
+
+Expected `command$status` to be identical to 0L.
+Differences:
+  `actual`: 1
+`expected`: 0
+
+Expected `any(command$output == ""repository_state=blocked"")` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+
+Expected `any(command$output == paste0(""reason_codes=DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED""))` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+"
+test-serialization-bugfix-review.R,applied BUGFIX gate proves the exact revised candidate,0,TRUE,0,TRUE,False,Error: Serialization BUGFIX review failed: current serialization source no longer matches the proposed before bytes
+test-sparse-cpp-cache.R,native structural cache reuses patterns and refactors values,0,TRUE,0,FALSE,False,
+test-sparse-schur-cpp.R,native Schur solve preserves the exact sparse operator,1,FALSE,0,FALSE,False,
