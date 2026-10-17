@@ -523,7 +523,7 @@ sparse_schur_apply = function(system, value) {
 }
 
 sparse_schur_norm = function(value) {
-  sqrt(as.numeric(crossprod(value)))
+  sparse_scaled_l2(value)
 }
 
 sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
@@ -555,12 +555,20 @@ sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
   if (!is.null(preconditioner) && !is.function(preconditioner)) {
     stop("preconditioner must be NULL or a function", call. = FALSE)
   }
-  if (is.null(x0)) x0 = numeric(n)
+  default_initial = is.null(x0)
+  if (default_initial) x0 = numeric(n)
   if (length(x0) != n || any(!is.finite(x0))) {
     stop("x0 must be a finite separator-length vector", call. = FALSE)
   }
-  x = as.numeric(x0)
-  rhs_scale = max(1, sparse_schur_norm(rhs))
+  original_rhs = as.numeric(rhs)
+  # Normalize large RHS vectors before Arnoldi. The norm of the original
+  # RHS may exceed the double range; the solution entries can still be finite.
+  solve_scale = max(1, abs(rhs))
+  rhs = original_rhs / solve_scale
+  x = as.numeric(x0) / solve_scale
+  relative_norm = function(value) {
+    sparse_relative_l2(value, rhs, absolute_floor = 1 / solve_scale)
+  }
   apply_operator = function(value) {
     result = if (inherits(system, "sparseExactSchurSystem")) {
       sparse_exact_schur_apply(system, value)
@@ -572,16 +580,24 @@ sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
     result
   }
   residual = rhs - apply_operator(x)
-  true_absolute = sparse_schur_norm(residual)
-  true_relative = true_absolute / rhs_scale
+  true_absolute = sparse_schur_norm(residual) * solve_scale
+  true_relative = relative_norm(residual)
   history_iteration = 0L
   history_estimated = NA_real_
   history_absolute = true_absolute
   history_relative = true_relative
   history_restart = 0L
-  if (!n || true_relative <= tolerance) {
+  if (!n || (true_relative <= tolerance &&
+             (!default_initial || !any(rhs != 0)))) {
+    returned_residual = original_rhs - apply_operator(x * solve_scale)
+    true_relative = sparse_relative_l2(returned_residual, original_rhs)
+    if (!is.finite(true_relative) || true_relative > tolerance) {
+      stop("FGMRES initial solution failed the true residual check", call. = FALSE)
+    }
+    history_absolute[] = sparse_schur_norm(returned_residual)
+    history_relative[] = true_relative
     return(list(
-      solution = x,
+      solution = x * solve_scale,
       converged = TRUE,
       iterations = 0L,
       residual_history = data.frame(
@@ -646,8 +662,11 @@ sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
         H[i + 1L, j] = -sine[[i]] * H[i, j] + cosine[[i]] * H[i + 1L, j]
         H[i, j] = rotated_top
       }
-      rotation_norm = sqrt(H[j, j]^2 + H[j + 1L, j]^2)
-      if (rotation_norm == 0 || !is.finite(rotation_norm)) {
+      rotation_norm = sparse_schur_norm(c(H[j, j], H[j + 1L, j]))
+      if (!is.finite(rotation_norm)) {
+        stop("FGMRES rotation exceeded the finite range", call. = FALSE)
+      }
+      if (rotation_norm == 0) {
         cosine[[j]] = 1
         sine[[j]] = 0
       } else {
@@ -675,13 +694,13 @@ sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
       for (i in seq_len(j)) candidate = candidate + coefficients[[i]] * Z[[i]]
       cycle_solution = candidate
       iterations = iterations + 1L
-      estimated_relative = abs(g[[j + 1L]]) / rhs_scale
+      estimated_relative = relative_norm(g[[j + 1L]])
       need_true = iterations %% true_residual_frequency == 0L ||
         iterations == max_iterations || h_next == 0
       if (need_true) {
         true_residual = rhs - apply_operator(candidate)
-        true_absolute = sparse_schur_norm(true_residual)
-        true_relative = true_absolute / rhs_scale
+        true_absolute = sparse_schur_norm(true_residual) * solve_scale
+        true_relative = relative_norm(true_residual)
       } else {
         true_residual = NULL
         true_absolute = NA_real_
@@ -708,10 +727,21 @@ sparse_schur_fgmres = function(system, rhs, x0 = NULL, restart = 30L,
     if (converged) break
     x = if (cycle_finished) cycle_solution else candidate
     residual = rhs - apply_operator(x)
-    true_absolute = sparse_schur_norm(residual)
-    true_relative = true_absolute / rhs_scale
+    true_absolute = sparse_schur_norm(residual) * solve_scale
+    true_relative = relative_norm(residual)
     if (true_relative <= tolerance) converged = TRUE
   }
+  x = x * solve_scale
+  if (any(!is.finite(x))) {
+    stop("FGMRES solution exceeded the finite range", call. = FALSE)
+  }
+  # Verify convergence on the returned, unscaled solution as well.
+  final_residual = original_rhs - apply_operator(x)
+  final_relative = sparse_relative_l2(final_residual, original_rhs)
+  converged = converged && is.finite(final_relative) &&
+    final_relative <= tolerance
+  history_absolute[length(history_absolute)] = sparse_schur_norm(final_residual)
+  history_relative[length(history_relative)] = final_relative
   list(
     solution = x,
     converged = converged,

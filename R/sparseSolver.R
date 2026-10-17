@@ -2689,8 +2689,7 @@ sparse_add_solution = function(accumulator, current, change_mask) {
   if (any(changed)) accumulator[changed] =
     accumulator[changed] + current[changed]
   if (any(regular)) accumulator[regular] =
-    ((1 + accumulator[regular] / 100) *
-       (1 + current[regular] / 100) - 1) * 100
+    sparse_compound_percent(accumulator[regular], current[regular])
   if (any(!is.finite(accumulator))) {
     stop("Sparse accumulated solution contains non-finite values",
          call. = FALSE)
@@ -2701,8 +2700,7 @@ sparse_add_solution = function(accumulator, current, change_mask) {
 sparse_substep_shocks = function(total, applied, denominator) {
   if (!length(total$values)) return(total)
   if (is.list(applied)) applied = applied$values
-  remaining = ((1 + total$values / 100) /
-                (1 + applied / 100) - 1) * 100
+  remaining = sparse_remaining_percent(total$values, applied)
   list(
     positions = total$positions,
     values = remaining / denominator,
@@ -2712,8 +2710,7 @@ sparse_substep_shocks = function(total, applied, denominator) {
 
 sparse_advance_applied_shocks = function(applied, substep) {
   if (!length(applied$values)) return(applied)
-  applied$values = ((1 + applied$values / 100) *
-                    (1 + substep$values / 100) - 1) * 100
+  applied$values = sparse_compound_percent(applied$values, substep$values)
   applied
 }
 

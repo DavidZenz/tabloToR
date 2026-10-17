@@ -76,7 +76,6 @@ static bool tablo_factor(std::vector<double> &factor, int size,
     if (!std::isfinite(value)) return false;
     scale = std::max(scale, std::abs(value));
   }
-  double threshold = tolerance * std::max(1.0, scale);
   pivot.assign(size, 0);
   for (int k = 0; k < size; ++k) {
     int best = k;
@@ -88,7 +87,8 @@ static bool tablo_factor(std::vector<double> &factor, int size,
         best_value = candidate;
       }
     }
-    if (!std::isfinite(best_value) || best_value <= threshold) return false;
+    if (!std::isfinite(best_value) || best_value == 0.0 ||
+        best_value / scale <= tolerance) return false;
     pivot[k] = best;
     if (best != k) {
       for (int column = 0; column < size; ++column) {

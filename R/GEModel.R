@@ -850,10 +850,10 @@ GEModel = setRefClass(
       for (it in 1:iter) {
         message(sprintf('Iteration %s/%s', it, iter))
 
-        remainingShocks = ((1+shocks/100)/(1+appliedShocks/100)-1)*100
+        remainingShocks = sparse_remaining_percent(shocks, appliedShocks)
         subShocks = remainingShocks/(iter-it+1)
 
-        appliedShocks = ((1+ appliedShocks/100) * (1+subShocks/100)-1)*100
+        appliedShocks = sparse_compound_percent(appliedShocks, subShocks)
 
         # Within each iteration (subinterval) do steps
 
@@ -883,11 +883,11 @@ GEModel = setRefClass(
 
           for(currentStep in 1:steps[step]){
 
-            remainingSubShocks = ((1+subShocks/100)/(1+appliedSubShocks/100)-1)*100
+            remainingSubShocks = sparse_remaining_percent(subShocks, appliedSubShocks)
 
             stepShocks = remainingSubShocks/(steps[step]-currentStep+1)
 
-            appliedSubShocks = ((1+ appliedSubShocks/100) * (1+stepShocks/100)-1)*100
+            appliedSubShocks = sparse_compound_percent(appliedSubShocks, stepShocks)
 
 
             data <<- equationCoefficientGenerator(data)
@@ -932,9 +932,8 @@ GEModel = setRefClass(
 
           solutionPctChangeVariables = setdiff(names(stepSolution[[step]]), changeVariables)
 
-          stepSolution[[step]][solutionPctChangeVariables] = ((apply(
-            subStepMatrix / 100 + 1, MARGIN = 1, FUN = prod
-          ) - 1) * 100)[solutionPctChangeVariables]
+          stepSolution[[step]][solutionPctChangeVariables] =
+            sparse_compound_rows(subStepMatrix)[solutionPctChangeVariables]
           if (any(!is.finite(stepSolution[[step]]))) {
             stop(
               "Legacy solver produced a non-finite accumulated step solution",
@@ -1030,9 +1029,8 @@ GEModel = setRefClass(
         if (!is.null(row_names)) rownames(iterationMatrix) = row_names
         solution <<- rowSums(iterationMatrix)
         solutionPctChangeVariables = setdiff(names(solution), changeVariables)
-        solution[solutionPctChangeVariables] <<- ((apply(
-          1 + iterationMatrix / 100, MARGIN = 1, FUN = prod
-        ) - 1) * 100)[solutionPctChangeVariables]
+        solution[solutionPctChangeVariables] <<-
+          sparse_compound_rows(iterationMatrix)[solutionPctChangeVariables]
       }
 
       if (any(!is.finite(solution))) {

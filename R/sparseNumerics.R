@@ -16,12 +16,40 @@ sparse_scaled_l2 = function(value) {
 
 # Preserve ||residual|| / max(1, ||rhs||), including the absolute tolerance
 # semantics for small RHS vectors. Never turn a nonzero residual into zero.
-sparse_relative_l2 = function(residual, rhs) {
+sparse_relative_l2 = function(residual, rhs, absolute_floor = 1) {
   r = sparse_l2_parts(residual)
   b = sparse_l2_parts(rhs)
   if (r$scale == 0) return(0)
-  common = max(1, r$scale, b$scale)
+  common = max(absolute_floor, r$scale, b$scale)
   ratio = ((r$scale / common) * r$unit) /
-    max(1 / common, (b$scale / common) * b$unit)
+    max(absolute_floor / common, (b$scale / common) * b$unit)
   if (ratio == 0) .Machine$double.xmin * .Machine$double.eps else ratio
+}
+
+sparse_compound_percent = function(value, current) {
+  result = value + current + value * (current / 100)
+  result[value == -100 | current == -100] = -100
+  if (any(!is.finite(result))) {
+    stop("Compounded changes contain non-finite values", call. = FALSE)
+  }
+  result
+}
+
+sparse_remaining_percent = function(total, applied) {
+  base = 1 + applied / 100
+  remaining = (total - applied) / base
+  remaining[base == 0 & total == applied] = 0
+  if (any(!is.finite(remaining))) {
+    stop("Remaining shocks cannot be represented as finite changes",
+         call. = FALSE)
+  }
+  remaining
+}
+
+sparse_compound_rows = function(value) {
+  result = setNames(numeric(nrow(value)), rownames(value))
+  for (column in seq_len(ncol(value))) {
+    result = sparse_compound_percent(result, value[, column])
+  }
+  result
 }
