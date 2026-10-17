@@ -30,7 +30,7 @@ test_that("scaled residuals preserve absolute tolerance and fail closed", {
     expect_error(sparse_true_residual(A, c(value, 0), c(0, 0)), "non-finite")
     expect_error(sparse_relative_l2(value, 1), "non-finite")
   }
-  candidate = list(backend = "Matrix", solution = c(1e-300, 0),
+  candidate = list(backend = "Matrix", solution = c(1e300, 1e-300),
                    coefficient_matrix = A, rhs = c(1e300, 0))
   expect_error(.sparse_accept_candidate(candidate, residual_tolerance = 0),
                "exceeds tolerance")

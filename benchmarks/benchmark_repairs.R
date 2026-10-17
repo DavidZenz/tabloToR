@@ -27,9 +27,12 @@ measure = function(name, fun, calls, error = 0, retained = 0, setup = 0) {
   Rprofmem(NULL)
   allocations = suppressWarnings(as.numeric(sub(" .*", "", readLines(trace))))
   unlink(trace)
-  rss = readLines("/proc/self/status")
-  rss = as.numeric(strsplit(trimws(rss[startsWith(rss, "VmHWM:")]),
-                            "[[:space:]]+")[[1L]][2L]) * 1024
+  rss = NA_real_
+  if (file.exists("/proc/self/status")) {
+    status = readLines("/proc/self/status")
+    rss = as.numeric(strsplit(trimws(status[startsWith(status, "VmHWM:")]),
+                              "[[:space:]]+")[[1L]][2L]) * 1024
+  }
   records[[length(records) + 1L]] <<- data.frame(
     workload = name, prepared_available = prepared_available,
     repetition = seq_along(times), elapsed_seconds = times,

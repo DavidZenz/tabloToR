@@ -55,6 +55,9 @@ test_that("structural cache keys cover batching while numerical factors stay fre
   runtime$active = TRUE
   runtime$state = sparse_make_state(list())
   runtime$index_key = "option-reuse"
+  options_before = options(GEModelR.sparse.lu_order =
+                             getOption("GEModelR.sparse.lu_order", 3L))
+  on.exit(options(options_before), add = TRUE)
   on.exit({
     .sparse_cpp_release_live_factors()
     runtime$active = old
@@ -62,8 +65,7 @@ test_that("structural cache keys cover batching while numerical factors stay fre
     runtime$index_key = NULL
   }, add = TRUE)
   for (order in 0:3) {
-    options_before = options(GEModelR.sparse.lu_order = order)
-    on.exit(options(options_before), add = TRUE)
+    options(GEModelR.sparse.lu_order = order)
     args = list(A = fixture$A * (1 + order / 100), row_group = fixture$row_group,
       column_group = fixture$column_group, local_count = fixture$local_count,
       region_count = fixture$region_count, global_group = fixture$global_group,
