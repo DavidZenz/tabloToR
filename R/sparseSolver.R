@@ -2243,18 +2243,10 @@ sparse_true_residual = function(A, solution, rhs) {
   if (any(!is.finite(residual))) {
     stop("Residual check produced non-finite residual values", call. = FALSE)
   }
-  scaled_l2 = function(values) {
-    if (!length(values)) return(0)
-    scale = max(abs(values))
-    if (scale == 0) return(0)
-    scale * sqrt(sum((values / scale) * (values / scale)))
-  }
-  residual_norm = scaled_l2(residual)
-  rhs_norm = scaled_l2(rhs)
   result = list(
     infinity_norm = if (length(residual)) max(abs(residual)) else 0,
-    l2_norm = residual_norm,
-    relative_l2 = residual_norm / max(1, rhs_norm)
+    l2_norm = sparse_scaled_l2(residual),
+    relative_l2 = sparse_relative_l2(residual, rhs)
   )
   rm(lhs, residual)
   result
@@ -2328,7 +2320,9 @@ sparse_true_residual = function(A, solution, rhs) {
   )
   residual_metrics = unlist(true_residual, use.names = FALSE)
   if (length(residual_metrics) != 3L ||
-      any(!is.finite(residual_metrics))) {
+      anyNA(residual_metrics) || any(residual_metrics < 0) ||
+      !is.finite(true_residual$infinity_norm) ||
+      !is.finite(true_residual$relative_l2)) {
     stop(paste(
       "Sparse candidate true residual metrics are non-finite;",
       "the solution was not applied."
