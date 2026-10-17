@@ -7,11 +7,16 @@ test_that("Schur budgets include dense blocks, factors and simultaneous work", {
     expect_gte(bytes$dense_factor_bytes, 8 * 768^2)
     expect_gt(bytes$dense_workspace_bytes, 0)
     expect_gt(bytes$worker_workspace_bytes, 0)
-    expect_gt(bytes$sparse_fill_workspace_bytes, 0)
+    expect_gt(bytes$sparse_factor_scratch_bytes, 0)
     expect_error(sparse_check_budget(
       list(estimated_peak_bytes = sum(unlist(bytes))), 2 * 1024^2),
       "above the configured")
   }
+  # Original commodity groups can contain rows removed by earlier stages.
+  # Their bounded native scratch is linear, not a dense factor of that size.
+  partition$external$row_group = c(rep(0L, 20000L), 1L, 2L)
+  bytes = sparse_schur_memory(partition, "StructuredSchurFGMRESCpp")
+  expect_equal(bytes$sparse_factor_scratch_bytes, 280 * 20000)
 })
 
 test_that("public Schur memory guards reject known dense storage before assembly", {

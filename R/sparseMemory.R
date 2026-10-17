@@ -6,7 +6,7 @@ sparse_schur_memory = function(partition, backend) {
   zero = list(dense_matrix_bytes = 0, dense_factor_bytes = 0,
               dense_workspace_bytes = 0, coupling_bytes = 0,
               worker_workspace_bytes = 0, krylov_bytes = 0,
-              sparse_fill_workspace_bytes = 0)
+              sparse_factor_scratch_bytes = 0)
   external = partition$external
   if (is.null(external) || !backend %in%
       c("StructuredSchurFGMRES", "StructuredSchurFGMRESCpp")) return(zero)
@@ -32,8 +32,11 @@ sparse_schur_memory = function(partition, backend) {
     worker_workspace_bytes = 8 * min(threads, max(1, length(regional))) * panel *
       (2 * max(c(0, local)) + sum(regional) + global),
     krylov_bytes = 8 * (sum(regional) + global) * (2 * restart + 4),
-    # Allow dense fill in the local triangular factors, their owned snapshot
-    # and numeric factorization work, rather than assuming fill follows nnz(A).
-    sparse_fill_workspace_bytes = 36 * sum(as.double(local)^2) + 64 * sum(local)
+    # Sparse factor payload/fill is estimated separately from triplet capacity
+    # in sparse_estimate_memory(). Add permutations, diagonal views and the
+    # bounded 32-RHS native workspace here. Original group counts can include
+    # millions of rows removed before Schur construction; do not assume dense
+    # factors of those original dimensions will be allocated.
+    sparse_factor_scratch_bytes = (24 + 8 * 32) * sum(local)
   )
 }
