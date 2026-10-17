@@ -3102,7 +3102,8 @@ sparse_select_simulation_index = function(index, spec, state,
 
 sparse_estimate_memory = function(model, index, engine = "sparse",
                                   budget = NULL, postsim = TRUE,
-                                  state = NULL) {
+                                  state = NULL, backend = "Matrix",
+                                  structured_partition = NULL) {
   if (is.null(state)) state = model$sparseState
   data = if (!is.null(state)) sparse_state_data(state) else model$data
   input_bytes = as.numeric(object.size(data))
@@ -3116,8 +3117,15 @@ sparse_estimate_memory = function(model, index, engine = "sparse",
   factor_bytes = triplet_bytes * 2
   rhs_bytes = equation_positions * 8
   metadata_bytes = as.numeric(object.size(index))
-  peak = input_bytes + variable_bytes + triplet_bytes + matrix_bytes +
-    factor_bytes + rhs_bytes + metadata_bytes
+  schur = sparse_schur_memory(structured_partition, backend)
+  # Keep the assembled matrix, scaled copy and extracted sparse blocks live
+  # alongside the factors. Prepared-factor construction can briefly hold both
+  # the Matrix factor and its owned native snapshot.
+  structured = !is.null(structured_partition)
+  if (structured) factor_bytes = factor_bytes * 2
+  sparse_copies = if (structured) 3 * matrix_bytes else matrix_bytes
+  peak = input_bytes + variable_bytes + triplet_bytes + sparse_copies +
+    factor_bytes + rhs_bytes + metadata_bytes + sum(unlist(schur))
   list(
     engine = engine,
     har_input_bytes = input_bytes,
@@ -3131,6 +3139,7 @@ sparse_estimate_memory = function(model, index, engine = "sparse",
     estimated_factor_workspace_bytes = factor_bytes,
     estimated_rhs_bytes = rhs_bytes,
     estimated_metadata_bytes = metadata_bytes,
+    estimated_schur_bytes = schur,
     estimated_peak_bytes = peak,
     post_simulation_retained = isTRUE(postsim),
     dense_fallback = FALSE,
@@ -3269,6 +3278,7 @@ sparse_check_budget = function(estimate, budget) {
     solution = original_solution
   }
   coefficient_matrix = NULL
+  emitted$A = NULL
   if (isTRUE(measure)) {
     solve_end = proc.time()[[3L]]
     solve_bytes = sparse_gc_bytes()
@@ -3411,11 +3421,17 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   committed_state = model$sparseState
   if (is.null(committed_state) || !is.environment(committed_state)) {
     state = sparse_make_state(model$data)
-  } else state = sparse_make_state(sparse_state_data(committed_state))
+  } else {
+    state = sparse_make_state(sparse_state_data(committed_state))
+    # Metadata only: entries own no numeric factors or native pointers. R's
+    # copy-on-modify lists isolate a failed transaction from committed state.
+    state$.solver_cache = committed_state$.solver_cache
+  }
   closure = model$closure
   if (is.null(closure)) closure = character()
   index_is_invalid = is.null(index) || !length(index) ||
     !setequal(index$closure_names, closure)
+  if (index_is_invalid) state$.solver_cache = list()
   if (index_is_invalid && identical(model$loadedEngine, "sparse") &&
       is.environment(committed_state) && length(model$sparseSpec)) {
     index = sparse_build_index(model$sparseSpec, sparse_state_data(state))
@@ -3477,7 +3493,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     structured_partition = sparse_gtap_elimination_partition(index, state)
   }
   estimate = sparse_estimate_memory(
-    model, index, budget = budget, postsim = postsim, state = state
+    model, index, budget = budget, postsim = postsim, state = state,
+    backend = requested_backend, structured_partition = structured_partition
   )
   sparse_check_budget(estimate, budget)
   phase_metrics = list(
@@ -3536,8 +3553,9 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
         )
         index = solved$index
         if (!is.null(solved$solver_diagnostics)) {
+          solved$solver_diagnostics$solution = NULL
           solver_diagnostics_history[[
-            length(solver_diagnostics_history) + 1L
+            if (isTRUE(diagnostics)) length(solver_diagnostics_history) + 1L else 1L
           ]] = solved$solver_diagnostics
         }
         if (!is.null(solved$capability_evidence)) {

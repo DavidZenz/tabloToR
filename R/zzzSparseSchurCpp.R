@@ -682,9 +682,14 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       identical(backend, "StructuredSchurFGMRES")
   ) "StructuredSchurFGMRESCpp" else backend
   old_state = .sparse_schur_cpp_runtime$state
+  old_index_key = .sparse_schur_cpp_runtime$index_key
   if (isTRUE(.sparse_schur_cpp_runtime$active)) {
     .sparse_schur_cpp_runtime$state = state
-    on.exit({ .sparse_schur_cpp_runtime$state = old_state }, add = TRUE)
+    .sparse_schur_cpp_runtime$index_key = sparse_pattern_key(index)
+    on.exit({
+      .sparse_schur_cpp_runtime$state = old_state
+      .sparse_schur_cpp_runtime$index_key = old_index_key
+    }, add = TRUE)
   }
   result = .sparse_solve_one_step_impl(
     state, model, index, shocks, requested_backend, reduction, measure,
