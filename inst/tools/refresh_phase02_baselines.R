@@ -183,6 +183,10 @@ phase02_runtime_environment = function(root) {
        checked_source)
   }
   if (!loaded_from_root) {
+    if (package %in% loadedNamespaces()) {
+      stop("Source baseline evaluation requires a clean R process",
+           call. = FALSE)
+    }
     pkgload::load_all(root, quiet = TRUE, export_all = TRUE, helpers = FALSE)
   }
   environment = new.env(parent = globalenv())
@@ -749,7 +753,7 @@ phase02_render_diff = function(comparison) {
     "|---|---|---|---|---|", rows)
 }
 
-phase02_generate_proposal = function(
+phase02_generate_proposal_impl = function(
     output,
     canonical_dir = phase02_canonical_dir(),
     root = phase02_repository_root()) {
@@ -809,6 +813,47 @@ phase02_generate_proposal = function(
     clean = all(comparison$status == "unchanged"),
     diff = paste(diff_lines, collapse = "\n")
   )
+}
+
+# Loading source over an installed namespace invalidates registry and
+# reference-class identities held by the caller. Keep all source evaluation
+# (including native loading) in a separate, initially empty R process.
+phase02_generate_proposal = function(
+    output,
+    canonical_dir = phase02_canonical_dir(),
+    root = phase02_repository_root()) {
+  root = normalizePath(root, mustWork = TRUE)
+  canonical_dir = normalizePath(canonical_dir, mustWork = TRUE)
+  output = phase02_normalize_proposal_dir(output, canonical_dir)
+  work = tempfile("phase02-process-")
+  dir.create(work)
+  on.exit(unlink(work, recursive = TRUE), add = TRUE)
+  request = file.path(work, "request.rds")
+  response = file.path(work, "response.rds")
+  script = file.path(work, "run.R")
+  log = file.path(work, "output.txt")
+  tool_path = if (!is.na(phase02_script_path)) phase02_script_path else
+    file.path(root, "inst", "tools", "refresh_phase02_baselines.R")
+  saveRDS(list(tool = tool_path, library = .libPaths(),
+               arguments = list(output = output, canonical_dir = canonical_dir,
+                                root = root)), request)
+  writeLines(c(
+    "args = commandArgs(trailingOnly = TRUE)",
+    "request = readRDS(args[[1L]])",
+    ".libPaths(request$library)",
+    "tool = new.env(parent = globalenv())",
+    "sys.source(request$tool, envir = tool)",
+    "result = do.call(tool$phase02_generate_proposal_impl, request$arguments)",
+    "saveRDS(result, args[[2L]])"
+  ), script)
+  status = system2(file.path(R.home("bin"), "Rscript"),
+                   c("--vanilla", shQuote(script), shQuote(request),
+                     shQuote(response)), stdout = log, stderr = log)
+  if (status != 0L || !file.exists(response)) {
+    stop(paste(c("Isolated source baseline evaluation failed:",
+                 readLines(log, warn = FALSE)), collapse = "\n"), call. = FALSE)
+  }
+  readRDS(response)
 }
 
 phase02_accepted_canonical_hash = function(canonical_dir) {
