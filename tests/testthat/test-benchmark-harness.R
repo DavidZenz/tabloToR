@@ -160,6 +160,11 @@ test_that("active benchmark producers use exact GEModelR identity", {
       'getFromNamespace(".GEModelR_sparse_lu_solve", "GEModelR")'
     )
   )
+  # Three producer scripts are intentionally source-only. Their source audit
+  # still runs from the repository and R CMD check source fixture.
+  skip_if_not(all(vapply(names(expected), function(name) {
+    nzchar(benchmark_source_script_path(name))
+  }, logical(1))), "Complete source-only producer audit requires package sources")
   for (name in names(expected)) {
     path <- benchmark_source_script_path(name)
     expect_true(nzchar(path), info = name)

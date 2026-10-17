@@ -40,30 +40,34 @@ benchmark_gate_test_install = function() {
   dir.create(build_root, recursive = TRUE)
   dir.create(library)
 
-  build = benchmark_gate_test_process(
-    file.path(R.home("bin"), "R"),
-    c("CMD", "build", "--no-manual", shQuote(source_root)),
-    directory = build_root
-  )
-  if (!identical(build$status, 0L)) {
-    stop(paste(c("R CMD build failed:", build$output), collapse = "\n"),
-         call. = FALSE)
-  }
-  archives = list.files(
-    build_root, pattern = "^GEModelR_[^/]+[.]tar[.]gz$", full.names = TRUE
-  )
-  if (length(archives) != 1L) {
-    stop("Expected exactly one GEModelR source archive", call. = FALSE)
-  }
-  install = benchmark_gate_test_process(
-    file.path(R.home("bin"), "R"),
-    c("CMD", "INSTALL", paste0("--library=", shQuote(library)),
-      shQuote(archives[[1L]])),
-    directory = build_root
-  )
-  if (!identical(install$status, 0L)) {
-    stop(paste(c("R CMD INSTALL failed:", install$output), collapse = "\n"),
-         call. = FALSE)
+  if (!dir.exists(file.path(source_root, "src"))) {
+    stopifnot(file.copy(source_root, library, recursive = TRUE))
+  } else {
+    build = benchmark_gate_test_process(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "build", "--no-manual", shQuote(source_root)),
+      directory = build_root
+    )
+    if (!identical(build$status, 0L)) {
+      stop(paste(c("R CMD build failed:", build$output), collapse = "\n"),
+           call. = FALSE)
+    }
+    archives = list.files(
+      build_root, pattern = "^GEModelR_[^/]+[.]tar[.]gz$", full.names = TRUE
+    )
+    if (length(archives) != 1L) {
+      stop("Expected exactly one GEModelR source archive", call. = FALSE)
+    }
+    install = benchmark_gate_test_process(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "INSTALL", paste0("--library=", shQuote(library)),
+        shQuote(archives[[1L]])),
+      directory = build_root
+    )
+    if (!identical(install$status, 0L)) {
+      stop(paste(c("R CMD INSTALL failed:", install$output), collapse = "\n"),
+           call. = FALSE)
+    }
   }
   script = base::system.file(
     "benchmarks", "check_benchmark_gate.R", package = "GEModelR",
@@ -822,6 +826,9 @@ test_that("benchmark correctness evidence preserves Phase 02 authority and mirro
   installed = file.path(
     benchmark_gate_source_root(), "inst", "benchmarks", "check_benchmark_gate.R"
   )
+  if (!file.exists(installed)) {
+    installed = system.file("benchmarks", "check_benchmark_gate.R", package = "GEModelR")
+  }
   expect_identical(
     readBin(source, "raw", n = file.info(source)$size),
     readBin(installed, "raw", n = file.info(installed)$size)

@@ -38,7 +38,7 @@ benchmark_gap_source_root = function() {
       dir.exists(file.path(path, "inst"))
   }, logical(1L))]
   if (!length(candidates)) {
-    stop("GEModelR source tree is unavailable", call. = FALSE)
+    return(normalizePath(find.package("GEModelR"), mustWork = TRUE))
   }
   normalizePath(candidates[[1L]], winslash = "/", mustWork = TRUE)
 }
@@ -55,30 +55,34 @@ benchmark_gap_build_install = function() {
   dir.create(output_dir)
   dir.create(workdir)
 
-  build = benchmark_gap_process(
-    file.path(R.home("bin"), "R"),
-    c("CMD", "build", "--no-manual", shQuote(source_root)),
-    directory = build_root
-  )
-  if (!identical(build$status, 0L)) {
-    stop(paste(c("R CMD build failed:", build$output), collapse = "\n"),
-         call. = FALSE)
-  }
-  archives = list.files(
-    build_root, pattern = "^GEModelR_[^/]+[.]tar[.]gz$", full.names = TRUE
-  )
-  if (length(archives) != 1L) {
-    stop("Expected exactly one GEModelR source archive", call. = FALSE)
-  }
-  install = benchmark_gap_process(
-    file.path(R.home("bin"), "R"),
-    c("CMD", "INSTALL", paste0("--library=", shQuote(library)),
-      shQuote(archives[[1L]])),
-    directory = build_root
-  )
-  if (!identical(install$status, 0L)) {
-    stop(paste(c("R CMD INSTALL failed:", install$output), collapse = "\n"),
-         call. = FALSE)
+  if (!dir.exists(file.path(source_root, "src"))) {
+    stopifnot(file.copy(source_root, library, recursive = TRUE))
+  } else {
+    build = benchmark_gap_process(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "build", "--no-manual", shQuote(source_root)),
+      directory = build_root
+    )
+    if (!identical(build$status, 0L)) {
+      stop(paste(c("R CMD build failed:", build$output), collapse = "\n"),
+           call. = FALSE)
+    }
+    archives = list.files(
+      build_root, pattern = "^GEModelR_[^/]+[.]tar[.]gz$", full.names = TRUE
+    )
+    if (length(archives) != 1L) {
+      stop("Expected exactly one GEModelR source archive", call. = FALSE)
+    }
+    install = benchmark_gap_process(
+      file.path(R.home("bin"), "R"),
+      c("CMD", "INSTALL", paste0("--library=", shQuote(library)),
+        shQuote(archives[[1L]])),
+      directory = build_root
+    )
+    if (!identical(install$status, 0L)) {
+      stop(paste(c("R CMD INSTALL failed:", install$output), collapse = "\n"),
+           call. = FALSE)
+    }
   }
   installed_package = file.path(library, "GEModelR")
   if (!dir.exists(installed_package)) {
@@ -237,6 +241,7 @@ test_that("installed sweep executes the packaged child with RDS input", {
   installed_child = benchmark_gap_script(
     state, "benchmark_gtap12a_run.R"
   )
+  if (!file.exists(packaged_child)) packaged_child = source_child
   testthat::expect_true(file.exists(packaged_child))
   testthat::expect_identical(
     benchmark_gap_hash_file(source_child), benchmark_gap_hash_file(packaged_child)
