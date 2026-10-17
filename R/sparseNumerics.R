@@ -42,7 +42,8 @@ sparse_remaining_percent = function(total, applied) {
   if (any(!is.finite(total)) || any(!is.finite(applied))) {
     stop("Remaining shocks contain non-finite values", call. = FALSE)
   }
-  base = 1 + applied / 100
+  # Add before dividing: 1 + applied / 100 loses accuracy near -100%.
+  base = (100 + applied) / 100
   remaining = (total - applied) / base
   remaining[base == 0 & total == applied] = 0
   if (any(!is.finite(remaining))) {

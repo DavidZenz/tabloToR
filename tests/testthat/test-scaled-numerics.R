@@ -38,6 +38,9 @@ test_that("tiny public shocks survive both engines and substeps", {
   expect_equal(sparse_compound_percent(c(10, -100, 1e308), c(20, 4, -100)),
                 c(32, -100, -100))
   expect_equal(sparse_remaining_percent(-100, -100), 0)
+  near_zero_base = -100 + 2^-45
+  expect_equal(sparse_remaining_percent(near_zero_base + 2^-45, near_zero_base),
+                100, tolerance = 1e-14)
   expect_error(sparse_remaining_percent(1, -100), "finite")
   expect_error(sparse_remaining_percent(NaN, 0), "non-finite")
   expect_error(sparse_compound_percent(1, Inf), "non-finite")
