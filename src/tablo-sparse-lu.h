@@ -152,7 +152,7 @@ inline void tablo_validate_permutation(const Rcpp::IntegerVector &value,
   }
 }
 
-inline TabloSparseLUView tablo_sparse_lu_view(SEXP factor_sexp,
+inline TabloSparseLUView tablo_sparse_lu_raw_view(SEXP factor_sexp,
                                               const char *name) {
   if (!Rf_isS4(factor_sexp)) {
     Rcpp::stop("%s must be a Matrix sparseLU factor", name);
@@ -198,6 +198,34 @@ inline TabloSparseLUView tablo_sparse_lu_view(SEXP factor_sexp,
     }
   }
   return result;
+}
+
+// Only the preparing R thread constructs these objects. The pointer's
+// protected slot owns an immutable snapshot of every referenced R buffer.
+struct TabloPreparedSparseLU {
+  TabloSparseLUView view;
+  std::vector<double> workspace;
+  explicit TabloPreparedSparseLU(TabloSparseLUView value) : view(value) {}
+};
+
+inline SEXP tablo_sparse_lu_tag() {
+  return Rf_install("GEModelR_prepared_sparse_lu_v1");
+}
+
+inline TabloPreparedSparseLU *tablo_prepared_sparse_lu(SEXP pointer) {
+  if (TYPEOF(pointer) != EXTPTRSXP ||
+      R_ExternalPtrTag(pointer) != tablo_sparse_lu_tag()) {
+    Rcpp::stop("Invalid prepared sparse LU handle");
+  }
+  TabloPreparedSparseLU *factor = static_cast<TabloPreparedSparseLU *>(
+    R_ExternalPtrAddr(pointer));
+  if (!factor) Rcpp::stop("Prepared sparse LU handle has been released");
+  return factor;
+}
+
+inline TabloSparseLUView tablo_sparse_lu_view(SEXP factor, const char *name) {
+  if (TYPEOF(factor) == EXTPTRSXP) return tablo_prepared_sparse_lu(factor)->view;
+  return tablo_sparse_lu_raw_view(factor, name);
 }
 
 inline void tablo_sparse_lu_solve_inplace(const TabloSparseLUView &factor,

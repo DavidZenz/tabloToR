@@ -2,6 +2,7 @@
 
 #include <cstdint>
 #include <iomanip>
+#include <memory>
 #include <sstream>
 
 #ifdef _OPENMP
@@ -34,7 +35,32 @@ Rcpp::List GEModelR_schur_cpp_capabilities() {
 
 // [[Rcpp::export(name = ".GEModelR_sparse_lu_solve")]]
 SEXP GEModelR_sparse_lu_solve(SEXP factor_sexp, SEXP rhs_sexp) {
-  TabloSparseLUView factor = tablo_sparse_lu_view(factor_sexp, "factor");
+  // Private prepare/release operations share the existing registered arity.
+  if (Rf_isNull(rhs_sexp)) {
+    if (TYPEOF(factor_sexp) == EXTPTRSXP) {
+      if (R_ExternalPtrTag(factor_sexp) != tablo_sparse_lu_tag()) {
+        Rcpp::stop("Invalid prepared sparse LU handle");
+      }
+      delete static_cast<TabloPreparedSparseLU *>(R_ExternalPtrAddr(factor_sexp));
+      R_ClearExternalPtr(factor_sexp);
+      R_SetExternalPtrProtected(factor_sexp, R_NilValue);
+      return R_NilValue;
+    }
+    if (!Rf_isS4(factor_sexp)) Rcpp::stop("factor must be a Matrix sparseLU factor");
+    Rcpp::S4 owner = Rcpp::clone(Rcpp::S4(factor_sexp));
+    std::unique_ptr<TabloPreparedSparseLU> prepared(new TabloPreparedSparseLU(
+      tablo_sparse_lu_raw_view(owner, "factor")));
+    Rcpp::XPtr<TabloPreparedSparseLU> pointer(
+      prepared.get(), true, tablo_sparse_lu_tag(), owner);
+    prepared.release();
+    pointer.attr("class") = "GEModelR_prepared_sparse_lu";
+    return pointer;
+  }
+  TabloPreparedSparseLU *prepared = TYPEOF(factor_sexp) == EXTPTRSXP ?
+    tablo_prepared_sparse_lu(factor_sexp) : nullptr;
+  TabloSparseLUView raw;
+  if (!prepared) raw = tablo_sparse_lu_view(factor_sexp, "factor");
+  const TabloSparseLUView &factor = prepared ? prepared->view : raw;
   if (!Rf_isReal(rhs_sexp) && !Rf_isInteger(rhs_sexp)) {
     Rcpp::stop("Sparse LU rhs must be numeric");
   }
@@ -55,7 +81,8 @@ SEXP GEModelR_sparse_lu_solve(SEXP factor_sexp, SEXP rhs_sexp) {
     Rcpp::stop("Sparse LU rhs vector has incompatible length");
   }
   std::vector<double> workspace;
-  tablo_sparse_lu_solve_inplace(factor, REAL(rhs), nrhs, workspace);
+  tablo_sparse_lu_solve_inplace(factor, REAL(rhs), nrhs,
+                               prepared ? prepared->workspace : workspace);
   return rhs;
 }
 

@@ -5,6 +5,7 @@
 .sparse_schur_cpp_runtime$initialized = FALSE
 .sparse_schur_cpp_runtime$capabilities = NULL
 .sparse_schur_cpp_runtime$live_dense_factors = list()
+.sparse_schur_cpp_runtime$live_sparse_factors = list()
 .sparse_schur_cpp_runtime$last_cleanup_status = list(
   status = "not-run", scope = "solve",
   resources = "no native solve is active"
@@ -359,6 +360,11 @@ sparse_set_closure_state = function(model, exogenous_variables) {
 .sparse_cpp_release_live_factors = function() {
   factors = .sparse_schur_cpp_runtime$live_dense_factors
   errors = character()
+  for (factor in .sparse_schur_cpp_runtime$live_sparse_factors) {
+    result = tryCatch(.GEModelR_sparse_lu_solve(factor, NULL), error = identity)
+    if (inherits(result, "error")) errors = c(errors, conditionMessage(result))
+  }
+  .sparse_schur_cpp_runtime$live_sparse_factors = list()
   if (length(factors)) for (factor in factors) {
     result = tryCatch(
       .GEModelR_dense_lu_release(factor),
@@ -411,8 +417,8 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     }
     return(result)
   }
-  if (isTRUE(.sparse_schur_cpp_runtime$active) &&
-      methods::is(factor, "sparseLU")) {
+  if (inherits(factor, "GEModelR_prepared_sparse_lu") ||
+      (isTRUE(.sparse_schur_cpp_runtime$active) && methods::is(factor, "sparseLU"))) {
     result = tryCatch(
       .GEModelR_sparse_lu_solve(factor, rhs),
       error = function(error) error
@@ -513,7 +519,13 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
       scaled[local_rows[[id]], local_columns[[id]], drop = FALSE]
     )
     tryCatch(
-      Matrix::lu(block, order = lu_order),
+      {
+        factor = .GEModelR_sparse_lu_solve(Matrix::lu(block, order = lu_order), NULL)
+        .sparse_schur_cpp_runtime$live_sparse_factors[[
+          length(.sparse_schur_cpp_runtime$live_sparse_factors) + 1L
+        ]] = factor
+        factor
+      },
       error = function(error) {
         stop(sprintf("Commodity block %s factorization failed: %s",
                      id, conditionMessage(error)), call. = FALSE)
