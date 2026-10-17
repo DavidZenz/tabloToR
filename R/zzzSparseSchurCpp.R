@@ -124,7 +124,11 @@
       )
       factor = Matrix::lu(A, order = 1L)
       rhs = c(5, 6)
-      native = as.numeric(.GEModelR_sparse_lu_solve(factor, rhs))
+      prepared = .GEModelR_sparse_lu_solve(factor, NULL)
+      native = tryCatch(
+        as.numeric(.GEModelR_sparse_lu_solve(prepared, rhs)),
+        finally = .GEModelR_sparse_lu_solve(prepared, NULL)
+      )
       reference = as.numeric(Matrix::solve(factor, rhs))
       isTRUE(max(abs(native - reference)) <= 1e-12)
     }, error = function(error) error)
