@@ -47,6 +47,15 @@ memoryEstimate = model$estimateMemory(engine = "sparse", postsim = FALSE)
 print(memoryEstimate)
 ```
 
+The public estimate describes generic sparse storage. During `solveModel()`,
+the selected structured backend additionally accounts for its partition:
+dense regional/global matrices and factors, simultaneously live copies,
+coupling transfers, local factor fill, Arnoldi vectors and worker scratch.
+The budget guard uses this fuller estimate before assembly. Counts from the
+original partition can overestimate storage later removed by elimination.
+Factor fill and allocator overhead remain estimates; this is not a hard cap
+on process RSS. Detailed solve diagnostics retain the component estimates.
+
 ## Set a memory budget
 
 `setMemoryBudget(bytes)` stores an instance-level sparse budget. A solve fails
@@ -92,3 +101,20 @@ model$lastDiagnostics[c(
 For the stable field list and failure statuses, see the
 [`GEModelR` package help](GEModelR-package.html). Diagnostics add evidence to
 the record; they do not change which backend was requested or permit fallback.
+
+Every accepted sparse solution passes the full-system check
+$\lVert A x-b\rVert_2 / \max(1,\lVert b\rVert_2)$ at the documented
+residual tolerance. Scaled arithmetic forms this ratio without overflowing
+the denominator. Invalid products or non-finite residual entries fail before
+state is committed. An absolute L2 diagnostic can be infinite when its exact
+value exceeds the double range; acceptance still requires a finite scaled
+relative residual. Small RHS vectors retain the existing absolute-tolerance
+semantics.
+
+The C++ backend carries only structural metadata between solves. Its keys
+include index/closure layout, sparse pattern, grouping and batching settings.
+Numeric factors and regional transfers belong to one solve and are rebuilt
+after coefficient changes. Prepared sparse factors own validated snapshots
+and reusable scratch; cleanup releases native handles before results are
+committed or a failure is returned. Matrix references needed for acceptance
+are released before simulation updates.

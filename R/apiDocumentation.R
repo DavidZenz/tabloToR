@@ -130,7 +130,9 @@
 #'   \item{\code{GEModelR.sparse.structured_residual_tolerance}}{Sparse
 #'     candidate true-residual tolerance; default \code{2e-7}.}
 #'   \item{\code{GEModelR.sparse.elimination_pivot_tolerance}}{Pivot
-#'     tolerance for structured elimination; default \code{1e-12}.}
+#'     tolerance relative to the largest original coefficient in each
+#'     structured elimination block; default \code{1e-12}. Zero pivots
+#'     are always rejected.}
 #'   \item{\code{GEModelR.sparse.schur_region_batch_size}}{Structured Schur
 #'     region batch size; default \code{8}.}
 #'   \item{\code{GEModelR.sparse.schur_panel_size}}{Structured Schur panel
