@@ -103,6 +103,8 @@ enabled. An initial large, non-diagnostic comparison was 0.154 to 0.190
 seconds, a 23% slowdown. It did not repeat consistently in interleaved fresh
 processes with 15 repetitions each: before medians were 0.147 and 0.148
 seconds; after medians were 0.156 and 0.146 seconds, with overlapping ranges.
+The [60 control repetitions](repair-public-controls-20261017.csv) span
+0.140–0.190 seconds before and 0.144–0.228 seconds after.
 Profiles remained dominated by existing label parsing and updates. This
 shared-host experiment establishes neither a consistent regression nor a
 public Matrix-workflow speedup. Compilation and setup remain excluded.
@@ -124,9 +126,11 @@ Completed verification includes:
 - `-Wall -Wextra -Wpedantic` syntax diagnostics on the prepared native
   boundary: zero diagnostics from handwritten code; Rcpp header warnings
   remain in the saved diagnostic log.
-- Complete source suite: 4,330 passing assertions, 26 failed assertions and
+- Complete source suite: 4,334 passing assertions across all 44 test files,
+  26 failed assertions and
   19 errors, versus 3,026 / 42 / 23 at this task's baseline. No newly failing
-  test case was found. Registry/cache/cleanup failures were repaired. The
+  test case was found, and no existing case gained failed assertions or a new
+  error. Registry/cache/cleanup failures were repaired. The
   remaining cases are inherited identity/provenance/release-evidence audits,
   including frozen source counts and historical inventory assumptions. Their
   assertions and accepted records were preserved; this is not a claim that
@@ -156,25 +160,81 @@ helper definitions and is unsuitable for the current test-file layout.
 
 ### Full GTAP comparison
 
-Three interleaved before/after C++ pairs are running against the same local
-GTAP 12a inputs and nonzero productivity shock. Each fresh process uses
-`iter=1`, `steps=1`, postsimulation enabled, four threads, panel size 64 and
-region batch size 16, with no additional warm-up. The workflow has 26,781,398
-simulation equations and a 389,253-row reduced system. This compares two C++
-builds; Matrix/reference checks use the generated workloads above.
+Three interleaved before/after C++ pairs completed successfully against
+the same local GTAP 12a inputs and nonzero productivity shock. Each fresh
+process used `iter=1`, `steps=1`, postsimulation and detailed diagnostics,
+four threads, panel size 64 and region batch size 16, with no additional
+warm-up. The workload has 26,781,398 simulation equations, a 389,253-row
+reduced system and 124,378 retained external unknowns. Both builds used 18
+reduced iterations in every run. This compares two C++ builds; trusted
+Matrix/reference comparisons use the generated workloads above.
 
-The first completed pair measured 757.403 to 706.501 solve seconds (6.7%
-lower), with peak RSS increasing from 15,776,145,408 to 16,663,932,928 bytes
-(5.6%). Solution attributes matched and maximum absolute difference across
-all 26,781,398 values was `9.95e-14`. Both full relative residuals were below
-`6.27e-9`. These are preliminary values; the remaining pairs are needed to
-report variability. They do not establish a universal end-to-end gain or a
-peak-memory improvement.
+The [six measured runs](repair-gtap-20261017.csv) and
+[three complete solution/output comparisons](repair-gtap-agreement-20261017.csv)
+contain aggregate evidence only. Values below are medians with observed
+ranges; process wall time includes input/setup and saving the solution RDS.
+
+| Metric | Before | Integrated repairs |
+| --- | ---: | ---: |
+| Public solve, including postsimulation (s) | 691.888 [633.172, 757.403] | 637.278 [632.132, 706.501] |
+| Process wall time (s) | 766.204 [694.663, 818.002] | 694.506 [682.572, 760.151] |
+| Peak process RSS (GiB) | 14.599 [14.599, 14.693] | 15.511 [15.509, 15.519] |
+
+Median solve time was 7.9% lower. The first two pairs were 6.72% and 8.64%
+faster; the third was 0.65% slower. Peak RSS increased by 6.2% at the median.
+Prepared snapshots and retained transfers add storage, but this experiment
+does not isolate their contribution to the RSS change. The first run was
+slowest for both builds on the shared host. Fixed interleaving, three pairs,
+host contention and cache effects limit causal precision; these observations
+are not a guaranteed GTAP-wide speedup or a peak-memory improvement.
+
+All solution attributes and selected-output structures matched. Maximum
+absolute differences across all three complete solution vectors and compact
+outputs were `9.95e-14` and `9.95e-14` respectively. Every value was
+finite; full relative residuals were at most
+`6.247e-09` before and
+`6.267e-09` after, below `2e-7`.
 
 The immutable after benchmark snapshot has the same handwritten native
 sources as the final code. Later R refinements cover boundary arithmetic,
 preflight validation, budget scratch accounting and requested reference
 history fields; those refinements have focused regression coverage. Licensed
 inputs and full solution artifacts remain outside source control in
-`/tmp/gemodelr-repairs-20261017/gtap`. Aggregate final metrics will be recorded
-when the planned repetitions finish.
+`/tmp/gemodelr-repairs-20261017/gtap`. Only aggregate metrics and input
+fingerprints are committed.
+
+To repeat this comparison, set the library, dependency and licensed input
+paths below. Run from the repository root and keep the output directory
+private, because the RDS files contain complete model solutions. Each
+library must be an immutable installation made from its recorded source
+snapshot; the launch process's Git HEAD is not the library's source identity.
+
+```sh
+mkdir -p "$REPAIR_GTAP_OUTPUT"
+for repetition in 1 2 3; do
+  for build in before after; do
+    case "$build" in
+      before) library="$REPAIR_BEFORE_LIBRARY" ;;
+      after) library="$REPAIR_AFTER_LIBRARY" ;;
+    esac
+    R_LIBS="$library:$REPAIR_DEPENDENCIES" \
+      OMP_NUM_THREADS=4 OPENBLAS_NUM_THREADS=1 \
+      Rscript --vanilla benchmarks/benchmark_gtap12a_run.R \
+      --data-dir="$REPAIR_DATA_DIR" --tablo="$REPAIR_TABLO" \
+      --closure-file="$REPAIR_CLOSURE" --shocks-file="$REPAIR_SHOCKS" \
+      --backend=StructuredSchurFGMRESCpp --threads=4 --iter=1 --steps=1 \
+      --postsim=true --diagnostics=true --warmup=false \
+      --panel-size=64 --region-batch-size=16 --repetition="$repetition" \
+      --run-id="$build-$repetition" \
+      --output="$REPAIR_GTAP_OUTPUT/$build-$repetition.csv" \
+      --solution-output="$REPAIR_GTAP_OUTPUT/$build-$repetition.rds"
+  done
+done
+Rscript --vanilla benchmarks/compare_repair_gtap.R \
+  "$REPAIR_GTAP_OUTPUT" /tmp/gtap-agreement.csv 3
+```
+
+The comparator verifies CSV/artifact identity, workload/runtime settings,
+types, attributes, output structure and finiteness before reporting maximum
+absolute differences. Its synthetic checks cover changed values, non-finite
+solutions, mismatched attributes/output shapes and stale artifact metadata.

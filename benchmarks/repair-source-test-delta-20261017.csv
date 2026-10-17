@@ -1,31 +1,47 @@
-file,test,before_failed,before_error,after_failed,after_error,new_failure,after_message
-test-attribution-contract.R,DESCRIPTION applies the reviewed current identity without licensing,1,FALSE,1,FALSE,False,"Expected `unname(description[[1L, ""URL""]])` to be identical to ""https://github.com/DavidZenz/GEModelR"".
+"file","test","before_failed","before_error","after_failed","after_error","new_failure","after_message"
+"test-attribution-contract.R","DESCRIPTION applies the reviewed current identity without licensing",1,FALSE,1,FALSE,FALSE,"Expected `unname(description[[1L, ""URL""]])` to be identical to ""https://github.com/DavidZenz/GEModelR"".
 Differences:
 lines(actual) vs lines(expected)
 - ""https://github.com/DavidZenz/GEModelR,""
 - ""https://davidzenz.github.io/GEModelR/""
 + ""https://github.com/DavidZenz/GEModelR""
 "
-test-baseline-artifacts.R,accepted Phase 2 bytes have independent SHA-256 evidence,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,migration check is read-only and independent of acceptance,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,migration comparison rejects schema and canonical evidence drift,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,migration identity map has a strict reviewed schema,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,migration source gate accepts identity-only substitutions,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,migration source gate rejects every non-identity contract drift,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-baseline-artifacts.R,proposal and check modes cannot mutate accepted canonical artifacts,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=420/328,package-upper-case=2/2"
-test-identity-migration.R,every historical registry field fails closed when malformed,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-identity-migration.R,historical old-identity records reject broad or stale entries,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-identity-migration.R,historical registry freezes evidence and numerical source,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-identity-migration.R,numerical identity contracts and five assumptions stay frozen,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-identity-migration.R,"occurrence allowlist rejects active, broad, duplicate, and stale rows",0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
-test-identity-migration.R,tracked identity inventory uses the exact five-category contract,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
-test-model-serialization.R,migration source gate narrows only reviewed serialization source,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-model-serialization.R,restored runtime cache starts empty and can rebuild independently,0,TRUE,0,FALSE,False,
-test-phase02-original-gate.R,protected source drift fails migration while original bytes still pass,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-phase03-identity-reseal.R,final-tree check is read-only across an actual tracked Git lifecycle,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
-test-phase03-identity-reseal.R,workflow-owned rows are excluded only after exact policy validation,0,TRUE,0,TRUE,False,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
-test-phase03-qualification-harness.R,Phase 2 qualification accepts only reviewed identity migration,0,TRUE,0,TRUE,False,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
-test-provenance-inventory.R,accepted Phase 02 inventory review remains historical evidence,11,FALSE,11,FALSE,False,"Expected `nrow(ledger)` to be identical to 291L.
+"test-baseline-artifacts.R","proposal and check modes cannot mutate accepted canonical artifacts",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","migration identity map has a strict reviewed schema",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","migration source gate accepts identity-only substitutions",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","migration source gate rejects every non-identity contract drift",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","migration comparison rejects schema and canonical evidence drift",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","migration check is read-only and independent of acceptance",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-baseline-artifacts.R","accepted Phase 2 bytes have independent SHA-256 evidence",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-identity-migration.R","historical registry freezes evidence and numerical source",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-identity-migration.R","every historical registry field fails closed when malformed",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-identity-migration.R","historical old-identity records reject broad or stale entries",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-identity-migration.R","numerical identity contracts and five assumptions stay frozen",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-identity-migration.R","tracked identity inventory uses the exact five-category contract",0,TRUE,0,TRUE,FALSE,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+"test-identity-migration.R","occurrence allowlist rejects active, broad, duplicate, and stale rows",0,TRUE,0,TRUE,FALSE,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+"test-model-serialization.R","migration source gate narrows only reviewed serialization source",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-model-serialization.R","restored runtime cache starts empty and can rebuild independently",0,TRUE,0,FALSE,FALSE,""
+"test-phase02-original-gate.R","protected source drift fails migration while original bytes still pass",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-phase03-identity-reseal.R","workflow-owned rows are excluded only after exact policy validation",0,TRUE,0,TRUE,FALSE,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+"test-phase03-identity-reseal.R","final-tree check is read-only across an actual tracked Git lifecycle",0,TRUE,0,TRUE,FALSE,"Error: UNEXPECTED_OLD_IDENTITY_UNCLASSIFIED .planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md,.planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md,.planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md,.planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md,.planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md,.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json,.planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md,.planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv,.planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md,.planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md,.planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md,man/GEModelR-package.Rd,pkgdown/index.md,tools/ci/verify-matrix-floor-evidence.R,vignettes/backend-selection.Rmd,vignettes/legacy-to-sparse.Rmd"
+"test-phase03-qualification-harness.R","Phase 2 qualification accepts only reviewed identity migration",0,TRUE,0,TRUE,FALSE,"Error: Identity mapping row is stale or count drifted: package-mixed-case=422/328,package-upper-case=2/2"
+"test-provenance-inventory.R","repository extraction records stable Git evidence",2,FALSE,0,FALSE,FALSE,""
+"test-provenance-inventory.R","accepted native hash review remains historical evidence",3,FALSE,3,FALSE,FALSE,"Expected `nrow(expected)` to be identical to 291L.
+Differences:
+  `actual`: 324
+`expected`: 291
+
+Expected `nrow(ledger)` to be identical to 291L.
+Differences:
+  `actual`: 324
+`expected`: 291
+
+Expected `nrow(fresh)` to be identical to 291L.
+Differences:
+  `actual`: 348
+`expected`: 291
+"
+"test-provenance-inventory.R","accepted Phase 02 inventory review remains historical evidence",11,FALSE,11,FALSE,FALSE,"Expected `nrow(ledger)` to be identical to 291L.
 Differences:
   `actual`: 324
 `expected`: 291
@@ -142,22 +158,7 @@ Differences:
 `actual`:   FALSE
 `expected`: TRUE
 "
-test-provenance-inventory.R,accepted native hash review remains historical evidence,3,FALSE,3,FALSE,False,"Expected `nrow(expected)` to be identical to 291L.
-Differences:
-  `actual`: 324
-`expected`: 291
-
-Expected `nrow(ledger)` to be identical to 291L.
-Differences:
-  `actual`: 324
-`expected`: 291
-
-Expected `nrow(fresh)` to be identical to 291L.
-Differences:
-  `actual`: 348
-`expected`: 291
-"
-test-provenance-inventory.R,checked-in provenance keys use the current GEModelR identity,2,FALSE,2,FALSE,False,"Expected `provenance_keys(expected)` to be identical to `provenance_keys(fresh)`.
+"test-provenance-inventory.R","checked-in provenance keys use the current GEModelR identity",2,FALSE,2,FALSE,FALSE,"Expected `provenance_keys(expected)` to be identical to `provenance_keys(fresh)`.
 Differences:
 actual[109:114] vs expected[109:121]
   ""R/sparseElimination.R::sparse_elimination_family""
@@ -245,28 +246,11 @@ actual[318:324] vs expected[337:348]
 + ""src/tablo-sparse-lu.h::tablo_sparse_lu_workspace_size""
 and 2 more ...
 "
-test-provenance-inventory.R,repository extraction records stable Git evidence,2,FALSE,0,FALSE,False,
-test-public-cpp-backend.R,public native backend is opt-in and numerically equivalent,1,TRUE,0,FALSE,False,
-test-public-solver-contract.R,Matrix adapter preflights before emission and commits accepted state,7,FALSE,0,FALSE,False,
-test-public-solver-contract.R,Matrix adapter records fail closed before accepted-state commit,0,TRUE,0,FALSE,False,
-test-public-solver-contract.R,native backend preflight fails closed before solving,5,FALSE,0,FALSE,False,
-test-release-gates.R,offline readiness stays distinct from an intentional block,1,FALSE,1,FALSE,False,"Expected `any(command$output == paste0(""reason_codes="", reason))` to be TRUE.
-Differences:
-`actual`:   FALSE
-`expected`: TRUE
-"
-test-release-gates.R,synthetic clean-room fixtures never clear canonical release blockers,2,FALSE,2,FALSE,False,"Expected `canonical$repository_state` to be identical to ""blocked"".
-Differences:
-`actual`:   ""invalid""
-`expected`: ""blocked""
-
-Expected `canonical$reason_codes` to be identical to `c(""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"", ""ATTRIBUTION_IDENTITY_UNRESOLVED"")`.
-Differences:
-    actual                    | expected
-[1] ""PROVENANCE_KEY_MISMATCH"" - ""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"" [1]
-                              - ""ATTRIBUTION_IDENTITY_UNRESOLVED""        [2]
-"
-test-release-gates.R,the checked-in repository is positively recognized as blocked,6,FALSE,6,FALSE,False,"Expected `result$repository_state` to be identical to ""blocked"".
+"test-public-cpp-backend.R","public native backend is opt-in and numerically equivalent",1,TRUE,0,FALSE,FALSE,""
+"test-public-solver-contract.R","Matrix adapter preflights before emission and commits accepted state",7,FALSE,0,FALSE,FALSE,""
+"test-public-solver-contract.R","Matrix adapter records fail closed before accepted-state commit",0,TRUE,0,FALSE,FALSE,""
+"test-public-solver-contract.R","native backend preflight fails closed before solving",5,FALSE,0,FALSE,FALSE,""
+"test-release-gates.R","the checked-in repository is positively recognized as blocked",6,FALSE,6,FALSE,FALSE,"Expected `result$repository_state` to be identical to ""blocked"".
 Differences:
 `actual`:   ""invalid""
 `expected`: ""blocked""
@@ -307,6 +291,22 @@ Differences:
 `actual`:   FALSE
 `expected`: TRUE
 "
-test-serialization-bugfix-review.R,applied BUGFIX gate proves the exact revised candidate,0,TRUE,0,TRUE,False,Error: Serialization BUGFIX review failed: current serialization source no longer matches the proposed before bytes
-test-sparse-cpp-cache.R,native structural cache reuses patterns and refactors values,0,TRUE,0,FALSE,False,
-test-sparse-schur-cpp.R,native Schur solve preserves the exact sparse operator,1,FALSE,0,FALSE,False,
+"test-release-gates.R","offline readiness stays distinct from an intentional block",1,FALSE,1,FALSE,FALSE,"Expected `any(command$output == paste0(""reason_codes="", reason))` to be TRUE.
+Differences:
+`actual`:   FALSE
+`expected`: TRUE
+"
+"test-release-gates.R","synthetic clean-room fixtures never clear canonical release blockers",2,FALSE,2,FALSE,FALSE,"Expected `canonical$repository_state` to be identical to ""blocked"".
+Differences:
+`actual`:   ""invalid""
+`expected`: ""blocked""
+
+Expected `canonical$reason_codes` to be identical to `c(""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"", ""ATTRIBUTION_IDENTITY_UNRESOLVED"")`.
+Differences:
+    actual                    | expected
+[1] ""PROVENANCE_KEY_MISMATCH"" - ""DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"" [1]
+                              - ""ATTRIBUTION_IDENTITY_UNRESOLVED""        [2]
+"
+"test-serialization-bugfix-review.R","applied BUGFIX gate proves the exact revised candidate",0,TRUE,0,TRUE,FALSE,"Error: Serialization BUGFIX review failed: current serialization source no longer matches the proposed before bytes"
+"test-sparse-cpp-cache.R","native structural cache reuses patterns and refactors values",0,TRUE,0,FALSE,FALSE,""
+"test-sparse-schur-cpp.R","native Schur solve preserves the exact sparse operator",1,FALSE,0,FALSE,FALSE,""

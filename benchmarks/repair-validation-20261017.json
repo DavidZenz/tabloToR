@@ -1,6 +1,6 @@
 {
   "schema": "GEModelR-solver-repairs-v1",
-  "generated_utc": "2026-10-17T21:11:50.935741Z",
+  "generated_utc": "2026-10-17T21:32:29.359721+00:00",
   "baseline_head": "901fcb0c070f802b6ca0e4e15604de5e0e0c39bd",
   "implementation_head": "902819b48a34e90cd15702be6134f51bc399dfb3",
   "baseline_includes_preexisting_uncommitted_optimizations": true,
@@ -41,11 +41,13 @@
       "warnings": 5
     },
     "source_after": {
-      "passed": 4330,
+      "passed": 4334,
       "failed_assertions": 26,
       "errors": 19,
       "skips": 2,
-      "warnings": 3
+      "warnings": 3,
+      "cases": 347,
+      "files": 44
     }
   },
   "package_check": {
@@ -219,7 +221,7 @@
   "public_summaries": "repair-public-20261017.csv",
   "source_test_delta": "repair-source-test-delta-20261017.csv",
   "gtap": {
-    "status": "running",
+    "status": "complete",
     "planned_before_after_pairs": 3,
     "backend": "StructuredSchurFGMRESCpp",
     "iter": 1,
@@ -232,15 +234,125 @@
     "region_batch_size": 16,
     "warmups": 0,
     "simulation_equations": 26781398,
-    "first_pair": {
-      "before_solve_seconds": 757.403,
-      "after_solve_seconds": 706.501,
-      "before_peak_rss_bytes": 15776145408,
-      "after_peak_rss_bytes": 16663932928,
-      "max_solution_abs_difference": 9.947598e-14,
-      "attributes_identical": true,
-      "before_full_relative_residual": 6.24664395787473e-09,
-      "after_full_relative_residual": 6.26739306963864e-09
+    "completed_before_after_pairs": 3,
+    "run_metrics": "repair-gtap-20261017.csv",
+    "agreement_metrics": "repair-gtap-agreement-20261017.csv",
+    "summary": {
+      "before": {
+        "solve_seconds": {
+          "median": 691.888,
+          "min": 633.172,
+          "max": 757.403,
+          "sample_sd": 62.14650062821987
+        },
+        "total_seconds": {
+          "median": 765.468,
+          "min": 693.561,
+          "max": 817.222,
+          "sample_sd": 62.10359099386548
+        },
+        "wall_seconds": {
+          "median": 766.2044582366943,
+          "min": 694.6633944511414,
+          "max": 818.0024287700653,
+          "sample_sd": 61.932316477572556
+        },
+        "peak_rss_bytes": {
+          "median": 15675662336.0,
+          "min": 15675240448.0,
+          "max": 15776145408.0,
+          "sample_sd": 58136099.944646165
+        },
+        "maximum_full_relative_residual": 6.24664395787473e-09
+      },
+      "after": {
+        "solve_seconds": {
+          "median": 637.278,
+          "min": 632.132,
+          "max": 706.501,
+          "sample_sd": 41.531219594420776
+        },
+        "total_seconds": {
+          "median": 693.56,
+          "min": 681.795,
+          "max": 759.363,
+          "sample_sd": 41.80359764820892
+        },
+        "wall_seconds": {
+          "median": 694.5057141780853,
+          "min": 682.5721008777618,
+          "max": 760.1505129337311,
+          "sample_sd": 41.773318332791966
+        },
+        "peak_rss_bytes": {
+          "median": 16654852096.0,
+          "min": 16653180928.0,
+          "max": 16663932928.0,
+          "sample_sd": 5785899.761437974
+        },
+        "maximum_full_relative_residual": 6.26739306963864e-09
+      },
+      "paired": [
+        {
+          "repetition": 1,
+          "solve_seconds_saved": 50.902000000000044,
+          "solve_speedup": 1.0720480225788782,
+          "solve_reduction_percent": 6.720596564840653,
+          "peak_rss_increase_percent": 5.627404521447987
+        },
+        {
+          "repetition": 2,
+          "solve_seconds_saved": 59.756000000000085,
+          "solve_speedup": 1.0945308891180958,
+          "solve_reduction_percent": 8.63665795620101,
+          "peak_rss_increase_percent": 6.23589977282859
+        },
+        {
+          "repetition": 3,
+          "solve_seconds_saved": -4.1059999999999945,
+          "solve_speedup": 0.9935569719965227,
+          "solve_reduction_percent": -0.6484809814710779,
+          "peak_rss_increase_percent": 6.249420232178893
+        }
+      ]
+    },
+    "maximum_solution_abs_difference": 9.9475983006414e-14,
+    "maximum_output_abs_difference": 9.9475983006414e-14,
+    "solution_attributes_identical": true,
+    "output_structure_identical": true,
+    "peak_memory_improved": false,
+    "timing_limitations": [
+      "shared host",
+      "fixed before/after order",
+      "three pairs",
+      "no additional warm-up",
+      "one GTAP closure/shock/step schedule"
+    ],
+    "input_fingerprints": {
+      "tablo": {
+        "bytes": 200672,
+        "sha256": "bbff19fdfaaed0615f736b377d57c1a534958850de24d328dad1236456243b1c"
+      },
+      "closure": {
+        "bytes": 268,
+        "sha256": "b72e04a95796783a48dfeb2afde4b736ff8da31c545cd76005f8ddfdb33d4ad4"
+      },
+      "shocks": {
+        "bytes": 87,
+        "sha256": "f888f3dd832b585905d74faea845b602f26e3bdf36fe31476bfaa97fe6cfab7c"
+      },
+      "sets": {
+        "bytes": 52694,
+        "sha256": "f863a1f39746264d86041aade4e09971293daaa22c4992f6fdd2b9da877a1ab6"
+      },
+      "data": {
+        "bytes": 62318614,
+        "sha256": "d92ced0a624ecc423019a717d5635baa9f0e5b26c376cfdbff45f4e297fff279"
+      },
+      "parameters": {
+        "bytes": 392470,
+        "sha256": "c9cc5ebde9c9d269a7d7634cf3cc09a72665a71731b078921500bc0ad216bbcf"
+      }
     }
   },
   "raw_workspace": "/tmp/gemodelr-repairs-20261017",
@@ -248,6 +360,9 @@
   "tooling_sha256": {
     "inst/tools/refresh_phase02_baselines.R": "fee480115470d97cb50b3a2559ecf8d25043df56b0b744296186d5e5415c2e09",
     "benchmarks/benchmark_repairs.R": "2cad612e58ccec2eca218f61bd29bff19011ea1e0e782b32640787f256e7b04f",
-    "benchmarks/check_repair_tests.R": "568a09d086603c037a33eea4ee86e8e473d322eaa8fc04d0246e6e762f74e5c1"
-  }
+    "benchmarks/check_repair_tests.R": "568a09d086603c037a33eea4ee86e8e473d322eaa8fc04d0246e6e762f74e5c1",
+    "benchmarks/compare_repair_gtap.R": "6aa7aaa7ffba5539aa720d0f16a4f02074e72fd5a1363f64979e606172b5b877"
+  },
+  "source_cases_with_increased_failures_or_new_errors": [],
+  "public_control_repetitions": "repair-public-controls-20261017.csv"
 }
