@@ -848,7 +848,8 @@ phase02_generate_proposal = function(
   ), script)
   status = system2(file.path(R.home("bin"), "Rscript"),
                    c("--vanilla", shQuote(script), shQuote(request),
-                     shQuote(response)), stdout = log, stderr = log)
+                     shQuote(response)), stdout = log, stderr = log,
+                   env = "R_TESTS=")
   if (status != 0L || !file.exists(response)) {
     stop(paste(c("Isolated source baseline evaluation failed:",
                  readLines(log, warn = FALSE)), collapse = "\n"), call. = FALSE)

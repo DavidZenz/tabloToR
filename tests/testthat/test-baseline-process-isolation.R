@@ -9,6 +9,11 @@ test_that("source proposals cannot reload the caller's namespace or runtime", {
   writeLines("stop('The outer test runner must never be sourced')",
              tool$phase02_script_path)
   on.exit(unlink(tool$phase02_script_path), add = TRUE)
+  old_tests = Sys.getenv("R_TESTS", unset = NA_character_)
+  on.exit({
+    if (is.na(old_tests)) Sys.unsetenv("R_TESTS") else Sys.setenv(R_TESTS = old_tests)
+  }, add = TRUE)
+  Sys.setenv(R_TESTS = tool$phase02_script_path)
   namespace = asNamespace("GEModelR")
   registry = get(".sparse_backend_registry", namespace)
   runtime = get(".sparse_schur_cpp_runtime", namespace)
