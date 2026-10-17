@@ -464,11 +464,13 @@ sparse_exact_schur_build = function(
     )
   }
   global_correction = global_global
+  regional_transfers = vector("list", region_count)
   for (region_id in seq_len(region_count)) {
     regional_to_global = sparse_exact_schur_solve_factor(
       regional_factors[[region_id]], region_global[[region_id]],
       sprintf("regional Schur block %s", region_id)
     )
+    regional_transfers[[region_id]] = regional_to_global
     global_correction = global_correction -
       global_region[[region_id]] %*% regional_to_global
   }
@@ -514,6 +516,7 @@ sparse_exact_schur_build = function(
       left = left,
       right = right,
       regional_factors = regional_factors,
+      regional_transfers = regional_transfers,
       region_global = region_global,
       global_region = global_region,
       global_factor = global_factor,
@@ -586,12 +589,17 @@ sparse_exact_schur_apply_preconditioner = function(system, value) {
   result = numeric(length(value))
   for (region_id in seq_len(system$region_count)) {
     positions = regional_positions[[region_id]]
-    correction = system$region_global[[region_id]] %*% global_value
-    result[positions] = as.numeric(sparse_exact_schur_solve_factor(
-      system$regional_factors[[region_id]],
-      value[positions] - correction,
-      sprintf("regional Schur block %s", region_id)
-    ))
+    if (!is.null(system$regional_transfers)) {
+      result[positions] = as.numeric(local_values[[region_id]] -
+        system$regional_transfers[[region_id]] %*% global_value)
+    } else {
+      # Compatibility for manually constructed internal systems.
+      correction = system$region_global[[region_id]] %*% global_value
+      result[positions] = as.numeric(sparse_exact_schur_solve_factor(
+        system$regional_factors[[region_id]], value[positions] - correction,
+        sprintf("regional Schur block %s", region_id)
+      ))
+    }
   }
   result[system$global_position] = global_value
   if (any(!is.finite(result))) {

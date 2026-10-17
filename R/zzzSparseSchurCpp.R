@@ -584,11 +584,13 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
   regional_dense_factor_seconds = proc.time()[[3L]] - regional_factor_start
   regional_solve_start = proc.time()[[3L]]
   global_correction = global_global
+  regional_transfers = vector("list", region_count)
   for (region_id in seq_len(region_count)) {
     regional_to_global = sparse_exact_schur_solve_factor(
       regional_factors[[region_id]], region_global[[region_id]],
       sprintf("regional Schur block %s", region_id)
     )
+    regional_transfers[[region_id]] = regional_to_global
     global_correction = global_correction -
       global_region[[region_id]] %*% regional_to_global
   }
@@ -655,6 +657,7 @@ sparse_exact_schur_solve_factor = function(factor, rhs, name = "block") {
     left = left,
     right = right,
     regional_factors = regional_factors,
+    regional_transfers = regional_transfers,
     region_global = region_global,
     global_region = global_region,
     global_factor = global_factor,
