@@ -226,8 +226,7 @@ sparse_schur_factor_block = function(A, rows, columns, lu_order = 3L,
     return(result)
   }
   probe_residual = as.numeric(block %*% probe_solution) - probe
-  relative_residual = sqrt(as.numeric(crossprod(probe_residual))) /
-    max(1, sqrt(as.numeric(crossprod(probe))))
+  relative_residual = sparse_relative_l2(probe_residual, probe)
   if (!is.finite(relative_residual) || relative_residual > factor_tolerance) {
     result$reason = sprintf(
       "local factor probe residual %.3e exceeds %.3e",
@@ -806,7 +805,17 @@ sparse_schur_solve = function(A, rhs, row_group, column_group,
     )
   full_rhs_scale = max(1, sparse_schur_norm(input$rhs))
   reduced_rhs_scale = max(1, sparse_schur_norm(reduced_rhs))
-  reduced_tolerance = tolerance * min(1, full_rhs_scale / reduced_rhs_scale)
+  log_scale = function(value) {
+    parts = sparse_l2_parts(value)
+    if (parts$scale == 0) 0 else
+      max(0, log(parts$scale) + log(parts$unit))
+  }
+  reduced_tolerance = tolerance * exp(min(
+    0, log_scale(input$rhs) - log_scale(reduced_rhs)
+  ))
+  if (!is.finite(reduced_tolerance) || reduced_tolerance <= 0) {
+    stop("Reduced Schur tolerance cannot be represented", call. = FALSE)
+  }
   reduced = sparse_schur_fgmres(
     system, reduced_rhs, restart = restart,
     max_iterations = max_iterations, tolerance = reduced_tolerance,
@@ -826,7 +835,7 @@ sparse_schur_solve = function(A, rhs, row_group, column_group,
   }
   full_residual = as.numeric(input$A %*% solution) - input$rhs
   full_absolute = sparse_schur_norm(full_residual)
-  full_relative = full_absolute / max(1, sparse_schur_norm(input$rhs))
+  full_relative = sparse_relative_l2(full_residual, input$rhs)
   diagnostics = system$diagnostics
   diagnostics$residual_history = reduced$residual_history
   diagnostics$reduced_converged = reduced$converged

@@ -55,3 +55,13 @@ test_that("small scaled pivots and shocks survive native reconstruction", {
     expect_equal(result / 1e-14, expected / 1e-14, tolerance = 1e-12)
   }
 })
+
+test_that("full structured convergence uses a finite scaled residual ratio", {
+  A = as(Matrix::Diagonal(4L), "generalMatrix")
+  groups = c(0L, 0L, 1L, 2L)
+  result = .sparse_exact_schur_solve_reference(
+    A, rep(1e308, 4L), groups, groups, 1L, 1L, 2L)
+  expect_true(result$converged)
+  expect_equal(result$solution / 1e308, rep(1, 4L), tolerance = 1e-12)
+  expect_equal(result$diagnostics$true_relative_residual, 0)
+})
