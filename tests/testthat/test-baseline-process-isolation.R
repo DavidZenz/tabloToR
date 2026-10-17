@@ -4,6 +4,11 @@ test_that("source proposals cannot reload the caller's namespace or runtime", {
   skip_if_not(file.exists(tool_path), "Source baseline tooling is unavailable")
   tool = new.env(parent = globalenv())
   sys.source(tool_path, envir = tool)
+  # A sourced tool may inherit --file= from an unrelated outer Rscript.
+  tool$phase02_script_path = tempfile("unrelated-caller-", fileext = ".R")
+  writeLines("stop('The outer test runner must never be sourced')",
+             tool$phase02_script_path)
+  on.exit(unlink(tool$phase02_script_path), add = TRUE)
   namespace = asNamespace("GEModelR")
   registry = get(".sparse_backend_registry", namespace)
   runtime = get(".sparse_schur_cpp_runtime", namespace)

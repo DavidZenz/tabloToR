@@ -832,8 +832,8 @@ phase02_generate_proposal = function(
   response = file.path(work, "response.rds")
   script = file.path(work, "run.R")
   log = file.path(work, "output.txt")
-  tool_path = if (!is.na(phase02_script_path)) phase02_script_path else
-    file.path(root, "inst", "tools", "refresh_phase02_baselines.R")
+  # commandArgs(--file=) can name the caller's test runner, not this tool.
+  tool_path = file.path(root, "inst", "tools", "refresh_phase02_baselines.R")
   saveRDS(list(tool = tool_path, library = .libPaths(),
                arguments = list(output = output, canonical_dir = canonical_dir,
                                 root = root)), request)
