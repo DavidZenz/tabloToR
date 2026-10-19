@@ -683,9 +683,51 @@ test_that("genuine predecessor fixture enforces lineage and content integrity", 
     payload$source$data_fingerprint,
     unname(registry$`Data-Fingerprint`)
   )
+  simulated_current_fingerprints = c(
+    tablo = paste(rep("0", 32L), collapse = ""),
+    data = paste(rep("1", 32L), collapse = "")
+  )
+  expect_true(.serialization_source_fingerprints_match(
+    payload$source, "predecessor", simulated_current_fingerprints[["tablo"]],
+    simulated_current_fingerprints[["data"]]
+  ))
+  expect_false(.serialization_source_fingerprints_match(
+    payload$source, "current", simulated_current_fingerprints[["tablo"]],
+    simulated_current_fingerprints[["data"]]
+  ))
+  altered_source = payload$source
+  altered_source$tablo_source[[1L]] = as.raw(
+    bitwXor(as.integer(altered_source$tablo_source[[1L]]), 1L)
+  )
+  expect_false(.serialization_is_exact_predecessor_source(
+    altered_source, "predecessor"
+  ))
+  altered_source = payload$source
+  altered_source$loaded_data$basedata$stock[[1L]] = 101
+  expect_false(.serialization_is_exact_predecessor_source(
+    altered_source, "predecessor"
+  ))
+
+  fingerprint_environment = environment(.serialization_object_fingerprint)
+  original_fingerprint = .serialization_object_fingerprint
+  assign(".serialization_object_fingerprint", function(value) {
+    if (is.raw(value)) return(simulated_current_fingerprints[["tablo"]])
+    if (identical(value, payload$source$loaded_data)) {
+      return(simulated_current_fingerprints[["data"]])
+    }
+    original_fingerprint(value)
+  }, envir = fingerprint_environment)
+  on.exit(assign(
+    ".serialization_object_fingerprint", original_fingerprint,
+    envir = fingerprint_environment
+  ), add = TRUE)
 
   receiver = GEModel$new()
   returned = receiver$loadState(fixture)
+  assign(
+    ".serialization_object_fingerprint", original_fingerprint,
+    envir = fingerprint_environment
+  )
   expect_identical(returned, receiver)
   expect_identical(receiver$loadedEngine, "sparse")
   expect_identical(receiver$sourceData, payload$source)

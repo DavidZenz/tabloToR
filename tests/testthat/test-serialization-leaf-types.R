@@ -84,7 +84,19 @@ serializationReplaceLeafValues = function(value, type) {
 
 serializationBuildCurrentPayload = function(
     engine = "sparse", output = "unsolved") {
-  model = make_three_region_model(engine)
+  model = if (identical(engine, "legacy")) {
+    legacy_data = three_region_input_data()
+    legacy_data$basedata = lapply(legacy_data$basedata, function(value) {
+      stats::setNames(as.numeric(value), dimnames(value)[[1L]])
+    })
+    legacy_model = GEModel$new()
+    legacy_model$loadTablo(three_region_fixture_path())
+    legacy_model$setClosure("tax")
+    legacy_model$loadData(legacy_data, engine = "legacy")
+    legacy_model
+  } else {
+    make_three_region_model(engine)
+  }
   if (identical(output, "unsolved")) {
     return(.build_logical_state_payload(model))
   }
@@ -287,8 +299,16 @@ test_that("current and predecessor round trips preserve exact leaf metadata", {
   fixture = testthat::test_path(
     "fixtures", "serialization", "tabloToR-schema1-lineage.rds"
   )
-  predecessor = readRDS(fixture)
-  predecessor_roundtrip = serializationResavePayload(predecessor)
+  predecessor_receiver = GEModel$new()
+  predecessor_returned = predecessor_receiver$loadState(fixture)
+  normalized_file = tempfile(fileext = ".rds")
+  on.exit(unlink(normalized_file), add = TRUE)
+  predecessor_receiver$saveState(normalized_file)
+  predecessor_roundtrip = list(
+    returned = predecessor_returned,
+    receiver = predecessor_receiver,
+    normalized = readRDS(normalized_file)
+  )
   expect_identical(
     predecessor_roundtrip$returned, predecessor_roundtrip$receiver
   )

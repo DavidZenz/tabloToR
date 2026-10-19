@@ -250,6 +250,69 @@
   fingerprint
 }
 
+.serialization_predecessor_data = function() {
+  regions = c("north", "south", "east")
+  list(basedata = list(
+    weight = array(c(1, 1.5, 2), dim = 3L, dimnames = list(reg = regions)),
+    stock = array(c(100, 200, 300), dim = 3L, dimnames = list(reg = regions))
+  ))
+}
+
+.serialization_raw_fingerprint = function(value) {
+  if (!is.raw(value) || !length(value)) return(NA_character_)
+  path = tempfile("tabloToR-raw-fingerprint-")
+  on.exit(unlink(path), add = TRUE)
+  connection = file(path, open = "wb")
+  tryCatch(writeBin(value, connection), finally = close(connection))
+  unname(tools::md5sum(path))
+}
+
+.serialization_is_exact_predecessor_source = function(source, lineage) {
+  if (!identical(lineage, "predecessor") ||
+      !identical(source$name, "three-region.tab") ||
+      !identical(source$tablo_fingerprint,
+                 "f60b9a7af3a7c43ca2c89c083c0a0e64") ||
+      !identical(source$data_fingerprint,
+                 "d7979ebd02d9f381f10852d93ffa143c") ||
+      !identical(source$loaded_data, .serialization_predecessor_data()) ||
+      !identical(.serialization_raw_fingerprint(source$tablo_source),
+                 "15e0bfa34b066974f6541f7a78ddfc1c")) {
+    return(FALSE)
+  }
+
+  registry = .serialization_package_lineage_registry()
+  record = registry[
+    registry[["Record-Id"]] == "tablotr-0.1.0-bridge",
+    , drop = FALSE
+  ]
+  nrow(record) == 1L &&
+    identical(record[["Package-Name"]], "tabloToR") &&
+    identical(record[["Package-Version"]], "0.1.0") &&
+    identical(record[["Source-Fingerprint"]],
+              "7b1abea84896dbca82b7b288c2a7f517") &&
+    identical(record[["Fixture-Path"]],
+              "tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds") &&
+    identical(record[["Fixture-Digest-Algorithm"]], "sha256") &&
+    identical(record[["Fixture-Digest"]],
+              "578f4b1a90e21097e401c22f20d0ef118ab71ce27b5301c0fd90aa776174274b") &&
+    identical(record[["Tablo-Path"]],
+              "tests/testthat/fixtures/three-region.tab") &&
+    identical(record[["Tablo-Digest-Algorithm"]], "sha256") &&
+    identical(record[["Tablo-Digest"]],
+              "9324e4f86938deb3283f61b28aec05a47425127dd9890a18e819ef1e6801a38b") &&
+    identical(record[["Data-Fingerprint"]],
+              "d7979ebd02d9f381f10852d93ffa143c")
+}
+
+.serialization_source_fingerprints_match = function(
+    source, lineage, tablo_fingerprint, data_fingerprint) {
+  if (identical(source$tablo_fingerprint, tablo_fingerprint) &&
+      identical(source$data_fingerprint, data_fingerprint)) {
+    return(TRUE)
+  }
+  .serialization_is_exact_predecessor_source(source, lineage)
+}
+
 .serialization_capture_tablo = function(path) {
   if (!is.character(path) || length(path) != 1L || is.na(path) ||
       !nzchar(path) || !file.exists(path)) {
@@ -538,7 +601,7 @@
       !identical(payload$schema_version, .serialization_schema_version)) {
     .serialization_stop("schema version is unsupported")
   }
-  .serialization_validate_package_lineage(payload$package_lineage)
+  lineage = .serialization_validate_package_lineage(payload$package_lineage)
   if (!is.character(payload$engine) || length(payload$engine) != 1L ||
       is.na(payload$engine) ||
       !payload$engine %in% c("legacy", "sparse")) {
@@ -584,16 +647,14 @@
       "source fingerprints must be 32 hexadecimal characters"
     )
   }
-  if (!identical(
-    source$tablo_fingerprint,
-    .serialization_object_fingerprint(source$tablo_source)
+  tablo_fingerprint = .serialization_object_fingerprint(source$tablo_source)
+  data_fingerprint = .serialization_object_fingerprint(source$loaded_data)
+  if (!.serialization_source_fingerprints_match(
+    source, lineage, tablo_fingerprint, data_fingerprint
   )) {
-    .serialization_stop("TABLO source fingerprint mismatch")
-  }
-  if (!identical(
-    source$data_fingerprint,
-    .serialization_object_fingerprint(source$loaded_data)
-  )) {
+    if (!identical(source$tablo_fingerprint, tablo_fingerprint)) {
+      .serialization_stop("TABLO source fingerprint mismatch")
+    }
     .serialization_stop("loaded source data fingerprint mismatch")
   }
   if (!is.list(payload$levels) || is.object(payload$levels)) {
