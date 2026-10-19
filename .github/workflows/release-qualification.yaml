@@ -1,0 +1,115 @@
+name: Source archive qualification
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  qualify-source-archive:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Check out source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+
+      - name: Require authoritative license evidence
+        shell: bash
+        run: |
+          if [[ ! -f docs/release/LICENSE-DECISION.md || ! -f tools/ci/check-license-decision.R ]]; then
+            echo "CI-02 blocked: authoritative package license evidence is not recorded."
+            exit 1
+          fi
+
+      - name: Set up R
+        uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          r-version: release
+          use-public-rspm: true
+
+      - name: Set up Pandoc
+        uses: r-lib/actions/setup-pandoc@9f58233a78a2a9fd874714be10f8bba627233339
+
+      - name: Install PDF manual tools
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes texlive-latex-base texlive-latex-recommended texlive-fonts-recommended
+          command -v pdflatex
+
+      - name: Install package and check dependencies
+        uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
+        with:
+          packages: deps::.
+          extra-packages: any::rcmdcheck
+          cache: false
+
+      - name: Verify authoritative license evidence
+        run: Rscript --vanilla tools/ci/check-license-decision.R
+
+      - name: Initialize isolated qualification paths
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-evidence" "$RUNNER_TEMP/release-check" "$RUNNER_TEMP/release-library"
+          printf '%s\n' "GEModelR_RELEASE_EVIDENCE_DIR=$RUNNER_TEMP/release-evidence" "GEModelR_RELEASE_CHECK_DIR=$RUNNER_TEMP/release-check" "GEModelR_RELEASE_LIBRARY=$RUNNER_TEMP/release-library" >> "$GITHUB_ENV"
+
+      - name: Build the source archive once
+        shell: bash
+        run: |
+          R CMD build .
+          mapfile -t archives < <(find "$GITHUB_WORKSPACE" -maxdepth 1 -type f -name 'GEModelR_*.tar.gz' -print)
+          if [[ ${#archives[@]} -ne 1 ]]; then
+            echo "Expected exactly one GEModelR source archive; found ${#archives[@]}"
+            exit 1
+          fi
+          printf '%s\n' "GEModelR_SOURCE_ARCHIVE=${archives[0]}" >> "$GITHUB_ENV"
+
+      - name: Scan the exact source archive
+        run: node tools/ci/check-public-content.cjs --archive "$GEModelR_SOURCE_ARCHIVE"
+
+      - name: Check the exact source archive and preserve raw status
+        shell: bash
+        run: |
+          set +e
+          R CMD check --as-cran --library="$GEModelR_RELEASE_LIBRARY" --output="$GEModelR_RELEASE_CHECK_DIR" "$GEModelR_SOURCE_ARCHIVE" > "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log" 2>&1
+          check_status=$?
+          set -e
+          printf '%s\n' "$check_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/check-exit-status.txt"
+          check_log=$(find "$GEModelR_RELEASE_CHECK_DIR" -maxdepth 2 -type f -name 00check.log -print -quit)
+          qualification_status=$check_status
+          if [[ -n "$check_log" ]]; then
+            cp "$check_log" "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check-00check.log"
+            if ! grep -Fxq 'Status: OK' "$check_log"; then
+              qualification_status=1
+            fi
+          else
+            printf '%s\n' 'R CMD check did not produce a 00check.log.' >> "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log"
+            qualification_status=1
+          fi
+          printf '%s\n' "$qualification_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt"
+          printf '%s\n' '# Source archive qualification' '' "R CMD check exit status: $check_status" "Qualification exit status: $qualification_status" '' 'Only `Status: OK` passes. Every warning, error, or note remains blocking.' > "$GEModelR_RELEASE_EVIDENCE_DIR/job-summary.md"
+          exit "$qualification_status"
+
+      - name: Scan staged qualification evidence
+        id: scan-qualification-evidence
+        if: always() && env.GEModelR_RELEASE_EVIDENCE_DIR != ''
+        shell: bash
+        run: |
+          test -n "$(find "$GEModelR_RELEASE_EVIDENCE_DIR" -maxdepth 1 -type f -print -quit)"
+          node tools/ci/check-public-content.cjs --artifact-dir "$GEModelR_RELEASE_EVIDENCE_DIR"
+
+      - name: Report qualification status
+        if: always()
+        shell: bash
+        run: |
+          if [[ -f "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt" ]]; then
+            printf 'Qualification result: %s\n' "$(cat "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt")" >> "$GITHUB_STEP_SUMMARY"
+          else
+            printf '%s\n' 'Qualification did not start or did not produce a result.' >> "$GITHUB_STEP_SUMMARY"
+          fi

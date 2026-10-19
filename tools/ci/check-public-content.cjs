@@ -7,14 +7,25 @@ const zlib = require("node:zlib");
 
 const BLOCK_SIZE = 512;
 const FORBIDDEN_SEGMENT = ".pkgdown-site";
+const MAX_FILE_BYTES = 50 * 1024 * 1024;
+const LARGE_SERIALIZED_FILE_BYTES = 10 * 1024 * 1024;
 const REPOSITORY_ONLY_SEGMENTS = new Set([
   ".claude",
   ".codex",
+  ".agents",
+  ".aws",
+  ".cache",
   ".git",
   ".github",
   ".gsd",
   ".local-gtap-test",
-  ".planning"
+  ".planning",
+  ".ssh",
+  ".Rcheck",
+  ".RData",
+  ".Rhistory",
+  ".Rproj.user",
+  ".Renviron"
 ]);
 const REPOSITORY_ONLY_DOCUMENTS = new Set([
   "AGENTS.md",
@@ -26,7 +37,24 @@ const REPOSITORY_ONLY_DOCUMENTS = new Set([
   "rcpp-solver-acceleration-plan.md",
   "rcpp-solver-acceleration-plan.html"
 ]);
-const TEXT_FILE_EXTENSIONS = new Set([".html", ".json", ".md", ".txt", ".xml"]);
+const TEXT_FILE_EXTENSIONS = new Set([
+  ".c", ".cc", ".cpp", ".cjs", ".csv", ".dcf", ".h", ".hpp",
+  ".html", ".ini", ".js", ".json", ".md", ".mjs", ".py", ".r",
+  ".rmd", ".sh", ".sql", ".toml", ".txt", ".xml", ".yaml", ".yml"
+]);
+const TEXT_FILE_NAMES = new Set([
+  "CITATION", "DESCRIPTION", "LICENSE", "Makefile", "Makevars",
+  "NAMESPACE", "cleanup", "configure", "configure.win"
+]);
+const PUBLIC_POLICY_PATHS = new Set([
+  "DESCRIPTION", "README.md", "NEWS.md", "inst/CITATION"
+]);
+const PUBLIC_POLICY_MARKER_REASONS = new Set([
+  "repository-only release or provenance reference is present",
+  "release blocker identifier is present",
+  "attribution blocker identifier is present",
+  "reviewed attribution ledger content is present"
+]);
 const PRIVATE_CONTENT_MARKERS = [
   {
     pattern: /docs[\\/](?:provenance|release)(?:[\\/]|[?#\s"')]|$)/i,
@@ -43,8 +71,33 @@ const PRIVATE_CONTENT_MARKERS = [
   {
     pattern: /\b(?:Attribution-Role|Evidence-Key):/i,
     reason: "reviewed attribution ledger content is present"
+  },
+  {
+    pattern: /-----BEGIN (?:OPENSSH |RSA |EC |DSA )?PRIVATE KEY-----/,
+    reason: "private-key material is present"
+  },
+  {
+    pattern: /\bAKIA[0-9A-Z]{16}\b/,
+    reason: "AWS access-key material is present"
+  },
+  {
+    pattern: /\b(?:gh[pousr]_[A-Za-z0-9_]{30,}|github_pat_[A-Za-z0-9_]{50,})\b/,
+    reason: "GitHub access-token material is present"
+  },
+  {
+    pattern: /\bxox[baprs]-[A-Za-z0-9-]{20,}\b/,
+    reason: "Slack access-token material is present"
   }
 ];
+const PRIVATE_PATH_PATTERN = /(?:^|[._-])(?:private|confidential|proprietary|credentials?|passwords?|secrets?)(?:$|[._-])/i;
+const PRIVATE_INPUT_EXTENSIONS = new Set([".har", ".gdx"]);
+const SERIALIZED_EXTENSIONS = new Set([".rds", ".rda", ".rdata"]);
+const SOLUTION_FILE_PATTERN = /(?:^|[._-])(?:full[-_]?scale|solution|levels)(?:[._-]|$)/i;
+const GTAP_SERIALIZED_FILE_PATTERN = /(?:^|[._-])gtap(?:12a)?(?:[._-]|$)/i;
+const SCRATCH_EXTENSIONS = new Set([
+  ".a", ".class", ".core", ".dll", ".dylib", ".exe", ".o", ".pyc",
+  ".so", ".swp", ".tmp"
+]);
 
 function fail(message) {
   throw new Error(message);
@@ -128,6 +181,7 @@ function parseTar(data) {
   let localPax = {};
   let globalPax = {};
   let longName = null;
+  let longLink = null;
 
   while (offset + BLOCK_SIZE <= data.length) {
     const header = data.subarray(offset, offset + BLOCK_SIZE);
@@ -184,6 +238,7 @@ function parseTar(data) {
       if (bodyOffset + paddedSize(bodySize) > data.length) {
         fail("truncated GNU long-link header body");
       }
+      longLink = trimLongName(data.subarray(bodyOffset, bodyOffset + bodySize));
       offset = bodyOffset + paddedSize(bodySize);
       continue;
     }
@@ -199,20 +254,44 @@ function parseTar(data) {
     if (bodyOffset + paddedSize(bodySize) > data.length) {
       fail("truncated tar member body for " + memberPath);
     }
-    entries.push(memberPath);
+    const linkPath = effective.linkpath || longLink ||
+      readString(header.subarray(157, 257));
+    entries.push({
+      path: memberPath,
+      size: bodySize,
+      type,
+      linkPath,
+      contents: type === "0" || type === "7"
+        ? data.subarray(bodyOffset, bodyOffset + bodySize)
+        : Buffer.alloc(0)
+    });
     offset = bodyOffset + paddedSize(bodySize);
     localPax = {};
     longName = null;
+    longLink = null;
   }
 
   fail("tar stream has no complete two-block end marker");
 }
 
 function pathViolation(entryPath) {
-  const parts = entryPath
-    .replace(/\\/g, "/")
+  const normalized = entryPath.replace(/\\/g, "/");
+  if (normalized.startsWith("/") || /^[A-Za-z]:/.test(normalized)) {
+    return "path is absolute rather than relative to the scanned root";
+  }
+  const rawParts = normalized.split("/");
+  if (rawParts.includes("..")) {
+    return "path escapes the scanned root";
+  }
+  const parts = normalized
     .split("/")
     .filter((part) => part !== "" && part !== ".");
+  if (parts.some((part) => PRIVATE_PATH_PATTERN.test(part) ||
+      /^\.env(?:$|[._-])/i.test(part) ||
+      /^\.renviron$/i.test(part) ||
+      /^id_(?:rsa|ed25519)$/i.test(part))) {
+    return "private or credential-like path is present";
+  }
   if (parts.includes(FORBIDDEN_SEGMENT)) {
     return "generated pkgdown site is nested inside the scanned output";
   }
@@ -230,15 +309,57 @@ function pathViolation(entryPath) {
   return null;
 }
 
-function contentViolation(content) {
+function fileViolation(entryPath, size) {
+  const basename = path.posix.basename(entryPath.replace(/\\/g, "/"));
+  const extension = path.posix.extname(basename).toLowerCase();
+  if (SCRATCH_EXTENSIONS.has(extension)) {
+    return "compiled or temporary scratch file is present";
+  }
+  if (PRIVATE_INPUT_EXTENSIONS.has(extension)) {
+    return "private or full-scale model input file is present";
+  }
+  if (extension === ".rdata" || extension === ".rda") {
+    return "serialized workspace or solution artifact is present";
+  }
+  if (size > MAX_FILE_BYTES) {
+    return "file exceeds the 50 MiB public-artifact limit";
+  }
+  if (SERIALIZED_EXTENSIONS.has(extension) &&
+      (size > LARGE_SERIALIZED_FILE_BYTES ||
+       SOLUTION_FILE_PATTERN.test(basename) ||
+       GTAP_SERIALIZED_FILE_PATTERN.test(basename))) {
+    return "full-scale solution or serialized model artifact is present";
+  }
+  if ((extension === ".csv" || extension === ".json" || extension === ".txt") &&
+      SOLUTION_FILE_PATTERN.test(basename)) {
+    return "full-scale solution or model-result artifact is present";
+  }
+  return null;
+}
+
+function contentViolation(content, filePath = "") {
   const normalized = content
     .replace(/%2f/gi, "/")
     .replace(/&#(?:x2f|47);/gi, "/")
     .replace(/&#x5c;/gi, "\\");
+  // These four package-facing metadata files intentionally state the public
+  // attribution/release boundary. The evidence trees themselves remain barred.
+  const normalizedPath = filePath.replace(/\\/g, "/");
+  const pathParts = normalizedPath.split("/").filter((part) => part !== "");
+  if (pathParts[0] === "GEModelR") pathParts.shift();
+  const allowPublicPolicyMarkers = PUBLIC_POLICY_PATHS.has(pathParts.join("/"));
   for (const marker of PRIVATE_CONTENT_MARKERS) {
+    if (allowPublicPolicyMarkers &&
+        PUBLIC_POLICY_MARKER_REASONS.has(marker.reason)) continue;
     if (marker.pattern.test(normalized)) return marker.reason;
   }
   return null;
+}
+
+function isTextFile(filePath) {
+  const normalized = filePath.replace(/\\/g, "/");
+  return TEXT_FILE_NAMES.has(path.posix.basename(normalized)) ||
+    TEXT_FILE_EXTENSIONS.has(path.posix.extname(normalized).toLowerCase());
 }
 
 function inspectArchive(archivePath) {
@@ -251,15 +372,43 @@ function inspectArchive(archivePath) {
 
   let tar;
   try {
-    tar = zlib.gunzipSync(compressed);
+    tar = zlib.gunzipSync(compressed, { maxOutputLength: 512 * 1024 * 1024 });
   } catch (error) {
     fail("cannot decompress archive " + archivePath + ": " + error.message);
   }
 
   const entries = parseTar(tar);
-  const violations = entries.flatMap((entryPath) => {
-    const reason = pathViolation(entryPath);
-    return reason ? [{ path: entryPath, reason }] : [];
+  const violations = entries.flatMap((entry) => {
+    const reasons = [];
+    const pathReason = pathViolation(entry.path);
+    if (pathReason) reasons.push({ path: entry.path, reason: pathReason });
+    if (!pathReason && !["0", "5", "7", "2", "1"].includes(entry.type)) {
+      reasons.push({ path: entry.path, reason: "unsupported tar entry type is present" });
+    }
+    if (!pathReason && ["2", "1"].includes(entry.type)) {
+      const linkPath = entry.linkPath.replace(/\\/g, "/");
+      const target = entry.type === "2"
+        ? path.posix.normalize(path.posix.join(
+          path.posix.dirname(entry.path), linkPath
+        ))
+        : path.posix.normalize(linkPath);
+      if (!linkPath || linkPath.startsWith("/") ||
+          /^[A-Za-z]:/.test(linkPath) ||
+          target === ".." || target.startsWith("../")) {
+        reasons.push({ path: entry.path, reason: "archive link escapes the scanned root" });
+      }
+    }
+    if (["0", "7"].includes(entry.type)) {
+      const fileReason = fileViolation(entry.path, entry.size);
+      if (fileReason) reasons.push({ path: entry.path, reason: fileReason });
+      if (entry.size <= MAX_FILE_BYTES && isTextFile(entry.path)) {
+        const contentReason = contentViolation(
+          entry.contents.toString("utf8"), entry.path
+        );
+        if (contentReason) reasons.push({ path: entry.path, reason: contentReason });
+      }
+    }
+    return reasons;
   });
   return { entries, violations };
 }
@@ -342,17 +491,21 @@ function inspectDirectory(rootPath, mode) {
           path: relative,
           reason: "unsupported filesystem entry type"
         });
-      } else if (TEXT_FILE_EXTENSIONS.has(path.extname(child.name).toLowerCase())) {
-        let content;
-        try {
-          content = fs.readFileSync(absolute, "utf8");
-        } catch (error) {
-          fail("cannot read " + mode + " content " + relative +
-            ": " + error.message);
-        }
-        const contentReason = contentViolation(content);
-        if (contentReason) {
-          violations.push({ path: relative, reason: contentReason });
+      } else {
+        const fileReason = fileViolation(relative, stat.size);
+        if (fileReason) violations.push({ path: relative, reason: fileReason });
+        if (stat.size <= MAX_FILE_BYTES && isTextFile(relative)) {
+          let content;
+          try {
+            content = fs.readFileSync(absolute, "utf8");
+          } catch (error) {
+            fail("cannot read " + mode + " content " + relative +
+              ": " + error.message);
+          }
+          const contentReason = contentViolation(content, relative);
+          if (contentReason) {
+            violations.push({ path: relative, reason: contentReason });
+          }
         }
       }
     }

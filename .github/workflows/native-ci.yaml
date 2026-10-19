@@ -35,11 +35,20 @@ jobs:
         run: |
           Rscript --vanilla tools/ci/verify-matrix-floor-evidence.R --verify-final-metadata --evidence .planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md
           Rscript --vanilla tools/ci/test-matrix-floor-evidence.R --expect-final-metadata
+      - name: Stage exact endpoint evidence
+        shell: bash
+        run: |
+          mkdir -p "$RUNNER_TEMP/matrix-endpoint"
+          cp matrix-current-endpoint.txt "$RUNNER_TEMP/matrix-endpoint/"
+      - name: Scan staged endpoint evidence
+        id: scan-endpoint-evidence
+        run: node tools/ci/check-public-content.cjs --artifact-dir "$RUNNER_TEMP/matrix-endpoint"
       - name: Preserve exact per-run current endpoint
+        if: steps.scan-endpoint-evidence.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: matrix-current-${{ github.run_id }}-${{ github.run_attempt }}
-          path: matrix-current-endpoint.txt
+          path: ${{ runner.temp }}/matrix-endpoint
           if-no-files-found: error
           retention-days: 30
 
@@ -188,8 +197,13 @@ jobs:
           cat "$GEModelR_EVIDENCE_DIR/matrix-candidate-evidence.csv" >> "$GITHUB_STEP_SUMMARY"
           printf '%s\n' '' 'No final Matrix floor is selected.' >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Preserve every provisional candidate row and logs
+      - name: Scan provisional candidate evidence
+        id: scan-candidate-evidence
         if: always()
+        run: node tools/ci/check-public-content.cjs --artifact-dir "$GEModelR_EVIDENCE_DIR"
+
+      - name: Preserve every provisional candidate row and logs
+        if: always() && steps.scan-candidate-evidence.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
         with:
           name: matrix-candidate-${{ github.run_id }}-${{ github.run_attempt }}-${{ matrix.r }}-${{ matrix.candidate }}-${{ matrix.platform }}-${{ matrix.build }}
@@ -256,8 +270,13 @@ jobs:
         # RTK wraps this exact Rscript command locally; hosted runners use Rscript.
         run: Rscript --vanilla tools/ci/summarize-r-cmd-check.R --run
 
-      - name: Preserve complete current check log and directory even on failure
+      - name: Scan check artifacts
+        id: scan-check-artifacts
         if: always()
+        run: node tools/ci/check-public-content.cjs --artifact-dir "$GEModelR_CHECK_ARTIFACT_DIR"
+
+      - name: Preserve raw check status and logs even on failure
+        if: always() && steps.scan-check-artifacts.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
         with:
           name: representative-check-${{ github.run_id }}-${{ github.run_attempt }}

@@ -138,17 +138,25 @@ runRcmdCheckReport = function() {
   if (!nzchar(artifacts)) artifacts = tempfile("GEModelR-check-", tmpdir = temporaryRoot)
   dir.create(artifacts, recursive = TRUE, showWarnings = FALSE)
   artifacts = normalizePath(artifacts, winslash = "/", mustWork = TRUE)
+  workRoot = tempfile("GEModelR-check-work-", tmpdir = temporaryRoot)
+  if (!dir.create(workRoot, recursive = TRUE, showWarnings = FALSE)) {
+    stop("Could not create disposable R CMD check work directory", call. = FALSE)
+  }
+  workRoot = normalizePath(workRoot, winslash = "/", mustWork = TRUE)
   inside = function(path, directory) {
     identical(path, directory) || startsWith(path, paste0(directory, "/"))
   }
-  if (inside(artifacts, source) || !inside(artifacts, temporaryRoot)) {
+  if (length(list.files(artifacts, all.files = TRUE, no.. = TRUE)) ||
+      inside(artifacts, source) || !inside(artifacts, temporaryRoot) ||
+      inside(workRoot, source) || !inside(workRoot, temporaryRoot)) {
     stop("Check artifacts must be in a temporary directory outside the source checkout",
          call. = FALSE)
   }
-  library = Sys.getenv("GEModelR_TEST_LIBRARY", unset = file.path(artifacts, "library"))
+  library = Sys.getenv("GEModelR_TEST_LIBRARY", unset = file.path(workRoot, "library"))
   dir.create(library, recursive = TRUE, showWarnings = FALSE)
   library = normalizePath(library, winslash = "/", mustWork = TRUE)
-  if (!inside(library, temporaryRoot) || inside(library, source)) {
+  if (!inside(library, temporaryRoot) || inside(library, source) ||
+      inside(library, artifacts)) {
     stop("R CMD check library must be an explicit temporary library", call. = FALSE)
   }
   matrixVersion = as.character(packageVersion("Matrix", lib.loc = unique(c(library, .libPaths()))))
@@ -157,14 +165,14 @@ runRcmdCheckReport = function() {
       package_version(matrixVersion) != package_version(expectedMatrix)) {
     stop("Representative check Matrix does not match its exact endpoint", call. = FALSE)
   }
-  sourceCopy = file.path(artifacts, "source")
+  sourceCopy = file.path(workRoot, "source")
   if (file.exists(sourceCopy)) stop("Check source copy must be new", call. = FALSE)
   copyCheckSource(source, sourceCopy)
   description = read.dcf(file.path(sourceCopy, "DESCRIPTION"))
   archive = paste0(description[1L, "Package"], "_", description[1L, "Version"], ".tar.gz")
-  buildLog = file.path(artifacts, "R-CMD-build.log")
-  rawLog = file.path(artifacts, "R-CMD-check.log")
-  makevars = file.path(artifacts, "Makevars-serial")
+  buildLog = file.path(workRoot, "R-CMD-build.log")
+  rawLog = file.path(workRoot, "R-CMD-check.log")
+  makevars = file.path(workRoot, "Makevars-serial")
   writeLines("SHLIB_OPENMP_CXXFLAGS =", makevars)
   oldDirectory = getwd()
   oldEnvironment = Sys.getenv(c("R_LIBS", "R_MAKEVARS_USER", "GEModelR_EXPECT_OPENMP"),
@@ -179,19 +187,19 @@ runRcmdCheckReport = function() {
   }, add = TRUE)
   Sys.setenv(R_LIBS = paste(unique(c(library, .libPaths())), collapse = .Platform$path.sep),
              R_MAKEVARS_USER = makevars, GEModelR_EXPECT_OPENMP = "forbidden")
-  setwd(artifacts)
+  setwd(workRoot)
   r = file.path(R.home("bin"), "R")
   cat("Full package check: disposable source", sourceCopy, "\n")
   cat("Explicit check library:", library, "\n")
   buildStatus = system2(r, c("CMD", "build", shQuote(sourceCopy)),
                         stdout = buildLog, stderr = buildLog)
-  writeLines(as.character(buildStatus), file.path(artifacts, "build-exit-status.txt"))
+  writeLines(as.character(buildStatus), file.path(workRoot, "build-exit-status.txt"))
   if (identical(buildStatus, 0L)) {
     checkStatus = system2(r, c("CMD", "check", paste0("--library=", shQuote(library)),
-                              paste0("--output=", shQuote(artifacts)), shQuote(archive)),
+                              paste0("--output=", shQuote(workRoot)), shQuote(archive)),
                           stdout = rawLog, stderr = rawLog)
-    writeLines(as.character(checkStatus), file.path(artifacts, "check-exit-status.txt"))
-    checkDirectories = list.dirs(artifacts, recursive = FALSE, full.names = TRUE)
+    writeLines(as.character(checkStatus), file.path(workRoot, "check-exit-status.txt"))
+    checkDirectories = list.dirs(workRoot, recursive = FALSE, full.names = TRUE)
     checkDirectories = checkDirectories[grepl("\\.Rcheck$", checkDirectories)]
     checkLogs = file.path(checkDirectories, "00check.log")
     checkLogs = checkLogs[file.exists(checkLogs)]
@@ -207,7 +215,7 @@ runRcmdCheckReport = function() {
     returnStatus = checkStatus
   } else {
     writeLines("R CMD check did not run because source build failed.", rawLog)
-    writeLines("not run", file.path(artifacts, "check-exit-status.txt"))
+    writeLines("not run", file.path(workRoot, "check-exit-status.txt"))
     current = list(result = paste("R CMD build failed with exit status", buildStatus),
                    exitStatus = "not run (source build failed)",
                    counts = setNames(rep(NA_integer_, 6L), names(phase04Baseline())))
@@ -216,16 +224,33 @@ runRcmdCheckReport = function() {
   summary = c(formatRcmdCheckReport(current),
               paste("Observed R version:", as.character(getRversion())),
               paste("Observed Matrix version:", matrixVersion),
-              paste("Raw full-check log:", rawLog),
-              paste("Complete check directory and source archive:", artifacts), "")
-  summaryPath = file.path(artifacts, "job-summary.md")
+              "Raw build and check logs are included in this artifact.",
+              "The complete check workspace remains outside the public artifact.", "")
+  summaryPath = file.path(workRoot, "job-summary.md")
   writeLines(summary, summaryPath)
+  publicFiles = c(
+    "R-CMD-build.log", "R-CMD-check.log", "build-exit-status.txt",
+    "check-exit-status.txt", "job-summary.md"
+  )
+  for (name in publicFiles) {
+    from = file.path(workRoot, name)
+    if (file.exists(from) && !file.copy(from, file.path(artifacts, name))) {
+      stop(paste("Could not stage check evidence:", name), call. = FALSE)
+    }
+  }
+  checkDirectoryLog = file.path(workRoot, "GEModelR.Rcheck", "00check.log")
+  if (file.exists(checkDirectoryLog) &&
+      !file.copy(checkDirectoryLog,
+                 file.path(artifacts, "R-CMD-check-00check.log"))) {
+    stop("Could not stage the complete R CMD check directory log", call. = FALSE)
+  }
+  writeLines(summary, file.path(artifacts, "job-summary.md"))
   githubSummary = Sys.getenv("GITHUB_STEP_SUMMARY")
   if (nzchar(githubSummary)) {
     cat(paste(summary, collapse = "\n"), "\n", file = githubSummary, append = TRUE)
   }
   cat(paste(summary, collapse = "\n"), "\n")
-  cat("Preserved check artifacts:", artifacts, "\n")
+  cat("Preserved public check evidence:", artifacts, "\n")
   invisible(returnStatus)
 }
 

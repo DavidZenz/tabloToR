@@ -10,7 +10,7 @@ const zlib = require("node:zlib");
 
 const checker = path.join(__dirname, "check-public-content.cjs");
 
-function tarHeader(name, size) {
+function tarHeader(name, size, type = "0", linkPath = "") {
   const header = Buffer.alloc(512);
   header.write(name, 0, 100, "utf8");
   header.write("0000644\0", 100, 8, "ascii");
@@ -19,7 +19,8 @@ function tarHeader(name, size) {
   header.write(size.toString(8).padStart(11, "0") + "\0", 124, 12, "ascii");
   header.write("00000000000\0", 136, 12, "ascii");
   header.fill(32, 148, 156);
-  header[156] = "0".charCodeAt(0);
+  header[156] = type.charCodeAt(0);
+  header.write(linkPath, 157, 100, "utf8");
   header.write("ustar\0", 257, 6, "ascii");
   header.write("00", 263, 2, "ascii");
   let checksum = 0;
@@ -32,7 +33,9 @@ function makeTarGz(entries) {
   const blocks = [];
   for (const entry of entries) {
     const body = Buffer.from(entry.contents || "", "utf8");
-    blocks.push(tarHeader(entry.path, body.length));
+    blocks.push(tarHeader(
+      entry.path, body.length, entry.type || "0", entry.linkPath || ""
+    ));
     blocks.push(body);
     const padding = (512 - (body.length % 512)) % 512;
     if (padding > 0) blocks.push(Buffer.alloc(padding));
@@ -61,7 +64,13 @@ test("accepts a clean source archive", () => {
     const archive = path.join(root, "clean.tar.gz");
     fs.writeFileSync(archive, makeTarGz([
       { path: "GEModelR/DESCRIPTION", contents: "Package: GEModelR\n" },
-      { path: "GEModelR/vignettes/first-simulation.Rmd", contents: "guide\n" }
+      { path: "GEModelR/README.md", contents: "See docs/provenance/ATTRIBUTION.md for package credit.\n" },
+      { path: "GEModelR/NEWS.md", contents: "Attribution-Role: reviewed package metadata\n" },
+      { path: "GEModelR/inst/CITATION", contents: "Package citation.\n" },
+      { path: "GEModelR/vignettes/first-simulation.Rmd", contents: "guide\n" },
+      { path: "GEModelR/benchmarks/run-model.R", contents: "runBenchmark()\n" },
+      { path: "GEModelR/benchmarks/repair-gtap-20261017.csv", contents: "component,elapsed_ms\nsolve,1.0\n" },
+      { path: "GEModelR/tests/testthat/fixtures/three-region.tab", contents: "TABLO\n" }
     ]));
     const result = runChecker(["--archive", archive]);
     assert.equal(result.status, 0, result.stderr);
@@ -78,6 +87,68 @@ test("rejects a source archive containing the generated site", () => {
     const result = runChecker(["--archive", archive]);
     assert.equal(result.status, 1);
     assert.match(result.stderr, /\.pkgdown-site/);
+  });
+});
+
+test("rejects credential paths, model inputs, solutions, and compiled scratch", () => {
+  withTempDirectory((root) => {
+    const cases = [
+      ["GEModelR/inst/data/credentials.txt", "private or credential-like path"],
+      ["GEModelR/inst/data/private.har", "private or full-scale model input"],
+      ["GEModelR/results/solution.rds", "full-scale solution"],
+      ["GEModelR/src/sparse-lu.o", "compiled or temporary scratch"],
+      ["GEModelR/model.RData", "serialized workspace"]
+    ];
+    for (const [member, reason] of cases) {
+      const archive = path.join(root, "rejected.tar.gz");
+      fs.writeFileSync(archive, makeTarGz([{ path: member, contents: "x" }]));
+      const result = runChecker(["--archive", archive]);
+      assert.equal(result.status, 1, member);
+      assert.match(result.stderr, new RegExp(reason));
+    }
+  });
+});
+
+test("rejects credential-like text and escaping archive links", () => {
+  withTempDirectory((root) => {
+    const archive = path.join(root, "credential.tar.gz");
+    fs.writeFileSync(archive, makeTarGz([
+      { path: "GEModelR/notes.txt", contents: "AKIA1234567890ABCDEF\n" }
+    ]));
+    const credential = runChecker(["--archive", archive]);
+    assert.equal(credential.status, 1);
+    assert.match(credential.stderr, /AWS access-key material/);
+
+    fs.writeFileSync(archive, makeTarGz([{
+      path: "GEModelR/data/link", type: "2", linkPath: "../../../outside.har"
+    }]));
+    const link = runChecker(["--archive", archive]);
+    assert.equal(link.status, 1);
+    assert.match(link.stderr, /archive link escapes the scanned root/);
+  });
+});
+
+test("scans credential markers in extensionless package metadata", () => {
+  withTempDirectory((root) => {
+    const archive = path.join(root, "metadata-token.tar.gz");
+    fs.writeFileSync(archive, makeTarGz([
+      { path: "GEModelR/DESCRIPTION", contents: "Package: GEModelR\nAWS: AKIA1234567890ABCDEF\n" }
+    ]));
+    const result = runChecker(["--archive", archive]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /AWS access-key material/);
+  });
+});
+
+test("does not extend package policy exceptions to nested files", () => {
+  withTempDirectory((root) => {
+    const archive = path.join(root, "nested-reference.tar.gz");
+    fs.writeFileSync(archive, makeTarGz([
+      { path: "GEModelR/docs/README.md", contents: "See docs/provenance/RIGHTS.md.\n" }
+    ]));
+    const result = runChecker(["--archive", archive]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /repository-only release or provenance reference/);
   });
 });
 
@@ -146,6 +217,42 @@ test("rejects repository-only provenance and release text in a generated site", 
     const blocker = runChecker(["--artifact-dir", site]);
     assert.equal(blocker.status, 1);
     assert.match(blocker.stderr, /attribution blocker identifier/);
+  });
+});
+
+test("rejects private files, compiled scratch, oversized files, and escaping links", () => {
+  withTempDirectory((root) => {
+    const staged = path.join(root, "staged");
+    fs.mkdirSync(staged, { recursive: true });
+    fs.writeFileSync(path.join(staged, "ordinary.md"), "public summary\n");
+    assert.equal(runChecker(["--artifact-dir", staged]).status, 0);
+
+    fs.mkdirSync(path.join(staged, ".ssh"));
+    let result = runChecker(["--artifact-dir", staged]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /repository-only planning or workflow content/);
+
+    fs.rmSync(path.join(staged, ".ssh"), { recursive: true, force: true });
+    fs.writeFileSync(path.join(staged, "native.so"), "object");
+    result = runChecker(["--artifact-dir", staged]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /compiled or temporary scratch/);
+
+    fs.rmSync(path.join(staged, "native.so"));
+    const large = path.join(staged, "large-output.txt");
+    fs.closeSync(fs.openSync(large, "w"));
+    fs.truncateSync(large, 50 * 1024 * 1024 + 1);
+    result = runChecker(["--artifact-dir", staged]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /50 MiB/);
+
+    fs.rmSync(large);
+    const outside = path.join(root, "outside.txt");
+    fs.writeFileSync(outside, "not staged\n");
+    fs.symlinkSync(outside, path.join(staged, "outside.txt"));
+    result = runChecker(["--artifact-dir", staged]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /symlink escapes the scanned root/);
   });
 });
 

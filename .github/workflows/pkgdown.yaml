@@ -38,13 +38,16 @@ jobs:
       - name: Scan archive and build pkgdown site
         run: Rscript --vanilla tools/ci/build-pkgdown-site.R
 
-      - name: Scan generated site tree
+      - name: Scan complete generated site tree
+        id: scan-site
         run: node tools/ci/check-public-content.cjs --site "$RUNNER_TEMP/pkgdown-source/GEModelR/.pkgdown-site"
 
       - name: Scan staged site artifact
+        id: scan-site-artifact
         run: node tools/ci/check-public-content.cjs --artifact-dir "$RUNNER_TEMP/pkgdown-site"
 
       - name: Upload pkgdown site artifact
+        if: steps.scan-site.outcome == 'success' && steps.scan-site-artifact.outcome == 'success'
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: pkgdown-site
