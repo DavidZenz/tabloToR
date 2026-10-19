@@ -9,14 +9,15 @@ The executable source of truth is `tools/check_release_gates.R`. It evaluates
 the exact integrated evidence version before any legacy result, then validates
 rights, accepted public-domain evidence, freshly extracted source and Git
 provenance, every public attribution destination, strict name evidence, the
-reviewed package-license decision, approved governance, and the canonical
-repository boundary as one fail-closed decision.
+authoritative package-license selection and its compatibility status, approved
+governance, and the canonical repository boundary as one fail-closed decision.
 
 The checked-in repository is intentionally blocked by exactly two reviewed
-facts. The package license remains unresolved until the LinkingTo, vendored, and
-native dependency compatibility audit is complete. A Git identity alias remains
-unresolved and cannot be silently merged into a public attribution identity.
-Neither blocker authorizes an external repository or publication action.
+facts. The package license choice is recorded as GPL-3.0-or-later, but its
+compatibility clearance remains pending the LinkingTo, vendored, and native
+dependency audit. A Git identity alias remains unresolved and cannot be
+silently merged into a public attribution identity. Neither blocker authorizes
+an external repository or publication action.
 
 | Gate | Evidence | Passing predicate | Blocking result |
 | --- | --- | --- | --- |
@@ -30,7 +31,7 @@ Neither blocker authorizes an external repository or publication action.
 | Governance identity | `GOVERNANCE.md` | Exact approved maintainer, contact, release authority, security route, reviewer, and date | `GOVERNANCE_IDENTITY_UNAPPROVED` or `GOVERNANCE_SECURITY_ROUTE_MISSING` |
 | Repository boundary | `REPOSITORY.md` | Exact owner/name/URL/issues pair, private-development boundary, and every external action remains not authorized | `REPOSITORY_URL_MISMATCH`, `REPOSITORY_ISSUES_MISMATCH`, or `REPOSITORY_BOUNDARY_INVALID` |
 | Package metadata | `DESCRIPTION`, governance/repository evidence, `_pkgdown.yml` | Package name is `GEModelR`; approved maintainer and issue tracker match; `DESCRIPTION` lists the canonical repository URL and, when configured, the exact pkgdown URL | `DESCRIPTION_IDENTITY_MISMATCH`, `DESCRIPTION_URL_MISMATCH`, or `DESCRIPTION_ISSUES_MISMATCH` |
-| Package license | `LICENSE-DECISION.md`, `DESCRIPTION`, reviewed dependency audit | Pending markers exactly match the unresolved field and dependency blocker; a reviewed transition has a safe under-root audit path, exact MD5, reviewer/date, exact DESCRIPTION equality, and an R-valid license expression | A named `LICENSE_*` or `DESCRIPTION_LICENSE_MISMATCH` reason |
+| Package license | `docs/provenance/LICENSE-DECISION.md`, `docs/release/LICENSE-DECISION.md`, `DESCRIPTION`, reviewed dependency audit | An authoritative `selected` decision has exact DESCRIPTION equality, reviewer/date, an R-valid license expression, and the dependency blocker still present; a final `reviewed` transition also has a safe under-root audit path, exact MD5, and no dependency blocker | A named `LICENSE_*` or `DESCRIPTION_LICENSE_MISMATCH` reason |
 | Sensitive evidence | Release and provenance evidence trees | No credential, private-correspondence, proprietary-model, or giant-result indicator | `SENSITIVE_EVIDENCE_CLASS` |
 
 ## Superseded request checkpoint

@@ -32,8 +32,10 @@ bibentry(
 
 citFooter(paste(
   "The current package identity is GEModelR.",
-  "The separately cited tabloToR baseline remains credited as predecessor source,",
-  "and public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+  "The separately cited tabloToR baseline remains credited as predecessor source.",
+  "Commercial users are encouraged to disclose GEModelR use in relevant outputs.",
+  "Citation and disclosure are requests, not additional GPL conditions.",
+  "Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
   "and ATTRIBUTION_IDENTITY_UNRESOLVED.",
   "This citation does not authorize redistribution or publication."
 ))

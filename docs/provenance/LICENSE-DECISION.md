@@ -3,21 +3,21 @@
 ## Canonical status
 
 License-Decision-Version: 1
-Decision-Status: pending
-Description-License: What license is it under?
+Decision-Status: selected
+Description-License: GPL (>= 3)
 Dependency-Audit-Artifact: pending
 Dependency-Audit-MD5: pending
-Reviewer: pending
-Review-Date-UTC: pending
+Reviewer: David Zenz
+Review-Date-UTC: 2026-10-19
 
-The package license remains unresolved while
-`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` is an intentional release blocker.
-The placeholder above must match `DESCRIPTION` exactly and cannot authorize a
-release.
+The maintainer selected GPL-3.0-or-later for the package. The exact R metadata
+expression is recorded above and in `DESCRIPTION`. This is an authoritative
+license choice, not compatibility clearance: the dependency audit remains
+pending, so public redistribution is still blocked.
 
-## Reviewed transition contract
+## Final review transition contract
 
-A future transition to `Decision-Status: reviewed` is valid only when every
+A future transition from `selected` to `reviewed` is valid only when every
 condition below is satisfied in the same evaluated root:
 
 - `Description-License` exactly equals the `DESCRIPTION` `License` field.
@@ -27,7 +27,8 @@ condition below is satisfied in the same evaluated root:
 - R's package-license checker accepts the exact license expression.
 - `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` is absent from all blocker records.
 
-This record does not perform the dependency audit, select a final license, or
-authorize repository mutation, release, or publication. Until a reviewed
-transition satisfies every predicate, the checked-in pending values remain
-canonical.
+This record does not perform the dependency audit or authorize repository
+mutation, release, or publication. The `selected` status keeps the exact
+maintainer-approved package license visible while the compatibility blocker
+remains active. Only a reviewed transition satisfying every predicate clears
+that blocker.

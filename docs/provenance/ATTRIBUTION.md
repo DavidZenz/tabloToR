@@ -43,17 +43,20 @@ Commit counts and author strings are audit leads only.
 `mivanicERS` appears in Git-derived contributor evidence, but no reviewed public
 record establishes it as a separate person or package role. It is therefore not
 published as a person and is not silently merged with Maros Ivanic. The package
-license likewise remains unresolved until the dependency compatibility audit;
-the provisional Apache-2.0 basis for original GEModelR code is not a finalized
-`DESCRIPTION` license.
+license choice is GPL-3.0-or-later, recorded in
+`docs/provenance/LICENSE-DECISION.md` and the maintainer-authorized
+`docs/release/LICENSE-DECISION.md`. The dependency compatibility audit remains
+open, so this choice does not clear the package compatibility blocker or
+authorize release. Earlier provisional Apache-2.0 source-ledger labels do not
+replace the selected package-level `DESCRIPTION` license.
 
 ## Destination contract
 
 Every public destination must retain the reviewed names, roles, evidence keys,
 and scope above:
 
-- `DESCRIPTION` carries only reviewed `Authors@R` roles and keeps the package
-  name `tabloToR` and unresolved license unchanged in this plan.
+- `DESCRIPTION` carries only reviewed `Authors@R` roles, uses the approved
+  successor name `GEModelR`, and records the selected GPL-3.0-or-later license.
 - `README.md` identifies the upstream repository and audited commit, states the
   current redistribution boundary, and links this contract and `RIGHTS.md`.
 - `inst/CITATION` derives common package fields from `DESCRIPTION` and records

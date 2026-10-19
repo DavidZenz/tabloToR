@@ -21,8 +21,13 @@
 ^CONTRIBUTORS\.md$
 ^GOVERNANCE\.md$
 ^benchmarks/\.
+^benchmarks/repair-[^/]*$
 ^benchmarks/(deep-review-[^/]*|optimization-(check|repetitions|results|test-delta)-[^/]*)$
 ^docs/provenance$
 ^docs/release$
+^inst/migration/old-identity-allowlist\.csv$
+^inst/tools$
+^tests/testthat/test-(attribution-contract|release-gates)\.R$
+^tools$
 ^rcpp-solver-acceleration-plan\.md$
 ^src/[^/]*\.(o|so|dll|a|dylib)$

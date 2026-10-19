@@ -118,3 +118,10 @@ after coefficient changes. Prepared sparse factors own validated snapshots
 and reusable scratch; cleanup releases native handles before results are
 committed or a failure is returned. Matrix references needed for acceptance
 are released before simulation updates.
+
+With detailed diagnostics, `phase_allocations` reports nonnegative changes in
+sampled R heap usage. Samples use full garbage collections and R's reported
+MiB, including the platform-specific size of node cells. `peak_gc_bytes` is
+the largest of those phase samples across the solve; the same samples are
+reused for progress and final diagnostics. These rounded heap estimates do
+not include all native allocations and are distinct from process peak RSS.

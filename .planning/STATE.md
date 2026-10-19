@@ -4,10 +4,10 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: 06-05 Task 2: full-scale benchmark run in progress
-last_updated: "2026-10-15T13:25:28Z"
-last_activity: 2026-10-15
-last_activity_desc: Plan 06-05 inputs and source package prepared; benchmark summary will be unsigned
+stopped_at: 06-06 final verification: local R CMD check blocked by Matrix minimum and source inventory mismatch
+last_updated: "2026-10-19T14:19:43Z"
+last_activity: 2026-10-19
+last_activity_desc: GPL-3.0-or-later decision recorded; archive privacy gate passed; full qualification remains blocked
 state_head: 2ca2d73d3e9ba723958c14fcc3013e0ebd1a7a2a
 progress:
   total_phases: 7
@@ -29,9 +29,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 ## Current Position
 
 Phase: 06 (Documentation and Release Qualification) — EXECUTING
-Plan: 5 of 6
-Status: External benchmark running; no signing identity is required
-Last activity: 2026-10-15 — Plan 06-05 external A/B runner started; unsigned evidence policy recorded
+Plan: 6 of 6
+Status: License decision and archive privacy checks completed; final qualification is halted by the local Matrix version and source inventory gate
+Last activity: 2026-10-19 — GPL-3.0-or-later was recorded; source archive built and passed the content gate
 
 Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans completed before this phase.
 
@@ -172,20 +172,22 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 05]: Set Matrix 1.6-5 as the minimum only after all five oldrel-1 platform/build pairings passed authentic installed hosted checks.
 - [Phase 05]: Keep SuiteSparse recognized but unavailable, and keep full package checks informational until Phase 06 release qualification.
 - [Phase 06]: Build the pkgdown site from the inspected source archive with a site-specific homepage, omit repository-only governance/citation/contributor/news pages, and scan rendered text for embedded release/provenance markers.
+- [Phase 06]: Run the approved nonzero-shock C++ thread-scaling diagnostic at 1, 4, 8, and 12 threads without an R baseline; treat its passing candidate-only gate as diagnostic evidence and keep NUM-03 pending.
+- [Phase 06]: Record the maintainer-authorized GPL-3.0-or-later selection in DESCRIPTION and keep dependency compatibility plus attribution identity as release blockers until separately cleared.
 
 ### Pending Todos
 
-Phase 06 Plan 05: The C++-only full-scale run is complete and its detailed outputs remain external. NUM-03's matched A/B gate is still pending; do not rerun the R reference unless the user redirects this decision.
+Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12-run C++ thread-scaling diagnostic for a nonzero GBR productivity shock are complete; the scaling gate passed and detailed outputs remain external. The earlier zero-shock C++ run is historical. No R baseline or matched A/B gate was run, so NUM-03 remains pending; do not rerun the R reference unless the user redirects this decision.
 
 ### Blockers/Concerns
 
-- Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; the license decision and attribution alias still need reviewed dispositions.
+- Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; GPL-3.0-or-later is selected, but compatibility clearance and the attribution alias still need reviewed dispositions.
 - Phase 1: A fresh GEModelR name availability check remains required immediately before release.
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
 - Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
 - Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
-- Phase 6 Plan 05: The C++ candidate-only run completed with one warm-up and three measured runs. It used no shocks file and produced an all-zero solution; no matched reference or A/B gate was used, so NUM-03 remains pending. The user directed that the R baseline not be rerun. Detailed outputs remain external; no GPG key is required.
-- Phase 6 Plan 06: Source-archive qualification remains blocked until an authoritative license decision is recorded; do not suppress the current DESCRIPTION warning.
+- Phase 6 Plan 05: Four measured C++ candidate-only shock runs and a later 12-run 1/4/8/12-thread scaling diagnostic completed; the candidate-only scaling gate passed. The user directed that the R baseline not be rerun, so no matched reference or A/B gate was used and NUM-03 remains pending. The scaling medians were 10,401/4,644/4,076/4,096 seconds; 12 threads were effectively level with 8 threads. `pidstat` observed up to all requested worker counts, but whole-run process averages were about 1.0/2.5/3.6/4.2 core equivalents. Detailed outputs remain external; no GPG key is required and no solver defaults changed.
+- Phase 6 Plan 06: The license decision is recorded and the built archive passes the content/privacy gate. Local R CMD check stops at Matrix 1.6-3, below the declared 1.6-5 minimum, and reports three 404 URLs because the canonical repository and site are not published. The integrated release gate also reports PROVENANCE_KEY_MISMATCH; preserve source evidence and resolve these gates before qualification.
 
 ## Deferred Items
 
@@ -197,6 +199,6 @@ Phase 06 Plan 05: The C++-only full-scale run is complete and its detailed outpu
 
 ## Session Continuity
 
-Last session: 2026-10-15T21:50:42Z
-Stopped at: Plan 06-05 C++-only run complete; matched A/B gate pending
+Last session: 2026-10-19T14:19:43Z
+Stopped at: Plan 06-06 license decision recorded; archive qualification blocked by local dependency and source-integrity checks
 Resume file: None

@@ -1736,6 +1736,11 @@ release_gate_validate_license_expression = function(expression, root) {
 }
 
 release_gate_license_review_date_valid = function(value) {
+  if (grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}$", value)) {
+    parsedDate = as.Date(value, format = "%Y-%m-%d")
+    return(!is.na(parsedDate) &&
+      identical(format(parsedDate, "%Y-%m-%d"), value))
+  }
   if (!grepl(
     "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$",
     value
@@ -1802,6 +1807,31 @@ release_gate_validate_license_decision = function(
       return(fail("LICENSE_DECISION_INVALID"))
     }
     if (!dependencyBlocked) return(fail("LICENSE_DECISION_PENDING"))
+    parseStatus[["license"]] = "pass"
+    return(list(parse_status = parseStatus, values = values))
+  }
+  if (identical(values[["Decision-Status"]], "selected")) {
+    if (!dependencyBlocked) return(fail("LICENSE_BLOCKER_MISMATCH"))
+    if (!identical(values[["Dependency-Audit-Artifact"]], "pending") ||
+        !identical(values[["Dependency-Audit-MD5"]], "pending")) {
+      return(fail("LICENSE_DECISION_INVALID"))
+    }
+    if (!identical(
+      descriptionLicense, values[["Description-License"]]
+    )) {
+      return(fail("DESCRIPTION_LICENSE_MISMATCH"))
+    }
+    if (identical(values[["Reviewer"]], "pending") ||
+        !release_gate_license_review_date_valid(
+          values[["Review-Date-UTC"]]
+        )) {
+      return(fail("LICENSE_DECISION_UNREVIEWED"))
+    }
+    if (!release_gate_validate_license_expression(
+      descriptionLicense, normalizePath(root, mustWork = TRUE)
+    )) {
+      return(fail("LICENSE_EXPRESSION_INVALID"))
+    }
     parseStatus[["license"]] = "pass"
     return(list(parse_status = parseStatus, values = values))
   }

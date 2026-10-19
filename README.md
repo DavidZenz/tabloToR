@@ -14,9 +14,10 @@ reviewed post-baseline sparse and native solver work. The upstream baseline has
 an accepted public-domain/CC0 basis; it is credited here even though CC0 does
 not require attribution.
 
-The current package identity is `GEModelR`. Public redistribution remains
-blocked: the dependency compatibility audit needed to finalize the package
-license is still pending. The identity migration does not authorize
+The current package identity is `GEModelR`, licensed under GPL-3.0-or-later
+(`GPL (>= 3)` in R package metadata). Public redistribution remains blocked
+while the dependency compatibility audit and attribution identity review are
+pending. The license decision and identity migration do not authorize
 publication.
 
 The evidence-to-role mapping is in
@@ -268,3 +269,8 @@ Rscript benchmarks/benchmark_gtap12a.R \
 ```
 
 The harness records HAR load, compilation, sparse construction/factor-solve timings, estimated triplets, peak resident memory, physical RAM, and whether a dense fallback was used.
+
+For repeatable public-function and native-kernel measurements using generated
+inputs, see [the optimization benchmark](benchmarks/OPTIMIZATION.md). Its
+small and large cases run in fresh R processes and report setup separately
+from execution, along with heap allocations, peak RSS, and numerical checks.

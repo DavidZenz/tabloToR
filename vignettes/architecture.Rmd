@@ -65,6 +65,14 @@ hand. Native code checks dimensions, storage, and finite values before use.
 OpenMP workers operate on prepared native buffers; R API calls and R memory
 allocation stay on the main thread. Serial builds remain supported.
 
+Sparse triangular solves share one native kernel between serial and OpenMP
+execution. The kernel packs at most 32 right-hand sides into contiguous rows,
+then restores the caller's matrix layout and permutations. Its temporary
+workspace is bounded by that tile width. Worker buffers are allocated before
+entering OpenMP, and worker failures are reported on the R thread. CSC storage
+and one-based positions are validated before native indexing; dense factor
+handles are tagged and released only by their owning implementation.
+
 ## Numerical acceptance, diagnostics, and cleanup
 
 A sparse backend returns a candidate solution. Before that candidate is

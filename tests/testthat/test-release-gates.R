@@ -1226,6 +1226,30 @@ writePendingLicenseDecisionFixture = function(root) {
   invisible(path)
 }
 
+writeSelectedLicenseDecisionFixture = function(root) {
+  path = file.path(root, "docs", "provenance", "LICENSE-DECISION.md")
+  dir.create(dirname(path), recursive = TRUE, showWarnings = FALSE)
+  writeLines(c(
+    "# Package license decision",
+    "",
+    "License-Decision-Version: 1",
+    "Decision-Status: selected",
+    "Description-License: GPL (>= 3)",
+    "Dependency-Audit-Artifact: pending",
+    "Dependency-Audit-MD5: pending",
+    "Reviewer: David Zenz",
+    "Review-Date-UTC: 2026-10-19"
+  ), path, useBytes = TRUE)
+  descriptionPath = file.path(root, "DESCRIPTION")
+  description = readLines(
+    descriptionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  description[grepl("^License:", description)] =
+    "License: GPL (>= 3)"
+  writeLines(description, descriptionPath, useBytes = TRUE)
+  invisible(path)
+}
+
 writeReviewedLicenseDecisionFixture = function(
     root, license = "Apache License (>= 2.0)",
     auditRelative = "docs/provenance/DEPENDENCY-AUDIT.md",
@@ -2362,6 +2386,48 @@ test_that("pending license evidence requires the dependency blocker", {
   result = evaluateReleaseGate(root)
   expect_identical(result$reason_codes, "LICENSE_DECISION_PENDING")
   expect_false(result$release_ready)
+})
+
+test_that("selected license records authority while compatibility stays blocked", {
+  selectedRoot = tempfile("release-gate-license-selected-")
+  on.exit(unlink(selectedRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(selectedRoot)
+  writeSelectedLicenseDecisionFixture(selectedRoot)
+
+  selected = evaluateReleaseGate(selectedRoot)
+  expect_identical(selected$repository_state, "blocked")
+  expect_identical(
+    selected$reason_codes,
+    c("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+      "ATTRIBUTION_IDENTITY_UNRESOLVED")
+  )
+  expect_identical(selected$parse_status[["license"]], "pass")
+  expect_false(selected$release_ready)
+
+  unblockedRoot = tempfile("release-gate-license-selected-unblocked-")
+  on.exit(unlink(unblockedRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(unblockedRoot)
+  writeSelectedLicenseDecisionFixture(unblockedRoot)
+  removeIntegratedBlocker(
+    unblockedRoot, "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING"
+  )
+  unblocked = evaluateReleaseGate(unblockedRoot)
+  expect_identical(unblocked$reason_codes, "LICENSE_BLOCKER_MISMATCH")
+  expect_false(unblocked$release_ready)
+
+  mismatchRoot = tempfile("release-gate-license-selected-mismatch-")
+  on.exit(unlink(mismatchRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(mismatchRoot)
+  writeSelectedLicenseDecisionFixture(mismatchRoot)
+  descriptionPath = file.path(mismatchRoot, "DESCRIPTION")
+  description = readLines(
+    descriptionPath, warn = FALSE, encoding = "UTF-8"
+  )
+  description[grepl("^License:", description)] = "License: GPL-3"
+  writeLines(description, descriptionPath, useBytes = TRUE)
+  mismatch = evaluateReleaseGate(mismatchRoot)
+  expect_identical(mismatch$reason_codes, "DESCRIPTION_LICENSE_MISMATCH")
+  expect_false(mismatch$release_ready)
 })
 
 test_that("reviewed license evidence is exact, hash-bound, and R-valid", {
