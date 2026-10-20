@@ -149,6 +149,7 @@ jobs:
           printf '%s\n' "CPPFLAGS += -I$gettext_prefix/include" "LDFLAGS += -L$gettext_prefix/lib" >> "$R_MAKEVARS_USER"
 
       - name: Install package dependencies
+        id: dependencies
         uses: r-lib/actions/setup-r-dependencies@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05 # v2 (reviewed 2026-10-04)
         with:
           packages: deps::.
@@ -180,6 +181,18 @@ jobs:
         run: |
           set -o pipefail
           Rscript --vanilla -e 'stopifnot(identical(as.character(getRversion()), Sys.getenv("GEModelR_EXPECT_R_VERSION"))); source("tools/ci/run-installed-core-tests.R")' 2>&1 | tee "$GEModelR_EVIDENCE_DIR/installed-core-tests.log"
+
+      - name: Run Windows trailing-root provenance regression
+        id: windows-trailing-root
+        if: always() && steps.setup-r.outcome == 'success' && steps.dependencies.outcome == 'success' && matrix.platform == 'Windows' && matrix.r == 'release' && matrix.candidate == 'current' && matrix.build == 'serial'
+        shell: bash
+        run: Rscript --vanilla -e 'testthat::test_file("tests/testthat/test-release-gates.R", desc = "provenance relative paths accept trailing roots", reporter = "summary", stop_on_failure = TRUE)'
+
+      - name: Run Windows selected-root provenance regression
+        id: windows-selected-root
+        if: always() && steps.setup-r.outcome == 'success' && steps.dependencies.outcome == 'success' && matrix.platform == 'Windows' && matrix.r == 'release' && matrix.candidate == 'current' && matrix.build == 'serial'
+        shell: bash
+        run: Rscript --vanilla -e 'testthat::test_file("tests/testthat/test-release-gates.R", desc = "provenance sources stay within selected root", reporter = "summary", stop_on_failure = TRUE)'
 
       - name: Record candidate success or failure in CSV and job summary
         if: always() && steps.setup-r.outcome == 'success'
