@@ -58,8 +58,16 @@ model$lastDiagnostics[c("engine", "requested_backend", "implementation", "status
 
 The legacy engine is a separate runtime choice, not a sparse backend. Changing
 `engine` requires loading the data again for that runtime. See the
-[`GEModelR` package help](../reference/GEModelR-package.html) for the complete public method
-and output contract.
+```{r package-help-link, results='asis', echo=FALSE}
+# pkgdown sets IN_PKGDOWN while rendering articles.
+helpPage = if (identical(Sys.getenv("IN_PKGDOWN"), "true")) {
+  "../reference/GEModelR-package.html"
+} else {
+  "../html/GEModelR-package.html"
+}
+cat(sprintf("[GEModelR package help](%s)", helpPage))
+```
+for the complete public method and output contract.
 
 ## Capability checks fail closed
 

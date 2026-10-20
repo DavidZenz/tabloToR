@@ -99,8 +99,17 @@ model$lastDiagnostics[c(
 ```
 
 For the stable field list and failure statuses, see the
-[`GEModelR` package help](../reference/GEModelR-package.html). Diagnostics add evidence to
-the record; they do not change which backend was requested or permit fallback.
+```{r package-help-link, results='asis', echo=FALSE}
+# pkgdown sets IN_PKGDOWN while rendering articles.
+helpPage = if (identical(Sys.getenv("IN_PKGDOWN"), "true")) {
+  "../reference/GEModelR-package.html"
+} else {
+  "../html/GEModelR-package.html"
+}
+cat(sprintf("[GEModelR package help](%s)", helpPage))
+```
+Diagnostics add evidence to the record; they do not change which backend was
+requested or permit fallback.
 
 Every accepted sparse solution passes the full-system check
 $\lVert A x-b\rVert_2 / \max(1,\lVert b\rVert_2)$ at the documented

@@ -43,15 +43,20 @@ vignette_help_target = function(page, expected_target, output_name) {
       html, perl = TRUE, ignore.case = TRUE
     )
   )[[1L]]
+  all_anchors = anchors
   anchor_text = gsub("<[^>]*>", " ", anchors, perl = TRUE)
   anchors = anchors[grepl(
     "GEModelR[[:space:]]+package[[:space:]]+help",
     anchor_text, ignore.case = TRUE, perl = TRUE
   )]
   if (length(anchors) != 1L) {
+    link_candidates = paste(
+      all_anchors[grepl("GEModelR", anchor_text, ignore.case = TRUE)],
+      collapse = " | "
+    )
     stop(sprintf(
-      "%s must contain exactly one GEModelR package help link: %s",
-      output_name, page
+      "%s must contain exactly one GEModelR package help link: %s; candidates: %s",
+      output_name, page, link_candidates
     ), call. = FALSE)
   }
   href_match = regexec("href=[\"']([^\"']+)[\"']", anchors[[1L]], perl = TRUE)
@@ -77,6 +82,8 @@ vignette_help_target = function(page, expected_target, output_name) {
       output_name, href
     ), call. = FALSE)
   }
+  cat(sprintf("PASS %s: %s -> %s\n", output_name, href,
+              basename(actual_target)))
   invisible(href)
 }
 
