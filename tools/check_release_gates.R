@@ -1237,6 +1237,16 @@ release_gate_attribution_destination_paths = function(root) {
 release_gate_validate_attribution_destination_presence = function(
     root, parseStatus) {
   paths = release_gate_attribution_destination_paths(root)
+  citationPath = release_gate_resolve_evidence_path(
+    root, file.path("inst", "CITATION")
+  )
+  citationCandidate = unname(paths[["CITATION"]])
+  if (is.null(citationPath) && file.exists(citationCandidate)) {
+    return(list(error = release_gate_integrated_failure(
+      "LICENSE_RELEASE_DECISION_INVALID", parseStatus, "license"
+    )))
+  }
+  if (!is.null(citationPath)) paths[["CITATION"]] = citationPath
   if (!all(file.exists(paths))) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_DESTINATION_MISSING",
@@ -1414,7 +1424,12 @@ release_gate_validate_name = function(root, parseStatus) {
 }
 
 release_gate_validate_governance = function(root, parseStatus) {
-  path = file.path(root, "GOVERNANCE.md")
+  path = release_gate_resolve_evidence_path(root, "GOVERNANCE.md")
+  if (is.null(path)) {
+    return(list(error = release_gate_integrated_failure(
+      "GOVERNANCE_IDENTITY_UNAPPROVED", parseStatus, "governance"
+    )))
+  }
   lines = release_gate_read_lines(path)
   fields = c(
     "Maintainer", "Approved-Contact", "Release-Authority",
@@ -1540,7 +1555,10 @@ release_gate_evaluate = function(root = ".") {
     ))
   }
   base = release_gate_evaluate_rights(root)
-  if (!identical(base$repository_state, "eligible")) return(base)
+  baseBlocked = identical(base$repository_state, "blocked")
+  if (!baseBlocked && !identical(base$repository_state, "eligible")) {
+    return(base)
+  }
 
   requiredRights = c(
     "Rights-Status", "Upstream-Repository", "Upstream-Commit",
@@ -1829,7 +1847,9 @@ release_gate_validate_release_license_decision = function(
                    provenanceValues[["Description-License"]])) {
       return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
     }
-    if (!file.exists(file.path(root, "inst", "CITATION"))) {
+    if (is.null(release_gate_resolve_evidence_path(
+      root, file.path("inst", "CITATION")
+    ))) {
       return(fail("LICENSE_RELEASE_DECISION_INVALID"))
     }
     return(list(parse_status = parseStatus, values = values))
@@ -1860,11 +1880,17 @@ release_gate_validate_release_license_decision = function(
     return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
   }
 
+  authorityPath = release_gate_resolve_evidence_path(
+    root, "GOVERNANCE.md"
+  )
+  citationPath = release_gate_resolve_evidence_path(
+    root, file.path("inst", "CITATION")
+  )
   if (!identical(values[["Decision-Authority"]], "GOVERNANCE.md") ||
-      !file.exists(file.path(root, "GOVERNANCE.md")) ||
+      is.null(authorityPath) ||
       !identical(values[["Referenced-License-Files"]], "none") ||
       !identical(values[["Citation-File"]], "inst/CITATION") ||
-      !file.exists(file.path(root, "inst", "CITATION"))) {
+      is.null(citationPath)) {
     return(fail("LICENSE_RELEASE_DECISION_INVALID"))
   }
   if (identical(values[["Reviewer"]], "pending") ||
