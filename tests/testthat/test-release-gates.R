@@ -80,6 +80,20 @@ releaseGateMarker <- function(lines, field) {
   sub(pattern, "\\1", grep(pattern, lines, value = TRUE))
 }
 
+releaseGateInstallEscapingSymlink <- function(root, relativePath, outside) {
+  sourcePath <- file.path(root, relativePath)
+  targetPath <- file.path(outside, basename(relativePath))
+  dir.create(dirname(targetPath), recursive = TRUE, showWarnings = FALSE)
+  if (!file.copy(sourcePath, targetPath, overwrite = TRUE)) {
+    stop("could not prepare outside-root evidence fixture", call. = FALSE)
+  }
+  unlink(sourcePath)
+  if (!isTRUE(file.symlink(targetPath, sourcePath))) {
+    skip("symbolic links are unavailable on this platform")
+  }
+  invisible(sourcePath)
+}
+
 writeReleaseRequestFixture <- function(root, asks = releaseRequestAsks) {
   path <- file.path(root, "docs", "provenance", "UPSTREAM-REQUEST.md")
   writeLines(c(
@@ -2725,6 +2739,266 @@ test_that("release gate rejects license decision targets outside root", {
       )
     }
   }
+})
+
+test_that("fixed selected-root evidence fails closed", {
+  assertEscapingEvidenceFails <- function(
+      label, prepare, relativePath, evaluator, reason, stream = NULL) {
+    root <- tempfile(paste0("release-gate-fixed-root-", label, "-"))
+    outside <- tempfile(paste0("release-gate-fixed-outside-", label, "-"))
+    on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+    prepare(root)
+    dir.create(outside, recursive = TRUE)
+    releaseGateInstallEscapingSymlink(root, relativePath, outside)
+
+    result <- evaluator(root)
+    expect_false(result$release_ready, info = label)
+    expect_identical(result$reason_codes, reason, info = label)
+    if (!is.null(stream)) {
+      expect_identical(result$parse_status[[stream]], "fail", info = label)
+    }
+  }
+
+  assertEscapingEvidenceFails(
+    "legacy-rights", writeReleaseGateFixture, "docs/provenance/RIGHTS.md",
+    evaluateRightsGate, "RIGHTS_DOCUMENT_MISSING", "rights"
+  )
+  assertEscapingEvidenceFails(
+    "integrated-rights", copyIntegratedReleaseEvidence,
+    "docs/provenance/RIGHTS.md", evaluateReleaseGate,
+    "INTEGRATED_EVIDENCE_VERSION_INVALID", "integrated"
+  )
+  assertEscapingEvidenceFails(
+    "release-policy", writeReleaseGateFixture,
+    "docs/release/RELEASE-GATES.md", evaluateRightsGate,
+    "RELEASE_GATES_DOCUMENT_MISSING", "release_gates"
+  )
+  assertEscapingEvidenceFails(
+    "upstream-request", writeReleaseGateFixture,
+    "docs/provenance/UPSTREAM-REQUEST.md", evaluateRightsGate,
+    "REQUEST_SCOPE_INCOMPLETE", "request"
+  )
+  assertEscapingEvidenceFails(
+    "upstream-response", writePublicDomainFixture,
+    "docs/provenance/UPSTREAM-RESPONSE.md", evaluateRightsGate,
+    "PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE", "public_domain"
+  )
+  assertEscapingEvidenceFails(
+    "cleanroom", writeCompleteCleanroomFixture,
+    "docs/provenance/CLEANROOM.md", evaluateRightsGate,
+    "CLEANROOM_EVIDENCE_INCOMPLETE", "cleanroom"
+  )
+
+  assertProvenanceEvidenceFails <- function(relativePath) {
+    root <- tempfile("release-gate-provenance-fixed-root-")
+    outside <- tempfile("release-gate-provenance-fixed-outside-")
+    on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    dir.create(outside, recursive = TRUE)
+    releaseGateInstallEscapingSymlink(root, relativePath, outside)
+
+    for (validatorName in c(
+      "release_gate_validate_provenance",
+      "release_gate_validate_current_source"
+    )) {
+      validator <- get(
+        validatorName, envir = releaseGateEnvironment, inherits = FALSE
+      )
+      result <- validator(root, c(integrated = "pass"))
+      failure <- result$error
+      expect_identical(
+        failure$reason_codes, "PROVENANCE_EVIDENCE_MISSING",
+        info = paste(relativePath, validatorName)
+      )
+      expect_identical(
+        failure$parse_status[["provenance"]], "fail",
+        info = paste(relativePath, validatorName)
+      )
+    }
+  }
+  for (relativePath in c(
+    "docs/provenance/EXPECTED-KEYS.csv",
+    "docs/provenance/PROVENANCE.csv"
+  )) {
+    assertProvenanceEvidenceFails(relativePath)
+  }
+
+  assertEscapingEvidenceFails(
+    "attribution", copyIntegratedReleaseEvidence,
+    "docs/provenance/ATTRIBUTION.md", evaluateReleaseGate,
+    "ATTRIBUTION_EVIDENCE_MISSING", "attribution"
+  )
+  assertEscapingEvidenceFails(
+    "name-report", copyIntegratedReleaseEvidence,
+    "docs/release/NAME-CHECK.md", evaluateReleaseGate,
+    "NAME_REPORT_INVALID", "name"
+  )
+  assertEscapingEvidenceFails(
+    "repository-report", copyIntegratedReleaseEvidence,
+    "docs/release/REPOSITORY.md", evaluateReleaseGate,
+    "REPOSITORY_URL_MISMATCH", "repository"
+  )
+
+  destinationCases <- list(
+    DESCRIPTION = c("ATTRIBUTION_DESTINATION_MISSING", "attribution_destinations"),
+    README.md = c("ATTRIBUTION_DESTINATION_MISSING", "attribution_destinations"),
+    CITATION = c("LICENSE_RELEASE_DECISION_INVALID", "license"),
+    CONTRIBUTORS.md = c("ATTRIBUTION_DESTINATION_MISSING", "attribution_destinations"),
+    PROVENANCE.csv = c("ATTRIBUTION_DESTINATION_MISSING", "attribution_destinations"),
+    NEWS.md = c("ATTRIBUTION_DESTINATION_MISSING", "attribution_destinations")
+  )
+  destinationPaths <- c(
+    DESCRIPTION = "DESCRIPTION",
+    README.md = "README.md",
+    CITATION = "inst/CITATION",
+    CONTRIBUTORS.md = "CONTRIBUTORS.md",
+    PROVENANCE.csv = "docs/provenance/PROVENANCE.csv",
+    NEWS.md = "NEWS.md"
+  )
+  for (destination in names(destinationCases)) {
+    assertEscapingEvidenceFails(
+      paste0("destination-", destination), copyIntegratedReleaseEvidence,
+      destinationPaths[[destination]], evaluateReleaseGate,
+      destinationCases[[destination]][[1L]],
+      destinationCases[[destination]][[2L]]
+    )
+  }
+
+  descriptionRoot <- tempfile("release-gate-description-fixed-root-")
+  descriptionOutside <- tempfile("release-gate-description-fixed-outside-")
+  on.exit(unlink(c(descriptionRoot, descriptionOutside), recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(descriptionRoot)
+  dir.create(descriptionOutside, recursive = TRUE)
+  releaseGateInstallEscapingSymlink(
+    descriptionRoot, "DESCRIPTION", descriptionOutside
+  )
+  descriptionResult <- releaseGateEnvironment$release_gate_validate_description(
+    descriptionRoot,
+    list(
+      Maintainer = "David Zenz",
+      "Approved-Contact" = "zenz@wiiw.ac.at"
+    ),
+    list(
+      "Canonical-URL" = "https://github.com/DavidZenz/GEModelR",
+      "Issue-Tracker" = "https://github.com/DavidZenz/GEModelR/issues"
+    ),
+    character(), c(repository = "pass")
+  )
+  expect_identical(
+    descriptionResult$error$reason_codes, "DESCRIPTION_IDENTITY_MISMATCH"
+  )
+  expect_identical(descriptionResult$error$parse_status[["description"]], "fail")
+
+  pkgdownRoot <- tempfile("release-gate-pkgdown-fixed-root-")
+  pkgdownOutside <- tempfile("release-gate-pkgdown-fixed-outside-")
+  on.exit(unlink(c(pkgdownRoot, pkgdownOutside), recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(pkgdownRoot)
+  dir.create(pkgdownOutside, recursive = TRUE)
+  descriptionPath <- file.path(pkgdownRoot, "DESCRIPTION")
+  descriptionLines <- readLines(descriptionPath, warn = FALSE, encoding = "UTF-8")
+  descriptionLines[grepl("^URL:", descriptionLines)] <- paste0(
+    "URL: https://github.com/DavidZenz/GEModelR, ",
+    "https://davidzenz.github.io/GEModelR"
+  )
+  writeLines(descriptionLines, descriptionPath, useBytes = TRUE)
+  outsidePkgdown <- file.path(pkgdownOutside, "_pkgdown.yml")
+  writeLines("url: https://davidzenz.github.io/GEModelR", outsidePkgdown)
+  if (!isTRUE(file.symlink(
+    outsidePkgdown, file.path(pkgdownRoot, "_pkgdown.yml")
+  ))) {
+    skip("symbolic links are unavailable on this platform")
+  }
+  pkgdownResult <- releaseGateEnvironment$release_gate_validate_description(
+    pkgdownRoot,
+    list(
+      Maintainer = "David Zenz",
+      "Approved-Contact" = "zenz@wiiw.ac.at"
+    ),
+    list(
+      "Canonical-URL" = "https://github.com/DavidZenz/GEModelR",
+      "Issue-Tracker" = "https://github.com/DavidZenz/GEModelR/issues"
+    ),
+    character(), c(repository = "pass")
+  )
+  expect_identical(
+    pkgdownResult$error$reason_codes, "DESCRIPTION_URL_MISMATCH"
+  )
+  expect_identical(pkgdownResult$error$parse_status[["description"]], "fail")
+})
+
+test_that("selected-root validator symlinks are never sourced", {
+  probeOutside <- tempfile("release-gate-validator-probe-")
+  on.exit(unlink(probeOutside, recursive = TRUE), add = TRUE)
+  dir.create(probeOutside, recursive = TRUE)
+  probe <- file.path(probeOutside, "symlink-probe-target")
+  writeLines("probe", probe)
+  probeLink <- file.path(probeOutside, "symlink-probe-link")
+  if (!isTRUE(file.symlink(probe, probeLink))) {
+    skip("symbolic links are unavailable on this platform")
+  }
+  unlink(probeLink)
+
+  cases <- list(
+    provenance = list(
+      relative = "tools/provenance_inventory.R",
+      reason = "PROVENANCE_TOOL_LOAD_FAILED",
+      stream = "provenance"
+    ),
+    name = list(
+      relative = "tools/check_name_availability.R",
+      reason = "NAME_TOOL_LOAD_FAILED",
+      stream = "name"
+    )
+  )
+  assertValidatorFails <- function(name) {
+    root <- tempfile("release-gate-validator-root-")
+    outside <- tempfile("release-gate-validator-outside-")
+    on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(root)
+    dir.create(outside, recursive = TRUE)
+    scriptPath <- file.path(root, cases[[name]]$relative)
+    outsideScript <- file.path(outside, paste0(name, "-validator.R"))
+    canary <- file.path(outside, paste0(name, "-validator-ran"))
+    original <- readLines(scriptPath, warn = FALSE, encoding = "UTF-8")
+    sideEffect <- paste0(
+      "writeLines('ran', ", paste(deparse(canary), collapse = ""), ")"
+    )
+    writeLines(c(sideEffect, original), outsideScript, useBytes = TRUE)
+    unlink(scriptPath)
+    expect_true(file.symlink(outsideScript, scriptPath), info = name)
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(result$reason_codes, cases[[name]]$reason, info = name)
+    expect_identical(
+      result$parse_status[[cases[[name]]$stream]], "fail", info = name
+    )
+    expect_false(file.exists(canary), info = name)
+  }
+  for (name in names(cases)) assertValidatorFails(name)
+})
+
+test_that("release gate resolver accepts filesystem-root evidence", {
+  temporary <- tempfile("release-gate-root-child-", tmpdir = tempdir())
+  on.exit(unlink(temporary), add = TRUE)
+  if (!isTRUE(file.create(temporary))) {
+    skip("a writable temporary location is unavailable")
+  }
+  writeLines("root child", temporary, useBytes = TRUE)
+  normalized <- normalizePath(temporary, winslash = "/", mustWork = TRUE)
+
+  if (.Platform$OS.type == "windows") {
+    root <- substr(normalized, 1L, 3L)
+    relative <- substring(normalized, 4L)
+  } else {
+    root <- "/"
+    relative <- substring(normalized, 2L)
+  }
+  if (!dir.exists(root)) skip("the active filesystem root is unavailable")
+
+  resolved <- releaseGateEnvironment$release_gate_resolve_evidence_path(
+    root, relative
+  )
+  expect_identical(resolved, normalized)
 })
 
 test_that("assert-blocked validates integrated evidence", {
