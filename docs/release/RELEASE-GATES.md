@@ -31,7 +31,7 @@ an external repository or publication action.
 | Governance identity | `GOVERNANCE.md` | Exact approved maintainer, contact, release authority, security route, reviewer, and date | `GOVERNANCE_IDENTITY_UNAPPROVED` or `GOVERNANCE_SECURITY_ROUTE_MISSING` |
 | Repository boundary | `REPOSITORY.md` | Exact owner/name/URL/issues pair, private-development boundary, and every external action remains not authorized | `REPOSITORY_URL_MISMATCH`, `REPOSITORY_ISSUES_MISMATCH`, or `REPOSITORY_BOUNDARY_INVALID` |
 | Package metadata | `DESCRIPTION`, governance/repository evidence, `_pkgdown.yml` | Package name is `GEModelR`; approved maintainer and issue tracker match; `DESCRIPTION` lists the canonical repository URL and, when configured, the exact pkgdown URL | `DESCRIPTION_IDENTITY_MISMATCH`, `DESCRIPTION_URL_MISMATCH`, or `DESCRIPTION_ISSUES_MISMATCH` |
-| Package license | `docs/provenance/LICENSE-DECISION.md`, `docs/release/LICENSE-DECISION.md`, `DESCRIPTION`, reviewed dependency audit | An authoritative `selected` decision has exact DESCRIPTION equality, reviewer/date, an R-valid license expression, and the dependency blocker still present; a final `reviewed` transition also has a safe under-root audit path, exact MD5, and no dependency blocker | A named `LICENSE_*` or `DESCRIPTION_LICENSE_MISMATCH` reason |
+| Package license | `docs/provenance/LICENSE-DECISION.md`, `docs/release/LICENSE-DECISION.md`, `DESCRIPTION`, `GOVERNANCE.md`, `inst/CITATION`, reviewed dependency audit | Both version-1 records are required. Their DESCRIPTION expression, reviewer, and review date agree; the release record's SPDX identifier maps to that R expression, its authority and citation targets are the canonical under-root files, and its blocker set equals the live blockers. Provenance retains its `pending`/`selected`/`reviewed` state machine; the release record may use the distinct `selected` or `reviewed` lifecycle label when a decision exists. A final provenance `reviewed` transition still requires a safe under-root audit path, exact MD5, and no dependency blocker. | `LICENSE_DECISION_*`, `LICENSE_RELEASE_DECISION_*`, `LICENSE_RELEASE_BLOCKER_MISMATCH`, or `DESCRIPTION_LICENSE_MISMATCH` |
 | Sensitive evidence | Release and provenance evidence trees | No credential, private-correspondence, proprietary-model, or giant-result indicator | `SENSITIVE_EVIDENCE_CLASS` |
 
 ## Superseded request checkpoint
@@ -57,10 +57,13 @@ public response is scoped to the audited upstream-authored baseline.
 The integrated regression contract constructs a complete temporary R source
 tree, initializes and commits its local Git history, then derives expected keys,
 expression hashes, provenance rows, attribution destinations, strict
-release-kind name evidence, governance, repository, and reviewed license
-evidence from that fixture. It does not import checked-in mutable ledgers.
-Table-driven mutations assert the exact failing parser and reason code for every
-integration boundary, while temporary roots are removed after each assertion.
+release-kind name evidence, governance, repository, and both license records
+from that fixture. The records must agree with `DESCRIPTION` and each other,
+and the release record's `Outstanding-Blockers` is compared as a set with the
+current gate blockers. It does not import checked-in mutable ledgers.
+Table-driven mutations assert stable reason codes for missing or conflicting
+release-record fields and every integration boundary, while temporary roots
+are removed after each assertion.
 
 A fresh release-kind name report is required before a blocker-free root can be
 release-ready. Even a technically ready result does not create, reserve, change,

@@ -1755,6 +1755,135 @@ release_gate_license_review_date_valid = function(value) {
   )
 }
 
+release_gate_license_blocker_set = function(value) {
+  if (!is.character(value) || length(value) != 1L || is.na(value)) {
+    return(NULL)
+  }
+  value = trimws(value)
+  if (identical(value, "NONE")) return(character())
+  blockers = trimws(strsplit(value, ",", fixed = TRUE)[[1L]])
+  if (!length(blockers) || any(!nzchar(blockers)) ||
+      anyDuplicated(blockers) ||
+      any(!grepl("^[A-Z][A-Z0-9_]*$", blockers))) {
+    return(NULL)
+  }
+  blockers
+}
+
+release_gate_validate_release_license_decision = function(
+    root, blockers, provenanceValues, descriptionLicense, parseStatus) {
+  fail = function(reason) {
+    list(error = release_gate_integrated_failure(
+      reason, parseStatus, "license"
+    ))
+  }
+  path = file.path(root, "docs", "release", "LICENSE-DECISION.md")
+  lines = release_gate_read_lines(path)
+  if (is.null(lines)) return(fail("LICENSE_RELEASE_DECISION_MISSING"))
+
+  fields = c(
+    "Decision-Record-Version", "Decision-Status",
+    "SPDX-License-Identifier", "Description-License",
+    "Decision-Authority", "Reviewer", "Review-Date-UTC",
+    "Referenced-License-Files", "Citation-File", "Outstanding-Blockers"
+  )
+  markers = release_gate_single_markers(lines, fields)
+  if (any(vapply(markers, length, integer(1)) != 1L)) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  values = vapply(markers, `[[`, character(1), 1L)
+  if (any(!nzchar(trimws(values))) ||
+      !identical(values[["Decision-Record-Version"]], "1")) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+
+  recordStatus = values[["Decision-Status"]]
+  recordLicense = values[["Description-License"]]
+  recordBlockers = release_gate_license_blocker_set(
+    values[["Outstanding-Blockers"]]
+  )
+  if (is.null(recordBlockers)) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  if (!setequal(recordBlockers, blockers)) {
+    return(fail("LICENSE_RELEASE_BLOCKER_MISMATCH"))
+  }
+
+  provenanceStatus = provenanceValues[["Decision-Status"]]
+  if (identical(provenanceStatus, "pending")) {
+    pending = c(
+      "Decision-Record-Version" = "1",
+      "Decision-Status" = "pending",
+      "SPDX-License-Identifier" = "pending",
+      "Description-License" = "What license is it under?",
+      "Decision-Authority" = "pending",
+      "Reviewer" = "pending",
+      "Review-Date-UTC" = "pending",
+      "Referenced-License-Files" = "none",
+      "Citation-File" = "inst/CITATION"
+    )
+    actualPending = values[names(pending)]
+    if (!identical(actualPending, pending) ||
+        !identical(recordLicense, descriptionLicense) ||
+        !identical(recordLicense,
+                   provenanceValues[["Description-License"]])) {
+      return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
+    }
+    if (!file.exists(file.path(root, "inst", "CITATION"))) {
+      return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+    }
+    return(list(parse_status = parseStatus, values = values))
+  }
+
+  if (!recordStatus %in% c("selected", "reviewed")) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  if (!identical(recordLicense, descriptionLicense)) {
+    return(fail("DESCRIPTION_LICENSE_MISMATCH"))
+  }
+  if (!identical(
+    recordLicense, provenanceValues[["Description-License"]]
+  )) {
+    return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
+  }
+
+  spdx = values[["SPDX-License-Identifier"]]
+  if (!grepl("^[A-Za-z0-9][A-Za-z0-9.+-]*$", spdx)) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  spdxExpressions = c(
+    "GPL-3.0-or-later" = "GPL (>= 3)",
+    "Apache-2.0" = "Apache License (>= 2.0)"
+  )
+  if (!spdx %in% names(spdxExpressions) ||
+      !identical(unname(spdxExpressions[[spdx]]), recordLicense)) {
+    return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
+  }
+
+  if (!identical(values[["Decision-Authority"]], "GOVERNANCE.md") ||
+      !file.exists(file.path(root, "GOVERNANCE.md")) ||
+      !identical(values[["Referenced-License-Files"]], "none") ||
+      !identical(values[["Citation-File"]], "inst/CITATION") ||
+      !file.exists(file.path(root, "inst", "CITATION"))) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  if (identical(values[["Reviewer"]], "pending") ||
+      !release_gate_license_review_date_valid(
+        values[["Review-Date-UTC"]]
+      )) {
+    return(fail("LICENSE_RELEASE_DECISION_INVALID"))
+  }
+  if (!identical(values[["Reviewer"]], provenanceValues[["Reviewer"]]) ||
+      !identical(
+        values[["Review-Date-UTC"]],
+        provenanceValues[["Review-Date-UTC"]]
+      )) {
+    return(fail("LICENSE_RELEASE_DECISION_CONFLICT"))
+  }
+
+  list(parse_status = parseStatus, values = values)
+}
+
 release_gate_validate_license_decision = function(
     root, blockers, parseStatus) {
   fail = function(reason) {
@@ -1807,6 +1936,10 @@ release_gate_validate_license_decision = function(
       return(fail("LICENSE_DECISION_INVALID"))
     }
     if (!dependencyBlocked) return(fail("LICENSE_DECISION_PENDING"))
+    releaseDecision = release_gate_validate_release_license_decision(
+      root, blockers, values, descriptionLicense, parseStatus
+    )
+    if (!is.null(releaseDecision$error)) return(releaseDecision)
     parseStatus[["license"]] = "pass"
     return(list(parse_status = parseStatus, values = values))
   }
@@ -1832,6 +1965,10 @@ release_gate_validate_license_decision = function(
     )) {
       return(fail("LICENSE_EXPRESSION_INVALID"))
     }
+    releaseDecision = release_gate_validate_release_license_decision(
+      root, blockers, values, descriptionLicense, parseStatus
+    )
+    if (!is.null(releaseDecision$error)) return(releaseDecision)
     parseStatus[["license"]] = "pass"
     return(list(parse_status = parseStatus, values = values))
   }
@@ -1881,6 +2018,10 @@ release_gate_validate_license_decision = function(
   )) {
     return(fail("LICENSE_EXPRESSION_INVALID"))
   }
+  releaseDecision = release_gate_validate_release_license_decision(
+    root, blockers, values, descriptionLicense, parseStatus
+  )
+  if (!is.null(releaseDecision$error)) return(releaseDecision)
   parseStatus[["license"]] = "pass"
   list(parse_status = parseStatus, values = values)
 }

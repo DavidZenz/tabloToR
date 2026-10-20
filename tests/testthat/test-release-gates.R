@@ -2148,8 +2148,8 @@ test_that("integrated release mutations fail at their exact boundary", {
       )
     ),
     attribution_blocker = list(
-      reason = "INTENTIONAL_BLOCKERS_MISMATCH",
-      stream = NA_character_,
+      reason = "LICENSE_RELEASE_BLOCKER_MISMATCH",
+      stream = "license",
       mutate = function(root) {
         path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
         lines = readLines(path, warn = FALSE, encoding = "UTF-8")
