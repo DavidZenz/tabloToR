@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: verifying
-stopped_at: Completed 06-09-PLAN.md
-last_updated: "2026-10-20T07:44:40.686Z"
+stopped_at: Completed 06-10-PLAN.md
+last_updated: "2026-10-20T08:13:03.313Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 06 execution started
-state_head: e4f9b2186fbc7c612bab93d74467939b616aae1e
+state_head: 4f7c164e973ac04efe378e9a57c613dcfcb73bab
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 60
-  completed_plans: 60
+  total_plans: 61
+  completed_plans: 61
 milestone_name: milestone
 ---
 
@@ -86,6 +86,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans comple
 | Phase 06 P07 | 20min | 3 tasks | 11 files |
 | Phase 06 P08 | 15min | 3 tasks | 7 files |
 | Phase 06 P09 | 2min | 1 tasks | 2 files |
+| Phase 06 P10 | 28min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -185,6 +186,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Keep both existing release blockers active; this gap plan does not qualify or publish a release.
 - [Phase 06]: Resolve both integrated license decision paths through the canonical in-root evidence resolver before reading.
 - [Phase 06]: Keep the two intentional release blockers and their lifecycle meanings unchanged.
+- [Phase 06]: Bind fixed release evidence and validator scripts to canonical selected-root paths; preserve stable failure semantics and active blockers.
 
 ### Pending Todos
 
@@ -210,6 +212,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-20T07:44:40.586Z
-Stopped at: Completed 06-09-PLAN.md
+Last session: 2026-10-20T08:13:03.228Z
+Stopped at: Completed 06-10-PLAN.md
 Resume file: None
