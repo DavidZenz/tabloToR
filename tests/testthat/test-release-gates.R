@@ -3096,6 +3096,33 @@ test_that("cleanroom specifications stay within selected root", {
   assertEscapingSpecificationFails(directoryLink = TRUE)
 })
 
+test_that("provenance relative paths accept trailing roots", {
+  root <- releaseGateProjectRoot()
+  tool <- loadProvenanceFixtureTool(
+    file.path(root, "tools", "provenance_inventory.R")
+  )
+  canonicalRoot <- normalizePath(root, winslash = "/", mustWork = TRUE)
+
+  if (.Platform$OS.type == "windows") {
+    driveRoot <- substr(canonicalRoot, 1L, 3L)
+    rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
+    if (!isTRUE(file.create(rootFile))) {
+      skip("a writable file beneath the active drive root is unavailable")
+    }
+    on.exit(unlink(rootFile), add = TRUE)
+    writeLines("root file", rootFile, useBytes = TRUE)
+    expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
+                     basename(rootFile))
+  } else if (file.exists("/etc/hosts") &&
+             isTRUE(utils::file_test("-f", "/etc/hosts"))) {
+    expect_identical(
+      tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
+    )
+  } else {
+    skip("a regular file beneath the POSIX filesystem root is unavailable")
+  }
+})
+
 test_that("provenance sources stay within selected root", {
   parent <- tempfile("release-gate-provenance-selected-parent-")
   root <- file.path(parent, "root1")
@@ -3214,24 +3241,4 @@ test_that("provenance sources stay within selected root", {
   expect_identical(result$reason_codes, "PROVENANCE_SOURCE_OUTSIDE_ROOT")
   expect_identical(result$parse_status[["provenance"]], "fail")
 
-  test_that("provenance relative paths accept trailing roots", {
-    if (.Platform$OS.type == "windows") {
-      driveRoot <- substr(canonicalRoot, 1L, 3L)
-      rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
-      if (!isTRUE(file.create(rootFile))) {
-        skip("a writable file beneath the active drive root is unavailable")
-      }
-      on.exit(unlink(rootFile), add = TRUE)
-      writeLines("root file", rootFile, useBytes = TRUE)
-      expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
-                       basename(rootFile))
-    } else if (file.exists("/etc/hosts") &&
-               isTRUE(utils::file_test("-f", "/etc/hosts"))) {
-      expect_identical(
-        tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
-      )
-    } else {
-      skip("a regular file beneath the POSIX filesystem root is unavailable")
-    }
-  })
 })
