@@ -1223,6 +1223,11 @@ writePendingLicenseDecisionFixture = function(root) {
     "Reviewer: pending",
     "Review-Date-UTC: pending"
   ), path, useBytes = TRUE)
+  writeReleaseLicenseDecisionFixture(
+    root, status = "pending",
+    license = "What license is it under?",
+    reviewer = "pending", reviewDate = "pending"
+  )
   invisible(path)
 }
 
@@ -1247,6 +1252,10 @@ writeSelectedLicenseDecisionFixture = function(root) {
   description[grepl("^License:", description)] =
     "License: GPL (>= 3)"
   writeLines(description, descriptionPath, useBytes = TRUE)
+  writeReleaseLicenseDecisionFixture(
+    root, status = "reviewed", license = "GPL (>= 3)",
+    reviewer = "David Zenz", reviewDate = "2026-10-19"
+  )
   invisible(path)
 }
 
@@ -1292,6 +1301,55 @@ writeReviewedLicenseDecisionFixture = function(
     "License: ", license
   )
   writeLines(description, descriptionPath, useBytes = TRUE)
+  writeReleaseLicenseDecisionFixture(
+    root, status = "reviewed", license = license,
+    reviewer = reviewer, reviewDate = reviewDate
+  )
+  invisible(path)
+}
+
+writeReleaseLicenseDecisionFixture = function(
+    root, status = "reviewed", license = "Apache License (>= 2.0)",
+    reviewer = "Fixture Reviewer", reviewDate = "2026-08-27T00:00:00Z",
+    blockers = NULL) {
+  if (is.null(blockers)) {
+    gatePath = file.path(root, "docs", "release", "RELEASE-GATES.md")
+    gateLines = readLines(gatePath, warn = FALSE, encoding = "UTF-8")
+    blockerText = releaseGateMarker(gateLines, "Intentional-Blockers")
+    blockers = if (identical(blockerText, "NONE")) {
+      character()
+    } else {
+      trimws(strsplit(blockerText, ",", fixed = TRUE)[[1L]])
+    }
+  }
+  pending = identical(status, "pending")
+  spdx = if (pending) "pending" else switch(
+    license,
+    "GPL (>= 3)" = "GPL-3.0-or-later",
+    "Apache License (>= 2.0)" = "Apache-2.0",
+    "unsupported-license"
+  )
+  path = file.path(root, "docs", "release", "LICENSE-DECISION.md")
+  writeLines(c(
+    "# Package license decision",
+    "",
+    "Decision-Record-Version: 1",
+    paste0("Decision-Status: ", status),
+    paste0("SPDX-License-Identifier: ", spdx),
+    paste0("Description-License: ", license),
+    paste0(
+      "Decision-Authority: ",
+      if (pending) "pending" else "GOVERNANCE.md"
+    ),
+    paste0("Reviewer: ", reviewer),
+    paste0("Review-Date-UTC: ", reviewDate),
+    "Referenced-License-Files: none",
+    "Citation-File: inst/CITATION",
+    paste0(
+      "Outstanding-Blockers: ",
+      if (length(blockers)) paste(blockers, collapse = ",") else "NONE"
+    )
+  ), path, useBytes = TRUE)
   invisible(path)
 }
 
@@ -2428,6 +2486,105 @@ test_that("selected license records authority while compatibility stays blocked"
   mismatch = evaluateReleaseGate(mismatchRoot)
   expect_identical(mismatch$reason_codes, "DESCRIPTION_LICENSE_MISMATCH")
   expect_false(mismatch$release_ready)
+})
+
+test_that("integrated license gate requires and compares both decision records", {
+  root = tempfile("release-gate-license-record-pair-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  writeSelectedLicenseDecisionFixture(root)
+
+  valid = evaluateReleaseGate(root)
+  expectedBlockers = c(
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    "ATTRIBUTION_IDENTITY_UNRESOLVED"
+  )
+  expect_identical(valid$repository_state, "blocked")
+  expect_identical(valid$reason_codes, expectedBlockers)
+  expect_identical(valid$parse_status[["license"]], "pass")
+  expect_false(valid$release_ready)
+
+  reorderedRoot = tempfile("release-gate-license-record-order-")
+  on.exit(unlink(reorderedRoot, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(reorderedRoot)
+  writeSelectedLicenseDecisionFixture(reorderedRoot)
+  record = file.path(
+    reorderedRoot, "docs", "release", "LICENSE-DECISION.md"
+  )
+  lines = readLines(record, warn = FALSE, encoding = "UTF-8")
+  lines[grepl("^Outstanding-Blockers:", lines)] = paste0(
+    "Outstanding-Blockers: ", paste(rev(expectedBlockers), collapse = ",")
+  )
+  writeLines(lines, record, useBytes = TRUE)
+  reordered = evaluateReleaseGate(reorderedRoot)
+  expect_identical(reordered$reason_codes, expectedBlockers)
+  expect_identical(reordered$parse_status[["license"]], "pass")
+
+  cases = list(
+    missing_release_record = list(
+      reason = "LICENSE_RELEASE_DECISION_MISSING",
+      mutate = function(path) unlink(path)
+    ),
+    status = list(
+      reason = "LICENSE_RELEASE_DECISION_INVALID",
+      field = "Decision-Status", value = "draft"
+    ),
+    spdx = list(
+      reason = "LICENSE_RELEASE_DECISION_CONFLICT",
+      field = "SPDX-License-Identifier", value = "BSD-3-Clause"
+    ),
+    description_license = list(
+      reason = "DESCRIPTION_LICENSE_MISMATCH",
+      field = "Description-License", value = "GPL-3"
+    ),
+    authority = list(
+      reason = "LICENSE_RELEASE_DECISION_INVALID",
+      field = "Decision-Authority", value = "README.md"
+    ),
+    citation = list(
+      reason = "LICENSE_RELEASE_DECISION_INVALID",
+      field = "Citation-File", value = "README.md"
+    ),
+    reviewer = list(
+      reason = "LICENSE_RELEASE_DECISION_CONFLICT",
+      field = "Reviewer", value = "Other Reviewer"
+    ),
+    review_date = list(
+      reason = "LICENSE_RELEASE_DECISION_CONFLICT",
+      field = "Review-Date-UTC", value = "2026-10-18"
+    ),
+    blockers = list(
+      reason = "LICENSE_RELEASE_BLOCKER_MISMATCH",
+      field = "Outstanding-Blockers",
+      value = "ATTRIBUTION_IDENTITY_UNRESOLVED"
+    )
+  )
+  for (name in names(cases)) {
+    mutatedRoot = tempfile(paste0("release-gate-license-record-", name, "-"))
+    on.exit(unlink(mutatedRoot, recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(mutatedRoot)
+    writeSelectedLicenseDecisionFixture(mutatedRoot)
+    path = file.path(
+      mutatedRoot, "docs", "release", "LICENSE-DECISION.md"
+    )
+    if (identical(name, "missing_release_record")) {
+      cases[[name]]$mutate(path)
+    } else {
+      lines = readLines(path, warn = FALSE, encoding = "UTF-8")
+      field = cases[[name]]$field
+      lines[grepl(paste0("^", field, ":"), lines)] = paste0(
+        field, ": ", cases[[name]]$value
+      )
+      writeLines(lines, path, useBytes = TRUE)
+    }
+
+    result = evaluateReleaseGate(mutatedRoot)
+    expect_identical(
+      result$reason_codes, cases[[name]]$reason, info = name
+    )
+    expect_false(result$release_ready, info = name)
+    expect_identical(result$parse_status[["license"]], "fail", info = name)
+  }
 })
 
 test_that("reviewed license evidence is exact, hash-bound, and R-valid", {
