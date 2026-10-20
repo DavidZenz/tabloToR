@@ -1,114 +1,59 @@
 ---
 phase: 06-documentation-and-release-qualification
-reviewed: 2026-10-19T15:12:12Z
-depth: standard
-files_reviewed: 33
+reviewed: 2026-10-20T08:59:45Z
+depth: deep
+files_reviewed: 3
 files_reviewed_list:
-  - .Rbuildignore
-  - DESCRIPTION
-  - README.md
-  - NEWS.md
-  - _pkgdown.yml
-  - .github/workflows/pkgdown.yaml
-  - vignettes/first-simulation.Rmd
-  - vignettes/helpers.R
-  - vignettes/legacy-to-sparse.Rmd
-  - vignettes/backend-selection.Rmd
-  - vignettes/diagnostics-memory-budgeting.Rmd
-  - vignettes/external-full-scale-benchmarking.Rmd
-  - vignettes/architecture.Rmd
-  - vignettes/contributing.Rmd
-  - pkgdown/index.md
-  - docs/release/VERSION-LIFECYCLE.md
-  - docs/release/RELEASE-CHECKLIST.md
-  - docs/release/RELEASE-GATES.md
-  - docs/release/BENCHMARK-EVIDENCE.md
-  - docs/release/LICENSE-DECISION.md
-  - docs/provenance/EXPECTED-KEYS.csv
-  - docs/provenance/PROVENANCE.csv
-  - docs/provenance/INVENTORY-REVIEW.csv
-  - docs/provenance/ATTRIBUTION.md
-  - docs/provenance/LICENSE-DECISION.md
-  - inst/CITATION
+  - tools/check_release_gates.R
   - tests/testthat/test-release-gates.R
   - tools/provenance_inventory.R
-  - tools/check_release_gates.R
-  - tools/ci/build-pkgdown-site.R
-  - tools/ci/check-public-content.cjs
-  - tools/ci/check-public-content.test.cjs
-  - tools/ci/check-license-decision.R
 findings:
-  critical: 3
+  critical: 0
   warning: 2
   info: 0
-  total: 5
+  total: 2
 status: issues_found
 ---
 
 # Phase 06: Code Review Report
 
-**Reviewed:** 2026-10-19T15:12:12Z  
-**Depth:** standard  
-**Files Reviewed:** 33  
+**Reviewed:** 2026-10-20T08:59:45Z  
+**Depth:** deep  
+**Files Reviewed:** 3  
 **Status:** issues_found
 
 ## Summary
 
-The Phase 06 package, documentation, provenance, and release-gate files were reviewed. Three blockers remain in the submitted implementation: the integrated release gate does not validate the separately designated authoritative license record, the public-content scanner can be bypassed with HTML named entities, and NEWS reports a license that conflicts with the selected package license.
+The cumulative Phase 06 review covers the selected-root and provenance changes from 06-09 through 06-12. The 06-12 test change moves trailing-root coverage into its own top-level `test_that()` and loads the provenance tool independently, so symlink creation in the following symlink-security test cannot skip it. The adjacent outside-root symlink assertions remain intact, including checks that the outside source is not read, extracted, or hashed and that integrated validation fails with `PROVENANCE_SOURCE_OUTSIDE_ROOT`. The new test has portability gaps: its POSIX expected value assumes `/etc/hosts` keeps the lexical `etc/hosts` path after canonicalization, and its Windows branch assumes a local drive-letter checkout and write access at the volume root. The prior selected-root and blocked-result findings are also closed as summarized below. Tests were not run for this review.
 
-The phase record says full archive qualification remains halted because the local Matrix version is below the declared minimum and the canonical repository/site URLs return 404. It also reports a current-source provenance mismatch and that NUM-03 has no matched reference A/B result. Those are recorded as qualification limitations, not treated as evidence that the reviewed code is correct. Tests and package checks were not rerun during this review.
+## Resolved Findings from Previous Review
 
-## Critical Issues
+- **CR-01 (BLOCKER):** Closed in 06-09. `release_gate_validate_release_license_decision()` and `release_gate_validate_license_decision()` call `release_gate_resolve_evidence_path()` before `release_gate_read_lines()`. The symlink regression asserts each stable missing-record code and `parse_status[['license']] == 'fail'`.
+- **WR-01 (WARNING):** Closed in 06-09. The missing-record case copies complete integrated evidence and removes only `docs/release/LICENSE-DECISION.md`; it checks `LICENSE_RELEASE_DECISION_MISSING`, failed license parsing, and CLI status 1. The intact blocked fixture checks both blocker IDs, passing parse statuses, and CLI status 0.
+- **CR-02 (BLOCKER):** Closed in 06-10. The reviewed fixed evidence readers, hashes, CSV/DCF parsers, and attribution destinations resolve the canonical path before consumption; tests cover escaping evidence links and stable failure codes.
+- **CR-03 (BLOCKER):** Closed in 06-10. Both validator callers resolve tool scripts before loading. The tests check stable tool-load errors and absent outside-root canaries.
+- **WR-02 (WARNING):** Closed in 06-10. The child prefix preserves a root's trailing slash, and the POSIX root regression resolves a real file beneath `/`.
+- **CR-04 (BLOCKER):** Closed in 06-11. The cleanroom directory and each enumerated specification are resolved and root-contained before listing or reading; regressions cover escaping directory and component-file symlinks.
+- **CR-05 (BLOCKER):** Closed in 06-11. Provenance candidates are canonicalized and checked as regular in-root files before return, and relative paths require the separator-safe root prefix; tests assert no outside read/extraction/hash and stable integrated failure.
+- **WR-03 (WARNING):** Closed in 06-12. The trailing-root regression is now a separate top-level test with its own tool setup and supported-platform assertions, independent of symbolic-link creation.
 
-### CR-01: Integrated release gate skips the authoritative license record
+## Narrative Findings (AI reviewer)
 
-**Classification:** BLOCKER  
-**File:** `tools/check_release_gates.R:1599-1601,1765-1772`; contract in `docs/release/RELEASE-GATES.md:34`
+### WR-04 (WARNING): POSIX assertion assumes `/etc/hosts` has no symlinked parent
 
-**Issue:** The integrated gate validates only `docs/provenance/LICENSE-DECISION.md`. It never checks `docs/release/LICENSE-DECISION.md` or invokes the preflight that validates that record. The documented package-license gate requires both records. After the active blockers are cleared, `tools/check_release_gates.R` can report release readiness even if the designated release decision is missing or disagrees with DESCRIPTION.
+**File:** `tests/testthat/test-release-gates.R:3116-3119`  
+**Issue:** The helper canonicalizes both arguments with `normalizePath()`, but the assertion hard-codes `etc/hosts`. On POSIX systems where `/etc` resolves through a symlink (for example, `/etc` to `/private/etc`), the correct helper result is `private/etc/hosts`, so this regression test fails even when the helper handles `/` correctly.  
+**Fix:** Derive the expected relative value from the normalized file path under the normalized `/` root, or use a fixture whose canonical path is known on each supported platform.
 
-**Fix:** Validate both decision records in the integrated gate and require their license, reviewer, date, authority, citation, and blocker fields to agree with DESCRIPTION and the live gate state. Add a regression case for a missing or conflicting release decision.
+### WR-05 (WARNING): Windows assertion can skip or derive an invalid volume root
 
-### CR-02: HTML named entities bypass public-content marker checks
-
-**Classification:** BLOCKER  
-**File:** `tools/ci/check-public-content.cjs:340-355`
-
-**Issue:** `contentViolation()` decodes only selected numeric HTML entities and `%2f`. It does not decode named entities such as `&sol;`. An HTML page containing `docs&sol;provenance&sol;...` is rendered by a browser with slash characters, but the scanner's repository-only path marker does not match it. The site/artifact gate can therefore accept content that its policy intends to reject.
-
-**Fix:** Normalize HTML entities with a complete decoder before applying markers (and normalize encoded URL characters consistently). Add a regression case using `&sol;` in generated HTML.
-
-### CR-03: NEWS gives a conflicting package-license status
-
-**Classification:** BLOCKER  
-**File:** `NEWS.md:22-24`
-
-**Issue:** NEWS says the package license is unresolved and describes Apache-2.0 as provisional, while DESCRIPTION and both current license-decision records select GPL-3.0-or-later. NEWS is included in the source archive, so users receive contradictory license information.
-
-**Fix:** State that GPL-3.0-or-later is the selected package license and that the dependency-compatibility audit and attribution-identity blockers still prevent release.
-
-## Warnings
-
-### WR-01: Vignette links resolve to pages the pkgdown site does not build
-
-**Classification:** WARNING  
-**File:** `vignettes/diagnostics-memory-budgeting.Rmd:101-103`; `vignettes/legacy-to-sparse.Rmd:91-92`; `vignettes/backend-selection.Rmd:88-90`
-
-**Issue:** The diagnostics article links to bare `GEModelR-package.html`, which resolves under `/articles/` instead of the generated `/reference/` directory. The migration articles link to `../MIGRATION.html`, but the site configuration does not build the root `MIGRATION.md` as an HTML page; the configured migration navigation instead points to GitHub. These links are broken in the generated site.
-
-**Fix:** Link the reference page as `../reference/GEModelR-package.html`, and use the configured migration URL or add a migration article to the site.
-
-### WR-02: Package-facing files link to evidence omitted from the source archive
-
-**Classification:** WARNING  
-**File:** `.Rbuildignore:12,26-27`; references in `README.md:23-28,70-71` and `inst/CITATION:25-29`
-
-**Issue:** The source archive excludes `.planning/`, `docs/provenance/`, and `docs/release/`, but the README and installed citation still point to files in those directories. Readers of the built archive cannot follow those relative references to the cited provenance, rights, or compatibility evidence.
-
-**Fix:** Replace archive-facing relative references with stable accessible URLs, or remove them and keep the relevant concise status inline. Keep repository-only evidence excluded from the archive.
+**File:** `tests/testthat/test-release-gates.R:3106-3111`  
+**Issue:** Taking the first three characters of the checkout path assumes a local drive-letter path; a UNC checkout produces an invalid root such as `//s`. Even for a local drive, creating a file directly under `C:/` commonly fails for a non-administrator, turning the intended Windows coverage into a skip.  
+**Fix:** Derive a valid volume root for local and UNC paths and use an existing readable file under that root, or another fixture strategy that tests the trailing-root case without requiring write permission at the volume root.
 
 ---
 
-_Reviewed: 2026-10-19T15:12:12Z_  
+_Reviewed: 2026-10-20T08:59:45Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
-_Depth: standard_
+_Depth: deep_
+
