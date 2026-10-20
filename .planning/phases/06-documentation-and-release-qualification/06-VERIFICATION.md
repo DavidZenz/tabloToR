@@ -1,24 +1,26 @@
 ---
 phase: 06-documentation-and-release-qualification
-verified: 2026-10-20T08:57:05Z
+verified: 2026-10-20T10:21:44Z
 status: gaps_found
 score: 11/14 must-haves verified
 behavior_unverified: 1
 overrides_applied: 0
 re_verification:
   previous_status: gaps_found
-  previous_score: 8/14
+  previous_score: 11/14
   gaps_closed:
     - "Release-facing NEWS, README, CITATION, and lifecycle text now match GPL-3.0-or-later and the development/release blockers."
     - "The public-content scanner now handles named/numeric HTML references, encoded separators, and case variants; regression tests pass."
     - "Both license decision records are root-bound and cross-validated; focused missing/conflicting-record and blocked-state tests pass."
     - "Selected-root evidence and validator reads reject escaping paths; Linux POSIX-root and trailing-root cases pass."
     - "Installed-vignette and pkgdown package-help links resolve to generated targets."
+    - "WR-04 and WR-05 are closed: trailing-root checks use normalized POSIX expectations and temporary files, without deriving or writing to a Windows drive root."
   gaps_remaining:
     - "A successful exact-archive R CMD check under the declared dependency floor."
     - "A current matched full-scale R/C++ benchmark accepted by the independent gate."
     - "The live release-gate invocation still reports PROVENANCE_KEY_MISMATCH."
     - "Hosted serialization behavior and the Phase 1 dependency/attribution blockers remain open."
+    - "The focused trailing-root test has not been executed on Windows; this verification host is POSIX."
 decision_coverage:
   honored: 5
   total: 5
@@ -60,6 +62,14 @@ gaps:
         issue: "The current release gate intentionally blocks distribution on the two unresolved Phase 1 decisions."
     missing:
       - "Resolve and record the dependency compatibility audit and attribution identity decisions before publication."
+  - truth: "The trailing-root provenance regression has been exercised on Windows."
+    status: partial
+    reason: "The test is now platform-neutral and its temporary fixture passed on POSIX, but no Windows execution is available from this host."
+    artifacts:
+      - path: "tests/testthat/test-release-gates.R"
+        issue: "The Windows runtime branch has not been observed."
+    missing:
+      - "A focused Windows CI result for the trailing-root provenance test."
 behavior_unverified_items:
   - truth: "The hosted predecessor deserialization and transactional receiver invariants hold after the Phase 06 serialization repair."
     test: "Run the focused serialization and predecessor tests plus the BUGFIX gate on the supported hosted R/Matrix context."
@@ -70,41 +80,48 @@ behavior_unverified_items:
 # Phase 06: Documentation and Release Qualification Re-verification
 
 **Phase Goal:** Produce a publication-quality source package and auditable evidence for users and maintainers.
-**Verified:** 2026-10-20T08:57:05Z
+**Verified:** 2026-10-20T10:21:44Z
 **Status:** gaps_found
-**Re-verification:** Yes — after plans 06-07 through 06-12.
+**Re-verification:** Yes — after plans 06-07 through 06-13.
 
 ## Goal Achievement
 
-The documentation and release-evidence repairs are present and their focused checks pass. The phase goal is **not achieved**: no successful exact-archive check or accepted matched benchmark is available; the current live release-gate assertion stops on a provenance mismatch; hosted serialization remains unverified; and the Phase 1 dependency and attribution blockers remain open.
+The documentation and release-evidence repairs are present. Plan 06-13 closes review warnings WR-04/WR-05: the trailing-root test uses a temporary file under a temporary directory, and its POSIX filesystem-root expectation follows normalized paths. The summary records parse and both focused groups passing in separate fresh Rscript processes; those checks were not rerun during this verification. The latest code review is clean with zero findings. The phase goal is **not achieved**: exact-archive qualification and the matched benchmark remain absent, the live provenance assertion still reports PROVENANCE_KEY_MISMATCH, hosted serialization remains unverified, Phase 1 release blockers remain open, and Windows execution has not been observed on this POSIX host.
 
 ### Observable Truths
 
 | # | Truth | Status | Evidence |
 |---|---|---|---|
-| 1 | The exact built archive passes package checks without unexplained warnings or errors. | ✗ FAILED | The previously recorded exact-archive `R CMD check --as-cran` failed on Matrix 1.6-3 below the declared >=1.6-5 floor and canonical URL 404s. Not rerun by scope. |
-| 2 | Vignettes cover all five required topics with redistributable examples; full-scale instructions stay external. | ✓ VERIFIED | Prior build evidence plus current `tools/ci/check-vignette-help-links.R` passed after temporary build/install and pkgdown rendering of all seven articles. This was a documentation-link check, not archive qualification. |
-| 3 | Architecture and contributor guides cover ownership, numerical gates, native development, and proprietary-data restrictions. | ✓ VERIFIED | Guide content was inspected; prior UAT recorded the maintainer review as pass. |
-| 4 | Release-facing text and decision records agree on the GPL-3.0-or-later license, lifecycle, and current blockers. | ✓ VERIFIED | Current NEWS/README/CITATION/lifecycle text assertion and license preflight passed. Both authority records are cross-validated by the integrated gate and focused fixture tests. |
-| 5 | A current full-scale matched benchmark passes the independent gate and has an unsigned evidence summary. | ✗ FAILED | No matched R/C++ result or accepted A/B gate exists; candidate-only runs are not equivalent. NUM-03 remains pending. |
-| 6 | Public-content checks reject repository-only evidence in archives, site trees, and staged uploads. | ✓ VERIFIED | Current Node tests passed 14/14; workflow scan-before-upload wiring and prior archive scan were inspected. No new archive qualification/scan was run here. |
-| 7 | The release gate recognizes the current repository as intentionally blocked when all evidence streams are valid. | ✗ FAILED | Current `tools/check_release_gates.R --assert-blocked` returned `repository_state=invalid`, `release_ready=false`, `reason_codes=PROVENANCE_KEY_MISMATCH`, and `parse_status.provenance=fail`. Root cause is not established. |
-| 8 | Hosted serialization repairs preserve predecessor and receiver-state behavior. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Focused source-level tests do not prove the nine hosted assertions; they remain unverified on the supported hosted R/Matrix context. |
+| 1 | The exact built archive passes package checks without unexplained warnings or errors. | ✗ FAILED | Recorded exact-archive R CMD check failed with Matrix 1.6-3 below DESCRIPTION's >=1.6-5 floor and canonical URLs returning 404. Not rerun by scope. |
+| 2 | Vignettes cover all five required topics with redistributable examples; full-scale instructions stay external. | ✓ VERIFIED | The five required articles plus two maintainer guides exist. Prior archive/site build evidence and the recorded installed-help/pkgdown link check cover all seven articles. |
+| 3 | Pkgdown exposes user guides, API reference, migration instructions, and maintainer guidance without deployment. | ✓ VERIFIED | `_pkgdown.yml` and the read-only artifact workflow remain present; prior site build/navigation evidence and UAT record support this. |
+| 4 | Architecture and contributor guides cover ownership, numerical gates, native development, and proprietary-data restrictions. | ✓ VERIFIED | Inspected `vignettes/architecture.Rmd` and `vignettes/contributing.Rmd`; both describe the R/native boundary, acceptance, portability, contribution workflow, and private-data boundary. |
+| 5 | Detailed release/provenance evidence remains outside the generated public site and package archive. | ✓ VERIFIED | Prior archive/site boundary scans and current scanner/workflow wiring are recorded; no new archive or site scan was run. |
+| 6 | NEWS, citation/provenance text, lifecycle policy, and checklist agree with the selected license and current release blockers. | ✓ VERIFIED | Current package metadata says `GPL (>= 3)`; NEWS, README, CITATION, lifecycle, checklist, and both decision records state GPL-3.0-or-later and retain the blockers. |
+| 7 | The owner-approved pre-1.0 lifecycle policy is recorded and 0.1.0 remains development-only. | ✓ VERIFIED | `docs/release/VERSION-LIFECYCLE.md` and NEWS retain the recorded 0.x policy and development status. |
+| 8 | A current full-scale matched benchmark passes the independent gate and has an unsigned evidence summary. | ✗ FAILED | The result file contains historical measurements; Plan 06-05 records candidate-only C++/scaling evidence and no matched R/C++ gate. NUM-03 remains pending; the R baseline was not rerun. |
+| 9 | The external benchmark procedure documents required evidence, redaction, privacy, and unsigned status. | ✓ VERIFIED | `docs/release/BENCHMARK-EVIDENCE.md` contains the external runner/checker procedure and explicitly leaves NUM-03 pending. |
+| 10 | The exact-archive workflow preserves failures and passes only on `Status: OK`. | ✓ VERIFIED | `.github/workflows/release-qualification.yaml` stores raw status and fails closed unless the exact archive log contains `Status: OK`; successful qualification is not evidenced. |
+| 11 | Hosted predecessor serialization and transactional receiver behavior pass on the supported hosted R/Matrix context. | ⚠️ PRESENT_BEHAVIOR_UNVERIFIED | Source repair and focused source-mode evidence exist, but the nine hosted assertions have not been observed on the supported hosted R/Matrix context. |
+| 12 | Public-content checks reject repository-only evidence across archive, site, and staged uploads. | ✓ VERIFIED | Scanner code/tests and scan-before-upload wiring are present; recorded Node tests passed 14/14, including entity, encoded-separator, and case-variant cases. |
+| 13 | The GPL license selection is authoritative, matches DESCRIPTION, and passes its preflight while blockers remain. | ✓ VERIFIED | The two decision records and DESCRIPTION agree on GPL-3.0-or-later / `GPL (>= 3)`; the prior license preflight passed. |
+| 14 | The integrated gate cross-validates both license records and rejects missing/conflicting or invalid blocked-state evidence. | ✓ VERIFIED | The focused missing/conflicting-record and complete blocked-fixture groups are recorded passing. The separate live repository invocation still fails on provenance mismatch. |
 
-**Score:** 11/14 must-haves verified (1 present, behavior-unverified). The score retains the original 14-truth audit set; its five repaired findings are now verified, while exact archive qualification and matched benchmarking remain failed. The live provenance result and release blockers are separately reported below.
+**Score:** 11/14 must-haves verified (2 failed, 1 present but behavior-unverified). The retained 14-truth set is now listed explicitly. Plan 06-13 closes WR-04/WR-05, but the Windows run itself remains unobserved and is tracked separately from the 14 original truths.
 
 ### Focused Verification Evidence
 
 | Check | Result | Notes |
 |---|---|---|
-| Nine isolated `test-release-gates.R` groups | PASS | Root-bound license decisions; complete blocked evidence; paired decision-record comparison; fixed selected-root evidence; validator symlink rejection; POSIX filesystem-root resolution; cleanroom containment; trailing-root relative paths; provenance-source containment. Each ran in a clean `Rscript --vanilla` process. |
+| Nine targeted `test-release-gates.R` groups from plans 06-08 through 06-12 | PASS (recorded) | Root-bound license decisions; complete blocked evidence; paired decision-record comparison; fixed selected-root evidence; validator symlink rejection; POSIX filesystem-root resolution; cleanroom containment; trailing-root relative paths; provenance-source containment. Plan summaries record independent `Rscript --vanilla` processes. |
+| Plan 06-13 parse check and two isolated release-gate groups | PASS (recorded) | `parse()` and both named groups passed in separate fresh Rscript processes per `06-13-SUMMARY.md`. This verifier did not rerun them. The POSIX `/etc/hosts` assertion ran; Windows did not. |
 | `node --test tools/ci/check-public-content.test.cjs` | PASS, 14/14 | Includes HTML entities, encoded separators, case variants, and scan modes. |
 | `Rscript --vanilla tools/ci/check-vignette-help-links.R` | PASS | Temporary package build/install and pkgdown rendering validated installed-help and site targets for seven articles. Pandoc printed a deprecation warning; the check passed. |
 | License preflight and NEWS/archive-boundary assertion | PASS | GPL-3.0-or-later / `GPL (>= 3)`; current package-facing release text assertion passed. |
 | `tools/check_release_gates.R --assert-blocked` on current checkout | FAIL | `PROVENANCE_KEY_MISMATCH`; provenance parser status is fail. Do not infer a cause from unrelated dirty solver/native files. |
 | Broader release-gate test-file run recorded in Plan 06-07 | FAIL, 9 assertions | All nine reported failures were canonical-state/reason-code checks affected by the provenance mismatch; plan-specific isolated groups listed above pass. |
 
-The GSD regression-gate fallback resolved to **`true`** because no configured `test_command`, Makefile/Justfile, or `package.json` exists. That fallback ran no test suite. Plan-specific focused tests were run independently as listed above.
+The GSD regression-gate fallback resolved to **`true`** because no configured `test_command`, Makefile/Justfile, or `package.json` exists. That fallback ran no test suite. This re-verification ran no tests; it relies on the focused results recorded in the plan summaries, including the two separate processes in 06-13.
 
 No broad test suite, baseline, `R CMD check`, archive qualification, benchmark, or publication was run in this verification, per scope.
 
@@ -115,7 +132,7 @@ No broad test suite, baseline, `R CMD check`, archive qualification, benchmark, 
 | NUM-03 | BLOCKED | No current matched R/C++ benchmark accepted by the independent gate; summary evidence is absent. |
 | CI-02 | BLOCKED | Prior exact-archive check failed on Matrix floor and URL 404s; no passing check is available and none was rerun. |
 | DOCS-02 | SATISFIED | Five required vignette topics exist; the seven-article build/link check passed. |
-| DOCS-03 | SATISFIED (tracking stale) | Architecture/contributor guide content and prior UAT evidence cover required topics; `.planning/REQUIREMENTS.md` still has its checkbox/status marked pending and was not edited. |
+| DOCS-03 | SATISFIED (tracking stale) | Architecture/contributor guide content and prior UAT evidence cover required topics; `.planning/REQUIREMENTS.md` still has its checkbox/status marked pending. |
 | REL-01 | SATISFIED for documented policy | NEWS, lifecycle, citation/provenance, checklist, and paired decision records reflect the selected license and blockers. The current live provenance mismatch remains a separate gate gap. |
 | DATA-01 | SATISFIED on available evidence | Prior archive scan passed; current scanner regressions pass 14/14 and CI wiring scans outputs before upload. No new archive scan was run here. |
 
@@ -126,8 +143,16 @@ No broad test suite, baseline, `R CMD check`, archive qualification, benchmark, 
 - Current read-only `--assert-blocked` fails with `PROVENANCE_KEY_MISMATCH`; its cause is unknown. Focused synthetic blocked-state fixtures passing does not override this live result.
 - `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED` remain in release decision records and block publication.
 - Hosted serialization assertions remain behavior-unverified.
-- Windows drive-root behavior remains untested on this Linux host; the POSIX `/` and trailing-root cases passed.
-- `06-REVIEW.md` covers a narrow three-file code review and says its tests were not run. The focused evidence above is independently recorded here.
+- The old Windows drive-root write was removed. The temporary-file regression and POSIX canonical-path case passed on this POSIX host, but no Windows execution has been observed.
+- The current `06-REVIEW.md` reports clean status with zero findings. Its scoped review did not rerun tests; 06-13 records the focused test results separately.
+
+### Test Quality Audit
+
+| Test File | Linked Req | Active | Skipped | Circular | Assertion Level | Verdict |
+|---|---|---:|---:|---:|---|---|
+| `tests/testthat/test-release-gates.R` trailing-root and selected-root groups | REL-01 | 2 focused groups | 0 in these groups | No expected values are generated from the system under test; temporary files are inputs | Value and behavioral assertions | PASS (recorded focused runs; not rerun here) |
+
+Disabled tests on the two 06-13 groups: 0. Circular expected-value generation: 0. Insufficient assertions: 0. The Windows runtime remains unobserved, so portability is established by the code shape and POSIX run, not a Windows result.
 
 ## Decision Coverage
 
@@ -139,7 +164,7 @@ No unreferenced `TBD`, `FIXME`, `XXX`, `TODO`, `HACK`, or `PLACEHOLDER` markers 
 
 ## Gaps Summary
 
-The targeted gap plans repaired the stale package-facing license text, HTML/path scanner bypasses, paired license-record validation and selected-root boundaries, and installed/pkgdown help links. Their focused tests passed. Phase 06 remains blocked by CI-02 and NUM-03; hosted serialization is unverified, the current live provenance check fails, and Phase 1's dependency and attribution blockers remain open. No later roadmap phase explicitly resolves these gaps; Phase 7 depends on cleared release gates.
+The targeted gap plans repaired the stale package-facing license text, HTML/path scanner bypasses, paired license-record validation and selected-root boundaries, installed/pkgdown help links, and WR-04/WR-05 portability issues. The focused results are recorded as passing, including 06-13's separate fresh-process runs. Phase 06 remains blocked by CI-02 and NUM-03; hosted serialization is unverified, the live provenance check fails, Phase 1's dependency and attribution blockers remain open, and Windows execution is not observed on this POSIX host. No later roadmap phase explicitly resolves these gaps; Phase 7 depends on cleared release gates.
 
 ---
 

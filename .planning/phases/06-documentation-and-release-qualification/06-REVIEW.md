@@ -1,6 +1,6 @@
 ---
 phase: 06-documentation-and-release-qualification
-reviewed: 2026-10-20T08:59:45Z
+reviewed: 2026-10-20T10:18:19Z
 depth: deep
 files_reviewed: 3
 files_reviewed_list:
@@ -9,22 +9,22 @@ files_reviewed_list:
   - tools/provenance_inventory.R
 findings:
   critical: 0
-  warning: 2
+  warning: 0
   info: 0
-  total: 2
-status: issues_found
+  total: 0
+status: clean
 ---
 
 # Phase 06: Code Review Report
 
-**Reviewed:** 2026-10-20T08:59:45Z  
+**Reviewed:** 2026-10-20T10:18:19Z  
 **Depth:** deep  
 **Files Reviewed:** 3  
-**Status:** issues_found
+**Status:** clean
 
 ## Summary
 
-The cumulative Phase 06 review covers the selected-root and provenance changes from 06-09 through 06-12. The 06-12 test change moves trailing-root coverage into its own top-level `test_that()` and loads the provenance tool independently, so symlink creation in the following symlink-security test cannot skip it. The adjacent outside-root symlink assertions remain intact, including checks that the outside source is not read, extracted, or hashed and that integrated validation fails with `PROVENANCE_SOURCE_OUTSIDE_ROOT`. The new test has portability gaps: its POSIX expected value assumes `/etc/hosts` keeps the lexical `etc/hosts` path after canonicalization, and its Windows branch assumes a local drive-letter checkout and write access at the volume root. The prior selected-root and blocked-result findings are also closed as summarized below. Tests were not run for this review.
+The cumulative Phase 06 review covers the selected-root and provenance changes through 06-13. The 06-12 change isolates trailing-root coverage from symlink setup, and the 06-13 re-review confirms that its temporary-file case now avoids drive-root assumptions while the POSIX filesystem-root expectation follows normalized paths. The adjacent outside-root symlink assertions remain intact, including checks that the outside source is not read, extracted, or hashed and that integrated validation fails with `PROVENANCE_SOURCE_OUTSIDE_ROOT`. The previous selected-root, blocked-result, and trailing-root portability findings are closed below. This scoped re-review did not rerun tests; the 06-13 summary records that both focused test groups passed in separate fresh R processes.
 
 ## Resolved Findings from Previous Review
 
@@ -36,24 +36,16 @@ The cumulative Phase 06 review covers the selected-root and provenance changes f
 - **CR-04 (BLOCKER):** Closed in 06-11. The cleanroom directory and each enumerated specification are resolved and root-contained before listing or reading; regressions cover escaping directory and component-file symlinks.
 - **CR-05 (BLOCKER):** Closed in 06-11. Provenance candidates are canonicalized and checked as regular in-root files before return, and relative paths require the separator-safe root prefix; tests assert no outside read/extraction/hash and stable integrated failure.
 - **WR-03 (WARNING):** Closed in 06-12. The trailing-root regression is now a separate top-level test with its own tool setup and supported-platform assertions, independent of symbolic-link creation.
+- **WR-04 (WARNING, closed in 06-13):** **File:** `tests/testthat/test-release-gates.R:3120-3134`. **Original issue:** The POSIX assertion assumed the canonical path for `/etc/hosts` remained the lexical `etc/hosts`. **Resolution:** The test now derives the expected suffix from normalized root and file paths.
+- **WR-05 (WARNING, closed in 06-13):** **File:** `tests/testthat/test-release-gates.R:3104-3113`. **Original issue:** The Windows branch parsed a drive root from the checkout path and attempted to write beneath it, which failed for UNC paths and restricted volume roots. **Resolution:** The all-platform regression writes and cleans up a file only beneath a temporary directory and passes that directory with a trailing separator.
 
 ## Narrative Findings (AI reviewer)
 
-### WR-04 (WARNING): POSIX assertion assumes `/etc/hosts` has no symlinked parent
-
-**File:** `tests/testthat/test-release-gates.R:3116-3119`  
-**Issue:** The helper canonicalizes both arguments with `normalizePath()`, but the assertion hard-codes `etc/hosts`. On POSIX systems where `/etc` resolves through a symlink (for example, `/etc` to `/private/etc`), the correct helper result is `private/etc/hosts`, so this regression test fails even when the helper handles `/` correctly.  
-**Fix:** Derive the expected relative value from the normalized file path under the normalized `/` root, or use a fixture whose canonical path is known on each supported platform.
-
-### WR-05 (WARNING): Windows assertion can skip or derive an invalid volume root
-
-**File:** `tests/testthat/test-release-gates.R:3106-3111`  
-**Issue:** Taking the first three characters of the checkout path assumes a local drive-letter path; a UNC checkout produces an invalid root such as `//s`. Even for a local drive, creating a file directly under `C:/` commonly fails for a non-administrator, turning the intended Windows coverage into a skip.  
-**Fix:** Derive a valid volume root for local and UNC paths and use an existing readable file under that root, or another fixture strategy that tests the trailing-root case without requiring write permission at the volume root.
+No open findings remain in the reviewed Phase 06 source scope. The 06-13 re-review was limited to `tests/testthat/test-release-gates.R` and commit `ddb0d23`; it confirmed the temporary fixture is platform-neutral, cleanup is registered, the POSIX root/file expectation uses canonical paths, and the unavailable `/etc/hosts` case does not skip the cross-platform fixture. The plan summary records focused test results; no tests or release checks were run as part of this re-review.
 
 ---
 
-_Reviewed: 2026-10-20T08:59:45Z_  
+_Reviewed: 2026-10-20T10:18:19Z_  
 _Reviewer: the agent (gsd-code-reviewer)_  
 _Depth: deep_
 
