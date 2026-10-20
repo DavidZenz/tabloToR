@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: verifying
-stopped_at: Completed 06-07-PLAN.md
-last_updated: "2026-10-20T06:52:08.127Z"
+stopped_at: Completed 06-08-PLAN.md
+last_updated: "2026-10-20T07:32:36.505Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 06 execution started
-state_head: 7f6ff90e105689f4df774262f220c8c7f99d5208
+state_head: efdd70f05f4da51595a1c5e68237a135a3096641
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 58
-  completed_plans: 58
+  total_plans: 59
+  completed_plans: 59
 milestone_name: milestone
 ---
 
@@ -84,6 +84,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans comple
 | Phase 06 P03 | 42 min | 2 tasks | 8 files |
 | Phase 06 P04 | Multi-turn including decision checkpoint | 3 tasks | 30 files |
 | Phase 06 P07 | 20min | 3 tasks | 11 files |
+| Phase 06 P08 | 15min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -178,6 +179,9 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Require both license decision records and compare shared facts and live blockers while allowing distinct lifecycle statuses.
 - [Phase 06]: Reject ambiguous encoded separators in repository-only path candidates and keep package-facing references inside the source archive.
 - [Phase 06]: Retain the 0.1.0 development status, selected GPL-3.0-or-later license, and current release blockers.
+- [Phase 06]: Bind fixed authority and citation reads to canonical in-root regular files.
+- [Phase 06]: Use pkgdown's IN_PKGDOWN render marker to select help links for installed vignettes and site articles.
+- [Phase 06]: Keep both existing release blockers active; this gap plan does not qualify or publish a release.
 
 ### Pending Todos
 
@@ -203,6 +207,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-20T06:52:07.992Z
-Stopped at: Completed 06-07-PLAN.md
+Last session: 2026-10-20T07:32:36.415Z
+Stopped at: Completed 06-08-PLAN.md
 Resume file: None
