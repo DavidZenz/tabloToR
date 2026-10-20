@@ -35,10 +35,16 @@ provenance_current_native_symbol <- function(symbol, relative) {
 provenance_relative_path <- function(path, root) {
   path <- normalizePath(path, winslash = "/", mustWork = TRUE)
   root <- normalizePath(root, winslash = "/", mustWork = TRUE)
-  substring(path, nchar(root) + 2L)
+  rootPrefix <- if (endsWith(root, "/")) root else paste0(root, "/")
+  if (!startsWith(path, rootPrefix)) {
+    provenance_abort("PROVENANCE_SOURCE_OUTSIDE_ROOT")
+  }
+  substring(path, nchar(rootPrefix) + 1L)
 }
 
 provenance_source_files <- function(root) {
+  root <- normalizePath(root, winslash = "/", mustWork = TRUE)
+  rootPrefix <- if (endsWith(root, "/")) root else paste0(root, "/")
   collect <- function(directory, pattern) {
     path <- file.path(root, directory)
     if (!dir.exists(path)) return(character())
@@ -53,8 +59,18 @@ provenance_source_files <- function(root) {
     collect(file.path("inst", "cpp"), "\\.(c|cc|cpp|cxx|h|hpp)$")
   )
   if (!length(files)) return(character())
-  files <- files[!file.info(files)[["isdir"]]]
-  sort(unique(normalizePath(files, winslash = "/", mustWork = TRUE)))
+  resolved <- vapply(files, function(path) {
+    canonical <- tryCatch(
+      normalizePath(path, winslash = "/", mustWork = TRUE),
+      error = function(error) NULL
+    )
+    if (is.null(canonical) || !isTRUE(utils::file_test("-f", canonical)) ||
+        !startsWith(canonical, rootPrefix)) {
+      provenance_abort("PROVENANCE_SOURCE_OUTSIDE_ROOT")
+    }
+    canonical
+  }, character(1))
+  sort(unique(resolved))
 }
 
 provenance_srcref_lines <- function(value, fallback_start = 1L,

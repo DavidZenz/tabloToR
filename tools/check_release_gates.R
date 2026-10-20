@@ -231,17 +231,47 @@ release_gate_evaluate_cleanroom <- function(root, cleanroomLines, parsePass,
       anyDuplicated(inheritedKeys)) {
     return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
   }
-  specificationDir <- file.path(root, "specs", "cleanroom")
-  specificationFiles <- if (dir.exists(specificationDir)) {
-    sort(list.files(
-      specificationDir, pattern = "\\.md$", full.names = TRUE
-    ))
+  rootPath <- tryCatch(
+    normalizePath(root, winslash = "/", mustWork = TRUE),
+    error = function(error) NULL
+  )
+  rootPrefix <- if (!is.null(rootPath) && endsWith(rootPath, "/")) {
+    rootPath
+  } else if (is.null(rootPath)) {
+    ""
   } else {
-    character()
+    paste0(rootPath, "/")
   }
-  specificationFiles <- specificationFiles[
-    basename(specificationFiles) != "README.md"
+  specificationDir <- if (is.null(rootPath)) NULL else tryCatch(
+    normalizePath(
+      file.path(rootPath, "specs", "cleanroom"),
+      winslash = "/", mustWork = TRUE
+    ),
+    error = function(error) NULL
+  )
+  if (is.null(specificationDir) || !dir.exists(specificationDir) ||
+      !startsWith(specificationDir, rootPrefix)) {
+    return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+  }
+  specificationNames <- sort(list.files(
+    specificationDir, pattern = "\\.md$", full.names = FALSE
+  ))
+  specificationNames <- specificationNames[
+    specificationNames != "README.md"
   ]
+  if (length(specificationNames)) {
+    specificationPaths <- lapply(specificationNames, function(name) {
+      release_gate_resolve_evidence_path(
+        rootPath, file.path("specs", "cleanroom", name)
+      )
+    })
+    if (any(vapply(specificationPaths, is.null, logical(1)))) {
+      return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
+    }
+    specificationFiles <- unlist(specificationPaths, use.names = FALSE)
+  } else {
+    specificationFiles <- character()
+  }
   if (!length(specificationFiles)) {
     return(fail("CLEANROOM_EVIDENCE_INCOMPLETE"))
   }
@@ -1020,6 +1050,7 @@ release_gate_provenance_reason = function(error) {
   code = strsplit(conditionMessage(error), "[[:space:]]+")[[1L]][[1L]]
   mapped = c(
     PROVENANCE_SOURCE_EMPTY = "PROVENANCE_SOURCE_MISSING",
+    PROVENANCE_SOURCE_OUTSIDE_ROOT = "PROVENANCE_SOURCE_OUTSIDE_ROOT",
     PROVENANCE_R_PARSE_FAILED = "PROVENANCE_SOURCE_EXTRACTION_FAILED",
     PROVENANCE_GIT_UNAVAILABLE = "PROVENANCE_GIT_EVIDENCE_MISSING",
     PROVENANCE_FILE_MISSING = "PROVENANCE_EVIDENCE_MISSING"
@@ -1613,6 +1644,10 @@ release_gate_evaluate = function(root = ".") {
   base = release_gate_evaluate_rights(root)
   baseBlocked = identical(base$repository_state, "blocked")
   if (!baseBlocked && !identical(base$repository_state, "eligible")) {
+    return(base)
+  }
+  if (baseBlocked &&
+      (anyNA(base$parse_status) || any(base$parse_status != "pass"))) {
     return(base)
   }
 

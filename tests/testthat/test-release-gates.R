@@ -3047,6 +3047,15 @@ test_that("assert-blocked validates integrated evidence", {
 })
 
 test_that("cleanroom specifications stay within selected root", {
+  validRoot <- tempfile("release-gate-cleanroom-valid-root-")
+  on.exit(unlink(validRoot, recursive = TRUE), add = TRUE)
+  writeCompleteIntegratedCleanroomFixture(validRoot)
+  validResult <- evaluateReleaseGate(validRoot)
+  expect_identical(validResult$repository_state, "eligible")
+  expect_true(validResult$release_ready)
+  expect_length(validResult$reason_codes, 0L)
+  expect_identical(validResult$parse_status[["cleanroom"]], "pass")
+
   assertEscapingSpecificationFails <- function(directoryLink) {
     root <- tempfile("release-gate-cleanroom-selected-root-")
     outside <- tempfile("release-gate-cleanroom-selected-outside-")
@@ -3094,6 +3103,22 @@ test_that("provenance sources stay within selected root", {
   on.exit(unlink(parent, recursive = TRUE), add = TRUE)
   dir.create(root, recursive = TRUE)
   dir.create(outside, recursive = TRUE)
+
+  blockedControl <- file.path(parent, "blocked-control")
+  copyIntegratedReleaseEvidence(blockedControl)
+  blockedResult <- evaluateReleaseGate(blockedControl)
+  expect_identical(blockedResult$repository_state, "blocked")
+  expect_false(blockedResult$release_ready)
+  expect_identical(blockedResult$reason_codes, c(
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    "ATTRIBUTION_IDENTITY_UNRESOLVED"
+  ))
+  expect_true(all(unname(blockedResult$parse_status) == "pass"))
+  expect_identical(
+    runReleaseGate(c("--root", blockedControl, "--assert-blocked"))$status,
+    0L
+  )
+
   copyIntegratedReleaseEvidence(root)
 
   sourcePath <- file.path(root, "R", "processTablo.R")
@@ -3189,22 +3214,24 @@ test_that("provenance sources stay within selected root", {
   expect_identical(result$reason_codes, "PROVENANCE_SOURCE_OUTSIDE_ROOT")
   expect_identical(result$parse_status[["provenance"]], "fail")
 
-  if (.Platform$OS.type == "windows") {
-    driveRoot <- substr(canonicalRoot, 1L, 3L)
-    rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
-    if (!isTRUE(file.create(rootFile))) {
-      skip("a writable file beneath the active drive root is unavailable")
+  test_that("provenance relative paths accept trailing roots", {
+    if (.Platform$OS.type == "windows") {
+      driveRoot <- substr(canonicalRoot, 1L, 3L)
+      rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
+      if (!isTRUE(file.create(rootFile))) {
+        skip("a writable file beneath the active drive root is unavailable")
+      }
+      on.exit(unlink(rootFile), add = TRUE)
+      writeLines("root file", rootFile, useBytes = TRUE)
+      expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
+                       basename(rootFile))
+    } else if (file.exists("/etc/hosts") &&
+               isTRUE(utils::file_test("-f", "/etc/hosts"))) {
+      expect_identical(
+        tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
+      )
+    } else {
+      skip("a regular file beneath the POSIX filesystem root is unavailable")
     }
-    on.exit(unlink(rootFile), add = TRUE)
-    writeLines("root file", rootFile, useBytes = TRUE)
-    expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
-                     basename(rootFile))
-  } else if (file.exists("/etc/hosts") &&
-             isTRUE(file_test("-f", "/etc/hosts"))) {
-    expect_identical(
-      tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
-    )
-  } else {
-    skip("a regular file beneath the POSIX filesystem root is unavailable")
-  }
+  })
 })
