@@ -2663,3 +2663,89 @@ test_that("reviewed license evidence is exact, hash-bound, and R-valid", {
     expect_identical(result$parse_status[["license"]], "fail", info = name)
   }
 })
+
+test_that("release gate rejects authority and citation targets outside root", {
+  root = tempfile("release-gate-fixed-evidence-symlink-")
+  outside = tempfile("release-gate-outside-evidence-")
+  on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  dir.create(outside, recursive = TRUE)
+
+  probeTarget = file.path(outside, "symlink-probe-target")
+  probeLink = file.path(outside, "symlink-probe-link")
+  writeLines("probe", probeTarget)
+  if (!isTRUE(file.symlink(probeTarget, probeLink))) {
+    skip("symbolic links are unavailable on this platform")
+  }
+  unlink(probeLink)
+
+  cases = list(
+    governance = list(
+      relative = "GOVERNANCE.md",
+      reason = "GOVERNANCE_IDENTITY_UNAPPROVED"
+    ),
+    citation = list(
+      relative = file.path("inst", "CITATION"),
+      reason = "LICENSE_RELEASE_DECISION_INVALID"
+    )
+  )
+  for (name in names(cases)) {
+    fixture = tempfile(paste0("release-gate-", name, "-symlink-"))
+    targetRoot = tempfile(paste0("release-gate-", name, "-target-"))
+    on.exit(unlink(c(fixture, targetRoot), recursive = TRUE), add = TRUE)
+    copyIntegratedReleaseEvidence(fixture)
+    dir.create(targetRoot, recursive = TRUE)
+    target = file.path(targetRoot, basename(cases[[name]]$relative))
+    link = file.path(fixture, cases[[name]]$relative)
+    dir.create(dirname(link), recursive = TRUE, showWarnings = FALSE)
+    expect_true(file.copy(link, target, overwrite = TRUE), info = name)
+    unlink(link)
+    expect_true(file.symlink(target, link), info = name)
+
+    result = evaluateReleaseGate(fixture)
+    expect_identical(
+      result$reason_codes, cases[[name]]$reason, info = name
+    )
+    expect_false(result$release_ready, info = name)
+  }
+})
+
+test_that("assert-blocked validates integrated evidence", {
+  complete = tempfile("release-gate-assert-blocked-complete-")
+  missing = tempfile("release-gate-assert-blocked-missing-record-")
+  on.exit(unlink(c(complete, missing), recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(complete)
+
+  completeResult = evaluateReleaseGate(complete)
+  expectedBlockers = c(
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    "ATTRIBUTION_IDENTITY_UNRESOLVED"
+  )
+  expect_identical(completeResult$repository_state, "blocked")
+  expect_false(completeResult$release_ready)
+  expect_identical(completeResult$reason_codes, expectedBlockers)
+  expect_true(all(unname(completeResult$parse_status) == "pass"))
+  expect_identical(
+    runReleaseGate(c("--root", complete, "--assert-blocked"))$status,
+    0L
+  )
+
+  writeReleaseGateFixture(missing)
+  rightsPath = file.path(missing, "docs", "provenance", "RIGHTS.md")
+  writeLines(
+    c(readLines(rightsPath, warn = FALSE),
+      "Integrated-Evidence-Version: 1"),
+    rightsPath, useBytes = TRUE
+  )
+  missingResult = evaluateReleaseGate(missing)
+  expect_identical(
+    missingResult$reason_codes, "ATTRIBUTION_DESTINATION_MISSING"
+  )
+  expect_false(missingResult$release_ready)
+  expect_false(all(unname(missingResult$parse_status) == "pass"))
+  expect_identical(
+    runReleaseGate(c("--root", missing, "--assert-blocked"))$status,
+    1L,
+    info = "missing integrated license evidence must not satisfy assert-blocked"
+  )
+})
