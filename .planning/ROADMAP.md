@@ -268,12 +268,25 @@ Plans:
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
 **Plans**: 1/6 plans executed
+**Wave 1**
 
 - [x] 06-01-PLAN.md
-- [ ] 06-02-PLAN.md
-- [ ] 06-03-PLAN.md
 - [ ] 06-04-PLAN.md
+
+**Wave 2** *(blocked on Wave 1 completion)*
+
+- [ ] 06-02-PLAN.md
+
+**Wave 3** *(blocked on Wave 2 completion)*
+
+- [ ] 06-03-PLAN.md
+
+**Wave 4** *(blocked on Wave 3 completion)*
+
 - [ ] 06-05-PLAN.md
+
+**Wave 5** *(blocked on Wave 4 completion)*
+
 - [ ] 06-06-PLAN.md
 
 ### Phase 7: GitHub and R-universe Release
