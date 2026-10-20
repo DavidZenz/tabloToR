@@ -3101,25 +3101,44 @@ test_that("provenance relative paths accept trailing roots", {
   tool <- loadProvenanceFixtureTool(
     file.path(root, "tools", "provenance_inventory.R")
   )
-  canonicalRoot <- normalizePath(root, winslash = "/", mustWork = TRUE)
+  temporaryRoot <- tempfile("provenance-trailing-root-")
+  expect_true(dir.create(temporaryRoot))
+  on.exit(unlink(temporaryRoot, recursive = TRUE), add = TRUE)
+  rootFile <- file.path(temporaryRoot, "root-file.txt")
+  expect_true(file.create(rootFile))
+  trailingTemporaryRoot <- paste0(temporaryRoot, .Platform$file.sep)
+  expect_identical(
+    tool$provenance_relative_path(rootFile, trailingTemporaryRoot),
+    basename(rootFile)
+  )
 
-  if (.Platform$OS.type == "windows") {
-    driveRoot <- substr(canonicalRoot, 1L, 3L)
-    rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
-    if (!isTRUE(file.create(rootFile))) {
-      skip("a writable file beneath the active drive root is unavailable")
+  if (.Platform$OS.type != "windows") {
+    hostsPath <- "/etc/hosts"
+    if (file.exists(hostsPath) &&
+        isTRUE(utils::file_test("-f", hostsPath)) &&
+        file.access(hostsPath, mode = 4L) == 0L) {
+      canonicalRoot <- normalizePath("/", winslash = "/", mustWork = TRUE)
+      canonicalHosts <- normalizePath(
+        hostsPath, winslash = "/", mustWork = TRUE
+      )
+      canonicalRootPrefix <- if (endsWith(canonicalRoot, "/")) {
+        canonicalRoot
+      } else {
+        paste0(canonicalRoot, "/")
+      }
+      expectedRelative <- substring(
+        canonicalHosts, nchar(canonicalRootPrefix) + 1L
+      )
+      expect_identical(
+        tool$provenance_relative_path(hostsPath, canonicalRootPrefix),
+        expectedRelative
+      )
+    } else {
+      message(
+        "Skipping POSIX filesystem-root assertion: a readable regular file ",
+        "beneath the filesystem root is unavailable"
+      )
     }
-    on.exit(unlink(rootFile), add = TRUE)
-    writeLines("root file", rootFile, useBytes = TRUE)
-    expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
-                     basename(rootFile))
-  } else if (file.exists("/etc/hosts") &&
-             isTRUE(utils::file_test("-f", "/etc/hosts"))) {
-    expect_identical(
-      tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
-    )
-  } else {
-    skip("a regular file beneath the POSIX filesystem root is unavailable")
   }
 })
 
