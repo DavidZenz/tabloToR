@@ -74,7 +74,10 @@ release_gate_resolve_evidence_path <- function(root, relative_path) {
     normalizePath(candidate, winslash = "/", mustWork = TRUE),
     error = function(error) NULL
   )
-  if (is.null(resolved) || !startsWith(resolved, paste0(rootPath, "/"))) {
+  childPrefix <- if (endsWith(rootPath, "/")) rootPath else {
+    paste0(rootPath, "/")
+  }
+  if (is.null(resolved) || !startsWith(resolved, childPrefix)) {
     return(NULL)
   }
   resolved
@@ -438,8 +441,11 @@ release_gate_evaluate_public_domain <- function(
   if (!identical(evidenceDocument, "docs/provenance/UPSTREAM-RESPONSE.md")) {
     return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
   }
-  evidencePath <- file.path(root, evidenceDocument)
-  evidenceLines <- release_gate_read_lines(evidencePath)
+  evidencePath <- release_gate_resolve_evidence_path(
+    root, evidenceDocument
+  )
+  evidenceLines <- if (is.null(evidencePath)) NULL else
+    release_gate_read_lines(evidencePath)
   if (is.null(evidenceLines)) {
     return(fail("PUBLIC_DOMAIN_EVIDENCE_INCOMPLETE"))
   }
@@ -606,9 +612,14 @@ release_gate_evaluate <- function(root = ".") {
   if (release_gate_has_sensitive_evidence(root)) {
     return(release_gate_result(reason_codes = "SENSITIVE_EVIDENCE_CLASS"))
   }
-  rightsPath <- file.path(root, "docs", "provenance", "RIGHTS.md")
-  releasePath <- file.path(root, "docs", "release", "RELEASE-GATES.md")
-  rightsLines <- release_gate_read_lines(rightsPath)
+  rightsPath <- release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "RIGHTS.md")
+  )
+  releasePath <- release_gate_resolve_evidence_path(
+    root, file.path("docs", "release", "RELEASE-GATES.md")
+  )
+  rightsLines <- if (is.null(rightsPath)) NULL else
+    release_gate_read_lines(rightsPath)
   if (is.null(rightsLines)) {
     return(release_gate_result(reason_codes = "RIGHTS_DOCUMENT_MISSING"))
   }
@@ -640,7 +651,8 @@ release_gate_evaluate <- function(root = ".") {
     return(release_gate_result(reason_codes = "RIGHTS_STATUS_INVALID"))
   }
 
-  releaseLines <- release_gate_read_lines(releasePath)
+  releaseLines <- if (is.null(releasePath)) NULL else
+    release_gate_read_lines(releasePath)
   if (is.null(releaseLines)) {
     return(release_gate_result(
       reason_codes = "RELEASE_GATES_DOCUMENT_MISSING",
@@ -682,10 +694,11 @@ release_gate_evaluate <- function(root = ".") {
       root, rightsLines, rightsValues, parsePass, intentionalBlockers
     ))
   }
-  requestPath <- file.path(
-    root, "docs", "provenance", "UPSTREAM-REQUEST.md"
+  requestPath <- release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "UPSTREAM-REQUEST.md")
   )
-  requestLines <- release_gate_read_lines(requestPath)
+  requestLines <- if (is.null(requestPath)) NULL else
+    release_gate_read_lines(requestPath)
   requestParseFail <- c(parsePass, request = "fail")
   if (is.null(requestLines)) {
     return(release_gate_result(
@@ -865,8 +878,11 @@ release_gate_evaluate <- function(root = ".") {
     ))
   }
 
-  cleanroomPath <- file.path(root, "docs", "provenance", "CLEANROOM.md")
-  cleanroomLines <- release_gate_read_lines(cleanroomPath)
+  cleanroomPath <- release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "CLEANROOM.md")
+  )
+  cleanroomLines <- if (is.null(cleanroomPath)) NULL else
+    release_gate_read_lines(cleanroomPath)
   release_gate_evaluate_cleanroom(
     root, cleanroomLines, parsePass, intentionalBlockers
   )
@@ -910,9 +926,13 @@ release_gate_integrated_failure = function(reason, parseStatus, stream) {
 }
 
 release_gate_validate_provenance = function(root, parseStatus) {
-  expectedPath = file.path(root, "docs", "provenance", "EXPECTED-KEYS.csv")
-  inventoryPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
-  if (!file.exists(expectedPath) || !file.exists(inventoryPath)) {
+  expectedPath = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "EXPECTED-KEYS.csv")
+  )
+  inventoryPath = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "PROVENANCE.csv")
+  )
+  if (is.null(expectedPath) || is.null(inventoryPath)) {
     return(list(error = release_gate_integrated_failure(
       "PROVENANCE_EVIDENCE_MISSING", parseStatus, "provenance"
     )))
@@ -1020,7 +1040,26 @@ release_gate_validate_current_source = function(root, parseStatus) {
       reason, parseStatus, "provenance"
     ))
   }
-  toolPath = file.path(root, "tools", "provenance_inventory.R")
+  toolCandidate = file.path(root, "tools", "provenance_inventory.R")
+  toolPath = release_gate_resolve_evidence_path(
+    root, file.path("tools", "provenance_inventory.R")
+  )
+  expectedPath = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "EXPECTED-KEYS.csv")
+  )
+  ledgerPath = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "PROVENANCE.csv")
+  )
+  if (is.null(toolPath)) {
+    return(fail(if (file.exists(toolCandidate)) {
+      "PROVENANCE_TOOL_LOAD_FAILED"
+    } else {
+      "PROVENANCE_TOOL_MISSING"
+    }))
+  }
+  if (is.null(expectedPath) || is.null(ledgerPath)) {
+    return(fail("PROVENANCE_EVIDENCE_MISSING"))
+  }
   symbols = c(
     "provenance_columns", "provenance_collect_sources",
     "provenance_read_csv", "provenance_validate_ledger",
@@ -1034,8 +1073,6 @@ release_gate_validate_current_source = function(root, parseStatus) {
     return(fail(release_gate_provenance_reason(tool)))
   }
 
-  expectedPath = file.path(root, "docs", "provenance", "EXPECTED-KEYS.csv")
-  ledgerPath = file.path(root, "docs", "provenance", "PROVENANCE.csv")
   validated = tryCatch(
     {
       expected = tool$provenance_read_csv(
@@ -1124,8 +1161,10 @@ release_gate_current_evidence_keys = function(keys) {
 
 release_gate_validate_attribution = function(
     root, rightsValues, provenance, parseStatus) {
-  path = file.path(root, "docs", "provenance", "ATTRIBUTION.md")
-  lines = release_gate_read_lines(path)
+  path = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "ATTRIBUTION.md")
+  )
+  lines = if (is.null(path)) NULL else release_gate_read_lines(path)
   if (is.null(lines)) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_EVIDENCE_MISSING", parseStatus, "attribution"
@@ -1222,38 +1261,36 @@ release_gate_validate_attribution = function(
 }
 
 release_gate_attribution_destination_paths = function(root) {
-  c(
-    DESCRIPTION = file.path(root, "DESCRIPTION"),
-    README = file.path(root, "README.md"),
-    CITATION = file.path(root, "inst", "CITATION"),
-    CONTRIBUTORS = file.path(root, "CONTRIBUTORS.md"),
-    PROVENANCE = file.path(
-      root, "docs", "provenance", "PROVENANCE.csv"
-    ),
-    NEWS = file.path(root, "NEWS.md")
+  relativePaths = c(
+    DESCRIPTION = "DESCRIPTION",
+    README = "README.md",
+    CITATION = file.path("inst", "CITATION"),
+    CONTRIBUTORS = "CONTRIBUTORS.md",
+    PROVENANCE = file.path("docs", "provenance", "PROVENANCE.csv"),
+    NEWS = "NEWS.md"
   )
+  lapply(relativePaths, function(relativePath) {
+    release_gate_resolve_evidence_path(root, relativePath)
+  })
 }
 
 release_gate_validate_attribution_destination_presence = function(
     root, parseStatus) {
   paths = release_gate_attribution_destination_paths(root)
-  citationPath = release_gate_resolve_evidence_path(
-    root, file.path("inst", "CITATION")
-  )
-  citationCandidate = unname(paths[["CITATION"]])
+  citationPath = paths[["CITATION"]]
+  citationCandidate = file.path(root, "inst", "CITATION")
   if (is.null(citationPath) && file.exists(citationCandidate)) {
     return(list(error = release_gate_integrated_failure(
       "LICENSE_RELEASE_DECISION_INVALID", parseStatus, "license"
     )))
   }
-  if (!is.null(citationPath)) paths[["CITATION"]] = citationPath
-  if (!all(file.exists(paths))) {
+  if (any(vapply(paths, is.null, logical(1)))) {
     return(list(error = release_gate_integrated_failure(
       "ATTRIBUTION_DESTINATION_MISSING",
       parseStatus, "attribution_destinations"
     )))
   }
-  list(parse_status = parseStatus, paths = paths)
+  list(parse_status = parseStatus, paths = unlist(paths, use.names = TRUE))
 }
 
 release_gate_attribution_role_markers = function(lines) {
@@ -1373,8 +1410,22 @@ release_gate_validate_attribution_destinations = function(
 
 
 release_gate_validate_name = function(root, parseStatus) {
-  path = file.path(root, "docs", "release", "NAME-CHECK.md")
-  toolPath = file.path(root, "tools", "check_name_availability.R")
+  path = release_gate_resolve_evidence_path(
+    root, file.path("docs", "release", "NAME-CHECK.md")
+  )
+  toolPath = release_gate_resolve_evidence_path(
+    root, file.path("tools", "check_name_availability.R")
+  )
+  if (is.null(path)) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_REPORT_INVALID", parseStatus, "name"
+    )))
+  }
+  if (is.null(toolPath)) {
+    return(list(error = release_gate_integrated_failure(
+      "NAME_TOOL_LOAD_FAILED", parseStatus, "name"
+    )))
+  }
   tool = tryCatch(
     release_gate_load_tool(toolPath, "name_check_verify_report"),
     error = function(error) error
@@ -1473,8 +1524,10 @@ release_gate_validate_governance = function(root, parseStatus) {
 
 release_gate_validate_repository = function(
     root, governance, parseStatus) {
-  path = file.path(root, "docs", "release", "REPOSITORY.md")
-  lines = release_gate_read_lines(path)
+  path = release_gate_resolve_evidence_path(
+    root, file.path("docs", "release", "REPOSITORY.md")
+  )
+  lines = if (is.null(path)) NULL else release_gate_read_lines(path)
   fields = c(
     "Owner-Slug", "Repository-Name", "Canonical-URL", "Issue-Tracker",
     "Visibility-Boundary", "Identity-Approval", "Reviewer",
@@ -1543,8 +1596,11 @@ release_gate_release_check_fresh = function(nameEvidence) {
 
 release_gate_evaluate = function(root = ".") {
   root = normalizePath(root, mustWork = TRUE)
-  rightsPath = file.path(root, "docs", "provenance", "RIGHTS.md")
-  rightsLines = release_gate_read_lines(rightsPath)
+  rightsPath = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "RIGHTS.md")
+  )
+  rightsLines = if (is.null(rightsPath)) NULL else
+    release_gate_read_lines(rightsPath)
   integratedVersion = if (is.null(rightsLines)) character() else
     release_gate_marker_values(rightsLines, "Integrated-Evidence-Version")
   if (length(integratedVersion) != 1L ||
@@ -1659,10 +1715,13 @@ release_gate_evaluate = function(root = ".") {
 
 
 release_gate_pkgdown_url = function(root) {
-  path = file.path(root, "_pkgdown.yml")
-  if (!file.exists(path)) return(character())
+  candidate = file.path(root, "_pkgdown.yml")
+  path = release_gate_resolve_evidence_path(root, "_pkgdown.yml")
+  if (is.null(path)) {
+    return(if (file.exists(candidate)) NA_character_ else character())
+  }
   lines = tryCatch(
-    readLines(path, warn = FALSE),
+    readLines(path, warn = FALSE, encoding = "UTF-8"),
     error = function(error) character()
   )
   urlLines = grep("^[[:space:]]*url:[[:space:]]*", lines, value = TRUE)
@@ -1679,10 +1738,9 @@ release_gate_pkgdown_url = function(root) {
 
 release_gate_validate_description = function(
     root, governance, repository, blockers, parseStatus) {
-  path = file.path(root, "DESCRIPTION")
-  description = tryCatch(
-    read.dcf(path),
-    error = function(error) NULL
+  path = release_gate_resolve_evidence_path(root, "DESCRIPTION")
+  description = if (is.null(path)) NULL else tryCatch(
+    read.dcf(path), error = function(error) NULL
   )
   required = c(
     "Package", "Authors@R", "Maintainer", "License", "URL", "BugReports"
@@ -1940,7 +1998,13 @@ release_gate_validate_license_decision = function(
   }
 
   description = tryCatch(
-    read.dcf(file.path(root, "DESCRIPTION")),
+    {
+      descriptionPath = release_gate_resolve_evidence_path(
+        root, "DESCRIPTION"
+      )
+      if (is.null(descriptionPath)) stop("missing DESCRIPTION")
+      read.dcf(descriptionPath)
+    },
     error = function(error) NULL
   )
   if (is.null(description) ||
@@ -2027,17 +2091,17 @@ release_gate_validate_license_decision = function(
       any(components %in% c("", ".", ".."))) {
     return(fail("LICENSE_DEPENDENCY_AUDIT_PATH_INVALID"))
   }
-  artifactPath = file.path(root, normalizedArtifact)
-  if (!file.exists(artifactPath)) {
+  artifactCandidate = file.path(root, normalizedArtifact)
+  resolvedArtifact = release_gate_resolve_evidence_path(
+    root, normalizedArtifact
+  )
+  if (is.null(resolvedArtifact)) {
+    if (file.exists(artifactCandidate)) {
+      return(fail("LICENSE_DEPENDENCY_AUDIT_PATH_INVALID"))
+    }
     return(fail("LICENSE_DEPENDENCY_AUDIT_MISSING"))
   }
-  rootPath = normalizePath(root, mustWork = TRUE)
-  resolvedArtifact = normalizePath(artifactPath, mustWork = TRUE)
-  if (!startsWith(
-    resolvedArtifact, paste0(rootPath, .Platform$file.sep)
-  )) {
-    return(fail("LICENSE_DEPENDENCY_AUDIT_PATH_INVALID"))
-  }
+  rootPath = normalizePath(root, winslash = "/", mustWork = TRUE)
   expectedHash = values[["Dependency-Audit-MD5"]]
   if (!grepl("^[0-9a-f]{32}$", expectedHash) ||
       !identical(release_gate_file_hash(resolvedArtifact), expectedHash)) {

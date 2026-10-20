@@ -2889,6 +2889,16 @@ test_that("fixed selected-root evidence fails closed", {
   )
   expect_identical(descriptionResult$error$parse_status[["description"]], "fail")
 
+  licenseResult <- releaseGateEnvironment$release_gate_validate_license_decision(
+    descriptionRoot,
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    c(license = "pass")
+  )
+  expect_identical(
+    licenseResult$error$reason_codes, "DESCRIPTION_LICENSE_MISMATCH"
+  )
+  expect_identical(licenseResult$error$parse_status[["license"]], "fail")
+
   pkgdownRoot <- tempfile("release-gate-pkgdown-fixed-root-")
   pkgdownOutside <- tempfile("release-gate-pkgdown-fixed-outside-")
   on.exit(unlink(c(pkgdownRoot, pkgdownOutside), recursive = TRUE), add = TRUE)
