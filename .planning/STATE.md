@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: verifying
-stopped_at: Created 06-14-PLAN.md; ready to execute the Windows evidence gap plan
-last_updated: "2026-10-20T11:49:43.000Z"
+stopped_at: Completed 06-14-PLAN.md; Phase 06 verification gaps remain open
+last_updated: "2026-10-20T14:46:37.152Z"
 last_activity: 2026-10-20
-last_activity_desc: Phase 06 plan 06-14 created; hosted Windows verification remains pending.
-state_head: 1d5dd5b1c0c673c05827059a3b3c46d8fcc7d845
+last_activity_desc: Plan 06-14 executed; focused POSIX regressions pass and hosted Windows evidence remains pending.
+state_head: 50099b64345fad05a2d58e22b509b7ac66b58ee0
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 65
-  completed_plans: 64
+  completed_plans: 65
 milestone_name: milestone
 ---
 
@@ -28,12 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 ## Current Position
 
-Phase: 06 (Documentation and Release Qualification) — READY TO EXECUTE
+Phase: 06 (Documentation and Release Qualification) — VERIFYING
 Plan: 14 of 14
-Status: Phase 06 plan 06-14 is ready to execute; remaining release and environment verification gaps stay open.
-Last activity: 2026-10-20 — Phase 06 plan 06-14 created; hosted Windows verification remains pending.
+Status: Phase 06 plan 06-14 is complete; verification gaps remain open.
+Last activity: 2026-10-20 — Plan 06-14 executed; focused POSIX regressions pass and hosted Windows evidence remains pending.
 
-Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 14 plans; 13 have summaries, 06-06 remains halted at source-archive qualification, and 06-14 is ready to execute. Verification remains 11/14 with release and environment gaps open.
+Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 14 plans and 14 summaries; 06-06 remains halted at source-archive qualification. Verification remains 11/14, with hosted Windows execution and other release/environment gaps open.
 
 ## Performance Metrics
 
@@ -90,6 +90,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 14
 | Phase 06 P11 | 6min | 1 tasks | 3 files |
 | Phase 06 P12 | 1min | 1 tasks | 1 files |
 | Phase 06 P13 | 4min | 2 tasks | 4 files |
+| Phase 06 P14 | 12 min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -194,6 +195,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Continue an integrated gate from a blocked base state only when all base parser streams passed.
 - [Phase 06]: Keep trailing-root coverage independent from symlink setup while preserving platform-specific filesystem checks.
 - [Phase 06]: Phase 6 Plan 13: Use a temporary file beneath a temporary root for portable trailing-root coverage and derive the POSIX expectation from normalized paths.
+- [Phase 06]: Reuse the existing Windows release/current/serial CI tuple for separately launched provenance regression groups. — This keeps the platform check narrow and lets a hosted trailing-root result be attributed independently.
 
 ### Pending Todos
 
@@ -208,6 +210,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 - Phase 5: The latest hosted representative full check is informational and exits 1 with nine serialization assertions, a missing `pdflatex` tool, and the provisional license warning. Clean source-archive qualification remains Phase 6; see `05-VERIFICATION.md` and `deferred-items.md`.
 - Phase 6 Plan 05: Four measured C++ candidate-only shock runs and a later 12-run 1/4/8/12-thread scaling diagnostic completed; the candidate-only scaling gate passed. The user directed that the R baseline not be rerun, so no matched reference or A/B gate was used and NUM-03 remains pending. The scaling medians were 10,401/4,644/4,076/4,096 seconds; 12 threads were effectively level with 8 threads. `pidstat` observed up to all requested worker counts, but whole-run process averages were about 1.0/2.5/3.6/4.2 core equivalents. Detailed outputs remain external; no GPG key is required and no solver defaults changed.
 - Phase 6 Plan 06: The license decision is recorded and the built archive passes the content/privacy gate. Local R CMD check stops at Matrix 1.6-3, below the declared 1.6-5 minimum, and reports three 404 URLs because the canonical repository and site are not published. The integrated release gate also reports PROVENANCE_KEY_MISMATCH; preserve source evidence and resolve these gates before qualification.
+- Phase 6 Plan 14: Hosted Windows execution remains pending; only a hosted pass of the trailing-root provenance regression closes this platform gap.
 
 ## Deferred Items
 
@@ -219,6 +222,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-20T10:15:56.623Z
-Stopped at: Completed 06-13-PLAN.md; ready for Phase 06 verification of remaining gaps
+Last session: 2026-10-20T14:45:22.279Z
+Stopped at: Completed 06-14-PLAN.md; Phase 06 verification gaps remain open
 Resume file: None
