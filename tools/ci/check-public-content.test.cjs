@@ -195,20 +195,31 @@ test("scans every generated-site path", () => {
   });
 });
 
-test("rejects repository-only provenance and release text in a generated site", () => {
+test("rejects literal and encoded repository-only paths in every scan mode", () => {
   withTempDirectory((root) => {
     const site = path.join(root, "site");
     fs.mkdirSync(site, { recursive: true });
     fs.writeFileSync(path.join(site, "index.html"), "Public guide\n");
     assert.equal(runChecker(["--site", site]).status, 0);
 
-    fs.writeFileSync(
-      path.join(site, "index.html"),
-      "See docs&#47;provenance&#47;RIGHTS.md for the reviewed evidence.\n"
-    );
-    const provenance = runChecker(["--site", site]);
-    assert.equal(provenance.status, 1);
-    assert.match(provenance.stderr, /repository-only release or provenance reference/);
+    const paths = [
+      "docs/provenance/RIGHTS.md",
+      "docs&#47;provenance&#47;RIGHTS.md",
+      "docs&sol;provenance&sol;RIGHTS.md",
+      "docs%2fprovenance%2fRIGHTS.md"
+    ];
+    for (const candidate of paths) {
+      fs.writeFileSync(
+        path.join(site, "index.html"),
+        `See ${candidate} for the reviewed evidence.\n`
+      );
+      const provenance = runChecker(["--site", site]);
+      assert.equal(provenance.status, 1, candidate);
+      assert.match(
+        provenance.stderr,
+        /repository-only release or provenance reference/
+      );
+    }
 
     fs.writeFileSync(
       path.join(site, "index.html"),
@@ -217,6 +228,29 @@ test("rejects repository-only provenance and release text in a generated site", 
     const blocker = runChecker(["--artifact-dir", site]);
     assert.equal(blocker.status, 1);
     assert.match(blocker.stderr, /attribution blocker identifier/);
+
+    fs.writeFileSync(
+      path.join(site, "index.html"),
+      "See docs&sol;provenance&sol;RIGHTS.md for the reviewed evidence.\n"
+    );
+    const stagedProvenance = runChecker(["--artifact-dir", site]);
+    assert.equal(stagedProvenance.status, 1);
+    assert.match(
+      stagedProvenance.stderr,
+      /repository-only release or provenance reference/
+    );
+
+    const archive = path.join(root, "named-entity.tar.gz");
+    fs.writeFileSync(archive, makeTarGz([{
+      path: "GEModelR/index.html",
+      contents: "See docs&sol;provenance&sol;RIGHTS.md for the evidence.\n"
+    }]));
+    const archivedProvenance = runChecker(["--archive", archive]);
+    assert.equal(archivedProvenance.status, 1);
+    assert.match(
+      archivedProvenance.stderr,
+      /repository-only release or provenance reference/
+    );
   });
 });
 
