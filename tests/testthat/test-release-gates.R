@@ -2664,7 +2664,7 @@ test_that("reviewed license evidence is exact, hash-bound, and R-valid", {
   }
 })
 
-test_that("release gate rejects authority and citation targets outside root", {
+test_that("release gate rejects license decision targets outside root", {
   root = tempfile("release-gate-fixed-evidence-symlink-")
   outside = tempfile("release-gate-outside-evidence-")
   on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
@@ -2687,6 +2687,16 @@ test_that("release gate rejects authority and citation targets outside root", {
     citation = list(
       relative = file.path("inst", "CITATION"),
       reason = "LICENSE_RELEASE_DECISION_INVALID"
+    ),
+    release_license_decision = list(
+      relative = file.path("docs", "release", "LICENSE-DECISION.md"),
+      reason = "LICENSE_RELEASE_DECISION_MISSING",
+      licenseParseStatus = "fail"
+    ),
+    provenance_license_decision = list(
+      relative = file.path("docs", "provenance", "LICENSE-DECISION.md"),
+      reason = "LICENSE_DECISION_MISSING",
+      licenseParseStatus = "fail"
     )
   )
   for (name in names(cases)) {
@@ -2707,6 +2717,13 @@ test_that("release gate rejects authority and citation targets outside root", {
       result$reason_codes, cases[[name]]$reason, info = name
     )
     expect_false(result$release_ready, info = name)
+    if (!is.null(cases[[name]]$licenseParseStatus)) {
+      expect_identical(
+        result$parse_status[["license"]],
+        cases[[name]]$licenseParseStatus,
+        info = name
+      )
+    }
   }
 })
 
@@ -2715,6 +2732,7 @@ test_that("assert-blocked validates integrated evidence", {
   missing = tempfile("release-gate-assert-blocked-missing-record-")
   on.exit(unlink(c(complete, missing), recursive = TRUE), add = TRUE)
   copyIntegratedReleaseEvidence(complete)
+  copyIntegratedReleaseEvidence(missing)
 
   completeResult = evaluateReleaseGate(complete)
   expectedBlockers = c(
@@ -2730,19 +2748,13 @@ test_that("assert-blocked validates integrated evidence", {
     0L
   )
 
-  writeReleaseGateFixture(missing)
-  rightsPath = file.path(missing, "docs", "provenance", "RIGHTS.md")
-  writeLines(
-    c(readLines(rightsPath, warn = FALSE),
-      "Integrated-Evidence-Version: 1"),
-    rightsPath, useBytes = TRUE
-  )
+  unlink(file.path(missing, "docs", "release", "LICENSE-DECISION.md"))
   missingResult = evaluateReleaseGate(missing)
   expect_identical(
-    missingResult$reason_codes, "ATTRIBUTION_DESTINATION_MISSING"
+    missingResult$reason_codes, "LICENSE_RELEASE_DECISION_MISSING"
   )
   expect_false(missingResult$release_ready)
-  expect_false(all(unname(missingResult$parse_status) == "pass"))
+  expect_identical(missingResult$parse_status[["license"]], "fail")
   expect_identical(
     runReleaseGate(c("--root", missing, "--assert-blocked"))$status,
     1L,
