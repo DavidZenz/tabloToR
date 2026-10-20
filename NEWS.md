@@ -2,29 +2,18 @@
 
 ## Provenance and release boundary
 
-Attribution-Role: David Zenz|aut,cre,cph
-Attribution-Role: Maros Ivanic|aut
-
-Evidence-Key: R/GEModel.R::GEModel$loadTablo
-Evidence-Key: R/GEModel.R::GEModel$solveModel
-Evidence-Key: R/processTablo.R::processTablo
-Evidence-Key: R/sparseCompiler.R::sparse_compile_spec
-Evidence-Key: R/sparseSolver.R::sparse_solve_model
-Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
-
-- Established a deterministic 250-key provenance inventory for the package's R
-  and native source surface.
-- Credited Maros Ivanic for the upstream `tabloToR` baseline under the reviewed
-  public-domain/CC0 evidence, while retaining stable source keys for the cited
-  model-loading, solve, and TABLO-processing work.
-- Credited David Zenz for the reviewed post-baseline sparse compiler, solver,
-  and native structured-solver work and recorded his approved maintainer role.
-- Renamed the package to `GEModelR`; its license remains unresolved. Apache-2.0 is
-  provisional for original post-baseline code pending the dependency
-  compatibility audit; this entry does not authorize a release or publication.
-- Public release remains blocked by `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
-  `ATTRIBUTION_IDENTITY_UNRESOLVED`. This development entry does not authorize
-  source redistribution or publication.
-
-See `docs/provenance/ATTRIBUTION.md`, `docs/provenance/PROVENANCE.csv`, and
-`docs/provenance/RIGHTS.md` for the evidence and scope behind these credits.
+- Maros Ivanic authored the upstream `tabloToR` baseline; David Zenz authored the
+  reviewed post-baseline sparse compiler, solver, and native structured-solver
+  work. The predecessor baseline is credited under its reviewed
+  public-domain/CC0 basis.
+- The selected license is GPL-3.0-or-later; package metadata declares
+  `GPL (>= 3)`.
+- Version 0.1.0 remains a development version and is not a public release. Before
+  1.0.0, minor releases may include documented breaking changes and patch
+  releases carry compatible fixes. After 1.0.0, Semantic Versioning applies:
+  patches are compatible, minors add backward-compatible functionality, and
+  majors may change documented interfaces incompatibly.
+- Public release remains blocked by
+  `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
+  `ATTRIBUTION_IDENTITY_UNRESOLVED`. This entry does not authorize source
+  redistribution or publication.

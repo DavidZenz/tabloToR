@@ -6,10 +6,8 @@ bibentry(
   author = as.person(meta[["Author"]]),
   note = paste0(
     "R package version ", meta[["Version"]],
-    "; reviewed current-work author: David Zenz; attribution evidence: ",
-    "R/sparseCompiler.R::sparse_compile_spec; ",
-    "R/sparseSolver.R::sparse_solve_model; ",
-    "src/sparse-schur.cpp::GEModelR_schur_accumulate_global"
+    "; reviewed post-baseline sparse and native solver work by David Zenz; ",
+    "upstream tabloToR baseline authored by Maros Ivanic"
   )
 )
 
@@ -22,11 +20,9 @@ bibentry(
     "7e063c65a19713857ed13023f8b77dad45b15c90"
   ),
   note = paste0(
-    "Reviewed predecessor author: Maros Ivanic; public-domain/CC0 evidence in ",
-    "docs/provenance/ATTRIBUTION.md and docs/provenance/RIGHTS.md; ",
-    "source evidence: R/GEModel.R::GEModel$loadTablo; ",
-    "R/GEModel.R::GEModel$solveModel; ",
-    "R/processTablo.R::processTablo"
+    "Reviewed predecessor author: Maros Ivanic; credited under the reviewed ",
+    "public-domain/CC0 basis; baseline includes model loading, solving, and ",
+    "TABLO processing"
   )
 )
 

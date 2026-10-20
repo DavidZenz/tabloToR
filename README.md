@@ -15,26 +15,12 @@ an accepted public-domain/CC0 basis; it is credited here even though CC0 does
 not require attribution.
 
 The current package identity is `GEModelR`, licensed under GPL-3.0-or-later
-(`GPL (>= 3)` in R package metadata). Public redistribution remains blocked
-while the dependency compatibility audit and attribution identity review are
-pending. The license decision and identity migration do not authorize
-publication.
-
-The evidence-to-role mapping is in
-[`docs/provenance/ATTRIBUTION.md`](docs/provenance/ATTRIBUTION.md), the accepted
-rights basis and scope are in
-[`docs/provenance/RIGHTS.md`](docs/provenance/RIGHTS.md), and the reviewed source
-ledger is in
-[`docs/provenance/PROVENANCE.csv`](docs/provenance/PROVENANCE.csv).
-
-Reviewed attribution evidence keys:
-
-- `R/GEModel.R::GEModel$loadTablo`
-- `R/GEModel.R::GEModel$solveModel`
-- `R/processTablo.R::processTablo`
-- `R/sparseCompiler.R::sparse_compile_spec`
-- `R/sparseSolver.R::sparse_solve_model`
-- `src/sparse-schur.cpp::GEModelR_schur_accumulate_global`
+(`GPL (>= 3)` in R package metadata). Maros Ivanic authored the upstream
+baseline; David Zenz authored the reviewed post-baseline sparse and native
+solver work. Public release remains blocked by
+`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
+`ATTRIBUTION_IDENTITY_UNRESOLVED`; the license decision and identity migration
+do not authorize release or publication.
 
 ## Migrating from the predecessor package
 
@@ -52,30 +38,17 @@ R CMD INSTALL .
 
 ### Matrix compatibility
 
-**Matrix support: 1.6-5 through 1.7-6** (current CRAN endpoint verified on
-2026-10-05). The support policy covers every Matrix version in this interval
-on R/platform combinations where its exact source release installs. CI tests
-the minimum and current endpoints with R `oldrel-1`, release and devel on
-Linux, macOS and Windows serial builds, plus Linux and Windows OpenMP builds.
-The current endpoint is refreshed from the official CRAN source index once
-per CI run, then shared as an exact version and source URL across its jobs;
-installed tests assert that exact version and the declared minimum.
-
-Matrix 1.6-5 passed source installation and the installed solver contract on
-all five `oldrel-1` platform/build pairings at R 4.5.3. On release R 4.6.1
-and devel R 4.7.0, its source failed on macOS serial and Windows serial/OpenMP
-with an `OBJECT` compiler error. Those six tuples are explicitly excluded;
-the Linux minimum tuples and all current endpoint tuples passed. This is
-not a promise that every R/Matrix/platform cross-product can be installed.
-See the [validated floor evidence](.planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md)
-and [retained tuple outcomes](.planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md).
-
-When the oldest supported R window advances, the floor advances to the
-oldest compatible Matrix source release that passes the same installed
-solver contract on all five required platform/build pairings. Failed
-candidates and any tuple exclusions remain recorded before the dependency
-minimum changes. Full package checks are reported separately; the native
-core matrix does not resolve the outstanding release/provenance findings.
+**Matrix support: 1.6-5 through 1.7-6.** Matrix 1.6-5 passed source
+installation and the installed solver contract on all five `oldrel-1`
+platform/build pairings. On release R 4.6.1 and devel R 4.7.0, its source
+failed on macOS serial and Windows serial/OpenMP; those six tuples are
+excluded. The Linux minimum tuples and current endpoint tuples passed. Support
+does not promise that every R/Matrix/platform combination can install. The
+minimum will advance only after the next oldest supported R window has a
+compatible Matrix source release that passes the same installed solver
+contract. Full package checks and remaining release qualification are tracked
+separately; these solver results do not resolve the outstanding release
+blockers.
 
 ## Running a simulation
 
