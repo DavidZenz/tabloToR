@@ -267,11 +267,12 @@ Plans:
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
-**Plans**: 9 total (8 complete; 1 review gap-closure pending)
+**Plans**: 10 total (9 complete; 1 review gap-closure pending)
 
 - [x] 06-07-PLAN.md
 - [x] 06-08-PLAN.md — Close release-gate, scanner, and installed-vignette review findings
 - [x] 06-09-PLAN.md — Root-bind license decision reads and repair the blocked-state regression
+- [ ] 06-10-PLAN.md — Bind all fixed release evidence and validators to the selected root
 
 **Wave 1**
 
@@ -317,5 +318,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 9/9 | In Progress|  |
+| 6. Documentation and Release Qualification | 9/10 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
