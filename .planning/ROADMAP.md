@@ -274,7 +274,7 @@ Plans:
 - [x] 06-09-PLAN.md — Root-bind license decision reads and repair the blocked-state regression
 - [x] 06-10-PLAN.md — Bind all fixed release evidence and validators to the selected root
 - [x] 06-11-PLAN.md — Bind dynamic cleanroom and provenance reads to the selected root
-- [ ] 06-12-PLAN.md — Isolate trailing-root coverage from symlink-dependent setup
+- [x] 06-12-PLAN.md — Isolate trailing-root coverage from symlink-dependent setup
 
 **Wave 1**
 
@@ -320,5 +320,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 11/12 | In Progress|  |
+| 6. Documentation and Release Qualification | 12/12 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |

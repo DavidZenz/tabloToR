@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: verifying
-stopped_at: Completed 06-11-PLAN.md
-last_updated: "2026-10-20T08:34:19.320Z"
+stopped_at: Completed 06-12-PLAN.md
+last_updated: "2026-10-20T08:43:51.366Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 06 execution started
-state_head: afaad58fde7db47f4648a8f8d1b982160c747260
+state_head: d014f82326a899e2e900d2799812a20ee6a9c0a5
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 62
-  completed_plans: 62
+  total_plans: 63
+  completed_plans: 63
 milestone_name: milestone
 ---
 
@@ -88,6 +88,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans comple
 | Phase 06 P09 | 2min | 1 tasks | 2 files |
 | Phase 06 P10 | 28min | 1 tasks | 2 files |
 | Phase 06 P11 | 6min | 1 tasks | 3 files |
+| Phase 06 P12 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -190,6 +191,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Bind fixed release evidence and validator scripts to canonical selected-root paths; preserve stable failure semantics and active blockers.
 - [Phase 06]: Require canonical root-contained regular files before reading cleanroom or provenance source evidence.
 - [Phase 06]: Continue an integrated gate from a blocked base state only when all base parser streams passed.
+- [Phase 06]: Keep trailing-root coverage independent from symlink setup while preserving platform-specific filesystem checks.
 
 ### Pending Todos
 
@@ -215,6 +217,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-20T08:34:19.218Z
-Stopped at: Completed 06-11-PLAN.md
+Last session: 2026-10-20T08:43:51.274Z
+Stopped at: Completed 06-12-PLAN.md
 Resume file: None
