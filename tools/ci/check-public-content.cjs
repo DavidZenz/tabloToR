@@ -21,12 +21,12 @@ const REPOSITORY_ONLY_SEGMENTS = new Set([
   ".local-gtap-test",
   ".planning",
   ".ssh",
-  ".Rcheck",
-  ".RData",
-  ".Rhistory",
-  ".Rproj.user",
-  ".Renviron"
-]);
+  ".rcheck",
+  ".rdata",
+  ".rhistory",
+  ".rproj.user",
+  ".renviron"
+].map((segment) => segment.toLowerCase()));
 const REPOSITORY_ONLY_DOCUMENTS = new Set([
   "AGENTS.md",
   "AGENTS.html",
@@ -36,7 +36,7 @@ const REPOSITORY_ONLY_DOCUMENTS = new Set([
   "GOVERNANCE.html",
   "rcpp-solver-acceleration-plan.md",
   "rcpp-solver-acceleration-plan.html"
-]);
+].map((document) => document.toLowerCase()));
 const TEXT_FILE_EXTENSIONS = new Set([
   ".c", ".cc", ".cpp", ".cjs", ".csv", ".dcf", ".h", ".hpp",
   ".html", ".ini", ".js", ".json", ".md", ".mjs", ".py", ".r",
@@ -290,24 +290,25 @@ function pathViolation(entryPath) {
   const parts = normalized
     .split("/")
     .filter((part) => part !== "" && part !== ".");
-  if (parts.some((part) => PRIVATE_PATH_PATTERN.test(part) ||
+  const policyParts = parts.map((part) => part.toLowerCase());
+  if (policyParts.some((part) => PRIVATE_PATH_PATTERN.test(part) ||
       /^\.env(?:$|[._-])/i.test(part) ||
       /^\.renviron$/i.test(part) ||
       /^id_(?:rsa|ed25519)$/i.test(part))) {
     return "private or credential-like path is present";
   }
-  if (parts.includes(FORBIDDEN_SEGMENT)) {
+  if (policyParts.includes(FORBIDDEN_SEGMENT.toLowerCase())) {
     return "generated pkgdown site is nested inside the scanned output";
   }
-  if (parts.some((part) => REPOSITORY_ONLY_SEGMENTS.has(part))) {
+  if (policyParts.some((part) => REPOSITORY_ONLY_SEGMENTS.has(part))) {
     return "repository-only planning or workflow content is present";
   }
-  const docsIndex = parts.lastIndexOf("docs");
+  const docsIndex = policyParts.lastIndexOf("docs");
   if (docsIndex >= 0 &&
-      ["release", "provenance"].includes(parts[docsIndex + 1])) {
+      ["release", "provenance"].includes(policyParts[docsIndex + 1])) {
     return "repository-only release or provenance evidence is present";
   }
-  if (REPOSITORY_ONLY_DOCUMENTS.has(parts[parts.length - 1])) {
+  if (REPOSITORY_ONLY_DOCUMENTS.has(policyParts[policyParts.length - 1])) {
     return "repository-only maintainer document is present";
   }
   return null;
@@ -341,8 +342,41 @@ function fileViolation(entryPath, size) {
   return null;
 }
 
+function decodeHtmlCharacterReferences(content) {
+  let decoded = content;
+  for (let pass = 0; pass < 4; pass += 1) {
+    const next = decoded.replace(
+      /&(?:amp|percnt|sol|bsol);?|&#(?:[0-9]+|x[0-9a-f]+);?/gi,
+      (reference) => {
+        if (/^&#/i.test(reference)) {
+          const numeric = reference.slice(2).replace(/;$/, "");
+          const codePoint = /^x/i.test(numeric)
+            ? Number.parseInt(numeric.slice(1), 16)
+            : Number.parseInt(numeric, 10);
+          if (!Number.isInteger(codePoint) || codePoint < 0 ||
+              codePoint > 0x10ffff ||
+              (codePoint >= 0xd800 && codePoint <= 0xdfff)) {
+            return reference;
+          }
+          return String.fromCodePoint(codePoint);
+        }
+        const entity = reference.slice(1).replace(/;$/, "").toLowerCase();
+        return {
+          amp: "&",
+          percnt: "%",
+          sol: "/",
+          bsol: "\\"
+        }[entity] || reference;
+      }
+    );
+    if (next === decoded) break;
+    decoded = next;
+  }
+  return decoded;
+}
+
 function contentViolation(content, filePath = "") {
-  const normalized = content
+  const normalized = decodeHtmlCharacterReferences(content)
     .replace(/%(?:25)*(?:2f|5c)/gi, (separator) =>
       /5c$/i.test(separator) ? "\\" : "/")
     .replace(/&(?:amp;)*sol;?/gi, "/")
@@ -360,7 +394,7 @@ function contentViolation(content, filePath = "") {
         PUBLIC_POLICY_MARKER_REASONS.has(marker.reason)) continue;
     if (marker.pattern.test(normalized)) return marker.reason;
   }
-  for (const candidate of content.matchAll(
+  for (const candidate of normalized.matchAll(
     REPOSITORY_PATH_CANDIDATE_PATTERN
   )) {
     if (ENCODED_PATH_SEPARATOR_PATTERN.test(candidate[0])) {
@@ -565,6 +599,7 @@ if (require.main === module) {
 
 module.exports = {
   contentViolation,
+  decodeHtmlCharacterReferences,
   inspect,
   inspectArchive,
   inspectDirectory,
