@@ -89,6 +89,10 @@ const PRIVATE_CONTENT_MARKERS = [
     reason: "Slack access-token material is present"
   }
 ];
+const REPOSITORY_PATH_CANDIDATE_PATTERN =
+  /\bdocs[^<>\s"'`]{0,128}?\b(?:provenance|release)\b/gi;
+const ENCODED_PATH_SEPARATOR_PATTERN =
+  /%(?:25)*(?:2f|5c)|&(?:amp;)*(?:sol|bsol);?|&(?:amp;)*#(?:0*47|x0*2f|0*92|x0*5c);?/i;
 const PRIVATE_PATH_PATTERN = /(?:^|[._-])(?:private|confidential|proprietary|credentials?|passwords?|secrets?)(?:$|[._-])/i;
 const PRIVATE_INPUT_EXTENSIONS = new Set([".har", ".gdx"]);
 const SERIALIZED_EXTENSIONS = new Set([".rds", ".rda", ".rdata"]);
@@ -339,9 +343,12 @@ function fileViolation(entryPath, size) {
 
 function contentViolation(content, filePath = "") {
   const normalized = content
-    .replace(/%2f/gi, "/")
-    .replace(/&#(?:x2f|47);/gi, "/")
-    .replace(/&#x5c;/gi, "\\");
+    .replace(/%(?:25)*(?:2f|5c)/gi, (separator) =>
+      /5c$/i.test(separator) ? "\\" : "/")
+    .replace(/&(?:amp;)*sol;?/gi, "/")
+    .replace(/&(?:amp;)*bsol;?/gi, "\\")
+    .replace(/&(?:amp;)*#(?:0*47|x0*2f);?/gi, "/")
+    .replace(/&(?:amp;)*#(?:0*92|x0*5c);?/gi, "\\");
   // These four package-facing metadata files intentionally state the public
   // attribution/release boundary. The evidence trees themselves remain barred.
   const normalizedPath = filePath.replace(/\\/g, "/");
@@ -352,6 +359,13 @@ function contentViolation(content, filePath = "") {
     if (allowPublicPolicyMarkers &&
         PUBLIC_POLICY_MARKER_REASONS.has(marker.reason)) continue;
     if (marker.pattern.test(normalized)) return marker.reason;
+  }
+  for (const candidate of content.matchAll(
+    REPOSITORY_PATH_CANDIDATE_PATTERN
+  )) {
+    if (ENCODED_PATH_SEPARATOR_PATTERN.test(candidate[0])) {
+      return "repository-only release or provenance reference is present";
+    }
   }
   return null;
 }

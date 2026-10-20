@@ -99,7 +99,7 @@ model$lastDiagnostics[c(
 ```
 
 For the stable field list and failure statuses, see the
-[`GEModelR` package help](GEModelR-package.html). Diagnostics add evidence to
+[`GEModelR` package help](../reference/GEModelR-package.html). Diagnostics add evidence to
 the record; they do not change which backend was requested or permit fallback.
 
 Every accepted sparse solution passes the full-system check
