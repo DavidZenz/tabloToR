@@ -10,9 +10,9 @@ provides:
   - An independently selectable trailing-root provenance regression.
 affects: [phase-06-verification, provenance]
 actuals:
-  tokens: 1373
+  tokens: 1677
   tasks: 1
-  commits: 1
+  commits: 3
 tech-stack:
   added: []
   patterns:
@@ -69,6 +69,8 @@ status: complete
 
 1. **Task 1: Isolate trailing-root coverage from symlink setup** — `d014f82` (`test(06-12): isolate trailing-root provenance coverage`)
 
+**Plan metadata:** `8b82afa` (`docs(06-12): complete trailing-root coverage plan`)
+
 ## Files Created/Modified
 
 - `tests/testthat/test-release-gates.R` — independently loads the provenance helper for the trailing-root regression while retaining the symlink-dependent checks.
@@ -97,6 +99,7 @@ Review warning WR-03 is closed by independent test selection. This focused test 
 
 - Summary file exists at the planned path.
 - Task commit `d014f82` exists and contains only `tests/testthat/test-release-gates.R`.
+- Plan metadata commit `8b82afa` exists.
 
 ---
 *Phase: 06-documentation-and-release-qualification*
