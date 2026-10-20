@@ -43,11 +43,11 @@
 ### Documentation and Release
 
 - [x] **DOCS-01**: All supported exports, the package, and native/backend options have generated R documentation.
-- [ ] **DOCS-02**: Vignettes cover first simulation, legacy-to-sparse migration, backend selection, diagnostics/memory budgeting, and external full-scale benchmarking.
+- [x] **DOCS-02**: Vignettes cover first simulation, legacy-to-sparse migration, backend selection, diagnostics/memory budgeting, and external full-scale benchmarking.
 - [ ] **DOCS-03**: Contributor and architecture documentation explains subsystem boundaries, numerical gates, data restrictions, and cross-platform native development.
-- [ ] **REL-01**: NEWS, semantic-versioning policy, lifecycle/deprecation rules, citation/provenance text, and release checklists exist.
+- [x] **REL-01**: NEWS, semantic-versioning policy, lifecycle/deprecation rules, citation/provenance text, and release checklists exist.
 - [ ] **REL-02**: A tagged GEModelR release is installable from its canonical Git repository and R-universe after all legal and technical gates pass.
-- [ ] **DATA-01**: Source archives and public CI contain no proprietary model data, private credentials, giant solutions, or unsupported benchmark scratch files.
+- [x] **DATA-01**: Source archives and public CI contain no proprietary model data, private credentials, giant solutions, or unsupported benchmark scratch files.
 
 ## v2 Requirements
 
@@ -94,11 +94,11 @@
 | CI-01 | Phase 5 | Complete |
 | CI-02 | Phase 6 | Pending |
 | DOCS-01 | Phase 4 | Complete |
-| DOCS-02 | Phase 6 | Pending |
+| DOCS-02 | Phase 6 | Complete |
 | DOCS-03 | Phase 6 | Pending |
-| REL-01 | Phase 6 | Pending |
+| REL-01 | Phase 6 | Complete |
 | REL-02 | Phase 7 | Pending |
-| DATA-01 | Phase 6 | Pending |
+| DATA-01 | Phase 6 | Complete |
 
 **Coverage:**
 
