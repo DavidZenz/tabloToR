@@ -267,9 +267,10 @@ Plans:
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
-**Plans**: 7/7 plans executed
+**Plans**: 8 plans (7 complete; 1 review gap-closure pending)
 
 - [x] 06-07-PLAN.md
+- [ ] 06-08-PLAN.md — Close release-gate, scanner, and installed-vignette review findings
 
 **Wave 1**
 
