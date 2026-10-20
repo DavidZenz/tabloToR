@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: verifying
-stopped_at: Completed 06-08-PLAN.md
-last_updated: "2026-10-20T07:32:36.505Z"
+stopped_at: Completed 06-09-PLAN.md
+last_updated: "2026-10-20T07:44:40.686Z"
 last_activity: 2026-10-20
 last_activity_desc: Phase 06 execution started
-state_head: efdd70f05f4da51595a1c5e68237a135a3096641
+state_head: e4f9b2186fbc7c612bab93d74467939b616aae1e
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 59
-  completed_plans: 59
+  total_plans: 60
+  completed_plans: 60
 milestone_name: milestone
 ---
 
@@ -85,6 +85,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22; 44 plans comple
 | Phase 06 P04 | Multi-turn including decision checkpoint | 3 tasks | 30 files |
 | Phase 06 P07 | 20min | 3 tasks | 11 files |
 | Phase 06 P08 | 15min | 3 tasks | 7 files |
+| Phase 06 P09 | 2min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -182,6 +183,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Bind fixed authority and citation reads to canonical in-root regular files.
 - [Phase 06]: Use pkgdown's IN_PKGDOWN render marker to select help links for installed vignettes and site articles.
 - [Phase 06]: Keep both existing release blockers active; this gap plan does not qualify or publish a release.
+- [Phase 06]: Resolve both integrated license decision paths through the canonical in-root evidence resolver before reading.
+- [Phase 06]: Keep the two intentional release blockers and their lifecycle meanings unchanged.
 
 ### Pending Todos
 
@@ -207,6 +210,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-20T07:32:36.415Z
-Stopped at: Completed 06-08-PLAN.md
+Last session: 2026-10-20T07:44:40.586Z
+Stopped at: Completed 06-09-PLAN.md
 Resume file: None
