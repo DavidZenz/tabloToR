@@ -1795,8 +1795,10 @@ release_gate_validate_release_license_decision = function(
       reason, parseStatus, "license"
     ))
   }
-  path = file.path(root, "docs", "release", "LICENSE-DECISION.md")
-  lines = release_gate_read_lines(path)
+  path = release_gate_resolve_evidence_path(
+    root, file.path("docs", "release", "LICENSE-DECISION.md")
+  )
+  lines = if (is.null(path)) NULL else release_gate_read_lines(path)
   if (is.null(lines)) return(fail("LICENSE_RELEASE_DECISION_MISSING"))
 
   fields = c(
@@ -1917,8 +1919,10 @@ release_gate_validate_license_decision = function(
       reason, parseStatus, "license"
     ))
   }
-  path = file.path(root, "docs", "provenance", "LICENSE-DECISION.md")
-  lines = release_gate_read_lines(path)
+  path = release_gate_resolve_evidence_path(
+    root, file.path("docs", "provenance", "LICENSE-DECISION.md")
+  )
+  lines = if (is.null(path)) NULL else release_gate_read_lines(path)
   if (is.null(lines)) return(fail("LICENSE_DECISION_MISSING"))
   fields = c(
     "License-Decision-Version", "Decision-Status",
