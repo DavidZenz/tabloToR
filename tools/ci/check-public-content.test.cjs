@@ -254,6 +254,80 @@ test("rejects literal and encoded repository-only paths in every scan mode", () 
   });
 });
 
+test("rejects HTML-encoded percent separators in every scan mode", () => {
+  withTempDirectory((root) => {
+    const site = path.join(root, "site");
+    fs.mkdirSync(site, { recursive: true });
+    const candidates = [
+      "docs&#x25;2fprovenance&#x25;2fRIGHTS.md",
+      "docs&percnt;2fprovenance&percnt;2fRIGHTS.md"
+    ];
+
+    for (const candidate of candidates) {
+      const contents = `See ${candidate} for reviewed evidence.\n`;
+      fs.writeFileSync(path.join(site, "index.html"), contents);
+      for (const mode of ["--site", "--artifact-dir"]) {
+        const result = runChecker([mode, site]);
+        assert.equal(result.status, 1, `${mode}: ${candidate}`);
+        assert.match(
+          result.stderr,
+          /repository-only release or provenance reference/
+        );
+      }
+
+      const archive = path.join(root, "encoded-percent.tar.gz");
+      fs.writeFileSync(archive, makeTarGz([{
+        path: "GEModelR/index.html",
+        contents
+      }]));
+      const archived = runChecker(["--archive", archive]);
+      assert.equal(archived.status, 1, `--archive: ${candidate}`);
+      assert.match(
+        archived.stderr,
+        /repository-only release or provenance reference/
+      );
+    }
+  });
+});
+
+test("rejects case-variant repository-only paths in directories and archives", () => {
+  withTempDirectory((root) => {
+    const candidates = [
+      ".GITHUB/workflows/release.yml",
+      "docs/Provenance/UPSTREAM-REQUEST.md",
+      "docs/Release/RELEASE-GATES.md"
+    ];
+    const staged = path.join(root, "staged");
+    const entries = [];
+
+    for (const candidate of candidates) {
+      const stagedPath = path.join(staged, candidate);
+      fs.mkdirSync(path.dirname(stagedPath), { recursive: true });
+      fs.writeFileSync(stagedPath, "repository-only evidence\n");
+      entries.push({
+        path: `GEModelR/${candidate}`,
+        contents: "repository-only evidence\n"
+      });
+
+      const directoryResult = runChecker(["--artifact-dir", staged]);
+      assert.equal(directoryResult.status, 1, candidate);
+      assert.match(
+        directoryResult.stderr,
+        /repository-only (?:planning or workflow content|release or provenance evidence)/
+      );
+    }
+
+    const archive = path.join(root, "case-variant.tar.gz");
+    fs.writeFileSync(archive, makeTarGz(entries));
+    const archived = runChecker(["--archive", archive]);
+    assert.equal(archived.status, 1);
+    assert.match(
+      archived.stderr,
+      /repository-only (?:planning or workflow content|release or provenance evidence)/
+    );
+  });
+});
+
 test("rejects private files, compiled scratch, oversized files, and escaping links", () => {
   withTempDirectory((root) => {
     const staged = path.join(root, "staged");
