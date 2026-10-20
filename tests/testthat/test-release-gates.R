@@ -3045,3 +3045,166 @@ test_that("assert-blocked validates integrated evidence", {
     info = "missing integrated license evidence must not satisfy assert-blocked"
   )
 })
+
+test_that("cleanroom specifications stay within selected root", {
+  assertEscapingSpecificationFails <- function(directoryLink) {
+    root <- tempfile("release-gate-cleanroom-selected-root-")
+    outside <- tempfile("release-gate-cleanroom-selected-outside-")
+    on.exit(unlink(c(root, outside), recursive = TRUE), add = TRUE)
+    writeCompleteIntegratedCleanroomFixture(root)
+
+    specificationDir <- file.path(root, "specs", "cleanroom")
+    specification <- file.path(specificationDir, "example-component.md")
+    dir.create(outside, recursive = TRUE, showWarnings = FALSE)
+    outsideSpecificationDir <- file.path(outside, "cleanroom")
+    dir.create(outsideSpecificationDir, recursive = TRUE,
+               showWarnings = FALSE)
+    outsideSpecification <- file.path(
+      outsideSpecificationDir, basename(specification)
+    )
+    if (!file.copy(specification, outsideSpecification, overwrite = TRUE)) {
+      stop("could not prepare outside cleanroom specification", call. = FALSE)
+    }
+
+    if (directoryLink) {
+      unlink(specificationDir, recursive = TRUE)
+      linked <- file.symlink(outsideSpecificationDir, specificationDir)
+    } else {
+      unlink(specification)
+      linked <- file.symlink(outsideSpecification, specification)
+    }
+    if (!isTRUE(linked)) {
+      skip("symbolic links are unavailable on this platform")
+    }
+
+    result <- evaluateReleaseGate(root)
+    expect_identical(result$reason_codes, "CLEANROOM_EVIDENCE_INCOMPLETE")
+    expect_identical(result$parse_status[["cleanroom"]], "fail")
+    expect_false(result$release_ready)
+  }
+
+  assertEscapingSpecificationFails(directoryLink = FALSE)
+  assertEscapingSpecificationFails(directoryLink = TRUE)
+})
+
+test_that("provenance sources stay within selected root", {
+  parent <- tempfile("release-gate-provenance-selected-parent-")
+  root <- file.path(parent, "root1")
+  outside <- file.path(parent, "root2")
+  on.exit(unlink(parent, recursive = TRUE), add = TRUE)
+  dir.create(root, recursive = TRUE)
+  dir.create(outside, recursive = TRUE)
+  copyIntegratedReleaseEvidence(root)
+
+  sourcePath <- file.path(root, "R", "processTablo.R")
+  outsideSource <- file.path(outside, "R", basename(sourcePath))
+  dir.create(dirname(outsideSource), recursive = TRUE, showWarnings = FALSE)
+  expectedSourceHash <- unname(tools::md5sum(sourcePath)[[1L]])
+  if (!file.copy(sourcePath, outsideSource, overwrite = TRUE)) {
+    stop("could not prepare outside provenance source", call. = FALSE)
+  }
+  unlink(sourcePath)
+  if (!isTRUE(file.symlink(outsideSource, sourcePath))) {
+    skip("symbolic links are unavailable on this platform")
+  }
+
+  canonicalRoot <- normalizePath(root, winslash = "/", mustWork = TRUE)
+  canonicalOutside <- normalizePath(outside, winslash = "/", mustWork = TRUE)
+  canonicalOutsideSource <- normalizePath(
+    outsideSource, winslash = "/", mustWork = TRUE
+  )
+  expect_identical(nchar(canonicalRoot), nchar(canonicalOutside))
+  expect_identical(
+    expectedSourceHash, unname(tools::md5sum(outsideSource)[[1L]])
+  )
+
+  tool <- loadProvenanceFixtureTool(
+    file.path(root, "tools", "provenance_inventory.R")
+  )
+  operations <- new.env(parent = emptyenv())
+  operations$outside_read <- FALSE
+  operations$outside_extraction <- FALSE
+  operations$outside_hash <- FALSE
+  operations$extracting_outside <- FALSE
+  tool$readLines <- function(con, ...) {
+    resolved <- tryCatch(
+      normalizePath(con, winslash = "/", mustWork = TRUE),
+      error = function(error) ""
+    )
+    if (identical(resolved, canonicalOutsideSource)) {
+      operations$outside_read <- TRUE
+    }
+    base::readLines(con, ...)
+  }
+  originalRRows <- tool$provenance_r_rows
+  tool$provenance_r_rows <- function(path, relative) {
+    resolved <- normalizePath(path, winslash = "/", mustWork = TRUE)
+    if (identical(resolved, canonicalOutsideSource)) {
+      operations$outside_extraction <- TRUE
+      operations$extracting_outside <- TRUE
+      on.exit(operations$extracting_outside <- FALSE, add = TRUE)
+    }
+    originalRRows(path, relative)
+  }
+  originalHashText <- tool$provenance_hash_text
+  tool$provenance_hash_text <- function(text) {
+    if (isTRUE(operations$extracting_outside)) {
+      operations$outside_hash <- TRUE
+    }
+    originalHashText(text)
+  }
+
+  collection <- tryCatch(
+    tool$provenance_collect_sources(root, include_git = FALSE),
+    error = identity
+  )
+  expect_true(inherits(collection, "error"))
+  if (inherits(collection, "error")) {
+    expect_match(
+      conditionMessage(collection), "^PROVENANCE_SOURCE_OUTSIDE_ROOT"
+    )
+  }
+  expect_false(operations$outside_read)
+  expect_false(operations$outside_extraction)
+  expect_false(operations$outside_hash)
+
+  files <- tryCatch(tool$provenance_source_files(root), error = identity)
+  expect_true(inherits(files, "error"))
+  if (inherits(files, "error")) {
+    expect_match(conditionMessage(files), "^PROVENANCE_SOURCE_OUTSIDE_ROOT")
+  }
+  relative <- tryCatch(
+    tool$provenance_relative_path(canonicalOutsideSource, canonicalRoot),
+    error = identity
+  )
+  expect_true(inherits(relative, "error"))
+  if (inherits(relative, "error")) {
+    expect_match(
+      conditionMessage(relative), "^PROVENANCE_SOURCE_OUTSIDE_ROOT"
+    )
+  }
+
+  result <- evaluateReleaseGate(root)
+  expect_false(result$release_ready)
+  expect_identical(result$reason_codes, "PROVENANCE_SOURCE_OUTSIDE_ROOT")
+  expect_identical(result$parse_status[["provenance"]], "fail")
+
+  if (.Platform$OS.type == "windows") {
+    driveRoot <- substr(canonicalRoot, 1L, 3L)
+    rootFile <- tempfile("provenance-root-file-", tmpdir = driveRoot)
+    if (!isTRUE(file.create(rootFile))) {
+      skip("a writable file beneath the active drive root is unavailable")
+    }
+    on.exit(unlink(rootFile), add = TRUE)
+    writeLines("root file", rootFile, useBytes = TRUE)
+    expect_identical(tool$provenance_relative_path(rootFile, driveRoot),
+                     basename(rootFile))
+  } else if (file.exists("/etc/hosts") &&
+             isTRUE(file_test("-f", "/etc/hosts"))) {
+    expect_identical(
+      tool$provenance_relative_path("/etc/hosts", "/"), "etc/hosts"
+    )
+  } else {
+    skip("a regular file beneath the POSIX filesystem root is unavailable")
+  }
+})
