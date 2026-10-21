@@ -11,7 +11,7 @@ provides:
   - An explicit rejected-dispatch record with Windows qualification blocked and no hosted evidence claimed.
 affects: [CI-02, Windows provenance qualification, native-ci]
 actuals:
-  tokens: 2000
+  tokens: 4493
   tasks: 3
   commits: 3
 tech-stack:
@@ -45,7 +45,7 @@ coverage:
     verification: []
     human_judgment: true
     rationale: "Dispatch authorization was rejected under the local-only direction, so the hosted Windows tests did not run."
-duration: 5min
+duration: 9min
 completed: 2026-10-21
 status: complete
 ---
@@ -56,9 +56,9 @@ status: complete
 
 ## Performance
 
-- **Duration:** 5 minutes
+- **Duration:** 9 minutes
 - **Started:** 2026-10-21T14:56:00Z (approximate)
-- **Completed:** 2026-10-21T15:01:31Z
+- **Completed:** 2026-10-21T15:04:33Z
 - **Tasks:** 3
 - **Files modified:** 4, including this summary and planning state files
 
@@ -100,7 +100,7 @@ The precise blocker is the explicit local-only direction: the revision remains o
 ## Task Commits
 
 1. **Task 1: Expose the existing native workflow to manual dispatch** — `1b57fb2` (`feat(06-19): add manual native workflow trigger`)
-2. **Tasks 2–3: Record rejected authorization and the no-dispatch outcome** — this summary's scoped commit.
+2. **Tasks 2–3: Record rejected authorization and the no-dispatch outcome** — `f1c653c` (`docs(06-19): record rejected Windows dispatch`)
 
 **Plan metadata:** recorded in the final STATE/ROADMAP metadata commit.
 
