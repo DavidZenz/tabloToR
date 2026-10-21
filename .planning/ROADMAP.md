@@ -290,7 +290,7 @@ Plans:
 
 **Wave 10** *(after Wave 9; checksum-bound provenance review)*
 
-- [ ] 06-15-PLAN.md — Diagnose and safely reconcile the live provenance mismatch
+- [x] 06-15-PLAN.md — Diagnose and safely reconcile the live provenance mismatch
 
 **Wave 11** *(after Waves 9 and 10)*
 
@@ -340,5 +340,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 15/17 | In Progress|  |
+| 6. Documentation and Release Qualification | 16/17 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |

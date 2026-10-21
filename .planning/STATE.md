@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: Completed 06-16-PLAN.md
-last_updated: "2026-10-21T08:41:24.437Z"
+stopped_at: Completed 06-15-PLAN.md
+last_updated: "2026-10-21T12:44:39.035Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 06 execution started
-state_head: 552df35cd81b8d2a4fba38e8a2277adc304ef4da
+state_head: 2bea2c4fadae917ca5ccc2acb51f3b4c0396f750
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 68
-  completed_plans: 66
+  completed_plans: 67
 milestone_name: milestone
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 ## Current Position
 
 Phase: 06 (Documentation and Release Qualification) — EXECUTING
-Plan: 2 of 17
+Plan: 3 of 17
 Status: Ready to execute
 Last activity: 2026-10-21 — Phase 06 execution started
 
@@ -92,6 +92,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 17
 | Phase 06 P13 | 4min | 2 tasks | 4 files |
 | Phase 06 P14 | 12 min | 2 tasks | 4 files |
 | Phase 06 P16 | 5min | 3 tasks | 3 files |
+| Phase 06 P15 | 3h 59m | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -199,6 +200,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Reuse the existing Windows release/current/serial CI tuple for separately launched provenance regression groups. — This keeps the platform check narrow and lets a hosted trailing-root result be attributed independently.
 - [Phase 06]: Phase 06 Plan 16: Defer installed-package serialization checks until Matrix meets the DESCRIPTION floor; do not install or upgrade dependencies during gap evidence collection.
 - [Phase 06]: Phase 06 Plan 16: Keep hosted serialization behavior and CI-02 open until their authorized evidence runs complete.
+- [Phase 06]: Rejected the checksum-bound 06-15 provenance delta; canonical provenance remains unchanged and the release gate remains open. — The reviewed 50-row proposal contains 23 source-only keys and 27 changed hashes, but every identity-evidence status is unreviewed and Git contributor data is audit-only. The user rejected the exact delta SHA-256 e250ad497e7795a142624bc39c9d4563b3a9ef51bd944321ec2027df63317541. No independent evidence supports applying its identity or rights claims.
 
 ### Pending Todos
 
@@ -215,6 +217,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 - Phase 6 Plan 06: The license decision is recorded and the built archive passes the content/privacy gate. Local R CMD check stops at Matrix 1.6-3, below the declared 1.6-5 minimum, and reports three 404 URLs because the canonical repository and site are not published. The integrated release gate also reports PROVENANCE_KEY_MISMATCH; preserve source evidence and resolve these gates before qualification.
 - Phase 6 Plan 14: Hosted Windows execution remains pending; only a hosted pass of the trailing-root provenance regression closes this platform gap.
 - Phase 06 Plan 16: installed-package serialization checks are blocked because Matrix 1.6.3 is below the DESCRIPTION minimum of 1.6-5; rerun only after a supported Matrix version is already available.
+- Phase 06 Plan 15: PROVENANCE_KEY_MISMATCH remains open after clean snapshot audit (23 source-only keys, 27 changed expression hashes, 50 total delta rows, 0 missing keys). The exact proposal was rejected because independent identity and rights evidence is absent. Canonical provenance remains unchanged; resolve only after supported evidence and a new checksum-bound review.
 
 ## Deferred Items
 
@@ -226,6 +229,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-21T08:41:24.333Z
-Stopped at: Completed 06-16-PLAN.md
+Last session: 2026-10-21T12:44:33.009Z
+Stopped at: Completed 06-15-PLAN.md
 Resume file: None
