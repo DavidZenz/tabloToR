@@ -29,7 +29,7 @@ key-decisions:
   - "Do not create a reviewer checkpoint or apply canonical changes without independent identity and rights evidence for every affected key."
 patterns-established:
   - "Require separate row-level identity and rights evidence before creating an actionable provenance delta."
-requirements-completed: [REL-01]
+requirements-completed: []
 coverage:
   - id: D1
     description: "A row-level index records the missing independent identity and rights evidence for all 50 disputed keys while preserving all canonical provenance bytes."
@@ -113,7 +113,7 @@ Tasks 2 and 3 were not reached. Task 2 requires a complete evidence-backed delta
 
 - Preserve the prior rejection of the exact 06-15 delta; do not infer identity or rights facts from its contents or from Git metadata.
 - Do not request maintainer review until independent evidence supports every row.
-- Keep REL-01 and `PROVENANCE_KEY_MISMATCH` open; this halted summary does not qualify a release.
+- Keep `PROVENANCE_KEY_MISMATCH` and the related release gate open; leave REL-01 tracking unchanged because its stated document-existence deliverables are present.
 
 ## Deviations from Plan
 
