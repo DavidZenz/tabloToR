@@ -267,7 +267,7 @@ Plans:
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
-**Plans**: 14 total (13 executed/reported; 1 Windows-evidence gap-closure pending)
+**Plans**: 17 total (14 prior plans; 3 new gap-closure plans pending)
 
 - [x] 06-07-PLAN.md
 - [x] 06-08-PLAN.md — Close release-gate, scanner, and installed-vignette review findings
@@ -283,6 +283,18 @@ Plans:
 **Wave 8** *(blocked on Wave 7 completion)*
 
 - [x] 06-14-PLAN.md
+
+**Wave 9** *(after Wave 8; installed-package serialization evidence)*
+
+- [ ] 06-16-PLAN.md — Verify focused serialization regressions through the installed package boundary
+
+**Wave 10** *(after Wave 9; checksum-bound provenance review)*
+
+- [ ] 06-15-PLAN.md — Diagnose and safely reconcile the live provenance mismatch
+
+**Wave 11** *(after Waves 9 and 10)*
+
+- [ ] 06-17-PLAN.md — Qualify one exact source archive under the declared Matrix floor
 
 **Wave 1**
 
