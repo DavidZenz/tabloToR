@@ -27,40 +27,96 @@ outside the repository:
 | `GEMODELR_GTAP12A_DATA_DIR` | Authorized local GTAP 12a HAR input directory |
 | `GEMODELR_GTAP12A_TABLO` | Authorized GTAP TABLO model file |
 | `GEMODELR_GTAP12A_CLOSURE_FILE` | Authorized benchmark closure RDS file |
-| `GEMODELR_GTAP12A_OUTPUT_DIR` | Temporary run output directory outside the repository |
+| `GEMODELR_GTAP12A_OUTPUT_DIR` | Existing external reference directory and destination for candidate CSV/RDS artifacts |
+| `GEMODELR_GTAP12A_REFERENCE_BUILD_RECORD` | Retained DCF build record for the existing reference package |
+| `GEMODELR_GTAP12A_CANDIDATE_BUILD_RECORD` | Retained DCF build record for the currently installed candidate package |
+| `GEMODELR_GTAP12A_PREFLIGHT_REPORT` | External DCF report path for the preflight; keep it outside the repository |
 
-Before running, confirm that the exact GEModelR source commit and package
-version intended for evaluation are installed on the benchmark host. Record the
-source commit, package version, and SHA-256 of the tested source archive in the
-public result summary. Do not place the archive, inputs, or full run output in
-the site or a CI artifact.
+`GEMODELR_GTAP12A_OUTPUT_DIR` is also the reference directory unless an
+explicit `--reference-dir` is supplied. If the reference benchmark used an RDS
+shock input, pass `--shocks-file` or set
+`GEMODELR_GTAP12A_SHOCKS_FILE`; otherwise the preflight uses the no-shock
+configuration.
+
+Both retained build records are DCF files with one record and these fields:
+
+```text
+schema_version: 1
+package_name: GEModelR
+package_version: 0.1.0
+source_commit: <40- or 64-digit Git commit>
+source_archive_sha256: <64-digit SHA-256>
+installed_package_signature: <32-digit package fingerprint>
+compiler_identity: <compiler name and version captured at build time>
+compiler_flags: <compiler flags captured at build time>
+r_version: <full R version string>
+matrix_version: <Matrix version>
+rcpp_version: <Rcpp version>
+blas: <extSoftVersion values>
+platform: <R platform>
+cpu: <CPU model>
+ram_bytes: <physical RAM in bytes>
+model_signature: <runner model fingerprint>
+pair_signature: <runner pair fingerprint>
+run_signature: <runner backend/run fingerprint>
+backend: StructuredSchurFGMRES
+threads: 1
+iter: 3
+steps: 1,3
+postsim: true
+panel_size: 64
+region_batch_size: 8
+memory_budget: none
+```
+
+The candidate build record has `backend: StructuredSchurFGMRESCpp` and the
+candidate's thread count. Keep actual compiler identity in each record; the
+current `PATH` is not evidence of which compiler built an installed package.
+The preflight requires the records to identify the same source archive,
+package, compiler, and environment. Their pair settings must match, while the
+backend-specific run signatures may differ. Do not put the build records,
+archive, inputs, or full run output in the repository, site, or CI artifact.
 
 ## Run and check
 
-Use the existing A/B runner with the documented full-scale settings. The
-runner starts fresh R processes, writes all detailed files under the external
-output directory, and invokes `check_benchmark_gate.R` itself:
+Run the read-only reference preflight before starting any solver. It checks
+existing schema-v3 reference CSVs and measured solution RDS files, recomputes
+the model and pair fingerprints from the local inputs and installed package,
+and compares retained source/package/compiler/runtime/build records. It reads
+no solution values into its report, launches no solver, and does not copy input
+files. The DCF report and standard output contain only safe software/build
+identifiers, artifact counts, fingerprints, and reason codes; they omit private
+paths, input filenames, direct input hashes, and solution values.
 
 ```sh
-Rscript --vanilla benchmarks/run_gtap12a_ab.R \
+Rscript --vanilla benchmarks/preflight_gtap12a_reference.R \
+  --reference-dir="$GEMODELR_GTAP12A_OUTPUT_DIR" \
   --data-dir="$GEMODELR_GTAP12A_DATA_DIR" \
   --tablo="$GEMODELR_GTAP12A_TABLO" \
   --closure-file="$GEMODELR_GTAP12A_CLOSURE_FILE" \
-  --output-dir="$GEMODELR_GTAP12A_OUTPUT_DIR" \
-  --reference=StructuredSchurFGMRES \
-  --candidate=StructuredSchurFGMRESCpp \
-  --warmups=1 \
-  --repetitions=3 \
-  --threads=4 \
-  --iter=3 \
-  --steps=1,3 \
-  --postsim=true \
-  --panel-size=64 \
-  --region-batch-size=8
+  --reference-build-record="$GEMODELR_GTAP12A_REFERENCE_BUILD_RECORD" \
+  --candidate-build-record="$GEMODELR_GTAP12A_CANDIDATE_BUILD_RECORD" \
+  --output="$GEMODELR_GTAP12A_PREFLIGHT_REPORT"
 ```
 
-After the runner exits successfully, independently run the checker against the
-same output directory:
+If the result is `reference_preflight_status=blocked`, stop. Record its exact
+reason codes and artifact counts, keep NUM-03 open, and do not run a candidate.
+Historical prose, candidate-only files, missing build provenance, stale or
+mismatched signatures, incomplete repetitions, and absent solution artifacts
+are not sufficient reference evidence. Never rerun the R baseline as part of
+this gap closure.
+
+Only after an `eligible` result, run the measured and warmup repetitions in the
+candidate build record using `benchmarks/benchmark_gtap12a_run.R` with
+`--backend=StructuredSchurFGMRESCpp` only. Use its exact `iter`, `steps`,
+`postsim`, `panel_size`, `region_batch_size`, and `memory_budget` settings, the
+candidate record's thread count, and the same authorized TABLO, input, closure,
+and optional shock files. Use one invocation per repetition, with unique
+`--run-id`, CSV `--output`, and `--solution-output` values under the external
+output directory. Do not invoke `run_gtap12a_ab.R`; it starts both backends.
+
+After all candidate warmups and measured repetitions complete, run the existing
+checker unchanged against the combined directory:
 
 ```sh
 Rscript --vanilla benchmarks/check_benchmark_gate.R \
@@ -70,7 +126,10 @@ Rscript --vanilla benchmarks/check_benchmark_gate.R \
   --output="$GEMODELR_GTAP12A_OUTPUT_DIR/comparison.csv"
 ```
 
-Both invocations must exit successfully before recording results.
+All candidate invocations and the unchanged checker must exit successfully
+before recording results.
+The checker command above is a separate invocation after the C++ candidate
+runs; no R baseline command is part of this procedure.
 The existing acceptance thresholds are at least 20% candidate speedup, no
 more than 1.10 candidate/reference peak-RSS ratio, maximum residual at most
 `2e-7`, and maximum absolute solution difference at most `1e-6`. The gate also

@@ -25,14 +25,7 @@ gtap12a_preflight_fixture = function(preflight) {
   writeLines("synthetic parameters", file.path(data_dir, "default.prm"))
   saveRDS(c("x", "y"), closure_file, version = 3L)
 
-  revision = suppressWarnings(system2(
-    "git", c("-C", shQuote(testthat::test_path("..", "..")),
-             "rev-parse", "HEAD"), stdout = TRUE, stderr = FALSE
-  ))
-  if (length(revision) != 1L || !grepl("^[[:xdigit:]]{40,64}$", revision)) {
-    stop("Could not identify the source revision for the synthetic fixture",
-         call. = FALSE)
-  }
+  revision = paste(rep("b", 40L), collapse = "")
 
   config = preflight$preflight_model_config(
     data_dir = data_dir, tablo_path = tablo, closure_file = closure_file,
@@ -57,7 +50,7 @@ gtap12a_preflight_fixture = function(preflight) {
   ))
   installed_signature = preflight$benchmark_hash_tree(package_root)
   package_version = as.character(utils::packageVersion("GEModelR"))
-  current_commit = revision[[1L]]
+  current_commit = revision
   common_record = list(
     schema_version = "1",
     package_name = "GEModelR",
@@ -182,6 +175,7 @@ test_that("reference preflight accepts complete matched synthetic evidence", {
   preflight = gtap12a_preflight_source()
   fixture = gtap12a_preflight_fixture(preflight)
   on.exit(unlink(fixture$root, recursive = TRUE, force = TRUE), add = TRUE)
+  fixture$options$output = file.path(fixture$root, "preflight-report.dcf")
   before = tools::md5sum(list.files(
     fixture$reference_dir, full.names = TRUE, recursive = TRUE
   ))
@@ -190,12 +184,18 @@ test_that("reference preflight accepts complete matched synthetic evidence", {
     fixture$options, repo_root = testthat::test_path("..", "..")
   )
 
-  expect_identical(result$reference_preflight_status, "eligible")
-  expect_length(result$reason_codes, 0L)
+  expect_identical(result$reference_preflight_status, "eligible",
+                   info = paste(result$reason_codes, collapse = ", "))
+  expect_true(length(result$reason_codes) == 0L,
+              info = paste(result$reason_codes, collapse = ", "))
   expect_equal(result$reference_csv_count, 4L)
-  expect_equal(result$reference_solution_count, 4L)
+  expect_equal(result$reference_solution_count, 3L)
   expect_equal(result$measured_repetitions, 3L)
   expect_equal(result$warmup_count, 1L)
+  expect_true(file.exists(fixture$options$output))
+  report = readLines(fixture$options$output, warn = FALSE)
+  expect_false(any(grepl(fixture$root, report, fixed = TRUE)))
+  expect_false(any(grepl("basedata.har", report, fixed = TRUE)))
   expect_identical(before, tools::md5sum(list.files(
     fixture$reference_dir, full.names = TRUE, recursive = TRUE
   )))
@@ -213,6 +213,44 @@ test_that("reference preflight identifies missing raw solution evidence", {
 
   expect_identical(result$reference_preflight_status, "blocked")
   expect_true("reference_solution_missing" %in% result$reason_codes)
+})
+
+test_that("reference preflight identifies missing CSV metadata", {
+  preflight = gtap12a_preflight_source()
+  fixture = gtap12a_preflight_fixture(preflight)
+  on.exit(unlink(fixture$root, recursive = TRUE, force = TRUE), add = TRUE)
+  path = file.path(fixture$reference_dir, "warmup-01.csv")
+  frame = read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+  frame$installed_package_signature = NULL
+  write.csv(frame, path, row.names = FALSE)
+
+  result = preflight$preflight_gtap12a_reference(
+    fixture$options, repo_root = testthat::test_path("..", "..")
+  )
+
+  expect_identical(result$reference_preflight_status, "blocked")
+  expect_true("reference_csv_metadata_missing" %in% result$reason_codes)
+})
+
+test_that("reference preflight rejects stale CSV runtime metadata", {
+  preflight = gtap12a_preflight_source()
+  fixture = gtap12a_preflight_fixture(preflight)
+  on.exit(unlink(fixture$root, recursive = TRUE, force = TRUE), add = TRUE)
+  paths = list.files(fixture$reference_dir, pattern = "[.]csv$",
+                     full.names = TRUE)
+  for (path in paths) {
+    frame = read.csv(path, stringsAsFactors = FALSE, check.names = FALSE)
+    frame$matrix_version = "stale-matrix-version"
+    write.csv(frame, path, row.names = FALSE)
+  }
+
+  result = preflight$preflight_gtap12a_reference(
+    fixture$options, repo_root = testthat::test_path("..", "..")
+  )
+
+  expect_identical(result$reference_preflight_status, "blocked")
+  expect_true(any(grepl("reference_metadata_mismatch_matrix_version",
+                        result$reason_codes)))
 })
 
 test_that("reference preflight rejects mismatched local input fingerprints", {
