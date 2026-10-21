@@ -59,21 +59,76 @@ jobs:
           mkdir -p "$RUNNER_TEMP/release-evidence" "$RUNNER_TEMP/release-check" "$RUNNER_TEMP/release-library"
           printf '%s\n' "GEModelR_RELEASE_EVIDENCE_DIR=$RUNNER_TEMP/release-evidence" "GEModelR_RELEASE_CHECK_DIR=$RUNNER_TEMP/release-check" "GEModelR_RELEASE_LIBRARY=$RUNNER_TEMP/release-library" >> "$GITHUB_ENV"
 
-      - name: Build the source archive once
+      - name: Record supported Matrix and source commit
+        id: record-supported-matrix
         shell: bash
         run: |
+          set -euo pipefail
+          # DESCRIPTION currently requires Matrix >= 1.6-5; read the floor below from that file.
+          head_sha=$(git rev-parse HEAD)
+          matrix_version=$(Rscript --vanilla -e 'value <- tryCatch(as.character(utils::packageVersion("Matrix")), error = function(e) "not_available"); cat(value)')
+          matrix_minimum=$(Rscript --vanilla -e 'imports <- read.dcf("DESCRIPTION")[1L, "Imports"]; match <- regmatches(imports, regexec("Matrix[[:space:]]*\\(>=[[:space:]]*([^)]*)\\)", imports, perl = TRUE))[[1L]]; if (length(match) != 2L) stop("DESCRIPTION does not declare a Matrix minimum"); cat(trimws(match[[2L]]))' || true)
+          if [[ -z "$matrix_minimum" ]]; then
+            matrix_minimum=not_available
+          fi
+
+          matrix_preflight_status=blocked
+          if MATRIX_VERSION="$matrix_version" MATRIX_MINIMUM="$matrix_minimum" Rscript --vanilla -e 'version <- Sys.getenv("MATRIX_VERSION"); minimum <- Sys.getenv("MATRIX_MINIMUM"); valid <- tryCatch(version != "not_available" && minimum != "not_available" && package_version(version) >= package_version(minimum), error = function(e) FALSE); if (!valid) quit(status = 1L)'; then
+            matrix_preflight_status=passed
+          fi
+
+          printf '%s\n' \
+            "head_sha=$head_sha" \
+            "matrix_version=$matrix_version" \
+            "matrix_minimum_version=$matrix_minimum" \
+            "matrix_preflight_status=$matrix_preflight_status" \
+            > "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-context.txt"
+          printf 'head_sha=%s\nmatrix_version=%s\nmatrix_minimum_version=%s\nmatrix_preflight_status=%s\n' \
+            "$head_sha" "$matrix_version" "$matrix_minimum" "$matrix_preflight_status" >> "$GITHUB_OUTPUT"
+          if [[ "$matrix_preflight_status" != passed ]]; then
+            echo "Matrix $matrix_version does not meet DESCRIPTION's Matrix >= $matrix_minimum floor."
+            exit 1
+          fi
+
+      - name: Build the source archive once
+        id: build-source-archive
+        shell: bash
+        run: |
+          set -uo pipefail
+          set +e
           R CMD build .
+          build_status=$?
+          set -e
+          if [[ "$build_status" -ne 0 ]]; then
+            printf 'build_exit_status=%s\n' "$build_status" >> "$GITHUB_OUTPUT"
+            exit "$build_status"
+          fi
           mapfile -t archives < <(find "$GITHUB_WORKSPACE" -maxdepth 1 -type f -name 'GEModelR_*.tar.gz' -print)
           if [[ ${#archives[@]} -ne 1 ]]; then
             echo "Expected exactly one GEModelR source archive; found ${#archives[@]}"
+            printf 'build_exit_status=1\n' >> "$GITHUB_OUTPUT"
             exit 1
           fi
+          archive_sha256=$(sha256sum "${archives[0]}" | awk '{print $1}')
           printf '%s\n' "GEModelR_SOURCE_ARCHIVE=${archives[0]}" >> "$GITHUB_ENV"
+          printf 'archive_path=%s\narchive_sha256=%s\n' "${archives[0]}" "$archive_sha256" > "$GEModelR_RELEASE_EVIDENCE_DIR/archive-identity.txt"
+          printf 'build_exit_status=0\narchive_path=%s\narchive_sha256=%s\n' "${archives[0]}" "$archive_sha256" >> "$GITHUB_OUTPUT"
 
       - name: Scan the exact source archive
-        run: node tools/ci/check-public-content.cjs --archive "$GEModelR_SOURCE_ARCHIVE"
+        id: scan-source-archive
+        shell: bash
+        run: |
+          set +e
+          node tools/ci/check-public-content.cjs --archive "$GEModelR_SOURCE_ARCHIVE" > "$GEModelR_RELEASE_EVIDENCE_DIR/archive-scan.log" 2>&1
+          scan_status=$?
+          set -e
+          cat "$GEModelR_RELEASE_EVIDENCE_DIR/archive-scan.log"
+          printf 'archive_scan_status=%s\narchive_scan_sha256=%s\n' "$scan_status" "$(sha256sum "$GEModelR_SOURCE_ARCHIVE" | awk '{print $1}')" >> "$GEModelR_RELEASE_EVIDENCE_DIR/archive-identity.txt"
+          printf 'archive_scan_status=%s\n' "$scan_status" >> "$GITHUB_OUTPUT"
+          exit "$scan_status"
 
       - name: Check the exact source archive and preserve raw status
+        id: check-source-archive
         shell: bash
         run: |
           set +e
@@ -83,18 +138,98 @@ jobs:
           printf '%s\n' "$check_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/check-exit-status.txt"
           check_log=$(find "$GEModelR_RELEASE_CHECK_DIR" -maxdepth 2 -type f -name 00check.log -print -quit)
           qualification_status=$check_status
+          check_status_line='Status: MISSING'
+          check_error_count=not_run
+          check_warning_count=not_run
+          unexplained_significant_note_count=not_run
+          url_check_status=not_run
           if [[ -n "$check_log" ]]; then
             cp "$check_log" "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check-00check.log"
-            if ! grep -Fxq 'Status: OK' "$check_log"; then
+            check_status_line=$(grep -m1 '^Status:' "$check_log" || printf '%s' 'Status: MISSING')
+            check_error_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ ERROR(S)?' | awk '{print $1}' | head -n 1 || true)
+            check_warning_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ WARNING(S)?' | awk '{print $1}' | head -n 1 || true)
+            unexplained_significant_note_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ NOTE(S)?' | awk '{print $1}' | head -n 1 || true)
+            [[ -n "$check_error_count" ]] || check_error_count=0
+            [[ -n "$check_warning_count" ]] || check_warning_count=0
+            [[ -n "$unexplained_significant_note_count" ]] || unexplained_significant_note_count=0
+
+            if grep -Eiq '(^|[^[:digit:]])404([^[:digit:]]|$)|404 Not Found' "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log" "$check_log"; then
+              url_check_status=failed_404
+            elif grep -Eiq '\* checking URLs? \.\.\. OK' "$check_log"; then
+              url_check_status=passed
+            elif grep -Eiq 'Could not resolve host|Could not resolve proxy|Connection timed out|Failed to connect|unable to access.*URL|cannot open URL' "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log" "$check_log"; then
+              url_check_status=blocked_external
+            elif grep -Eiq '\* checking URLs? \.\.\. (ERROR|WARNING|NOTE)' "$check_log"; then
+              url_check_status=failed
+            fi
+
+            if [[ "$check_status_line" != 'Status: OK' || "$check_status" -ne 0 || "$check_error_count" != 0 || "$check_warning_count" != 0 || "$unexplained_significant_note_count" != 0 || "$url_check_status" != passed ]]; then
               qualification_status=1
             fi
           else
             printf '%s\n' 'R CMD check did not produce a 00check.log.' >> "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log"
             qualification_status=1
           fi
-          printf '%s\n' "$qualification_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt"
-          printf '%s\n' '# Source archive qualification' '' "R CMD check exit status: $check_status" "Qualification exit status: $qualification_status" '' 'Only `Status: OK` passes. Every warning, error, or note remains blocking.' > "$GEModelR_RELEASE_EVIDENCE_DIR/job-summary.md"
+
+          while IFS= read -r -d '' test_log; do
+            relative_path=${test_log#"$GEModelR_RELEASE_CHECK_DIR"/}
+            destination="$GEModelR_RELEASE_EVIDENCE_DIR/test-logs/$relative_path"
+            mkdir -p "$(dirname "$destination")"
+            cp "$test_log" "$destination"
+          done < <(find "$GEModelR_RELEASE_CHECK_DIR" -type f \( -name testthat.Rout -o -name testthat.Rout.fail \) -print0)
+
+          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
+            > "$GEModelR_RELEASE_EVIDENCE_DIR/check-status.txt"
+          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
+            >> "$GITHUB_OUTPUT"
           exit "$qualification_status"
+
+      - name: Record qualification status
+        if: always()
+        shell: bash
+        env:
+          HEAD_SHA: ${{ steps.record-supported-matrix.outputs.head_sha }}
+          MATRIX_VERSION: ${{ steps.record-supported-matrix.outputs.matrix_version }}
+          MATRIX_MINIMUM_VERSION: ${{ steps.record-supported-matrix.outputs.matrix_minimum_version }}
+          MATRIX_PREFLIGHT_STATUS: ${{ steps.record-supported-matrix.outputs.matrix_preflight_status }}
+          BUILD_EXIT_STATUS: ${{ steps.build-source-archive.outputs.build_exit_status }}
+          ARCHIVE_PATH: ${{ steps.build-source-archive.outputs.archive_path }}
+          ARCHIVE_SHA256: ${{ steps.build-source-archive.outputs.archive_sha256 }}
+          ARCHIVE_SCAN_STATUS: ${{ steps.scan-source-archive.outputs.archive_scan_status }}
+          CHECK_EXIT_STATUS: ${{ steps.check-source-archive.outputs.check_exit_status }}
+          CHECK_STATUS_LINE: ${{ steps.check-source-archive.outputs.check_status_line }}
+          CHECK_ERROR_COUNT: ${{ steps.check-source-archive.outputs.check_error_count }}
+          CHECK_WARNING_COUNT: ${{ steps.check-source-archive.outputs.check_warning_count }}
+          UNEXPLAINED_SIGNIFICANT_NOTE_COUNT: ${{ steps.check-source-archive.outputs.unexplained_significant_note_count }}
+          URL_CHECK_STATUS: ${{ steps.check-source-archive.outputs.url_check_status }}
+          QUALIFICATION_STATUS: ${{ steps.check-source-archive.outputs.qualification_status }}
+        run: |
+          if [[ -z "${GEModelR_RELEASE_EVIDENCE_DIR:-}" ]]; then
+            echo "Qualification did not initialize an evidence directory."
+            exit 0
+          fi
+          value_or() {
+            if [[ -n "$1" ]]; then printf '%s' "$1"; else printf '%s' "$2"; fi
+          }
+          printf 'head_sha=%s\nmatrix_version=%s\nmatrix_minimum_version=%s\nmatrix_preflight_status=%s\nbuild_exit_status=%s\narchive_path=%s\narchive_sha256=%s\narchive_scan_status=%s\ncheck_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+            "$(value_or "$HEAD_SHA" not_available)" \
+            "$(value_or "$MATRIX_VERSION" not_available)" \
+            "$(value_or "$MATRIX_MINIMUM_VERSION" not_available)" \
+            "$(value_or "$MATRIX_PREFLIGHT_STATUS" not_run)" \
+            "$(value_or "$BUILD_EXIT_STATUS" not_run)" \
+            "$(value_or "$ARCHIVE_PATH" not_available)" \
+            "$(value_or "$ARCHIVE_SHA256" not_available)" \
+            "$(value_or "$ARCHIVE_SCAN_STATUS" not_run)" \
+            "$(value_or "$CHECK_EXIT_STATUS" not_run)" \
+            "$(value_or "$CHECK_STATUS_LINE" not_run)" \
+            "$(value_or "$CHECK_ERROR_COUNT" not_run)" \
+            "$(value_or "$CHECK_WARNING_COUNT" not_run)" \
+            "$(value_or "$UNEXPLAINED_SIGNIFICANT_NOTE_COUNT" not_run)" \
+            "$(value_or "$URL_CHECK_STATUS" not_run)" \
+            "$(value_or "$QUALIFICATION_STATUS" not_run)" \
+            > "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-status.txt"
 
       - name: Scan staged qualification evidence
         id: scan-qualification-evidence
@@ -104,12 +239,23 @@ jobs:
           test -n "$(find "$GEModelR_RELEASE_EVIDENCE_DIR" -maxdepth 1 -type f -print -quit)"
           node tools/ci/check-public-content.cjs --artifact-dir "$GEModelR_RELEASE_EVIDENCE_DIR"
 
+      - name: Preserve scanned qualification evidence
+        if: always() && steps.scan-qualification-evidence.outcome == 'success'
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2; immutable artifacts
+        with:
+          name: release-qualification-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ env.GEModelR_RELEASE_EVIDENCE_DIR }}
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Report qualification status
         if: always()
         shell: bash
         run: |
-          if [[ -f "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt" ]]; then
-            printf 'Qualification result: %s\n' "$(cat "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-exit-status.txt")" >> "$GITHUB_STEP_SUMMARY"
+          if [[ -f "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-status.txt" ]]; then
+            printf 'Source archive qualification evidence:\n\n```text\n' >> "$GITHUB_STEP_SUMMARY"
+            cat "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-status.txt" >> "$GITHUB_STEP_SUMMARY"
+            printf '```\n' >> "$GITHUB_STEP_SUMMARY"
           else
             printf '%s\n' 'Qualification did not start or did not produce a result.' >> "$GITHUB_STEP_SUMMARY"
           fi
