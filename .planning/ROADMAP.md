@@ -325,7 +325,7 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 06-06-PLAN.md
-- [ ] 06-21-PLAN.md — Preflight existing references before a C++-only matched benchmark
+- [x] 06-21-PLAN.md — Preflight existing references before a C++-only matched benchmark
 
 ### Phase 7: GitHub and R-universe Release
 
@@ -350,5 +350,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 17/21 | In Progress|  |
+| 6. Documentation and Release Qualification | 18/21 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
