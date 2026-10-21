@@ -1,0 +1,9 @@
+approval_status=rejected
+approved_input_commit=
+approved_delta_sha256=
+reviewed_input_commit=492aa5d733b6d39fdd68278ef9adf16d8e7220c3
+reviewed_delta_sha256=e250ad497e7795a142624bc39c9d4563b3a9ef51bd944321ec2027df63317541
+review_date=2026-10-21
+decision=reject
+rejection_reason=The proposal provides no independent identity or rights evidence for its 50 rows; Git contributor data is audit-only and every identity_evidence_status is unreviewed.
+canonical_change_status=unchanged
