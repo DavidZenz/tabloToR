@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: Recorded 06-21 reference preflight block; plans 18-20 remain pending
-last_updated: "2026-10-21T14:30:02.672Z"
+stopped_at: Halted 06-20 at missing independent provenance evidence gate
+last_updated: "2026-10-21T14:36:51.127Z"
 last_activity: 2026-10-21
 last_activity_desc: Phase 06 gap-closure planning complete
-state_head: a1a472aa9ef547fb787fb1b9a3e04a06433098b9
+state_head: 35b9a07da61b237e28c07f7615bf29ed685dd69f
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 72
-  completed_plans: 69
+  completed_plans: 70
 milestone_name: milestone
 ---
 
@@ -31,9 +31,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 Phase: 06 (Documentation and Release Qualification) — READY TO EXECUTE
 Plan: 18 of 21
 Status: Ready to execute
-Last activity: 2026-10-21 — Phase 06 gap-closure planning complete
+Last activity: 2026-10-21 — Phase 06 Plan 20 halted at the independent-evidence gate
 
-Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 21 plans total: 17 executed plans and 4 gap-closure plans pending. Prior verification remains 11/14; hosted archive/serialization, Windows, provenance, and matched benchmark evidence gaps remain open.
+Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 21 plans total: 17 complete, 2 halted at evidence gates, and 2 gap-closure plans pending. Prior verification remains 11/14; hosted archive/serialization, Windows, provenance, and matched benchmark evidence gaps remain open.
 
 ## Performance Metrics
 
@@ -95,6 +95,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 21
 | Phase 06 P15 | 3h 59m | 3 tasks | 8 files |
 | Phase 06 P17 | 3 min | 2 tasks | 3 files |
 | Phase 06 P21 | 10min (approx.) | 1 tasks | 6 files |
+| Phase 06 P20 | 9 min | 1 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -204,6 +205,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Phase 06 Plan 16: Keep hosted serialization behavior and CI-02 open until their authorized evidence runs complete.
 - [Phase 06]: Rejected the checksum-bound 06-15 provenance delta; canonical provenance remains unchanged and the release gate remains open. — The reviewed 50-row proposal contains 23 source-only keys and 27 changed hashes, but every identity-evidence status is unreviewed and Git contributor data is audit-only. The user rejected the exact delta SHA-256 e250ad497e7795a142624bc39c9d4563b3a9ef51bd944321ec2027df63317541. No independent evidence supports applying its identity or rights claims.
 - [Phase 06]: Keep archive qualification blocked until installed serialization behavior passes under the declared Matrix floor. — Plan 06-16 records local_behavior_status=blocked because installed Matrix 1.6.3 is below the DESCRIPTION requirement >=1.6-5 and focused installed serialization checks were not run. Plan 06-17 therefore did not inspect Matrix, build an archive, scan, check, or start hosted CI; CI-02 remains open.
+- [Phase 06]: Plan 20: Preserve the rejected 06-15 provenance delta; no new review or canonical application without independently supported identity and rights evidence for every disputed key.
 
 ### Pending Todos
 
@@ -223,6 +225,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 - Phase 06 Plan 15: PROVENANCE_KEY_MISMATCH remains open after clean snapshot audit (23 source-only keys, 27 changed expression hashes, 50 total delta rows, 0 missing keys). The exact proposal was rejected because independent identity and rights evidence is absent. Canonical provenance remains unchanged; resolve only after supported evidence and a new checksum-bound review.
 - Phase 06 Plan 17: CI-02 remains open because 06-16 local_behavior_status is blocked. No Matrix inspection, source archive build, public-content scan, R CMD check, or hosted workflow was run; resume qualification only after supported installed serialization behavior passes.
 - Phase 06 Plan 21: NUM-03 remains open because no authorized GTAP 12a input paths, raw reference artifacts, or retained reference/candidate build records were configured; candidate and independent review were not run.
+- Phase 06 Plan 20: REL-01 remains documented as satisfied because its requirement concerns document existence, but PROVENANCE_KEY_MISMATCH remains open. All 50 disputed source keys lack independent identity and rights evidence; the 06-15 rejection is preserved and canonical files remain unchanged.
 
 ## Deferred Items
 
@@ -234,6 +237,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-21T14:30:02.543Z
-Stopped at: Recorded 06-21 reference preflight block; plans 18-20 remain pending
-Resume file: None
+Last session: 2026-10-21T14:36:51.048Z
+Stopped at: Halted 06-20 at missing independent provenance evidence gate
+Resume file: .planning/phases/06-documentation-and-release-qualification/06-20-PLAN.md
