@@ -286,7 +286,7 @@ Plans:
 
 **Wave 9** *(after Wave 8; installed-package serialization evidence)*
 
-- [ ] 06-16-PLAN.md — Verify focused serialization regressions through the installed package boundary
+- [x] 06-16-PLAN.md — Verify focused serialization regressions through the installed package boundary
 
 **Wave 10** *(after Wave 9; checksum-bound provenance review)*
 
@@ -340,5 +340,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 14/14 | In Progress|  |
+| 6. Documentation and Release Qualification | 15/17 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |

@@ -11,7 +11,7 @@ provides:
   - explicit local and hosted evidence status
 affects: [06-17, serialization, release-qualification]
 actuals:
-  tokens: 0
+  tokens: 1708
   tasks: 3
   commits: 4
 tech-stack:
@@ -25,7 +25,7 @@ key-decisions:
   - "Keep hosted serialization evidence open until an authorized hosted run completes."
 patterns-established: []
 requirements-completed: []
-duration: 5min
+duration: 7min
 completed: 2026-10-21
 status: complete
 ---
@@ -87,9 +87,9 @@ The final local result remains `local_behavior_status=blocked`; no focused seria
 
 ## Performance
 
-- **Duration:** 5 min
+- **Duration:** 7 min
 - **Started:** 2026-10-21T08:36:16Z (recorded Phase 06 execution start)
-- **Completed:** 2026-10-21T08:40:21Z
+- **Completed:** 2026-10-21T08:43:38Z
 - **Tasks:** 3
 - **Files modified:** 3 (summary, STATE, ROADMAP); no candidate artifacts
 
@@ -101,8 +101,25 @@ None. The Matrix prerequisite branch was followed as written; no dependency was 
 
 The available Matrix 1.6.3 does not meet the package's declared `>= 1.6-5` floor. The focused groups and approved BUGFIX gate were therefore not run.
 
+The GSD `state.update-progress` handler was attempted but skipped with `phase scope is unscoped, not complete`; it left the aggregate Progress field unchanged. Plan position, metric, decisions, blocker, session, and roadmap plan-progress updates were recorded by their respective handlers.
+
 ## Next Phase Readiness
 
 Plan 06-17 must preserve its serialization prerequisite block until a supported local run records `local_behavior_status=passed`. Hosted serialization evidence and CI-02 remain open.
+
+## Task Commits
+
+1. **Task 1: Focused installed-package checks** — `62106ca` (`docs(06-16): record Matrix prerequisite blocker`)
+2. **Task 2: Candidate assessment** — `32fb10e` (`docs(06-16): record candidate not required`)
+3. **Task 3: Final evidence and approval boundary** — `552df35` (`docs(06-16): finalize local serialization evidence`)
+
+The plan closeout commit records this summary with the scoped STATE and ROADMAP updates.
+
+## Self-Check: PASSED
+
+- This summary exists and all three task commits are present in git history.
+- Task 1, Task 2, and Task 3 machine-readable summary verifiers passed.
+- The candidate directory is absent; canonical source, tests, DCF, and patch remain unchanged.
+- The roadmap updater reports 15 Phase 06 summaries and an in-progress phase.
 
 Results in this summary are local environment evidence only. No hosted workflow was started, and the hosted serialization gap remains open.

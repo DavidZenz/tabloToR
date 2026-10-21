@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
-status: verifying
-stopped_at: Completed 06-14-PLAN.md; plans 06-15/06-16/06-17 drafted and pending execution; Phase 06 verification gaps remain open
-last_updated: "2026-10-21T08:22:17.903Z"
+status: executing
+stopped_at: Completed 06-16-PLAN.md
+last_updated: "2026-10-21T08:41:24.437Z"
 last_activity: 2026-10-21
-last_activity_desc: Plans 06-15, 06-16, and 06-17 drafted as local-only gap closures; execution and verification remain pending.
-state_head: c03eabf39bc3044d15b8249d7f5867274efb5820
+last_activity_desc: Phase 06 execution started
+state_head: 552df35cd81b8d2a4fba38e8a2277adc304ef4da
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 68
-  completed_plans: 65
+  completed_plans: 66
 milestone_name: milestone
 ---
 
@@ -28,10 +28,10 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 ## Current Position
 
-Phase: 06 (Documentation and Release Qualification) — READY TO EXECUTE
-Plan: 14 completed of 17 planned; 06-16 (Wave 9), 06-15 (Wave 10), and 06-17 (Wave 11) are pending.
-Status: Phase 06 plans 01-14 are complete; the three gap-closure plans are drafted and not executed.
-Last activity: 2026-10-21 — Plans 06-15, 06-16, and 06-17 drafted; execution and verification remain pending.
+Phase: 06 (Documentation and Release Qualification) — EXECUTING
+Plan: 2 of 17
+Status: Ready to execute
+Last activity: 2026-10-21 — Phase 06 execution started
 
 Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 17 plans total: 14 previously executed plans and 3 gap-closure plans pending. Prior verification remains 11/14; hosted Windows execution and other release/environment gaps remain open.
 
@@ -91,6 +91,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 17
 | Phase 06 P12 | 1min | 1 tasks | 1 files |
 | Phase 06 P13 | 4min | 2 tasks | 4 files |
 | Phase 06 P14 | 12 min | 2 tasks | 4 files |
+| Phase 06 P16 | 5min | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -196,6 +197,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Keep trailing-root coverage independent from symlink setup while preserving platform-specific filesystem checks.
 - [Phase 06]: Phase 6 Plan 13: Use a temporary file beneath a temporary root for portable trailing-root coverage and derive the POSIX expectation from normalized paths.
 - [Phase 06]: Reuse the existing Windows release/current/serial CI tuple for separately launched provenance regression groups. — This keeps the platform check narrow and lets a hosted trailing-root result be attributed independently.
+- [Phase 06]: Phase 06 Plan 16: Defer installed-package serialization checks until Matrix meets the DESCRIPTION floor; do not install or upgrade dependencies during gap evidence collection.
+- [Phase 06]: Phase 06 Plan 16: Keep hosted serialization behavior and CI-02 open until their authorized evidence runs complete.
 
 ### Pending Todos
 
@@ -211,6 +214,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 - Phase 6 Plan 05: Four measured C++ candidate-only shock runs and a later 12-run 1/4/8/12-thread scaling diagnostic completed; the candidate-only scaling gate passed. The user directed that the R baseline not be rerun, so no matched reference or A/B gate was used and NUM-03 remains pending. The scaling medians were 10,401/4,644/4,076/4,096 seconds; 12 threads were effectively level with 8 threads. `pidstat` observed up to all requested worker counts, but whole-run process averages were about 1.0/2.5/3.6/4.2 core equivalents. Detailed outputs remain external; no GPG key is required and no solver defaults changed.
 - Phase 6 Plan 06: The license decision is recorded and the built archive passes the content/privacy gate. Local R CMD check stops at Matrix 1.6-3, below the declared 1.6-5 minimum, and reports three 404 URLs because the canonical repository and site are not published. The integrated release gate also reports PROVENANCE_KEY_MISMATCH; preserve source evidence and resolve these gates before qualification.
 - Phase 6 Plan 14: Hosted Windows execution remains pending; only a hosted pass of the trailing-root provenance regression closes this platform gap.
+- Phase 06 Plan 16: installed-package serialization checks are blocked because Matrix 1.6.3 is below the DESCRIPTION minimum of 1.6-5; rerun only after a supported Matrix version is already available.
 
 ## Deferred Items
 
@@ -222,6 +226,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-21T07:58:09.000Z
-Stopped at: Drafted 06-15, 06-16, and 06-17 gap-closure plans; execution pending
+Last session: 2026-10-21T08:41:24.333Z
+Stopped at: Completed 06-16-PLAN.md
 Resume file: None
