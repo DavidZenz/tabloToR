@@ -294,7 +294,7 @@ Plans:
 
 **Wave 11** *(after Waves 9 and 10)*
 
-- [ ] 06-17-PLAN.md — Qualify one exact source archive under the declared Matrix floor
+- [x] 06-17-PLAN.md — Qualify one exact source archive under the declared Matrix floor
 
 **Wave 1**
 
@@ -340,5 +340,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 16/17 | In Progress|  |
+| 6. Documentation and Release Qualification | 17/17 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
