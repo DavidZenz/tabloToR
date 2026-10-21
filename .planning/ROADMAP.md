@@ -267,7 +267,7 @@ Plans:
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
-**Plans**: 17 total (14 prior plans; 3 new gap-closure plans pending)
+**Plans**: 21 total (17 executed; 4 new gap-closure plans pending)
 
 - [x] 06-07-PLAN.md
 - [x] 06-08-PLAN.md — Close release-gate, scanner, and installed-vignette review findings
@@ -295,6 +295,15 @@ Plans:
 **Wave 11** *(after Waves 9 and 10)*
 
 - [x] 06-17-PLAN.md — Qualify one exact source archive under the declared Matrix floor
+- [ ] 06-20-PLAN.md — Reconcile provenance only with independent identity and rights evidence
+
+**Wave 12** *(after Wave 11; hosted archive and serialization evidence)*
+
+- [ ] 06-18-PLAN.md — Qualify the exact archive and installed serialization behavior on a supported hosted Matrix environment
+
+**Wave 13** *(after Wave 12; hosted Windows evidence)*
+
+- [ ] 06-19-PLAN.md — Run focused provenance checks on the Windows filesystem runtime
 
 **Wave 1**
 
@@ -316,6 +325,7 @@ Plans:
 **Wave 5** *(blocked on Wave 4 completion)*
 
 - [x] 06-06-PLAN.md
+- [ ] 06-21-PLAN.md — Preflight existing references before a C++-only matched benchmark
 
 ### Phase 7: GitHub and R-universe Release
 
@@ -340,5 +350,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 17/17 | In Progress|  |
+| 6. Documentation and Release Qualification | 17/21 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
