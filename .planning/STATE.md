@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 07
 current_phase_name: GitHub and R-universe Release
 status: executing
-stopped_at: Completed 07-01-PLAN.md
-last_updated: "2026-10-23T11:57:02.601Z"
+stopped_at: Completed 07-02-PLAN.md
+last_updated: "2026-10-23T12:05:35.841Z"
 last_activity: 2026-10-23
-last_activity_desc: Completed Phase 07 Plan 01 local packet and smoke tooling
-state_head: ff5bd8011fee7b73f86f4c607f2bb7c180d1e362
+last_activity_desc: Completed Phase 07 Plan 02 release and source-distribution drafts
+state_head: acfa54ceed33b11ab7ab955a2089788d9900fc0a
 progress:
   total_phases: 7
   completed_phases: 6
   total_plans: 77
-  completed_plans: 74
+  completed_plans: 75
 milestone_name: milestone
 ---
 
@@ -29,11 +29,11 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 ## Current Position
 
 Phase: 07 (GitHub and R-universe Release) — EXECUTING
-Plan: 2 of 4
+Plan: 3 of 4
 Status: Ready to execute
-Last activity: 2026-10-23 — Completed Plan 07-01; 28 focused checks passed and supported numerical smoke remains not_run
+Last activity: 2026-10-23 — Completed Plan 07-02; release/registry/source-policy and workflow assertions passed
 
-Progress: Phase 06 is complete by explicit maintainer acceptance on 2026-10-23, with 22/22 plan summaries. The technical assessment remains 11/18; outstanding evidence and review findings are accepted limitations for this phase. See `phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md`. Do not restart the same Phase 06 gap/UAT cycle without a new maintainer request. Phase 07 has 1/4 plan summaries; local packet/smoke tooling is complete. Actual numerical smoke remains not_run because Matrix is below floor. REL-02, public release guards, and the local-only direction remain active.
+Progress: Phase 06 is complete by explicit maintainer acceptance on 2026-10-23, with 22/22 plan summaries. The technical assessment remains 11/18; outstanding evidence and review findings are accepted limitations for this phase. See `phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md`. Do not restart the same Phase 06 gap/UAT cycle without a new maintainer request. Phase 07 has 2/4 plan summaries; local packet/smoke tooling and concrete release/source/registry/support drafts are complete. Actual numerical smoke remains not_run because Matrix is below floor. REL-02, public release guards, and the local-only direction remain active.
 
 ## Performance Metrics
 
@@ -101,6 +101,7 @@ Progress: Phase 06 is complete by explicit maintainer acceptance on 2026-10-23, 
 | Phase 06 P19 | 9min | 3 tasks | 4 files |
 | Phase 06 P22 | 7min | 3 tasks | 1 files |
 | Phase 07 P01 | 12min | 3 tasks | 4 files |
+| Phase 07 P02 | 7min | 3 tasks | 10 files |
 
 ## Accumulated Context
 
@@ -217,6 +218,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Phase 06 Plan 22: keep CI-02 open because only Matrix 1.6-3 and 1.5-3 are installed, below the unchanged 1.6-5 floor; do not install or build an archive.
 - [Phase 06]: Accept Phase 06 completion with waivers and end repeated gap/UAT cycling, per the maintainer's explicit instruction on 2026-10-23. The acceptance supersedes earlier instructions to keep this phase open on the same missing evidence. Preserve the technical 11/18 assessment, CR-06/CR-07, rejected provenance proposal, and all public release guards; see `06-ACCEPTANCE.md`.
 - [Phase 07]: Phase 07 Plan 01: local packet verification establishes source/content integrity only; numerical qualification and publication authorization remain separate actual evidence.
+- [Phase 07]: Propose a separately reviewed public root and annotated unsigned v0.1.0 development candidate; exact release actions and tag-pinned registry remain pending the final packet decision.
 
 ### Pending Todos
 
@@ -253,6 +255,6 @@ Phase 06 entries below retain the historical evidence. Their workflow-closure re
 
 ## Session Continuity
 
-Last session: 2026-10-23T11:57:02.499Z
-Stopped at: Completed 07-01-PLAN.md
+Last session: 2026-10-23T12:05:35.725Z
+Stopped at: Completed 07-02-PLAN.md
 Resume file: None
