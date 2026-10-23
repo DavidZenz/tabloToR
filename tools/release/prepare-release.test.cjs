@@ -392,6 +392,11 @@ test("public projection is an exact separate root commit with no private history
     assert.equal(git(repository, ["show-ref"]), refs);
     assert.deepEqual(fs.readFileSync(path.join(repository, ".git/index")), index);
     assert.equal(run(repository, ["verify", "--packet", output, "--for-publication"]).status, 1);
+    git(projected, ["tag", "v0.1.0"]);
+    assert.equal(run(repository, ["verify", "--packet", output]).status, 0);
+    git(projected, ["tag", "unreviewed-ref"]);
+    assert.equal(run(repository, ["verify", "--packet", output]).stderr,
+      "FAIL PUBLIC_SOURCE_IDENTITY_MISMATCH\n");
   });
 });
 
@@ -413,6 +418,20 @@ test("staged public source mutation is rejected", () => {
     fs.appendFileSync(path.join(output, "private/public-source/R/model.R"), "changed\n");
     assert.equal(run(repository, ["verify", "--packet", output]).stderr,
       "FAIL PACKET_CONTENT_CHANGED\n");
+  });
+});
+
+test("a complete disposition cannot include private development evidence", () => {
+  candidateFixture(({ repository, output }) => {
+    const policyPath = path.join(repository, "docs/release/public-source.json");
+    const policy = JSON.parse(fs.readFileSync(policyPath));
+    policy.exclude = policy.exclude.filter((entry) => entry.path !== ".planning/private.txt");
+    policy.include.push(".planning/private.txt");
+    fs.writeFileSync(policyPath, JSON.stringify(policy));
+    git(repository, ["add", "docs/release/public-source.json"]);
+    git(repository, ["commit", "--quiet", "-m", "unsafe complete policy"]);
+    assert.equal(stage(repository, output).stderr, "FAIL PRIVATE_SOURCE_INCLUDED\n");
+    assert.equal(fs.existsSync(path.join(output, "private/public-source")), false);
   });
 });
 
@@ -441,6 +460,28 @@ test("unsupported runtime completes preparation without attempting a build or in
     assert.equal(calls.some((item) => item.command === "R"), false);
     assert.equal(run(repository, ["verify", "--packet", output]).status, 0);
     assert.equal(run(repository, ["verify", "--packet", output, "--for-publication"]).status, 1);
+  });
+});
+
+test("the actual R prerequisite probe parses the declared floor without loading or installing packages", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    fs.appendFileSync(path.join(repository, "DESCRIPTION"), "Imports: Matrix (>= 999.0)\n");
+    git(repository, ["add", "DESCRIPTION"]);
+    git(repository, ["commit", "--quiet", "-m", "unavailable runtime floor"]);
+    assert.equal(stage(repository, output).status, 0);
+    const runner = (command, args, options) => {
+      if (args.includes("-e")) return spawnSync(command, args, options);
+      if (args.includes("--offline")) return { status: 1,
+        stdout: "repository_state=blocked\nrelease_ready=false\nreason_codes=FIXTURE_BLOCKED\n", stderr: "" };
+      assert.fail("Unsupported prerequisites must prevent package commands");
+    };
+    const library = path.join(directory, "library");
+    fs.mkdirSync(library);
+    require(cli).qualifyReleasePacket({ packet: output, library, runner });
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.qualification.runtime.reason, "MATRIX_BELOW_FLOOR");
+    assert.equal(manifest.qualification.runtime.matrix_minimum, "999.0");
+    assert.equal(manifest.checks.archive_build, "not_run");
   });
 });
 
@@ -488,6 +529,7 @@ test("qualification builds projected bytes and shares one retained archive acros
     for (const change of [
       (m) => { m.archive_source_commit = "a".repeat(40); },
       (m) => { m.archive_sha256 = "not_built"; },
+      (m) => { m.archive_sha256 = "a".repeat(64); },
       (m) => { m.qualification.guard.status = "blocked"; },
       (m) => { m.checks.archive_check = "failed"; },
       (m) => { m.checks.installed_smoke = "not_run"; }

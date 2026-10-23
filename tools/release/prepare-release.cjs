@@ -15,7 +15,10 @@ const CHECK_NAMES = ["archive_build", "archive_scan", "archive_check", "installe
   "github_install", "runiverse_install", "publication"];
 const PUBLIC_KEYS = ["schema_version", "source_commit", "source_tree", "package", "version",
   "intended_tag", "tag_type", "preparation_status", "publication_authorized", "public_source_commit",
-  "publication_readiness", "release_notes_status", "checks"];
+  "public_source_tree", "source_policy_sha256", "archive_source_commit", "archive_sha256",
+  "qualification_status", "publication_readiness", "release_notes_status", "checks"];
+const POLICY_PATH = "docs/release/public-source.json";
+const LOCAL_REPOSITORIES = ["private/public-source", "private/original-source", "private/work/build-source"];
 const OID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
 const SHA256 = /^[0-9a-f]{64}$/;
 
@@ -48,13 +51,14 @@ function within(root, target) {
     relative !== ".." && !path.isAbsolute(relative));
 }
 
-function git(repository, args, encoding = "utf8") {
+function git(repository, args, encoding = "utf8", extraEnv = {}) {
   const env = { ...process.env, GIT_TERMINAL_PROMPT: "0" };
   for (const name of Object.keys(env)) {
     if (/^GIT_(?:DIR|WORK_TREE|INDEX_FILE|OBJECT_DIRECTORY|ALTERNATE_OBJECT_DIRECTORIES|CONFIG_COUNT|CONFIG_KEY_\d+|CONFIG_VALUE_\d+)$/.test(name)) {
       delete env[name];
     }
   }
+  Object.assign(env, extraEnv);
   const result = spawnSync("git", ["-C", repository, ...args], {
     env, encoding, maxBuffer: 128 * 1024 * 1024, timeout: 30000, windowsHide: true
   });
@@ -125,6 +129,11 @@ function inventory(root) {
   function visit(directory, relative = "") {
     for (const name of fs.readdirSync(directory).sort(bytewise)) {
       const item = relative ? relative + "/" + name : name;
+      if (LOCAL_REPOSITORIES.some((repository) => item === repository + "/.git")) {
+        if (!fs.lstatSync(path.join(directory, name)).isDirectory() ||
+            fs.lstatSync(path.join(directory, name)).isSymbolicLink()) fail("UNSAFE_PACKET_ENTRY");
+        continue;
+      }
       if (!safeRelative(item)) fail("UNSAFE_PACKET_ENTRY");
       const absolute = path.join(directory, name);
       const stat = fs.lstatSync(absolute);
@@ -172,18 +181,33 @@ function sortedUnique(entries) {
 }
 
 function validateManifest(manifest) {
-  if (!exactKeys(manifest, [...PUBLIC_KEYS, "source_entries", "files", "content_sha256"]) ||
+  if (!exactKeys(manifest, [...PUBLIC_KEYS, "source_entries", "files", "qualification", "content_sha256"]) ||
       manifest.schema_version !== 1 || !OID.test(manifest.source_commit) ||
       !OID.test(manifest.source_tree) || manifest.source_commit.length !== manifest.source_tree.length ||
       manifest.package !== "GEModelR" || !/^[0-9]+(?:[.-][0-9]+)+$/.test(manifest.version) ||
       manifest.intended_tag !== "v" + manifest.version || manifest.tag_type !== "annotated_unsigned" ||
-      manifest.preparation_status !== "prepared" || manifest.publication_authorized !== false ||
-      manifest.public_source_commit !== "not_created" || manifest.publication_readiness !== "unqualified" ||
+      !["prepared", "complete"].includes(manifest.preparation_status) || manifest.publication_authorized !== false ||
+      !(manifest.public_source_commit === "not_created" || OID.test(manifest.public_source_commit)) ||
+      !(manifest.public_source_tree === "not_created" || OID.test(manifest.public_source_tree)) ||
+      !(manifest.source_policy_sha256 === "not_frozen" || SHA256.test(manifest.source_policy_sha256)) ||
+      !(manifest.archive_source_commit === "not_built" || OID.test(manifest.archive_source_commit)) ||
+      !(manifest.archive_sha256 === "not_built" || SHA256.test(manifest.archive_sha256)) ||
+      !["unqualified", "blocked", "ready"].includes(manifest.publication_readiness) ||
+      !["not_run", "unavailable", "failed", "passed"].includes(manifest.qualification_status) ||
       !["ready", "unavailable"].includes(manifest.release_notes_status) ||
       !exactKeys(manifest.checks, CHECK_NAMES) ||
-      CHECK_NAMES.some((name) => manifest.checks[name] !== "not_run") ||
+      CHECK_NAMES.some((name) => !["not_run", "passed", "failed"].includes(manifest.checks[name])) ||
       !SHA256.test(manifest.content_sha256) || !Array.isArray(manifest.source_entries) ||
       !manifest.source_entries.length || !Array.isArray(manifest.files) || !manifest.files.length) {
+    fail("INVALID_MANIFEST");
+  }
+  const staged = manifest.public_source_commit !== "not_created";
+  if (staged !== (manifest.public_source_tree !== "not_created") ||
+      staged !== (manifest.source_policy_sha256 !== "not_frozen") ||
+      (staged ? manifest.preparation_status !== "complete" : manifest.preparation_status !== "prepared") ||
+      (manifest.qualification === null ? manifest.qualification_status !== "not_run" :
+        !validQualification(manifest.qualification)) ||
+      (!staged && (manifest.qualification !== null || manifest.publication_readiness !== "unqualified"))) {
     fail("INVALID_MANIFEST");
   }
   if (manifest.source_entries.some((entry) => !exactKeys(entry, ["path", "mode", "oid"]) ||
@@ -288,6 +312,7 @@ function prepareReleasePacket(options) {
     writeFile(staging, "private/support/prepare-release.cjs", fs.readFileSync(__filename));
     writeFile(staging, "private/support/check-public-content.cjs", fs.readFileSync(scannerPath));
     writeFile(staging, "private/support/source-commit.txt", git(repository, ["cat-file", "commit", commit], null));
+    writeFile(staging, "private/support/source-origin.txt", repository);
     writeFile(staging, "public/run-installed-release-smoke.R",
       fs.readFileSync(path.join(staging, "private/source", SMOKE_PATH)));
     writeFile(staging, "public/registry/packages.json", json([{
@@ -300,12 +325,14 @@ function prepareReleasePacket(options) {
       schema_version: 1, source_commit: commit, source_tree: tree, ...metadata,
       intended_tag: options.tag, tag_type: "annotated_unsigned", preparation_status: "prepared",
       publication_authorized: false, public_source_commit: "not_created",
+      public_source_tree: "not_created", source_policy_sha256: "not_frozen",
+      archive_source_commit: "not_built", archive_sha256: "not_built", qualification_status: "not_run",
       publication_readiness: "unqualified", release_notes_status: notes ? "ready" : "unavailable",
       checks: Object.fromEntries(CHECK_NAMES.map((name) => [name, "not_run"]))
     };
     writeFile(staging, "public/manifest.json", json(publicManifest));
     scanPublic(path.join(staging, "public"));
-    const manifest = { ...publicManifest, source_entries: files, files: inventory(staging) };
+    const manifest = { ...publicManifest, source_entries: files, files: inventory(staging), qualification: null };
     manifest.content_sha256 = sha256(json(manifest));
     writeFile(staging, INVENTORY_PATH, json(manifest));
     if (fs.existsSync(output)) fs.rmdirSync(output);
@@ -316,7 +343,7 @@ function prepareReleasePacket(options) {
   }
 }
 
-function verifyReleasePacket(options) {
+function readVerifiedPacket(options) {
   if (typeof options.packet !== "string" || !options.packet.trim()) fail("MISSING_PACKET");
   const requested = path.resolve(options.packet);
   if (fs.lstatSync(requested).isSymbolicLink()) fail("PACKET_SYMLINK");
@@ -341,25 +368,328 @@ function verifyReleasePacket(options) {
     fail("PUBLIC_MANIFEST_MISMATCH");
   }
   scanPublic(path.join(root, "public"));
+  if (manifest.public_source_commit !== "not_created") verifyPublicSource(root, manifest);
+  return { root, manifest };
+}
+
+function verifyReleasePacket(options) {
+  const { manifest } = readVerifiedPacket(options);
+  if (options.forPublication) validatePublicationReadiness(manifest);
   return { status: "verified", source_commit: manifest.source_commit,
-    content_sha256: manifest.content_sha256 };
+    public_source_commit: manifest.public_source_commit, content_sha256: manifest.content_sha256 };
+}
+
+function publicValues(manifest) {
+  return Object.fromEntries(PUBLIC_KEYS.map((name) => [name, manifest[name]]));
+}
+
+function saveManifest(root, manifest) {
+  fs.writeFileSync(path.join(root, "public/manifest.json"), json(publicValues(manifest)));
+  scanPublic(path.join(root, "public"));
+  manifest.files = inventory(root);
+  delete manifest.content_sha256;
+  manifest.content_sha256 = sha256(json(manifest));
+  const temporary = path.join(root, "private/manifest.json.next");
+  fs.writeFileSync(temporary, json(manifest), { flag: "wx" });
+  fs.renameSync(temporary, path.join(root, INVENTORY_PATH));
+}
+
+function sourcePolicy(root, manifest) {
+  let policy;
+  const bytes = readPacketFile(root, "private/source/" + POLICY_PATH);
+  try { policy = JSON.parse(bytes); } catch { fail("INVALID_SOURCE_POLICY"); }
+  if (!exactKeys(policy, ["schema_version", "include", "exclude"]) ||
+      policy.schema_version !== 1 || !Array.isArray(policy.include) || !policy.include.length ||
+      !Array.isArray(policy.exclude) || policy.include.some((name) => !safeRelative(name)) ||
+      policy.exclude.some((entry) => !exactKeys(entry, ["path", "reason"]) ||
+        !safeRelative(entry.path) || typeof entry.reason !== "string" || !entry.reason.trim())) {
+    fail("INVALID_SOURCE_POLICY");
+  }
+  const names = [...policy.include, ...policy.exclude.map((entry) => entry.path)].sort(bytewise);
+  if (names.some((name, i) => i > 0 && name === names[i - 1]) ||
+      JSON.stringify(names) !== JSON.stringify(manifest.source_entries.map((entry) => entry.path))) {
+    fail("SOURCE_POLICY_INCOMPLETE");
+  }
+  if (policy.include.some((name) => /^(?:\.planning|\.codex|\.claude|\.agents|\.aws|\.ssh|\.gsd)(?:\/|$)/i.test(name) ||
+      /^docs\/(?:release|provenance)(?:\/|$)/i.test(name) || /(?:^|\/)(?:\.RData|\.Rhistory|\.Renviron)$/i.test(name))) {
+    fail("PRIVATE_SOURCE_INCLUDED");
+  }
+  for (const name of ["DESCRIPTION", SMOKE_PATH]) {
+    if (!policy.include.includes(name)) fail("MISSING_PUBLIC_SOURCE");
+  }
+  // Package implementation and notices cannot be silently dropped by a projection.
+  for (const entry of manifest.source_entries) {
+    if (/^(?:R|src)\//.test(entry.path) ||
+        /^(?:LICENSE(?:\.[^/]+)?|COPYING|CONTRIBUTORS\.md|inst\/CITATION)$/.test(entry.path)) {
+      if (!policy.include.includes(entry.path)) fail("MISSING_PUBLIC_SOURCE");
+    }
+  }
+  return { policy, digest: sha256(bytes) };
+}
+
+function verifyPublicSource(root, manifest) {
+  const { policy, digest } = sourcePolicy(root, manifest);
+  if (digest !== manifest.source_policy_sha256) fail("SOURCE_POLICY_CHANGED");
+  const repository = path.join(root, "private/public-source");
+  readPacketFile(root, "private/public-source/DESCRIPTION");
+  if (!fs.lstatSync(path.join(repository, ".git")).isDirectory() ||
+      fs.lstatSync(path.join(repository, ".git")).isSymbolicLink() ||
+      git(repository, ["rev-parse", "HEAD"]).trim() !== manifest.public_source_commit ||
+      git(repository, ["rev-parse", "HEAD^{tree}"]).trim() !== manifest.public_source_tree ||
+      git(repository, ["rev-list", "--count", "--all"]).trim() !== "1" ||
+      git(repository, ["remote"]).trim() !== "") {
+    fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+  }
+  const refs = git(repository, ["for-each-ref", "--format=%(refname)"]).trim().split("\n").filter(Boolean);
+  if (refs.some((ref) => !["refs/heads/main", "refs/tags/" + manifest.intended_tag].includes(ref))) {
+    fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+  }
+  if (refs.includes("refs/tags/" + manifest.intended_tag) &&
+      git(repository, ["rev-parse", "refs/tags/" + manifest.intended_tag + "^{commit}"]).trim() !== manifest.public_source_commit) {
+    fail("TAG_SOURCE_CONFLICT");
+  }
+  const expected = manifest.source_entries.filter((entry) => policy.include.includes(entry.path));
+  if (JSON.stringify(selectedTree(repository, manifest.public_source_commit)) !== JSON.stringify(expected)) {
+    fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+  }
+  for (const entry of expected) {
+    if (!readPacketFile(root, "private/public-source/" + entry.path)
+      .equals(readPacketFile(root, "private/source/" + entry.path))) fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+  }
+}
+
+function stagePublicSource(options) {
+  const { root, manifest } = readVerifiedPacket(options);
+  if (manifest.public_source_commit !== "not_created") fail("PUBLIC_SOURCE_ALREADY_STAGED");
+  const { policy, digest } = sourcePolicy(root, manifest);
+  const repository = path.join(root, "private/public-source");
+  const hooks = path.join(root, "private/support/empty-hooks");
+  fs.mkdirSync(hooks, { recursive: true });
+  fs.mkdirSync(repository);
+  try {
+    const algorithm = manifest.source_commit.length === 40 ? "sha1" : "sha256";
+    git(repository, ["init", "--quiet", "--initial-branch=main", "--object-format=" + algorithm]);
+    for (const entry of manifest.source_entries.filter((item) => policy.include.includes(item.path))) {
+      writeFile(repository, entry.path, readPacketFile(root, "private/source/" + entry.path),
+        entry.mode === "100755" ? 0o755 : 0o644);
+      const oid = git(repository, ["hash-object", "-w", "--no-filters", "--", entry.path]).trim();
+      if (oid !== entry.oid) fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+      git(repository, ["update-index", "--add", "--cacheinfo", entry.mode + "," + oid + "," + entry.path]);
+    }
+    const commitText = readPacketFile(root, "private/support/source-commit.txt").toString("utf8");
+    const date = /^committer .* ([0-9]+ [+-][0-9]{4})$/m.exec(commitText);
+    if (!date) fail("SOURCE_IDENTITY_MISMATCH");
+    git(repository, ["-c", "core.hooksPath=" + hooks, "-c", "commit.gpgsign=false", "commit", "--quiet",
+      "-m", "GEModelR " + manifest.version + " proposed public source\n\nDevelopment source: " + manifest.source_commit], "utf8", {
+      GIT_AUTHOR_NAME: "GEModelR release preparation", GIT_AUTHOR_EMAIL: "release-preparation@example.invalid",
+      GIT_COMMITTER_NAME: "GEModelR release preparation", GIT_COMMITTER_EMAIL: "release-preparation@example.invalid",
+      GIT_AUTHOR_DATE: date[1], GIT_COMMITTER_DATE: date[1]
+    });
+    manifest.public_source_commit = git(repository, ["rev-parse", "HEAD"]).trim();
+    manifest.public_source_tree = git(repository, ["rev-parse", "HEAD^{tree}"]).trim();
+    manifest.source_policy_sha256 = digest;
+    manifest.preparation_status = "complete";
+    manifest.publication_readiness = "blocked";
+    writeFile(root, "private/support/public-reachable-objects.txt", git(repository, ["rev-list", "--objects", "--all"]));
+    verifyPublicSource(root, manifest);
+    saveManifest(root, manifest);
+    return { status: "staged", public_source_commit: manifest.public_source_commit,
+      public_source_tree: manifest.public_source_tree, review_sha256: manifest.content_sha256 };
+  } catch (error) {
+    fs.rmSync(repository, { recursive: true, force: true });
+    fs.rmSync(path.join(root, "private/support/public-reachable-objects.txt"), { force: true });
+    throw error;
+  }
+}
+
+function validQualification(value) {
+  return exactKeys(value, ["evidence_kind", "runtime", "guard", "install_status", "archive_check_status", "reason_codes"]) &&
+    ["actual", "fixture"].includes(value.evidence_kind) &&
+    exactKeys(value.runtime, ["supported", "reason", "matrix_version", "matrix_minimum"]) &&
+    typeof value.runtime.supported === "boolean" && /^[A-Z0-9_]+$/.test(value.runtime.reason) &&
+    /^(?:[0-9]+(?:[.-][0-9]+)+|unavailable)$/.test(value.runtime.matrix_version) &&
+    /^[0-9]+(?:[.-][0-9]+)+$/.test(value.runtime.matrix_minimum) &&
+    exactKeys(value.guard, ["status", "exit_status", "reason_codes"]) &&
+    ["passed", "blocked", "invalid", "failed", "unavailable"].includes(value.guard.status) &&
+    (value.guard.exit_status === null || Number.isInteger(value.guard.exit_status)) &&
+    Array.isArray(value.guard.reason_codes) && value.guard.reason_codes.every((code) => /^[A-Z0-9_]+$/.test(code)) &&
+    ["not_run", "passed", "failed"].includes(value.install_status) &&
+    ["not_run", "passed", "failed"].includes(value.archive_check_status) &&
+    Array.isArray(value.reason_codes) && value.reason_codes.every((code) => /^[A-Z0-9_]+$/.test(code));
+}
+
+function validatePublicationReadiness(manifest) {
+  const qualification = manifest.qualification;
+  const archive = manifest.files?.find((entry) =>
+    entry.path === "public/" + manifest.package + "_" + manifest.version + ".tar.gz");
+  if (!qualification || !validQualification(qualification) || qualification.evidence_kind !== "actual" ||
+      !qualification.runtime.supported || qualification.guard.status !== "passed" ||
+      qualification.guard.exit_status !== 0 || qualification.guard.reason_codes.length ||
+      qualification.reason_codes.length || qualification.install_status !== "passed" ||
+      qualification.archive_check_status !== "passed" || manifest.qualification_status !== "passed" ||
+      !OID.test(manifest.public_source_commit) || !OID.test(manifest.public_source_tree) ||
+      !SHA256.test(manifest.source_policy_sha256) || !SHA256.test(manifest.archive_sha256) ||
+      !archive || archive.sha256 !== manifest.archive_sha256 ||
+      manifest.archive_source_commit !== manifest.public_source_commit || manifest.release_notes_status !== "ready" ||
+      ["archive_build", "archive_scan", "archive_check", "installed_smoke"].some((name) => manifest.checks[name] !== "passed")) {
+    fail("PUBLICATION_NOT_READY");
+  }
+  return true;
+}
+
+function selectedClone(root, source, destination, commit) {
+  const hooks = path.join(root, "private/support/empty-hooks");
+  git(root, ["-c", "core.hooksPath=" + hooks, "clone", "--quiet", "--no-hardlinks", "--no-checkout", "--no-tags", "--", source, destination]);
+  git(destination, ["-c", "core.hooksPath=" + hooks, "checkout", "--quiet", "--detach", commit, "--"]);
+  git(destination, ["remote", "remove", "origin"]);
+}
+
+function runtimeProbeCode() {
+  return [
+    'args = commandArgs(TRUE); .libPaths(c(args[[1]], .Library));',
+    'description = read.dcf(args[[2]]); imports = strsplit(description[1,"Imports"], ",", fixed=TRUE)[[1]];',
+    'declaration = trimws(imports)[grepl("^Matrix($|[[:space:](])", trimws(imports))];',
+    'floor = "1.6-5"; if(length(declaration)==1 && grepl(">=", declaration)) floor = sub(".*>=[[:space:]]*([0-9.-]+).*", "\\\\1", declaration);',
+    'v = tryCatch(as.character(packageVersion("Matrix")), error=function(e) "unavailable");',
+    'ok = v != "unavailable" && package_version(v) >= package_version("1.6-5") && package_version(v) >= package_version(floor);',
+    'cat(sprintf("{\\"supported\\":%s,\\"reason\\":\\"%s\\",\\"matrix_version\\":\\"%s\\",\\"matrix_minimum\\":\\"%s\\"}",',
+    'if(ok) "true" else "false", if(ok) "SUPPORTED" else if(v=="unavailable") "MISSING_MATRIX" else "MATRIX_BELOW_FLOOR", v, floor));'
+  ].join("\n");
+}
+
+function qualifyReleasePacket(options) {
+  const { root, manifest } = readVerifiedPacket(options);
+  if (manifest.public_source_commit === "not_created") fail("PUBLIC_SOURCE_NOT_STAGED");
+  if (manifest.qualification !== null) fail("QUALIFICATION_ALREADY_RECORDED");
+  if (typeof options.library !== "string" || !options.library.trim() ||
+      !fs.existsSync(options.library) || !fs.statSync(options.library).isDirectory()) fail("MISSING_SELECTED_LIBRARY");
+  const library = fs.realpathSync(options.library);
+  const evidence = path.join(root, "private/evidence");
+  const work = path.join(root, "private/work");
+  fs.mkdirSync(evidence);
+  fs.mkdirSync(work);
+  const runner = options.runner || spawnSync;
+  const qualification = {
+    evidence_kind: options.runner ? "fixture" : "actual",
+    runtime: { supported: false, reason: "RUNTIME_PROBE_FAILED", matrix_version: "unavailable", matrix_minimum: "1.6-5" },
+    guard: { status: "unavailable", exit_status: null, reason_codes: ["GUARD_UNAVAILABLE"] },
+    install_status: "not_run", archive_check_status: "not_run", reason_codes: []
+  };
+  const env = { ...process.env, R_LIBS_USER: library, R_LIBS_SITE: "" };
+  function command(name, args, cwd, label, extraEnv = {}) {
+    const result = runner(name, args, { cwd, encoding: "utf8", maxBuffer: 128 * 1024 * 1024,
+      timeout: 300000, windowsHide: true, env: { ...env, ...extraEnv } });
+    fs.writeFileSync(path.join(evidence, label + ".stdout.log"), result.stdout || "");
+    fs.writeFileSync(path.join(evidence, label + ".stderr.log"), result.stderr || "");
+    fs.writeFileSync(path.join(evidence, label + ".exit.txt"), String(result.status ?? "unavailable") + "\n");
+    return result;
+  }
+  // Inspect already-installed prerequisites before any package build, check or install.
+  const probe = command("Rscript", ["--vanilla", "-e", runtimeProbeCode(), library,
+    path.join(root, "private/source/DESCRIPTION")], work, "runtime");
+  try {
+    const runtime = JSON.parse(probe.stdout);
+    if (probe.status === 0 && validQualification({ ...qualification, runtime })) qualification.runtime = runtime;
+  } catch { /* Raw output remains private; never copy unknown values into reports. */ }
+  const original = path.join(root, "private/original-source");
+  const source = readPacketFile(root, "private/support/source-origin.txt").toString("utf8");
+  if (!path.isAbsolute(source)) fail("INVALID_SOURCE_ORIGIN");
+  selectedClone(root, source, original, manifest.source_commit);
+  if (git(original, ["rev-parse", "HEAD^{tree}"]).trim() !== manifest.source_tree) fail("SOURCE_IDENTITY_MISMATCH");
+  writeFile(root, "private/support/original-reachable-objects.txt", git(original, ["rev-list", "--objects", "--all"]));
+  const guardScript = path.join(original, "tools/check_release_gates.R");
+  if (fs.existsSync(guardScript)) {
+    const guard = command("Rscript", ["--vanilla", guardScript, "--root", original, "--offline"], original, "release-guard");
+    const state = /^repository_state=(ready|blocked|invalid)$/m.exec(guard.stdout || "");
+    const ready = /^release_ready=true$/m.test(guard.stdout || "");
+    const reasons = /^reason_codes=([A-Z0-9_,]+)$/m.exec(guard.stdout || "");
+    const codes = reasons ? (reasons[1] === "NONE" ? [] : reasons[1].split(",")) : ["GUARD_OUTPUT_INVALID"];
+    qualification.guard = { status: guard.status === 0 && state?.[1] === "ready" && ready && !codes.length ? "passed" :
+      state?.[1] === "blocked" ? "blocked" : state?.[1] === "invalid" ? "invalid" : "failed",
+    exit_status: Number.isInteger(guard.status) ? guard.status : null, reason_codes: codes };
+  }
+  if (!qualification.runtime.supported) {
+    manifest.qualification_status = "unavailable";
+    qualification.reason_codes.push(qualification.runtime.reason);
+  } else {
+    const buildSource = path.join(work, "build-source");
+    selectedClone(root, path.join(root, "private/public-source"), buildSource, manifest.public_source_commit);
+    if (git(buildSource, ["rev-parse", "HEAD^{tree}"]).trim() !== manifest.public_source_tree) fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+    const build = command("R", ["CMD", "build", buildSource], buildSource, "archive-build");
+    const basename = manifest.package + "_" + manifest.version + ".tar.gz";
+    const built = path.join(buildSource, basename);
+    manifest.checks.archive_build = build.status === 0 && fs.existsSync(built) && fs.lstatSync(built).isFile() ? "passed" : "failed";
+    if (manifest.checks.archive_build === "passed") {
+      const archive = path.join(root, "public", basename);
+      fs.renameSync(built, archive);
+      manifest.archive_source_commit = manifest.public_source_commit;
+      manifest.archive_sha256 = sha256(fs.readFileSync(archive));
+      const scan = command(process.execPath, [path.join(root, "private/support/check-public-content.cjs"), "--archive", archive], work, "archive-scan");
+      manifest.checks.archive_scan = scan.status === 0 ? "passed" : "failed";
+      if (manifest.checks.archive_scan === "passed") {
+        const checkDirectory = path.join(work, "check");
+        const installLibrary = path.join(work, "library");
+        fs.mkdirSync(checkDirectory);
+        fs.mkdirSync(installLibrary);
+        const check = command("R", ["CMD", "check", "--as-cran", "--library=" + installLibrary,
+          "--output=" + checkDirectory, archive], work, "archive-check");
+        const checkLogPath = path.join(checkDirectory, manifest.package + ".Rcheck/00check.log");
+        const checkLog = fs.existsSync(checkLogPath) ? fs.readFileSync(checkLogPath, "utf8") : "";
+        manifest.checks.archive_check = check.status === 0 && /^Status: OK\s*$/m.test(checkLog) &&
+          /\* checking URLs? \.\.\. OK/.test(checkLog) ? "passed" : "failed";
+        qualification.archive_check_status = manifest.checks.archive_check;
+        if (manifest.checks.archive_check === "passed") {
+          const install = command("R", ["CMD", "INSTALL", "--library=" + installLibrary, archive], work, "archive-install");
+          qualification.install_status = install.status === 0 ? "passed" : "failed";
+          if (install.status === 0) {
+            const smoke = command("Rscript", ["--vanilla", path.join(root, "public/run-installed-release-smoke.R")], work, "installed-smoke", {
+              GEModelR_TEST_LIBRARY: installLibrary, GEModelR_EXPECTED_VERSION: manifest.version,
+              GEModelR_DISTRIBUTION_CHANNEL: "local", GEModelR_EXPECTED_SOURCE_COMMIT: manifest.public_source_commit
+            });
+            manifest.checks.installed_smoke = smoke.status === 0 && /^PASS installed-release-smoke$/m.test(smoke.stdout || "") ? "passed" : "failed";
+          }
+        }
+      }
+    }
+    manifest.qualification_status = ["archive_build", "archive_scan", "archive_check", "installed_smoke"]
+      .every((name) => manifest.checks[name] === "passed") ? "passed" : "failed";
+    if (manifest.qualification_status !== "passed") qualification.reason_codes.push("ARCHIVE_QUALIFICATION_FAILED");
+  }
+  manifest.qualification = qualification;
+  manifest.publication_readiness = "blocked";
+  try { validatePublicationReadiness(manifest); manifest.publication_readiness = "ready"; }
+  catch (error) { if (!(error instanceof ReleaseError)) throw error; }
+  // Recheck the selected public bytes after all commands and before freezing evidence.
+  verifyPublicSource(root, manifest);
+  saveManifest(root, manifest);
+  return { status: "qualified", qualification_status: manifest.qualification_status,
+    publication_readiness: manifest.publication_readiness, public_source_commit: manifest.public_source_commit,
+    review_sha256: manifest.content_sha256 };
 }
 
 function main(argv) {
   const command = argv[0];
   const allowed = command === "prepare" ? ["--source-ref", "--output", "--tag"] :
-    command === "verify" ? ["--packet"] : [];
+    command === "qualify" ? ["--packet", "--library"] :
+    ["verify", "stage-public-source"].includes(command) ? ["--packet"] : [];
   if (!allowed.length) fail("INVALID_COMMAND");
   const values = {};
-  for (let i = 1; i < argv.length; i += 2) {
+  let forPublication = false;
+  for (let i = 1; i < argv.length; i += 1) {
     const flag = argv[i];
+    if (flag === "--for-publication" && command === "verify" && !forPublication) {
+      forPublication = true;
+      continue;
+    }
     if (!allowed.includes(flag) || flag in values || typeof argv[i + 1] !== "string" ||
         argv[i + 1].startsWith("--")) fail("INVALID_ARGUMENTS");
-    values[flag] = argv[i + 1];
+    values[flag] = argv[++i];
   }
   const result = command === "prepare" ? prepareReleasePacket({
     sourceRef: values["--source-ref"], output: values["--output"], tag: values["--tag"]
-  }) : verifyReleasePacket({ packet: values["--packet"] });
+  }) : command === "stage-public-source" ? stagePublicSource({ packet: values["--packet"] }) :
+    command === "qualify" ? qualifyReleasePacket({ packet: values["--packet"], library: values["--library"] }) :
+      verifyReleasePacket({ packet: values["--packet"], forPublication });
   process.stdout.write(json(result));
 }
 
@@ -371,4 +701,5 @@ if (require.main === module) {
   }
 }
 
-module.exports = { prepareReleasePacket, verifyReleasePacket };
+module.exports = { prepareReleasePacket, verifyReleasePacket, stagePublicSource,
+  qualifyReleasePacket, validatePublicationReadiness };

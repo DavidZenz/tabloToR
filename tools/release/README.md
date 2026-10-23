@@ -38,7 +38,60 @@ integrity only. `publication_authorized=false`, `publication_readiness=unqualifi
 `public_source_commit=not_created`, and unexecuted `checks` stay explicit.
 Missing draft notes remain `release_notes_status=unavailable`. No installation,
 package qualification, signature, public source selection, or release is claimed.
-The tag proposal is `annotated_unsigned`; no GPG setup is required.
+The initial tag proposal is `annotated_unsigned`; no GPG setup is required.
+
+## Freeze the proposed public source
+
+The selected commit must contain `docs/release/public-source.json`, with
+`schema_version: 1`, an `include` array of paths and an `exclude` array of
+`{path, reason}` objects. Exactly one disposition is required for every tracked
+path in the selected commit. Private planning/release/provenance paths cannot
+be included, and package implementation plus notices cannot be silently dropped.
+
+```sh
+rtk node tools/release/prepare-release.cjs stage-public-source --packet /tmp/GEModelR-release-packet
+rtk node tools/release/prepare-release.cjs qualify --packet /tmp/GEModelR-release-packet --library /existing/supported-library
+rtk node tools/release/prepare-release.cjs verify --packet /tmp/GEModelR-release-packet
+rtk node tools/release/prepare-release.cjs verify --packet /tmp/GEModelR-release-packet --for-publication
+```
+
+Staging constructs a separate local repository with one deterministic root commit,
+no configured remote, and exactly the selected committed blobs/modes. It preserves
+both development and public commit/tree identities. The development repository's
+history, refs, index and dirty files are untouched. The local public repository is
+private review material, not automatically a publishable artifact or a mirror.
+Only `main` and an optional matching intended tag are accepted; conflicting or
+additional refs are rejected. No tag is created by these commands.
+
+Qualification first probes the already-installed Matrix floor without loading or
+installing a package. It retains one offline canonical release-guard result from
+a private local clone of the selected development commit. That clone is guard-only.
+When supported prerequisites exist, it builds solely from a separate checkout of
+the frozen projected public commit, then scans, checks and installs the same
+retained archive. `archive_source_commit` must equal `public_source_commit`, and
+the retained archive must match its declared SHA-256. The actual check requires
+`Status: OK`, zero exit status and a passing URL check, as in the existing workflow.
+
+An unsupported runtime completes local preparation with
+`qualification_status=unavailable`, archive fields `not_built`, and untouched
+`not_run` package steps. Failed attempted commands keep their real exits/logs in
+`private/evidence/`. Local integrity verification can pass in this state;
+`--for-publication` rejects it. Qualification is recorded once per packet: prepare
+a new packet to make another attempt. The review digest is the final private
+manifest's `content_sha256`, covering artifact identities and qualification state.
+
+Subprocess-injected unit fixtures are always marked `evidence_kind=fixture` and
+can never qualify a real packet. This flag is unavailable in the CLI. Publication
+readiness requires actual supported runtime, successful canonical guard, exact
+archive/scan/check/install/smoke evidence, and matching selected identities.
+Even a ready packet retains `publication_authorized=false`: the separate concrete
+maintainer approval remains mandatory. No command here pushes, publishes,
+dispatches hosted work or changes external settings.
+
+Git object databases are excluded from the ordinary file inventory, because they
+contain local Git bookkeeping; their repositories and allowed reachable refs,
+root commit, tree, selected blobs, and absence of remotes are checked separately.
+The projected repository and private original clone never enter the public assets.
 
 The standalone smoke is invoked in a fresh process with an already supported
 isolated package library:
