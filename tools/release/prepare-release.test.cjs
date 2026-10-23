@@ -340,3 +340,161 @@ test("installed smoke rejects bad metadata and the actual declared Matrix floor 
     assert.doesNotMatch(wrongUniverse.stdout, /PASS/);
   });
 });
+
+function candidateFixture(callback) {
+  fixture((values) => {
+    const { repository } = values;
+    fs.mkdirSync(path.join(repository, "docs/release"), { recursive: true });
+    fs.mkdirSync(path.join(repository, ".planning"));
+    fs.writeFileSync(path.join(repository, ".planning/private.txt"), "private history canary\n");
+    fs.writeFileSync(path.join(repository, "docs/release/RELEASE-NOTES.md"), "Development candidate.\n");
+    fs.mkdirSync(path.join(repository, "tools"), { recursive: true });
+    fs.writeFileSync(path.join(repository, "tools/check_release_gates.R"), "# guard fixture\n");
+    const tracked = git(repository, ["ls-files"]).split("\n");
+    const added = [".planning/private.txt", "docs/release/RELEASE-NOTES.md",
+      "docs/release/public-source.json", "tools/check_release_gates.R"];
+    const names = [...new Set([...tracked, ...added])].sort();
+    const exclude = names.filter((name) => name.startsWith(".planning/") || name.startsWith("docs/release/"))
+      .map((name) => ({ path: name, reason: "Private development evidence" }));
+    const policy = { schema_version: 1,
+      include: names.filter((name) => !exclude.some((item) => item.path === name)), exclude };
+    fs.writeFileSync(path.join(repository, "docs/release/public-source.json"), JSON.stringify(policy));
+    git(repository, ["add", "--", ...added]);
+    git(repository, ["commit", "--quiet", "-m", "candidate evidence"]);
+    callback(values);
+  });
+}
+
+function stage(repository, output) {
+  assert.equal(prepare(repository, output).status, 0);
+  return run(repository, ["stage-public-source", "--packet", output]);
+}
+
+test("public projection is an exact separate root commit with no private history or original mutation", () => {
+  candidateFixture(({ repository, output }) => {
+    const refs = git(repository, ["show-ref"]);
+    const index = fs.readFileSync(path.join(repository, ".git/index"));
+    const staged = stage(repository, output);
+    assert.equal(staged.status, 0, staged.stderr);
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.preparation_status, "complete");
+    assert.match(manifest.public_source_commit, /^[a-f0-9]{40}$/);
+    assert.notEqual(manifest.public_source_commit, manifest.source_commit);
+    const projected = path.join(output, "private/public-source");
+    assert.equal(git(projected, ["rev-parse", "HEAD"]), manifest.public_source_commit);
+    assert.equal(git(projected, ["rev-list", "--count", "HEAD"]), "1");
+    assert.equal(git(projected, ["remote"]), "");
+    assert.equal(fs.existsSync(path.join(projected, ".planning")), false);
+    assert.equal(fs.existsSync(path.join(projected, "docs/release")), false);
+    assert.deepEqual(fs.readFileSync(path.join(projected, "R/model.R")),
+      fs.readFileSync(path.join(output, "private/source/R/model.R")));
+    assert.equal(run(repository, ["verify", "--packet", output]).status, 0);
+    assert.equal(git(repository, ["show-ref"]), refs);
+    assert.deepEqual(fs.readFileSync(path.join(repository, ".git/index")), index);
+    assert.equal(run(repository, ["verify", "--packet", output, "--for-publication"]).status, 1);
+  });
+});
+
+test("projection requires complete dispositions and rejects unknown paths before public staging", () => {
+  candidateFixture(({ repository, output }) => {
+    fs.writeFileSync(path.join(repository, "unknown.txt"), "not disposed\n");
+    git(repository, ["add", "unknown.txt"]);
+    git(repository, ["commit", "--quiet", "-m", "undisposed"]);
+    const result = stage(repository, output);
+    assert.equal(result.stderr, "FAIL SOURCE_POLICY_INCOMPLETE\n");
+    assert.equal(fs.existsSync(path.join(output, "private/public-source")), false);
+    assert.equal(run(repository, ["verify", "--packet", output]).status, 0);
+  });
+});
+
+test("staged public source mutation is rejected", () => {
+  candidateFixture(({ repository, output }) => {
+    assert.equal(stage(repository, output).status, 0);
+    fs.appendFileSync(path.join(output, "private/public-source/R/model.R"), "changed\n");
+    assert.equal(run(repository, ["verify", "--packet", output]).stderr,
+      "FAIL PACKET_CONTENT_CHANGED\n");
+  });
+});
+
+test("unsupported runtime completes preparation without attempting a build or inventing qualification", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    assert.equal(stage(repository, output).status, 0);
+    const calls = [];
+    const runner = (command, args, options) => {
+      calls.push({ command, args, cwd: options.cwd });
+      if (args.includes("--offline")) return { status: 1,
+        stdout: "repository_state=blocked\nrelease_ready=false\nreason_codes=DEPENDENCY_COMPATIBILITY_AUDIT_PENDING\n", stderr: "" };
+      return { status: 0, stdout: JSON.stringify({ supported: false, reason: "MATRIX_BELOW_FLOOR",
+        matrix_version: "1.6.3", matrix_minimum: "1.6-5" }), stderr: "" };
+    };
+    const library = path.join(directory, "library");
+    fs.mkdirSync(library);
+    const { qualifyReleasePacket } = require(cli);
+    const result = qualifyReleasePacket({ packet: output, library, runner });
+    assert.equal(result.qualification_status, "unavailable");
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.preparation_status, "complete");
+    assert.equal(manifest.archive_source_commit, "not_built");
+    assert.equal(manifest.archive_sha256, "not_built");
+    assert.equal(manifest.checks.archive_build, "not_run");
+    assert.equal(manifest.publication_readiness, "blocked");
+    assert.equal(calls.some((item) => item.command === "R"), false);
+    assert.equal(run(repository, ["verify", "--packet", output]).status, 0);
+    assert.equal(run(repository, ["verify", "--packet", output, "--for-publication"]).status, 1);
+  });
+});
+
+test("qualification builds projected bytes and shares one retained archive across scan, check, and install", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    assert.equal(stage(repository, output).status, 0);
+    const calls = [];
+    const archiveBytes = Buffer.from("synthetic archive evidence is never real qualification");
+    const runner = (command, args, options) => {
+      calls.push({ command, args, cwd: options.cwd });
+      if (args.includes("--offline")) return { status: 0,
+        stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
+      if (command === "Rscript" && args.includes("-e")) return { status: 0,
+        stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5",
+          matrix_minimum: "1.6-5" }), stderr: "" };
+      if (command === "R" && args[1] === "build") {
+        assert.equal(git(options.cwd, ["rev-parse", "HEAD"]),
+          JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json"))).public_source_commit);
+        fs.writeFileSync(path.join(options.cwd, "GEModelR_0.1.0.tar.gz"), archiveBytes);
+      }
+      if (command === "R" && args[1] === "check") {
+        const dir = args.find((arg) => arg.startsWith("--output=")).slice(9);
+        fs.mkdirSync(path.join(dir, "GEModelR.Rcheck"), { recursive: true });
+        fs.writeFileSync(path.join(dir, "GEModelR.Rcheck/00check.log"), "* checking URLs ... OK\nStatus: OK\n");
+      }
+      if (command === "Rscript") return { status: 0, stdout: "PASS installed-release-smoke\n", stderr: "" };
+      return { status: 0, stdout: "", stderr: "" };
+    };
+    const library = path.join(directory, "library");
+    fs.mkdirSync(library);
+    const { qualifyReleasePacket, validatePublicationReadiness } = require(cli);
+    qualifyReleasePacket({ packet: output, library, runner });
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.archive_source_commit, manifest.public_source_commit);
+    assert.equal(manifest.archive_sha256, crypto.createHash("sha256").update(archiveBytes).digest("hex"));
+    const check = calls.find((item) => item.command === "R" && item.args[1] === "check");
+    const install = calls.find((item) => item.command === "R" && item.args[1] === "INSTALL");
+    const scan = calls.find((item) => item.command === process.execPath && item.args.includes("--archive"));
+    assert.equal(check.args.at(-1), install.args.at(-1));
+    assert.equal(scan.args.at(-1), install.args.at(-1));
+    assert.throws(() => validatePublicationReadiness(manifest), { code: "PUBLICATION_NOT_READY" });
+    const actualShape = structuredClone(manifest);
+    actualShape.qualification.evidence_kind = "actual";
+    assert.doesNotThrow(() => validatePublicationReadiness(actualShape));
+    for (const change of [
+      (m) => { m.archive_source_commit = "a".repeat(40); },
+      (m) => { m.archive_sha256 = "not_built"; },
+      (m) => { m.qualification.guard.status = "blocked"; },
+      (m) => { m.checks.archive_check = "failed"; },
+      (m) => { m.checks.installed_smoke = "not_run"; }
+    ]) {
+      const invalid = structuredClone(actualShape);
+      change(invalid);
+      assert.throws(() => validatePublicationReadiness(invalid), { code: "PUBLICATION_NOT_READY" });
+    }
+  });
+});
