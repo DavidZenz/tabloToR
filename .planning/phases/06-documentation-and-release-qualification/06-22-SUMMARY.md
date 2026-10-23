@@ -13,7 +13,7 @@ provides:
   - Separate local Matrix/archive and release-hold statuses
 affects: [NUM-03, CI-02, release-qualification]
 actuals:
-  tokens: 2000
+  tokens: 3196
   tasks: 3
   commits: 3
 tech-stack:
@@ -29,7 +29,7 @@ key-decisions:
 patterns-established:
   - "Record only safe statuses and reason codes; keep benchmark paths and artifacts external."
 requirements-completed: []
-duration: 5min
+duration: 9min
 completed: 2026-10-23
 status: complete
 ---
@@ -37,6 +37,14 @@ status: complete
 # Phase 6 Plan 22: Recheck Local Qualification Evidence Summary
 
 **The fresh GTAP benchmark attempt is blocked before any solver, and local archive qualification is blocked by the installed Matrix version.**
+
+## Performance
+
+- **Duration:** About 9 minutes.
+- **Started:** 2026-10-23T08:56:55Z.
+- **Completed:** 2026-10-23T09:06:10Z.
+- **Tasks:** 3 conditions processed; Task 2 was not applicable after the blocked preflight.
+- **Files modified:** 1 summary file; no benchmark-results file changed.
 
 ## Task 1: Supplied Evidence Inventory
 
@@ -111,13 +119,15 @@ All seven edge assumptions remain flagged-unresolved: `EC-NUM-03-UNCLASSIFIED`, 
 - Task 1 machine-readable status gate passed using an isolated `Rscript --vanilla -e` invocation.
 - Task 2 precondition check confirmed `reference_preflight_status=blocked`; no solver or checker command ran.
 - Task 3 runtime inventory found only Matrix 1.6-3 and 1.5-3; serialization, installation, archive, scanner, and package-check commands were not run.
+- The GSD regression gate used its `true` fallback because no project test command or recognized build target is configured; no R package suite was run.
+- The GSD progress updater left phase-level progress unchanged because Phase 06 remains in progress; the roadmap reflects all 22 plan summaries.
 - No production code or benchmark-results document changed.
 
 ## Task Commits
 
 1. **Task 1: Inventory supplied benchmark evidence** — `c1e1e02` (`docs(06-22): record blocked benchmark preflight`).
 2. **Task 2: Candidate and independent review** — not applicable; the eligible-preflight precondition was not met.
-3. **Task 3: Matrix/archive qualification status** — recorded in the task-specific summary commit; its hash is added with final plan metadata.
+3. **Task 3: Matrix/archive qualification status** — `d8060be` (`docs(06-22): record local Matrix qualification blocker`).
 
 ## Deviations from Plan
 
@@ -130,3 +140,10 @@ The configured local evidence paths and supported Matrix runtime were unavailabl
 ## User Setup Required
 
 Configure the required GTAP evidence locations, retained build records, external preflight-report destination, and an already-installed Matrix >=1.6-5 runtime before retrying the corresponding local qualification. Keep all inputs, raw measurements, candidate outputs, and reviewer materials outside the repository.
+
+## Self-Check: PASSED
+
+- This summary exists and its Task 1, Task 2, and Task 3 machine-readable status gates passed.
+- Task commits `c1e1e02` and `d8060be` exist in Git history.
+- The roadmap update reports 22 plan summaries; Phase 06 remains in progress because evidence and release holds remain open.
+- `benchmarks/GTAP12A_CPP_RESULTS.md` is unchanged.

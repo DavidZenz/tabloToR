@@ -4,16 +4,16 @@ milestone: v1.0
 current_phase: 06
 current_phase_name: Documentation and Release Qualification
 status: executing
-stopped_at: Completed 06-19 local dispatch workflow and no-run record
-last_updated: "2026-10-23T06:58:34Z"
+stopped_at: Completed 06-22 local benchmark and Matrix qualification status
+last_updated: "2026-10-23T09:05:31.903Z"
 last_activity: 2026-10-23
-last_activity_desc: Phase 06 Plan 22 added to re-evaluate user-confirmed benchmark evidence through local preflight and supported-runtime gates
-state_head: f1c653c65eb4bf5d15476c1e004e764f50283cc0
+last_activity_desc: Phase 06 execution started
+state_head: d8060beb1976bfc903adcccc20cf76470d559a5a
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 72
-  completed_plans: 72
+  total_plans: 73
+  completed_plans: 73
 milestone_name: milestone
 ---
 
@@ -28,12 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 ## Current Position
 
-Phase: 06 (Documentation and Release Qualification)
+Phase: 06 (Documentation and Release Qualification) — EXECUTING
 Plan: 22 of 22
-Status: Awaiting evidence gates
-Last activity: 2026-10-23 — Phase 06 Plan 22 added for local benchmark evidence revalidation and conditional Matrix/archive qualification; hosted work remains local-only blocked
+Status: Plan 22 complete; Phase 06 remains open on evidence and release holds
+Last activity: 2026-10-23 — Phase 06 Plan 22 qualification attempt recorded
 
-Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 22 plans total: 19 complete, 2 halted at evidence gates, and Plan 22 pending. Prior verification remains 11/14; hosted archive/serialization, Windows, provenance, and matched benchmark evidence gaps remain open.
+Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 22 plan summaries, including the Plan 22 local qualification attempt. Existing evidence-gated holds remain; prior verification is 11/14, with hosted archive/serialization, Windows, provenance, and matched benchmark gaps still open.
 
 ## Performance Metrics
 
@@ -99,6 +99,7 @@ Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 22
 | Phase 06 P18 | 20min (checkpoint pending) | 1 of 3 tasks | 4 files |
 | Phase 06 P18 | 23min | 3 tasks | 5 files |
 | Phase 06 P19 | 9min | 3 tasks | 4 files |
+| Phase 06 P22 | 7min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -211,6 +212,8 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Plan 20: Preserve the rejected 06-15 provenance delta; no new review or canonical application without independently supported identity and rights evidence for every disputed key.
 - [Phase 06]: Phase 06 Plan 18: Honor the user's local-only direction as rejection of the remote push and hosted dispatch; preserve canonical URLs and leave CI-02 open.
 - [Phase 06]: Phase 06 Plan 19: Honor the existing local-only direction as rejection of a hosted Windows dispatch; no run was started and Windows qualification remains blocked.
+- [Phase 06]: Phase 06 Plan 22: preserve UAT #48 and #54 as user-confirmed passes while keeping NUM-03 open until local matched artifacts and independent review are inspectable.
+- [Phase 06]: Phase 06 Plan 22: keep CI-02 open because only Matrix 1.6-3 and 1.5-3 are installed, below the unchanged 1.6-5 floor; do not install or build an archive.
 
 ### Pending Todos
 
@@ -233,6 +236,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 - Phase 06 Plan 21: NUM-03 remains open because no authorized GTAP 12a input paths, raw reference artifacts, or retained reference/candidate build records were configured; candidate and independent review were not run.
 - Phase 06 Plan 20: REL-01 remains documented as satisfied because its requirement concerns document existence, but PROVENANCE_KEY_MISMATCH remains open. All 50 disputed source keys lack independent identity and rights evidence; the 06-15 rejection is preserved and canonical files remain unchanged.
 - Phase 06 Plan 19: Windows provenance qualification remains blocked because the maintainer's local-only instruction rejected publishing and dispatching the native workflow; no hosted run or Windows test result exists.
+- Phase 06 Plan 22: configured GTAP evidence paths were absent, so no solver ran; local Matrix 1.6-3 and 1.5-3 are below floor 1.6-5, so serialization/archive checks remain blocked. NUM-03 and CI-02 remain open.
 
 ## Deferred Items
 
@@ -244,6 +248,6 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 ## Session Continuity
 
-Last session: 2026-10-21T15:04:48.224Z
-Stopped at: Completed 06-19 local dispatch workflow and no-run record
-Resume file: .planning/phases/06-documentation-and-release-qualification/06-20-PLAN.md
+Last session: 2026-10-23T09:04:09.727Z
+Stopped at: Completed 06-22 local benchmark and Matrix qualification status
+Resume file: None

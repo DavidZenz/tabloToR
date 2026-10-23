@@ -300,7 +300,7 @@ Plans:
 **Wave 12** *(after Wave 11; hosted archive and serialization evidence)*
 
 - [x] 06-18-PLAN.md — Qualify the exact archive and installed serialization behavior on a supported hosted Matrix environment
-- [ ] 06-22-PLAN.md — Reassess user-confirmed benchmark evidence and local Matrix/archive qualification
+- [x] 06-22-PLAN.md — Reassess user-confirmed benchmark evidence and local Matrix/archive qualification
 
 **Wave 13** *(after Wave 12; hosted Windows evidence)*
 
