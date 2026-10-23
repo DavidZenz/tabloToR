@@ -1,5 +1,26 @@
 # GEModelR 0.1.0 (development)
 
+## Initial public-validation candidate
+
+- Local release preparation proposes `v0.1.0` as an annotated unsigned tag and a
+  tag-pinned R-universe registry. The tag, GitHub release, and public channel are
+  pending publication; no cryptographic signing or successful public installation
+  is claimed.
+- Version `0.1.0` becomes a public release only when the exact approved tag and
+  release are actually published and recorded. Preparation, an accepted
+  development phase, or the milestone name does not create that boundary or
+  imply `1.0.0` stability.
+- The legacy engine and Matrix sparse-backend defaults are unchanged; native
+  structured acceleration remains opt-in. Migration instructions cover the
+  GEModelR namespace, options, and portable logical state.
+- Exact-archive qualification, supported-runtime serialization, hosted Windows
+  provenance evidence, and a current matched full-scale benchmark remain
+  unverified for this candidate. Existing component and C++ scaling observations
+  are not guaranteed end-to-end performance gains. Benchmark preflight report
+  redaction and reference-file binding remain known tooling limitations.
+- A proposed initial support cadence is recorded in governance for maintainer
+  review, with no guaranteed response time or release schedule.
+
 ## Provenance and release boundary
 
 - Maros Ivanic authored the upstream `tabloToR` baseline; David Zenz authored the

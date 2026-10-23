@@ -30,11 +30,49 @@ GEModelR is an immediate replacement and does not provide a compatibility shim.
 
 ## Installation
 
-From a local GEModelR checkout:
+Version `0.1.0` currently remains a development candidate. The proposed Git
+release and R-universe channel below are pending publication and have not been
+verified as available for this candidate.
+
+### Local development checkout
+
+From an existing local GEModelR checkout with its declared dependencies installed:
 
 ```sh
 R CMD INSTALL .
 ```
+
+### Proposed release channels — pending publication
+
+After the approved `v0.1.0` release is actually published, the proposed Git
+installation is pinned to that tag:
+
+```sh
+git clone --branch v0.1.0 --depth 1 https://github.com/DavidZenz/GEModelR.git GEModelR
+R CMD INSTALL GEModelR
+```
+
+Use a supported R/Matrix installation and satisfy the dependencies in
+`DESCRIPTION` before `R CMD INSTALL`. The proposed R-universe installation uses
+CRAN as the dependency fallback:
+
+```r
+install.packages(
+  "GEModelR",
+  repos = c(
+    GEModelR = "https://davidzenz.r-universe.dev",
+    CRAN = "https://cloud.r-project.org"
+  )
+)
+```
+
+These are proposed instructions, not a claim that either public installation
+has passed. Follow the [migration guide](MIGRATION.md) for predecessor namespaces,
+options, and saved states. Start with the redistributable
+[first-simulation guide](vignettes/first-simulation.Rmd), which uses
+`GEModelR::GEModel$new()` and requires no external GTAP inputs. The default engine
+remains legacy; the sparse engine and its Matrix backend are selected explicitly
+in that example. Optional native backends depend on installed-build capabilities.
 
 ### Matrix compatibility
 
@@ -224,7 +262,7 @@ model$solveModel(
 )
 ```
 
-The native backend performs a registered-symbol, ABI, Matrix-factor, and thread-capability check before constructing the coefficient matrix. An unavailable or incompatible native backend fails clearly and never substitutes the R solver. The option defaults to `1L`; request more than one thread only when diagnostics report `openmp_compiled = TRUE`. On the GTAP 12a benchmark machine, panel size 64 and four threads retained most of the available parallel speedup; see [`benchmarks/GTAP12A_CPP_RESULTS.md`](benchmarks/GTAP12A_CPP_RESULTS.md).
+The native backend performs a registered-symbol, ABI, Matrix-factor, and thread-capability check before constructing the coefficient matrix. An unavailable or incompatible native backend fails clearly and never substitutes the R solver. The option defaults to `1L`; request more than one thread only when diagnostics report `openmp_compiled = TRUE`. Existing C++ shock and thread-scaling observations are diagnostic measurements; they do not guarantee package-wide or end-to-end GTAP speedups. A current matched full-scale R/C++ comparison and independent review remain unqualified for this candidate.
 
 For reproducible A/B measurements, use `benchmarks/run_gtap12a_ab.R`. It launches fresh R processes, validates input/configuration signatures, compares solutions and residuals, and exits nonzero when a numerical, memory, or performance gate fails.
 
@@ -243,7 +281,11 @@ Rscript benchmarks/benchmark_gtap12a.R \
 
 The harness records HAR load, compilation, sparse construction/factor-solve timings, estimated triplets, peak resident memory, physical RAM, and whether a dense fallback was used.
 
-For repeatable public-function and native-kernel measurements using generated
-inputs, see [the optimization benchmark](benchmarks/OPTIMIZATION.md). Its
-small and large cases run in fresh R processes and report setup separately
-from execution, along with heap allocations, peak RSS, and numerical checks.
+Exact source-archive qualification and installed serialization under a supported
+R/Matrix runtime remain unverified for this candidate, and current hosted Windows
+provenance evidence is unavailable. Benchmark component improvements and isolated
+reuse prototypes must be reported separately from whole-model measurements.
+The external benchmark preflight also has known report-redaction and reference-file
+binding limitations; its eligibility report alone is not publication-grade
+correctness evidence. Private model inputs, full solutions, and raw measurements
+are not part of the proposed public source distribution.

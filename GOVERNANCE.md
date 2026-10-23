@@ -74,6 +74,20 @@ the approved security policy explicitly directs that. Changing the security
 route or delegating security responsibility requires a reviewed governance
 change and confirmation that the new route is controlled and monitored.
 
+## Proposed initial public-validation cadence
+
+This cadence is proposed for the first public validation period and awaits
+maintainer review with the concrete release packet. Triage ordinary issues at
+`https://github.com/DavidZenz/GEModelR/issues` weekly when maintainer capacity
+permits. Group compatible patch releases monthly, or release sooner when a
+correctness fix warrants it. Each release still follows the existing review,
+qualification, and authorization process.
+
+There is no guaranteed response time, support availability, or release schedule.
+Send private security reports to `zenz@wiiw.ac.at` using the approved security
+route above; the proposed cadence does not replace private security triage or
+change the maintainer/release authority records.
+
 ## Approval boundary
 
 `Identity-Approval: approved` records the maintainer's positive approval of the
