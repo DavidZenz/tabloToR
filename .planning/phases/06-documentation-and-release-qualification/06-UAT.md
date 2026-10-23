@@ -1,5 +1,7 @@
 ---
-status: partial
+status: complete
+acceptance_basis: maintainer_override
+acceptance_record: 06-ACCEPTANCE.md
 phase: 06-documentation-and-release-qualification
 source:
   - 06-01-SUMMARY.md
@@ -24,7 +26,8 @@ source:
   - 06-20-SUMMARY.md
   - 06-21-SUMMARY.md
 started: 2026-10-21T15:24:52Z
-updated: 2026-10-23T06:42:22Z
+updated: 2026-10-23T09:28:14Z
+---
 
 ## Current Test
 
@@ -368,3 +371,7 @@ blocked: 2
 ## Gaps
 
 [none yet]
+
+## Maintainer disposition
+
+The maintainer accepted Phase 06 completion and waived further UAT or gap cycling for the existing findings; see [06-ACCEPTANCE.md](06-ACCEPTANCE.md). The 52 passing and two blocked results above remain unchanged. The two blocked checks are accepted for workflow closure without claiming that they ran or passed.

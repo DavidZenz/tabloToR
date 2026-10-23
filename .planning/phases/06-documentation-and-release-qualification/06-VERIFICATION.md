@@ -1,10 +1,15 @@
 ---
 phase: 06-documentation-and-release-qualification
-verified: 2026-10-23T09:21:18Z
-status: gaps_found
+verified: 2026-10-23T09:28:14Z
+status: passed
+technical_verified: 2026-10-23T09:21:18Z
+technical_status: gaps_found
+acceptance_basis: maintainer_override
+acceptance_record: 06-ACCEPTANCE.md
 score: 11/18 must-haves verified
 behavior_unverified: 1
-overrides_applied: 0
+overrides_applied: 7
+security_review_disposition: waived_for_phase_closure
 re_verification:
   previous_status: gaps_found
   previous_score: 11/14
@@ -97,12 +102,16 @@ behavior_unverified_items:
 
 **Phase Goal:** Produce a publication-quality source package and auditable evidence for users and maintainers.  
 **Verified:** 2026-10-23T09:21:18Z  
-**Status:** gaps_found  
+**Status:** passed by explicit maintainer acceptance; technical evidence remains gaps_found
 **Re-verification:** Yes — after Plan 06-22's local qualification attempt.
 
-## Goal Achievement
+## Maintainer acceptance
 
-Plan 06-22 completed its fail-closed evidence attempt, but the Phase 06 goal is not achieved. The current Matrix is 1.6.3, below the declared 1.6-5 floor. All nine configured GTAP path variables are absent. No test suite, serialization test, package build/check, solver, candidate, comparison gate, hosted Windows run, or publication was run in this verification. I checked only configuration-variable presence and the installed Matrix version; I did not inspect path values or search external directories.
+Phase 06 is closed by the maintainer's explicit instruction to pass the phase and end the repeated gap cycle. [06-ACCEPTANCE.md](06-ACCEPTANCE.md) records the scope and retained limitations. The `passed` frontmatter status is the workflow acceptance decision; the technical assessment below remains 11/18, with six failed criteria and one behavior-unverified criterion. No additional checks were run to make this decision. The earlier recommendation to keep the phase open is superseded for workflow routing.
+
+## Goal Achievement (technical assessment retained)
+
+Plan 06-22 completed its fail-closed evidence attempt, but complete technical qualification has not been demonstrated. The current Matrix is 1.6.3, below the declared 1.6-5 floor. All nine configured GTAP path variables are absent. No test suite, serialization test, package build/check, solver, candidate, comparison gate, hosted Windows run, or publication was run in this verification. I checked only configuration-variable presence and the installed Matrix version; I did not inspect path values or search external directories.
 
 UAT #48 and #54 remain user-confirmed passes. They are not fresh technical evidence: #54 has no configured local inventory or eligible preflight, and #48 has no retained raw URL check log or current hosted URL result in the later qualification record. No conclusion is made about artifacts that may exist elsewhere.
 
@@ -176,7 +185,7 @@ None. Phase 7 depends on Phase 6 and the cleared Phase 1 release gate; its crite
 
 ### Gaps Summary
 
-The documentation and static qualification workflows are present, but release qualification is incomplete. The Matrix floor blocks installed serialization and exact-archive checks. No configured GTAP paths allow preflight, and two verified defects prevent trusting a future eligible attempt: malformed private build-record data can enter the report, and approved reference files are not bound to later candidate/comparison work. The last recorded live provenance assertion also fails, and Windows evidence is unavailable under the local-only instruction. Phase 06 must remain open.
+The documentation and static qualification workflows are present, but release qualification is incomplete. The Matrix floor blocks installed serialization and exact-archive checks. No configured GTAP paths allow preflight, and two verified defects prevent trusting a future eligible attempt: malformed private build-record data can enter the report, and approved reference files are not bound to later candidate/comparison work. The last recorded live provenance assertion also fails, and Windows evidence is unavailable under the local-only instruction. These limitations remain recorded under the maintainer acceptance; Phase 06 is closed for workflow purposes.
 
 ---
 

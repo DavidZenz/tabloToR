@@ -23,7 +23,7 @@
 
 - [x] **NUM-01**: Legacy, Matrix sparse, structured R, and optional structured C++ paths satisfy documented solution-equivalence and true-residual tolerances on redistributable fixtures.
 - [x] **NUM-02**: Solver results are applied to mutable model state only after the selected backend passes its required residual and finiteness checks.
-- [ ] **NUM-03**: The full GTAP benchmark records package/model configuration fingerprints, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs; the summary is explicitly unsigned.
+- [x] **NUM-03**: The full GTAP benchmark records package/model configuration fingerprints, residuals, finiteness, dense-fallback status, time, memory, and hardware without distributing proprietary inputs; the summary is explicitly unsigned. **Phase 06 disposition: accepted with waiver; matched technical qualification remains unverified.**
 
 ### Package Migration and API
 
@@ -38,16 +38,16 @@
 - [x] **PORT-02**: OpenMP acceleration is optional, capability-reported, bounded, and numerically equivalent across supported thread counts.
 - [x] **PORT-03**: Supported installed workflows do not compile native code at solve time or depend on hard-coded Linux SuiteSparse paths.
 - [x] **CI-01**: CI checks R release, oldrel, and devel across an appropriate Linux/macOS/Windows matrix and exercises native/serial capability paths.
-- [ ] **CI-02**: Built source archives pass package checks without errors, warnings, or unexplained significant notes before release.
+- [x] **CI-02**: Built source archives pass package checks without errors, warnings, or unexplained significant notes before release. **Phase 06 disposition: accepted with waiver; exact archive and supported-runtime qualification remain unverified.**
 
 ### Documentation and Release
 
 - [x] **DOCS-01**: All supported exports, the package, and native/backend options have generated R documentation.
-- [ ] **DOCS-02**: Vignettes cover first simulation, legacy-to-sparse migration, backend selection, diagnostics/memory budgeting, and external full-scale benchmarking.
-- [ ] **DOCS-03**: Contributor and architecture documentation explains subsystem boundaries, numerical gates, data restrictions, and cross-platform native development.
-- [ ] **REL-01**: NEWS, semantic-versioning policy, lifecycle/deprecation rules, citation/provenance text, and release checklists exist.
+- [x] **DOCS-02**: Vignettes cover first simulation, legacy-to-sparse migration, backend selection, diagnostics/memory budgeting, and external full-scale benchmarking.
+- [x] **DOCS-03**: Contributor and architecture documentation explains subsystem boundaries, numerical gates, data restrictions, and cross-platform native development.
+- [x] **REL-01**: NEWS, semantic-versioning policy, lifecycle/deprecation rules, citation/provenance text, and release checklists exist.
 - [ ] **REL-02**: A tagged GEModelR release is installable from its canonical Git repository and R-universe after all legal and technical gates pass.
-- [ ] **DATA-01**: Source archives and public CI contain no proprietary model data, private credentials, giant solutions, or unsupported benchmark scratch files.
+- [x] **DATA-01**: Source archives and public CI contain no proprietary model data, private credentials, giant solutions, or unsupported benchmark scratch files.
 
 ## v2 Requirements
 
@@ -71,6 +71,8 @@
 
 ## Traceability
 
+Phase 06 was accepted by the maintainer on 2026-10-23; see [06-ACCEPTANCE.md](phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md). Checked boxes for NUM-03 and CI-02 record the accepted workflow disposition, with the outstanding technical evidence retained. This acceptance does not establish public release readiness.
+
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | PROV-01 | Phase 1 | Complete |
@@ -83,7 +85,7 @@
 | COMP-04 | Phase 3 | Complete |
 | NUM-01 | Phase 2 | Complete |
 | NUM-02 | Phase 2 | Complete |
-| NUM-03 | Phase 6 | Pending |
+| NUM-03 | Phase 6 | Accepted with waiver |
 | MIGR-01 | Phase 3 | Complete |
 | MIGR-02 | Phase 3 | Complete |
 | API-01 | Phase 4 | Complete |
@@ -92,13 +94,13 @@
 | PORT-02 | Phase 5 | Complete |
 | PORT-03 | Phase 5 | Complete |
 | CI-01 | Phase 5 | Complete |
-| CI-02 | Phase 6 | Pending |
+| CI-02 | Phase 6 | Accepted with waiver |
 | DOCS-01 | Phase 4 | Complete |
-| DOCS-02 | Phase 6 | Gaps Found |
-| DOCS-03 | Phase 6 | Gaps Found |
-| REL-01 | Phase 6 | Gaps Found |
+| DOCS-02 | Phase 6 | Complete |
+| DOCS-03 | Phase 6 | Complete |
+| REL-01 | Phase 6 | Complete |
 | REL-02 | Phase 7 | Pending |
-| DATA-01 | Phase 6 | Gaps Found |
+| DATA-01 | Phase 6 | Complete |
 
 **Coverage:**
 

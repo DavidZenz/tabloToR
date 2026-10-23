@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-current_phase: 06
-current_phase_name: Documentation and Release Qualification
-status: executing
-stopped_at: Completed 06-22 local benchmark and Matrix qualification status
-last_updated: "2026-10-23T09:05:31.903Z"
+current_phase: 7
+current_phase_name: GitHub and R-universe Release
+status: planning
+stopped_at: Phase 06 complete, ready to plan Phase 7
+last_updated: "2026-10-23T09:28:49.283Z"
 last_activity: 2026-10-23
-last_activity_desc: Phase 06 execution started
-state_head: d8060beb1976bfc903adcccc20cf76470d559a5a
+last_activity_desc: Phase 06 complete, transitioned to Phase 7
+state_head: 684778b37cd2bd575ef2c21145853c24b18547f4
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 73
   completed_plans: 73
 milestone_name: milestone
@@ -24,16 +24,16 @@ milestone_name: milestone
 See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 **Core value:** Users can run numerically trustworthy, full-scale TABLO/GTAP simulations in R without dense-memory failure and without sacrificing compatibility.
-**Current focus:** Phase 06 — Documentation and Release Qualification
+**Current focus:** Phase 07 — GitHub and R-universe Release (planning only; local-only direction remains active)
 
 ## Current Position
 
-Phase: 06 (Documentation and Release Qualification) — EXECUTING
-Plan: 22 of 22
-Status: Plan 22 complete; Phase 06 remains open on evidence and release holds
-Last activity: 2026-10-23 — Phase 06 Plan 22 qualification attempt recorded
+Phase: 7 — GitHub and R-universe Release
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-10-23 — Phase 06 complete, transitioned to Phase 7
 
-Progress: Phase 05 complete: 7/7 plans; goal verification 22/22. Phase 06 has 22 plan summaries, including the Plan 22 local qualification attempt. Existing evidence-gated holds remain; prior verification is 11/14, with hosted archive/serialization, Windows, provenance, and matched benchmark gaps still open.
+Progress: Phase 06 is complete by explicit maintainer acceptance on 2026-10-23, with 22/22 plan summaries. The technical assessment remains 11/18; outstanding evidence and review findings are accepted limitations for this phase. See `phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md`. Do not restart the same Phase 06 gap/UAT cycle without a new maintainer request. Phase 07 has not started; public release guards and the local-only direction remain active.
 
 ## Performance Metrics
 
@@ -214,12 +214,15 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 06]: Phase 06 Plan 19: Honor the existing local-only direction as rejection of a hosted Windows dispatch; no run was started and Windows qualification remains blocked.
 - [Phase 06]: Phase 06 Plan 22: preserve UAT #48 and #54 as user-confirmed passes while keeping NUM-03 open until local matched artifacts and independent review are inspectable.
 - [Phase 06]: Phase 06 Plan 22: keep CI-02 open because only Matrix 1.6-3 and 1.5-3 are installed, below the unchanged 1.6-5 floor; do not install or build an archive.
+- [Phase 06]: Accept Phase 06 completion with waivers and end repeated gap/UAT cycling, per the maintainer's explicit instruction on 2026-10-23. The acceptance supersedes earlier instructions to keep this phase open on the same missing evidence. Preserve the technical 11/18 assessment, CR-06/CR-07, rejected provenance proposal, and all public release guards; see `06-ACCEPTANCE.md`.
 
 ### Pending Todos
 
 Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12-run C++ thread-scaling diagnostic for a nonzero GBR productivity shock are complete; the scaling gate passed and detailed outputs remain external. The earlier zero-shock C++ run is historical. No R baseline or matched A/B gate was run, so NUM-03 remains pending; do not rerun the R reference unless the user redirects this decision.
 
 ### Blockers/Concerns
+
+Phase 06 entries below retain the historical evidence. Their workflow-closure requirements are superseded by the maintainer acceptance in `06-ACCEPTANCE.md`; they must not automatically reopen Phase 06. Public release restrictions remain applicable.
 
 - Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; GPL-3.0-or-later is selected, but compatibility clearance and the attribution alias still need reviewed dispositions.
 - Phase 1: A fresh GEModelR name availability check remains required immediately before release.
@@ -249,5 +252,5 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 ## Session Continuity
 
 Last session: 2026-10-23T09:04:09.727Z
-Stopped at: Completed 06-22 local benchmark and Matrix qualification status
+Stopped at: Phase 06 complete, ready to plan Phase 7
 Resume file: None
