@@ -19,14 +19,14 @@ REL-02-Status: pending
 
 | Identity | Value |
 |----------|-------|
-| Development source commit | `a0a42662a5a1199c5bf67276b97f772f83e68fa8` |
-| Development source tree | `57ceade529c648b68a1326d2122aff76647aa591` |
-| Proposed public root commit | `4041517a944ca67724b4ca45b53a6ba27911eea5` |
-| Proposed public source tree | `de6ea107d489528280ed13294320c7996ff4b425` |
-| Review content digest (`content_sha256`) | `7a61380fc34c9c8a632376b9090295b2281e37be12ddf0bc75c5fddd567ab833` |
-| Private manifest file SHA-256 | `0331d44297ea2b3f7d5612a705c45457cc8fa5fc25479f2b4c0899fcadbbb3d1` |
-| Public manifest file SHA-256 | `60168ca7b09bb3c7612232ccd2d5be2f51f5c3ffe047e2a2b1f8f2580938c25a` |
-| Explicit source-policy SHA-256 | `0369647df01eae5b633e20efd9a460cae95f4e8559947c6ae991832066859947` |
+| Development source commit | `e46ea70e737bc709880458ab1548244a2fd525cd` |
+| Development source tree | `6ef6c2d60b4dce13bea34f31b47473bc96b40673` |
+| Proposed public root commit | `ee8f5d26c9565db3407567e065633a0b0252da9a` |
+| Proposed public source tree | `cb74d2a4000c3d84ae005d05c63769597988d24a` |
+| Review content digest (`content_sha256`) | `e9a41d268ac88238bff47ded201fe3d0bbd391365fbc288e288e0d0a05b3b4dd` |
+| Private manifest file SHA-256 | `66782d716bd9b9b9e0cf7ca6809068d898b266787b369b01319be98cea5159d5` |
+| Public manifest file SHA-256 | `9c49ebc2693cbeb46b50b4586b1686daa4ac2b13ae11791675a3b1ef5e5186ef` |
+| Explicit source-policy SHA-256 | `d5df0943ae5ce47c8aba148732fecf69da899e3345b54578566c7f96167215cd` |
 | Release notes SHA-256 | `7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5` |
 | Tag-pinned registry SHA-256 | `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` |
 | Installed smoke runner SHA-256 | `f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15` |
@@ -48,12 +48,15 @@ On 2026-10-23, the retained external packet was reverified with `prepare-release
 | Runtime qualification | `unavailable`; `MATRIX_BELOW_FLOOR` |
 | Exact archive build / scan / check | `not_run`; archive `not_built` |
 | Installed numerical smoke | `not_run` |
+| Separate explicit URL check | `not_run`; no network URL pass claimed |
 | Offline canonical release guard | `invalid`, exit 1; `PROVENANCE_KEY_MISMATCH` |
 | Canonical Git installation | `not_run` |
 | R-universe installation | `not_run` |
 | External publication | `not_run` |
 
 These actual outcomes make this candidate unready for publication. No executable publication approval is being requested for it. The accepted Phase 06 limitations remain recorded under `06-ACCEPTANCE.md`; they are not reopened, converted into passing results, or treated as rights or publication authority. Dependency compatibility and attribution identity also retain their existing release dispositions. Current public-CI dependencies on excluded private evidence remain a documented readiness limitation.
+
+The candidate identities above supersede the initial packet after the two focused tooling review fixes. The initial packet was not edited. The new source policy explicitly excludes the private review, summary and pending approval records. This refresh records new candidate bytes only: the packet-specific maintainer decision is still `not_received`, no external action is authorized, and Plan 07-04 remains at its existing checkpoint.
 
 ## Standing instruction and pending decision
 

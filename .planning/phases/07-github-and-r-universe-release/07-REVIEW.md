@@ -50,8 +50,6 @@ The review covers the four committed files listed above. It finds two defects in
 
 **Fix:** Parse the actual supported R check format and preserve a separate, explicit URL-check disposition using reliable raw evidence or a dedicated URL check. Do not infer a network URL pass when checking was disabled or unavailable. Add realistic successful and failing R check-log fixtures rather than manufacturing a standalone URL line; ensure a clean supported log can advance to installation while URL failures/unavailable evidence retain their intended failure status.
 
-## Checks and limitations
-
 ## Implemented resolution notes — pending independent re-review
 
 - **CR-07-01 — `25e065a`:** Reproduced the transformed guard input with an external temporary `GIT_CONFIG_GLOBAL` attributes/smudge setup; a separate ordinary checkout confirms that setup really changes bytes. Clone setup now ignores inherited global/system Git settings and templates, replaces checkout conversions with the exact committed blobs/modes, and checks the complete actual file set, blob hashes and executable modes immediately before both guard and build commands. The regression also includes tracked CRLF attributes and checks actual consumed bytes independently of Git HEAD/tree IDs. User-global Git settings were never changed.
@@ -59,7 +57,9 @@ The review covers the four committed files listed above. It finds two defects in
 - Combined focused packet/scanner regression result after both fixes: **38/38 passed**, about 7.7 seconds. Package build/check/install remains unperformed in the actual unsupported Matrix runtime. The fixes above are implementation results awaiting the independent reviewer; this section does not self-certify a clean review.
 - The old frozen candidate is retained unchanged. A new selected revision and packet will bind these committed fixes, with this private review document explicitly excluded by the source policy. Review-content and raw manifest-file digests will be labelled separately in the refreshed handoff.
 
-- Packet refresh is required after these fixes: the current policy explicitly includes `tools/release/prepare-release.cjs`, its test file, and the smoke runner. A fixed committed source therefore produces a new public tree/commit and review digest. Prepare a new packet rather than modifying the existing frozen packet. Give this new private `07-REVIEW.md` an explicit exclusion in the source policy before selecting the next source revision.
+## Original review checks and limitations
+
+- Packet refresh was required after these fixes: the policy explicitly includes `tools/release/prepare-release.cjs`, its test file, and the smoke runner. The refreshed packet must bind the committed fixed source and exclude this private review record. The executor has prepared a new packet and left the old packet unchanged; current identities are in the pending handoff, not a public approval.
 - Inspected the complete release CLI, focused test file, standalone R runner, and public-source policy.
 - Policy inspection found 197 includes, 465 exclusions, no duplicate paths, no missing included paths, and no blank exclusion reasons.
 - Read the directly called scanner/qualification contracts where relevant.
