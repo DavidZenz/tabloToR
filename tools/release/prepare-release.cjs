@@ -537,11 +537,59 @@ function validatePublicationReadiness(manifest) {
   return true;
 }
 
+function verifyCheckoutBytes(repository, commit) {
+  const entries = selectedTree(repository, commit);
+  const names = [];
+  function visit(directory, prefix = "") {
+    for (const name of fs.readdirSync(directory)) {
+      if (!prefix && name === ".git") {
+        if (!fs.lstatSync(path.join(directory, name)).isDirectory() ||
+            fs.lstatSync(path.join(directory, name)).isSymbolicLink()) fail("CHECKOUT_CONTENT_MISMATCH");
+        continue;
+      }
+      const relative = prefix ? prefix + "/" + name : name;
+      if (!safeRelative(relative)) fail("CHECKOUT_CONTENT_MISMATCH");
+      const stat = fs.lstatSync(path.join(directory, name));
+      if (stat.isSymbolicLink()) fail("CHECKOUT_CONTENT_MISMATCH");
+      if (stat.isDirectory()) visit(path.join(directory, name), relative);
+      else if (stat.isFile()) names.push(relative);
+      else fail("CHECKOUT_CONTENT_MISMATCH");
+    }
+  }
+  visit(repository);
+  if (JSON.stringify(names.sort(bytewise)) !== JSON.stringify(entries.map((entry) => entry.path))) {
+    fail("CHECKOUT_CONTENT_MISMATCH");
+  }
+  const algorithm = commit.length === 40 ? "sha1" : "sha256";
+  for (const entry of entries) {
+    const file = path.join(repository, ...entry.path.split("/"));
+    const bytes = fs.readFileSync(file);
+    const executable = (fs.statSync(file).mode & 0o111) !== 0;
+    if (gitObjectHash("blob", bytes, algorithm) !== entry.oid ||
+        (process.platform !== "win32" && executable !== (entry.mode === "100755"))) {
+      fail("CHECKOUT_CONTENT_MISMATCH");
+    }
+  }
+}
+
 function selectedClone(root, source, destination, commit) {
   const hooks = path.join(root, "private/support/empty-hooks");
-  git(root, ["-c", "core.hooksPath=" + hooks, "clone", "--quiet", "--no-hardlinks", "--no-checkout", "--no-tags", "--", source, destination]);
-  git(destination, ["-c", "core.hooksPath=" + hooks, "checkout", "--quiet", "--detach", commit, "--"]);
-  git(destination, ["remote", "remove", "origin"]);
+  const config = path.join(root, "private/support/empty-git-config");
+  if (!fs.existsSync(config)) writeFile(root, "private/support/empty-git-config", "");
+  const env = { GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: config, GIT_TEMPLATE_DIR: hooks };
+  git(root, ["-c", "core.hooksPath=" + hooks, "clone", "--quiet", "--template=" + hooks,
+    "--no-hardlinks", "--no-checkout", "--no-tags", "--", source, destination], "utf8", env);
+  git(destination, ["-c", "core.hooksPath=" + hooks, "-c", "core.autocrlf=false", "checkout", "--quiet", "--detach", commit, "--"], "utf8", env);
+  git(destination, ["remote", "remove", "origin"], "utf8", env);
+  // Tracked attributes can still request EOL/ident conversion. Replace checkout
+  // output with raw committed blobs and verify the actual source before use.
+  for (const entry of selectedTree(destination, commit)) {
+    const file = path.join(destination, ...entry.path.split("/"));
+    const bytes = git(destination, ["cat-file", "blob", entry.oid], null, env);
+    fs.writeFileSync(file, bytes);
+    fs.chmodSync(file, entry.mode === "100755" ? 0o755 : 0o644);
+  }
+  verifyCheckoutBytes(destination, commit);
 }
 
 function runtimeProbeCode() {
@@ -599,6 +647,7 @@ function qualifyReleasePacket(options) {
   writeFile(root, "private/support/original-reachable-objects.txt", git(original, ["rev-list", "--objects", "--all"]));
   const guardScript = path.join(original, "tools/check_release_gates.R");
   if (fs.existsSync(guardScript)) {
+    verifyCheckoutBytes(original, manifest.source_commit);
     const guard = command("Rscript", ["--vanilla", guardScript, "--root", original, "--offline"], original, "release-guard");
     const state = /^repository_state=(ready|blocked|invalid)$/m.exec(guard.stdout || "");
     const ready = /^release_ready=true$/m.test(guard.stdout || "");
@@ -615,6 +664,7 @@ function qualifyReleasePacket(options) {
     const buildSource = path.join(work, "build-source");
     selectedClone(root, path.join(root, "private/public-source"), buildSource, manifest.public_source_commit);
     if (git(buildSource, ["rev-parse", "HEAD^{tree}"]).trim() !== manifest.public_source_tree) fail("PUBLIC_SOURCE_IDENTITY_MISMATCH");
+    verifyCheckoutBytes(buildSource, manifest.public_source_commit);
     const build = command("R", ["CMD", "build", buildSource], buildSource, "archive-build");
     const basename = manifest.package + "_" + manifest.version + ".tar.gz";
     const built = path.join(buildSource, basename);

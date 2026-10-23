@@ -540,3 +540,70 @@ test("qualification builds projected bytes and shares one retained archive acros
     }
   });
 });
+
+test("guard and build consume frozen blob bytes despite an external Git smudge/EOL configuration", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    fs.writeFileSync(path.join(repository, ".gitattributes"), "R/model.R eol=crlf\n");
+    const policyPath = path.join(repository, "docs/release/public-source.json");
+    const policy = JSON.parse(fs.readFileSync(policyPath));
+    policy.include.push(".gitattributes");
+    policy.include.sort();
+    fs.writeFileSync(policyPath, JSON.stringify(policy));
+    if (process.platform !== "win32") fs.chmodSync(path.join(repository, "R/model.R"), 0o755);
+    git(repository, ["add", ".gitattributes", "docs/release/public-source.json", "R/model.R"]);
+    git(repository, ["commit", "--quiet", "-m", "tracked EOL and mode fixture"]);
+    const originalModel = fs.readFileSync(path.join(repository, "R/model.R"));
+    const originalGuard = fs.readFileSync(path.join(repository, "tools/check_release_gates.R"));
+    const config = path.join(directory, "external.gitconfig");
+    const attributes = path.join(directory, "external.attributes");
+    const smudge = path.join(directory, "smudge.cjs");
+    const clean = path.join(directory, "clean.cjs");
+    fs.writeFileSync(attributes, "R/model.R filter=review eol=crlf\ntools/check_release_gates.R filter=review\n");
+    fs.writeFileSync(smudge, 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.stdout.write(s.replace("function() 1", "function() 999").replace("guard fixture", "changed guard")));');
+    fs.writeFileSync(clean, "process.stdin.pipe(process.stdout);\n");
+    const quote = (value) => '"' + value.replace(/\\/g, "/").replace(/["$`]/g, "\\$&") + '"';
+    git(repository, ["config", "--file", config, "core.attributesFile", attributes]);
+    git(repository, ["config", "--file", config, "filter.review.smudge", quote(process.execPath) + " " + quote(smudge)]);
+    git(repository, ["config", "--file", config, "filter.review.clean", quote(process.execPath) + " " + quote(clean)]);
+    git(repository, ["config", "--file", config, "filter.review.required", "true"]);
+    const previous = process.env.GIT_CONFIG_GLOBAL;
+    process.env.GIT_CONFIG_GLOBAL = config;
+    try {
+      const control = path.join(directory, "ordinary-checkout");
+      git(repository, ["clone", "--quiet", "--no-hardlinks", repository, control]);
+      assert.notDeepEqual(fs.readFileSync(path.join(control, "R/model.R")), originalModel,
+        "The independent ordinary checkout must demonstrate the configured transformation");
+      assert.equal(stage(repository, output).status, 0);
+      const calls = [];
+      const runner = (command, args, options) => {
+        calls.push({ command, args });
+        if (args.includes("--offline")) {
+          assert.deepEqual(fs.readFileSync(path.join(options.cwd, "R/model.R")), originalModel);
+          if (process.platform !== "win32") assert.ok(fs.statSync(path.join(options.cwd, "R/model.R")).mode & 0o111);
+          assert.deepEqual(fs.readFileSync(args[1]), originalGuard);
+          return { status: 0, stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
+        }
+        if (command === "Rscript" && args.includes("-e")) return { status: 0,
+          stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5", matrix_minimum: "1.6-5" }), stderr: "" };
+        if (command === "R" && args[1] === "build") {
+          assert.deepEqual(fs.readFileSync(path.join(options.cwd, "R/model.R")), originalModel);
+          if (process.platform !== "win32") assert.ok(fs.statSync(path.join(options.cwd, "R/model.R")).mode & 0o111);
+          fs.writeFileSync(path.join(options.cwd, "GEModelR_0.1.0.tar.gz"), "fixture archive");
+        }
+        if (command === "R" && args[1] === "check") {
+          const check = args.find((arg) => arg.startsWith("--output=")).slice(9);
+          fs.mkdirSync(path.join(check, "GEModelR.Rcheck"), { recursive: true });
+          fs.writeFileSync(path.join(check, "GEModelR.Rcheck/00check.log"), "* checking URLs ... OK\nStatus: OK\n");
+        }
+        return { status: 0, stdout: command === "Rscript" ? "PASS installed-release-smoke\n" : "", stderr: "" };
+      };
+      const library = path.join(directory, "library");
+      fs.mkdirSync(library);
+      require(cli).qualifyReleasePacket({ packet: output, library, runner });
+      assert.ok(calls.some((call) => call.command === "R" && call.args[1] === "build"));
+    } finally {
+      if (previous === undefined) delete process.env.GIT_CONFIG_GLOBAL;
+      else process.env.GIT_CONFIG_GLOBAL = previous;
+    }
+  });
+});

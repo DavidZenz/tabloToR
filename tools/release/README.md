@@ -66,7 +66,13 @@ additional refs are rejected. No tag is created by these commands.
 Qualification first probes the already-installed Matrix floor without loading or
 installing a package. It retains one offline canonical release-guard result from
 a private local clone of the selected development commit. That clone is guard-only.
-When supported prerequisites exist, it builds solely from a separate checkout of
+Clone setup ignores inherited global/system Git settings and templates. After
+checkout, raw committed blobs replace any tracked EOL/ident conversions. The
+actual guard/build file set, blob bytes and executable modes (where the platform
+supports them) are checked immediately before the corresponding command. A Git
+HEAD/tree identifier alone is not proof of the files consumed by that command.
+
+When supported prerequisites exist, it builds solely from this verified checkout of
 the frozen projected public commit, then scans, checks and installs the same
 retained archive. `archive_source_commit` must equal `public_source_commit`, and
 the retained archive must match its declared SHA-256. The actual check requires
