@@ -1,6 +1,9 @@
 ---
 phase: 07-github-and-r-universe-release
-reviewed: 2026-10-23T12:25:28Z
+reviewed: 2026-10-23T12:39:43Z
+original_reviewed: 2026-10-23T12:25:28Z
+re_review_commits: [25e065a, 8b8b242]
+resolved_findings: 2
 depth: standard
 files_reviewed: 4
 files_reviewed_list:
@@ -9,24 +12,26 @@ files_reviewed_list:
   - tools/ci/run-installed-release-smoke.R
   - docs/release/public-source.json
 findings:
-  critical: 2
+  critical: 0
   warning: 0
   info: 0
-  total: 2
-status: fixes_pending_review
+  total: 0
+status: clean
 ---
 
 # Phase 07: Local release tooling code review
 
 ## Summary
 
-The review covers the four committed files listed above. It finds two defects in the new qualification path: the archive can be built from a checkout whose bytes differ from the recorded public commit, and a standard successful R check log is rejected because it lacks a synthetic URL-check line. The already recorded Matrix and provenance limitations are outside these findings; Phase 06 acceptance remains unchanged.
+The initial review covered the four committed files listed above and identified two qualification defects. Independent re-review of fixes `25e065a` and `8b8b242`, their focused regressions, and necessary adjacent source-policy/handoff fields confirms both findings are resolved. There are no remaining findings in this scoped review. The already recorded Matrix and provenance limitations are outside these findings; Phase 06 acceptance remains unchanged. A clean code review does not establish package or publication readiness.
 
 ## Narrative Findings (AI reviewer)
 
-### CR-07-01: Qualification verifies the Git tree ID, but builds an unchecked filtered worktree
+### CR-07-01: Unchecked filtered build worktree — RESOLVED
 
 **Classification:** BLOCKER
+
+**Disposition:** Resolved by `25e065a`, independently re-reviewed on 2026-10-23. The issue and original evidence below are retained as history.
 
 **File:** `tools/release/prepare-release.cjs:540-544,615-618`
 
@@ -38,9 +43,13 @@ The review covers the four committed files listed above. It finds two defects in
 
 **Evidence boundary:** This follows directly from the checkout call and the tree-only check, with the checkout transformation behavior confirmed against the official Git documentation. An isolated temporary-fixture reproduction was attempted, but execution was blocked by the environment's `bwrap: No permissions to create a new namespace` failure. No real package build or install ran.
 
-### CR-07-02: A literal standalone URL step rejects clean checks on supported R versions
+**Resolution verified:** `selectedClone()` now supplies empty global/system configuration and templates, restores each selected committed blob and executable mode after checkout, and calls `verifyCheckoutBytes()`. That verifier checks the entire actual file set, rejects linked/special entries, recomputes blob IDs from the worktree bytes, and checks executable modes where supported. Both guard and archive-build call sites repeat this verification immediately before consuming their source. The regression independently demonstrates that an ordinary checkout transforms the fixture under a temporary global smudge/EOL configuration, then asserts the guard and build commands receive the original bytes and mode. Tracked CRLF attributes are also exercised. This directly covers the original tree-ID-versus-worktree defect.
+
+### CR-07-02: Literal standalone URL-step requirement — RESOLVED
 
 **Classification:** BLOCKER
+
+**Disposition:** Resolved by `8b8b242`, independently re-reviewed on 2026-10-23. The issue and original evidence below are retained as history.
 
 **File:** `tools/release/prepare-release.cjs:636-640`; masking fixture at `tools/release/prepare-release.test.cjs:508`
 
@@ -50,12 +59,14 @@ The review covers the four committed files listed above. It finds two defects in
 
 **Fix:** Parse the actual supported R check format and preserve a separate, explicit URL-check disposition using reliable raw evidence or a dedicated URL check. Do not infer a network URL pass when checking was disabled or unavailable. Add realistic successful and failing R check-log fixtures rather than manufacturing a standalone URL line; ensure a clean supported log can advance to installation while URL failures/unavailable evidence retain their intended failure status.
 
-## Implemented resolution notes — pending independent re-review
+**Resolution verified:** The archive check now accepts zero exit status plus exactly one `Status: OK` line without requiring a fictional URL step. URL evidence comes from a separate R tools probe with explicit status/reason fields. The probe respects disabled checking, reports unavailable execution honestly, distinguishes no URLs from validated URLs, and uses `check_url_db()`'s returned invalid-URL rows. Publication readiness requires the corresponding explicit successful or no-URLs disposition. The realistic R 4.3 fixture reaches installation; warning logs do not; failed, unavailable, and disabled URL evidence keep readiness blocked. Read-only inspection of the installed `check_url_db()` confirms that its return value is the collected invalid-URL table, matching the new probe's interpretation.
+
+## Implemented resolution notes — independently re-reviewed
 
 - **CR-07-01 — `25e065a`:** Reproduced the transformed guard input with an external temporary `GIT_CONFIG_GLOBAL` attributes/smudge setup; a separate ordinary checkout confirms that setup really changes bytes. Clone setup now ignores inherited global/system Git settings and templates, replaces checkout conversions with the exact committed blobs/modes, and checks the complete actual file set, blob hashes and executable modes immediately before both guard and build commands. The regression also includes tracked CRLF attributes and checks actual consumed bytes independently of Git HEAD/tree IDs. User-global Git settings were never changed.
 - **CR-07-02 — `8b8b242`:** Reproduced failure to reach installation using a realistic R 4.3 clean log without a synthetic URL step. A zero-exit archive check with one `Status: OK` now advances to installation. URL evidence is a separate dedicated R tools check with explicit passed/failed/unavailable/not-applicable/not-run disposition; incoming/remote URL checks disabled by configuration remain unavailable. Realistic clean/warning fixtures and failed/unavailable URL cases pass, including an actual disabled R URL-probe invocation with no network access. No network URL pass is inferred from incoming feasibility or a general clean check.
-- Combined focused packet/scanner regression result after both fixes: **38/38 passed**, about 7.7 seconds. Package build/check/install remains unperformed in the actual unsupported Matrix runtime. The fixes above are implementation results awaiting the independent reviewer; this section does not self-certify a clean review.
-- The old frozen candidate is retained unchanged. A new selected revision and packet will bind these committed fixes, with this private review document explicitly excluded by the source policy. Review-content and raw manifest-file digests will be labelled separately in the refreshed handoff.
+- Combined focused packet/scanner regression result after both fixes: **38/38 passed**, about 7.7 seconds, as recorded by the fixing executor and parent. The reviewer inspected those regressions and did not repeat the suite. Package build/check/install remains unperformed in the actual unsupported Matrix runtime.
+- The old frozen candidate is retained unchanged. The refreshed packet binds source `e46ea70e737bc709880458ab1548244a2fd525cd`, public commit `ee8f5d26c9565db3407567e065633a0b0252da9a`, and review-content digest `e9a41d268ac88238bff47ded201fe3d0bbd391365fbc288e288e0d0a05b3b4dd`. These fields were read directly from `/tmp/GEModelR-release-packet-repaired-bYPwbD/private/manifest.json`; it retains actual evidence with qualification unavailable. The source policy now explicitly excludes this private review record. The handoff distinguishes the review-content digest from the raw manifest-file digest.
 
 ## Original review checks and limitations
 
@@ -68,4 +79,4 @@ The review covers the four committed files listed above. It finds two defects in
 
 ---
 
-Reviewed by `gsd-code-reviewer`; standard depth. Findings remain open pending a focused fix and re-review.
+Reviewed by `gsd-code-reviewer`; standard depth, with targeted independent re-review of the two fixes. Both findings are resolved; no remaining scoped findings. Publication readiness and authorization remain separate.

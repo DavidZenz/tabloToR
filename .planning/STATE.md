@@ -3,11 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 current_phase: 07
 current_phase_name: GitHub and R-universe Release
-status: executing
-stopped_at: Completed 07-03-PLAN.md; frozen local packet ready for final publication boundary
-last_updated: "2026-10-23T12:18:53.383Z"
+status: paused
+paused_at: 2026-10-23T12:40:36Z
+pause_reason: Plan 07-04 publication checkpoint; actual readiness unmet and local-only instruction active
+stopped_at: Plan 07-04 Task 1; completed local handoff retained without publication approval
+last_updated: "2026-10-23T12:40:36Z"
 last_activity: 2026-10-23
-last_activity_desc: Completed Phase 07 Plan 03 frozen local candidate and truthful qualification handoff
+last_activity_desc: Local release preparation complete; 38 tests pass and scoped re-review clean; final publication checkpoint retained
 state_head: e577d7e37a7293753405c2a245980f1a206fa74d
 progress:
   total_phases: 7
@@ -28,10 +30,10 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 
 ## Current Position
 
-Phase: 07 (GitHub and R-universe Release) — EXECUTING
+Phase: 07 (GitHub and R-universe Release) — PUBLICATION CHECKPOINT
 Plan: 4 of 4
-Status: Ready to execute
-Last activity: 2026-10-23 — Completed Plan 07-03; frozen candidate verifies locally and remains blocked for publication
+Status: Local preparation complete; waiting on actual publication readiness and exact authority
+Last activity: 2026-10-23 — Repaired packet verified; 38/38 focused tests and independent scoped re-review passed
 
 Progress: Phase 06 is complete by explicit maintainer acceptance on 2026-10-23, with 22/22 plan summaries. The technical assessment remains 11/18; outstanding evidence and review findings are accepted limitations for this phase. See `phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md`. Do not restart the same Phase 06 gap/UAT cycle without a new maintainer request. Phase 07 has 3/4 plan summaries; local packet/smoke tooling, release/source/registry/support drafts, and the exact frozen local candidate are complete. Matrix 1.6.3 leaves package qualification unavailable; the actual offline guard is invalid with PROVENANCE_KEY_MISMATCH. Local packet verification passed; stricter publication verification correctly fails. Plan 07-04 is the single final publication boundary. REL-02 and the local-only direction remain active.
 
@@ -257,6 +259,6 @@ Phase 06 entries below retain the historical evidence. Their workflow-closure re
 
 ## Session Continuity
 
-Last session: 2026-10-23T12:18:53.265Z
-Stopped at: Completed 07-03-PLAN.md; frozen local packet ready for final publication boundary
-Resume file: None
+Last session: 2026-10-23T12:40:36Z
+Stopped at: Plan 07-04 Task 1; no executable publication approval requested for the unready candidate
+Resume file: .planning/phases/07-github-and-r-universe-release/.continue-here.md

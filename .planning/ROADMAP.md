@@ -359,6 +359,8 @@ Plans:
 
 **Cross-cutting constraints**: Phase 06 acceptance remains binding; do not restart its accepted gap cycle. Local preparation uses explicit committed source and preserves unrelated dirty work. External publication remains behind the concrete final decision and existing release guards. Unavailable checks retain their actual status.
 
+**Execution status**: Local preparation is complete (3/4 plans); 38 focused tests and the scoped tooling re-review pass. Plan 07-04 is retained at the final publication checkpoint. The exact local candidate is not publishable under current runtime/guard results, no approval is requested for it, and REL-02 remains pending. See `.planning/phases/07-github-and-r-universe-release/.continue-here.md`; resume that checkpoint only when readiness or maintainer instructions change, without repeating completed preparation or reopening Phase 06.
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -369,4 +371,4 @@ Plans:
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
 | 6. Documentation and Release Qualification | 22/22 | Complete    | 2026-10-23 |
-| 7. GitHub and R-universe Release | 3/4 | In Progress|  |
+| 7. GitHub and R-universe Release | 3/4 | Publication checkpoint | - |
