@@ -359,7 +359,7 @@ Plans:
 
 **Cross-cutting constraints**: Phase 06 acceptance remains binding; do not restart its accepted gap cycle. Local preparation uses explicit committed source and preserves unrelated dirty work. External publication remains behind the concrete final decision and existing release guards. Unavailable checks retain their actual status.
 
-**Execution status**: Local preparation is complete (3/4 plans); 38 focused tests and the scoped tooling re-review pass. Plan 07-04 is retained at the final publication checkpoint. The exact local candidate is not publishable under current runtime/guard results, no approval is requested for it, and REL-02 remains pending. See `.planning/phases/07-github-and-r-universe-release/.continue-here.md`; resume that checkpoint only when readiness or maintainer instructions change, without repeating completed preparation or reopening Phase 06.
+**Execution status**: Local preparation is complete (3/4 plans); 38 focused tests and the scoped tooling re-review pass. Later authorized isolated Matrix 1.6-5 setup resolved the runtime prerequisite: archive build/scan and a separate installed smoke pass, but R CMD check reports 1 ERROR, 2 WARNINGs and 7 NOTEs (3036 pass, 10 fail, 102 skip). See `07-SUPPORTED-RUNTIME.md` in the phase directory. Plan 07-04 remains at the publication checkpoint because the archive check fails and the release guard is invalid; REL-02 remains pending. Resume the saved checkpoint when readiness or instructions change, without repeating completed preparation or reopening Phase 06.
 
 ## Progress
 

@@ -17,21 +17,21 @@ Development-Source-Commit: e46ea70e737bc709880458ab1548244a2fd525cd
 Development-Source-Tree: 6ef6c2d60b4dce13bea34f31b47473bc96b40673
 Public-Source-Commit: ee8f5d26c9565db3407567e065633a0b0252da9a
 Public-Source-Tree: cb74d2a4000c3d84ae005d05c63769597988d24a
-Archive-Source-Commit: not_built
-Archive-Basename: not_built
-Archive-SHA256: not_built
+Archive-Source-Commit: ee8f5d26c9565db3407567e065633a0b0252da9a
+Archive-Basename: GEModelR_0.1.0.tar.gz
+Archive-SHA256: 6e67efd755634735a67bf8fb9cfcf3b95421694f9709d2e3418d8b61e9c1b317
 Public-Policy-SHA256: d5df0943ae5ce47c8aba148732fecf69da899e3345b54578566c7f96167215cd
 Registry-SHA256: 18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8
 Release-Notes-SHA256: 7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5
 Installed-Smoke-SHA256: f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15
-Review-Content-SHA256: e9a41d268ac88238bff47ded201fe3d0bbd391365fbc288e288e0d0a05b3b4dd
-Private-Manifest-File-SHA256: 66782d716bd9b9b9e0cf7ca6809068d898b266787b369b01319be98cea5159d5
-Public-Manifest-File-SHA256: 9c49ebc2693cbeb46b50b4586b1686daa4ac2b13ae11791675a3b1ef5e5186ef
+Review-Content-SHA256: 3af1f9e1531fb4f1bbd4b928b2c4142d4937135acccf411501316d23aa8a4ba5
+Private-Manifest-File-SHA256: 47b9f90590eafc97e690844f62552bfcf2e8bfa93133a4e115c015077486a7e6
+Public-Manifest-File-SHA256: 47cec1df5139c4aa192df924407084dd7eabed772d902bebc9b63075826ba8c0
 Preparation-Status: complete
-Qualification-Status: unavailable
-Matrix-Version: 1.6.3
+Qualification-Status: failed
+Matrix-Version: 1.6.5
 Matrix-Minimum: 1.6-5
-Runtime-Reason: MATRIX_BELOW_FLOOR
+Runtime-Reason: SUPPORTED
 Offline-Release-Guard-State: invalid
 Offline-Release-Guard-Exit: 1
 Offline-Release-Guard-Reasons: PROVENANCE_KEY_MISMATCH
@@ -42,7 +42,7 @@ The source revision above was deliberately selected after the two post-review to
 
 The fresh external packet contains the frozen committed development export, a separate public repository with one new root commit and no remote, the original-source private clone used only for one offline guard evaluation, private reachable-object inventories, and the scanned notes/registry/smoke assets above. Local packet verification passed after qualification. `Review-Content-SHA256` is the manifest's recorded `content_sha256`; `Private-Manifest-File-SHA256` hashes the complete serialized private manifest bytes. These are distinct identities, not signatures. Private local paths and raw logs remain external and are not upload assets. The superseded initial packet was retained unchanged.
 
-The actual prerequisite probe found Matrix 1.6.3 below the declared 1.6-5 floor. Therefore no package archive was built, scanned, checked, installed, or run through the actual numerical smoke; the separate URL check also remains `not_run`, with archive fields `not_built`. The single actual offline canonical guard evaluation for this new packet returned `invalid`, exit 1 and `PROVENANCE_KEY_MISMATCH`. The strict publication predicate correctly returned `FAIL PUBLICATION_NOT_READY`. These are actual outcomes, not mocked fixture results, and do not restart the accepted Phase 06 workflow.
+After explicit maintainer selection of isolated-runtime setup, Matrix 1.6-5 was installed into a separate temporary release library; shared Matrix 1.6-3 remains unchanged. A new packet from the same frozen source built the exact archive above and passed its content scan. `R CMD check --as-cran` installed the archive successfully but finished with 1 ERROR, 2 WARNINGs and 7 NOTEs: 3036 test assertions passed, 10 failed and 102 were skipped. A separate fresh-process smoke against that installed copy passed the expected three-region solution. The pipeline's gated install/smoke and dedicated URL steps remain `not_run` after the failed check; their original manifest statuses are preserved. The actual offline canonical guard remains `invalid`, exit 1, `PROVENANCE_KEY_MISMATCH`; strict publication verification returns `FAIL PUBLICATION_NOT_READY`. Detailed evidence is recorded in `.planning/phases/07-github-and-r-universe-release/07-SUPPORTED-RUNTIME.md`. Earlier packets remain unchanged and Phase 06 stays accepted.
 
 This private handoff document was completed after freezing the selected revision. Its later documentation commit and the Plan 07-03 summary do not change the frozen public source or assets. Any future source change requires a new explicit policy/source selection and packet; do not edit this packet into an apparent pass.
 
@@ -72,8 +72,8 @@ The public area contains only deliberately selected, scanned artifacts: a redact
 |------|---------------------|
 | Local packet tooling and projection | Complete; the real frozen candidate and review digest are recorded above; local integrity verification passed |
 | Version/tag | `0.1.0` development candidate; proposed annotated unsigned `v0.1.0`; no tag published |
-| Local supported-runtime smoke | `not_run`; installed Matrix 1.6.3 is below the declared 1.6-5 floor |
-| Exact public-source archive, scan, check, and installation | `not_built` / `not_run`; actual unsupported Matrix prerequisite prevented these operations |
+| Local supported-runtime smoke | Separate installed smoke passed with isolated Matrix 1.6-5; pipeline-gated smoke remains `not_run` after the failed archive check |
+| Exact public-source archive, scan, check, and installation | Build, scan, and check's installation passed; check failed with 1 ERROR, 2 WARNINGs, 7 NOTEs (3036 pass, 10 fail, 102 skip); no clean qualification claimed |
 | Full-scale benchmark and hosted Windows/serialization evidence | Existing accepted Phase 06 limitations; no new run or passing claim |
 | Benchmark preflight report privacy/reference binding | CR-06 and CR-07 remain known limitations; no new preflight attempt |
 | Canonical release guards | Actual offline guard returned `invalid`, exit 1, `PROVENANCE_KEY_MISMATCH`; dependency compatibility and attribution identity remain separately open |

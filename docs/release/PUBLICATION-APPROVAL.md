@@ -23,14 +23,14 @@ REL-02-Status: pending
 | Development source tree | `6ef6c2d60b4dce13bea34f31b47473bc96b40673` |
 | Proposed public root commit | `ee8f5d26c9565db3407567e065633a0b0252da9a` |
 | Proposed public source tree | `cb74d2a4000c3d84ae005d05c63769597988d24a` |
-| Review content digest (`content_sha256`) | `e9a41d268ac88238bff47ded201fe3d0bbd391365fbc288e288e0d0a05b3b4dd` |
-| Private manifest file SHA-256 | `66782d716bd9b9b9e0cf7ca6809068d898b266787b369b01319be98cea5159d5` |
-| Public manifest file SHA-256 | `9c49ebc2693cbeb46b50b4586b1686daa4ac2b13ae11791675a3b1ef5e5186ef` |
+| Review content digest (`content_sha256`) | `3af1f9e1531fb4f1bbd4b928b2c4142d4937135acccf411501316d23aa8a4ba5` |
+| Private manifest file SHA-256 | `47b9f90590eafc97e690844f62552bfcf2e8bfa93133a4e115c015077486a7e6` |
+| Public manifest file SHA-256 | `47cec1df5139c4aa192df924407084dd7eabed772d902bebc9b63075826ba8c0` |
 | Explicit source-policy SHA-256 | `d5df0943ae5ce47c8aba148732fecf69da899e3345b54578566c7f96167215cd` |
 | Release notes SHA-256 | `7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5` |
 | Tag-pinned registry SHA-256 | `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` |
 | Installed smoke runner SHA-256 | `f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15` |
-| Archive source commit / basename / SHA-256 | `not_built` / `not_built` / `not_built` |
+| Archive source commit / basename / SHA-256 | `ee8f5d26c9565db3407567e065633a0b0252da9a` / `GEModelR_0.1.0.tar.gz` / `6e67efd755634735a67bf8fb9cfcf3b95421694f9709d2e3418d8b61e9c1b317` |
 
 The review content digest and the private manifest file SHA-256 are different identities: the former is the manifest's recorded content identity, while the latter hashes the complete serialized manifest bytes. Neither is a cryptographic signature or a maintainer approval.
 
@@ -44,10 +44,10 @@ On 2026-10-23, the retained external packet was reverified with `prepare-release
 |-------|--------------------|
 | Packet integrity and retained source identities | Verified locally |
 | Qualification evidence kind | `actual` |
-| Installed Matrix / declared minimum | `1.6.3` / `1.6-5` |
-| Runtime qualification | `unavailable`; `MATRIX_BELOW_FLOOR` |
-| Exact archive build / scan / check | `not_run`; archive `not_built` |
-| Installed numerical smoke | `not_run` |
+| Installed Matrix / declared minimum | Isolated `1.6.5` / `1.6-5`; shared `1.6.3` unchanged |
+| Runtime qualification | Supported |
+| Exact archive build / scan / check | Build and scan passed; check failed: 1 ERROR, 2 WARNINGs, 7 NOTEs; 3036 assertions passed, 10 failed, 102 skipped |
+| Installed numerical smoke | Separate fresh-process smoke passed against the check-installed archive; pipeline-gated smoke remains `not_run` |
 | Separate explicit URL check | `not_run`; no network URL pass claimed |
 | Offline canonical release guard | `invalid`, exit 1; `PROVENANCE_KEY_MISMATCH` |
 | Canonical Git installation | `not_run` |
@@ -56,7 +56,7 @@ On 2026-10-23, the retained external packet was reverified with `prepare-release
 
 These actual outcomes make this candidate unready for publication. No executable publication approval is being requested for it. The accepted Phase 06 limitations remain recorded under `06-ACCEPTANCE.md`; they are not reopened, converted into passing results, or treated as rights or publication authority. Dependency compatibility and attribution identity also retain their existing release dispositions. Current public-CI dependencies on excluded private evidence remain a documented readiness limitation.
 
-The candidate identities above supersede the initial packet after the two focused tooling review fixes. The initial packet was not edited. The new source policy explicitly excludes the private review, summary and pending approval records. This refresh records new candidate bytes only: the packet-specific maintainer decision is still `not_received`, no external action is authorized, and Plan 07-04 remains at its existing checkpoint.
+The identities above refer to the new supported-runtime qualification packet made after explicit authorization of isolated Matrix setup. Development and public source bytes are unchanged; a real archive and failed check result now exist. Earlier packets were not edited. See `.planning/phases/07-github-and-r-universe-release/07-SUPPORTED-RUNTIME.md` for the actual test failures and external evidence locations. The runtime setup authorization grants no external action: the packet-specific publication decision is still `not_received` and Plan 07-04 remains at its existing checkpoint.
 
 ## Standing instruction and pending decision
 
@@ -74,7 +74,7 @@ The concrete proposal in `PUBLICATION-PLAN.md` remains unapproved:
 
 1. Canonical source destination: `DavidZenz/GEModelR`, `https://github.com/DavidZenz/GEModelR`; proposed public `main` and exact tag `v0.1.0` at the approved public commit. Current remote state has not been probed for this decision.
 2. Repository creation/visibility, default-branch/protection/required-check settings, or hosted CI dispatches only if each is explicitly named in the eventual authorization. A push may itself trigger the listed workflows.
-3. An annotated unsigned tag and a GitHub draft release containing the exact retained R-built archive and frozen notes, using the named repository and verified tag. No archive exists for this candidate.
+3. An annotated unsigned tag and a GitHub draft release containing the exact retained R-built archive and frozen notes, using the named repository and verified tag. An archive now exists, but it has not passed release qualification and is not approved for upload.
 4. Registry destination: `DavidZenz/davidzenz.r-universe.dev`; proposed universe `https://davidzenz.r-universe.dev`; one `GEModelR` entry with canonical URL and branch `v0.1.0`. Registry publication and GitHub app authorization require their own expressly included scope.
 5. Two clean supported-library installations and the same exact numerical smoke, with Git tag/source and R-universe `RemoteSha`/`RemoteRef` evidence retained. Any later GitHub draft promotion must be included in the same exact authorization and wait for both real channel results.
 
