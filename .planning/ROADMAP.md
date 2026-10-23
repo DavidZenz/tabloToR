@@ -267,7 +267,7 @@ Plans:
   4. NEWS, semantic-versioning/lifecycle policy, citation/provenance text, and release checklist agree with actual package behavior.
   5. Full-scale benchmark summaries report residuals, finiteness, no dense fallback, time, memory, hardware, and package/model fingerprints without bundling private inputs; summaries are explicitly unsigned.
 
-**Plans**: 21 total (18 complete; 2 halted at evidence gates; 1 gap-closure plan pending)
+**Plans**: 22 total (19 complete; 2 halted at evidence gates; 1 gap-closure plan pending)
 
 - [x] 06-07-PLAN.md
 - [x] 06-08-PLAN.md — Close release-gate, scanner, and installed-vignette review findings
@@ -327,6 +327,10 @@ Plans:
 - [x] 06-06-PLAN.md
 - [x] 06-21-PLAN.md — Halted: matched reference artifacts and configured GTAP 12a inputs are unavailable
 
+**Wave 6** *(after the 06-21 preflight; supplied local evidence and runtime gates)*
+
+- [ ] 06-22-PLAN.md — Reassess user-confirmed benchmark evidence and local Matrix/archive qualification
+
 ### Phase 7: GitHub and R-universe Release
 
 **Goal**: Publish the first installable GEModelR release after all legal and technical gates pass.
@@ -350,5 +354,5 @@ Plans:
 | 3. GEModelR Identity Migration | 21/21 | Complete    | 2026-09-25 |
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
-| 6. Documentation and Release Qualification | 21/21 | In Progress|  |
+| 6. Documentation and Release Qualification | 22/22 | In Progress|  |
 | 7. GitHub and R-universe Release | 0/TBD | Not started | - |
