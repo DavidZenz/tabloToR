@@ -1,0 +1,2064 @@
+{
+  "schema_version": 1,
+  "include": [
+    ".Rbuildignore",
+    ".github/workflows/native-ci.yaml",
+    ".github/workflows/pkgdown.yaml",
+    ".github/workflows/release-qualification.yaml",
+    ".gitignore",
+    "CONTRIBUTORS.md",
+    "DESCRIPTION",
+    "GOVERNANCE.md",
+    "MIGRATION.md",
+    "NAMESPACE",
+    "NEWS.md",
+    "R/GEModel.R",
+    "R/RcppExports.R",
+    "R/apiDocumentation.R",
+    "R/coefficientProcessing.R",
+    "R/equationLevelGenerator.R",
+    "R/equationMatrixProcessing.R",
+    "R/equationProcessing.R",
+    "R/formulaProcessing.R",
+    "R/helpers.R",
+    "R/identityMigration.R",
+    "R/main.R",
+    "R/modelSerialization.R",
+    "R/processCoefficientStatement.R",
+    "R/processEquationSetupStatement.R",
+    "R/processEquationStatement.R",
+    "R/processFormulaStatement.R",
+    "R/processReadStatement.R",
+    "R/processSetStatement.R",
+    "R/processTablo.R",
+    "R/processUpdateStatement.R",
+    "R/readProcessing.R",
+    "R/setProcessing.R",
+    "R/skeletonGenerator.R",
+    "R/sparseCompiler.R",
+    "R/sparseElimination.R",
+    "R/sparseMemory.R",
+    "R/sparseNumerics.R",
+    "R/sparsePartition.R",
+    "R/sparseSchur.R",
+    "R/sparseSchurComplement.R",
+    "R/sparseSolver.R",
+    "R/sparseSuiteSparse.R",
+    "R/tabloToStatements.R",
+    "R/updateGenerator.R",
+    "R/variableGenerator.R",
+    "R/zzzSparseSchurCpp.R",
+    "R/zzzzSparseSchurOpenMP.R",
+    "R/zzzzzSchurDiagnostics.R",
+    "README.md",
+    "_pkgdown.yml",
+    "benchmarks/benchmark_config.R",
+    "benchmarks/benchmark_gtap12a.R",
+    "benchmarks/benchmark_gtap12a_run.R",
+    "benchmarks/benchmark_schur_cpp.R",
+    "benchmarks/benchmark_sparse_lu_cpp.R",
+    "benchmarks/check_benchmark_gate.R",
+    "benchmarks/preflight_gtap12a_reference.R",
+    "benchmarks/run_gtap12a_ab.R",
+    "benchmarks/run_gtap12a_scaling.R",
+    "benchmarks/run_gtap12a_sweep.R",
+    "inst/CITATION",
+    "inst/benchmarks/benchmark_config.R",
+    "inst/benchmarks/benchmark_gtap12a_run.R",
+    "inst/benchmarks/check_benchmark_gate.R",
+    "inst/benchmarks/run_gtap12a_scaling.R",
+    "inst/benchmarks/run_gtap12a_sweep.R",
+    "inst/compatibility/BASELINE-PROCESS.md",
+    "inst/compatibility/FAILURE-SEMANTICS.md",
+    "inst/compatibility/GEModel-contract.csv",
+    "inst/compatibility/MANIFEST.md",
+    "inst/compatibility/SERIALIZATION.md",
+    "inst/compatibility/WORKFLOWS.md",
+    "inst/cpp/sparse-elimination.cpp",
+    "inst/cpp/tablo-sparse-lu.h",
+    "inst/migration/benchmark-identity-map.dcf",
+    "inst/migration/historical-evidence.dcf",
+    "inst/migration/identity-reseal-review.dcf",
+    "inst/migration/option-replacements.dcf",
+    "inst/migration/predecessor-fingerprints.dcf",
+    "inst/migration/serialization-bugfix.dcf",
+    "inst/migration/serialization-bugfix.patch",
+    "inst/migration/workflow-evidence-policy-review.dcf",
+    "inst/migration/workflow-evidence-policy.csv",
+    "inst/tools/accept_phase02_baselines.R",
+    "inst/tools/refresh_phase02_baselines.R",
+    "man/GEModel.Rd",
+    "man/GEModelR-package.Rd",
+    "pkgdown/index.md",
+    "src/Makevars",
+    "src/Makevars.win",
+    "src/RcppExports.cpp",
+    "src/dense-schur.cpp",
+    "src/sparse-elimination.cpp",
+    "src/sparse-lu.cpp",
+    "src/sparse-schur-openmp.cpp",
+    "src/sparse-schur.cpp",
+    "src/tablo-sparse-lu.h",
+    "tests/testthat.R",
+    "tests/testthat/baselines/phase02/ACCEPTANCE.md",
+    "tests/testthat/baselines/phase02/expectations.csv",
+    "tests/testthat/baselines/phase02/fingerprints.dcf",
+    "tests/testthat/baselines/phase02/tolerances.csv",
+    "tests/testthat/fixtures/PROVENANCE.md",
+    "tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds",
+    "tests/testthat/fixtures/synthetic.tab",
+    "tests/testthat/fixtures/three-region.tab",
+    "tests/testthat/fixtures/update.tab",
+    "tests/testthat/helper-compatibility.R",
+    "tests/testthat/helper-native-portability.R",
+    "tests/testthat/helper-numerical-baseline.R",
+    "tests/testthat/helper-serialization.R",
+    "tests/testthat/helper-sparse-cpp-fixtures.R",
+    "tests/testthat/helper-statement.R",
+    "tests/testthat/helper-synthetic-model.R",
+    "tests/testthat/helper-three-region.R",
+    "tests/testthat/helper-transactional-state.R",
+    "tests/testthat/test-api-documentation.R",
+    "tests/testthat/test-attribution-contract.R",
+    "tests/testthat/test-baseline-artifacts.R",
+    "tests/testthat/test-baseline-process-isolation.R",
+    "tests/testthat/test-benchmark-correctness-gate.R",
+    "tests/testthat/test-benchmark-harness.R",
+    "tests/testthat/test-compatibility-helpers.R",
+    "tests/testthat/test-compatibility-manifest.R",
+    "tests/testthat/test-documented-workflow.R",
+    "tests/testthat/test-gtap12a-reference-preflight.R",
+    "tests/testthat/test-identity-migration.R",
+    "tests/testthat/test-installed-benchmark-execution.R",
+    "tests/testthat/test-lifecycle-contract.R",
+    "tests/testthat/test-matrix-compatibility.R",
+    "tests/testthat/test-memory-cache-lifecycle.R",
+    "tests/testthat/test-model-serialization.R",
+    "tests/testthat/test-name-availability.R",
+    "tests/testthat/test-native-portability.R",
+    "tests/testthat/test-numerical-baseline.R",
+    "tests/testthat/test-phase02-original-gate.R",
+    "tests/testthat/test-phase03-identity-reseal.R",
+    "tests/testthat/test-phase03-qualification-harness.R",
+    "tests/testthat/test-prepared-factor-preflight.R",
+    "tests/testthat/test-prepared-sparse-factors.R",
+    "tests/testthat/test-provenance-inventory.R",
+    "tests/testthat/test-public-cpp-backend.R",
+    "tests/testthat/test-public-solver-contract.R",
+    "tests/testthat/test-randomized-native-reuse.R",
+    "tests/testthat/test-regional-reuse.R",
+    "tests/testthat/test-release-gates.R",
+    "tests/testthat/test-scaled-numerics.R",
+    "tests/testthat/test-scaled-residuals.R",
+    "tests/testthat/test-serialization-bugfix-review.R",
+    "tests/testthat/test-serialization-leaf-types.R",
+    "tests/testthat/test-sparse-core.R",
+    "tests/testthat/test-sparse-cpp-cache.R",
+    "tests/testthat/test-sparse-lu-cpp.R",
+    "tests/testthat/test-sparse-schur-cpp.R",
+    "tests/testthat/test-sparse-schur-openmp.R",
+    "tests/testthat/test-suite-sparse-unsupported.R",
+    "tests/testthat/test-transactional-state.R",
+    "tests/testthat/test-workflow-identity-policy.R",
+    "tools/accept_phase02_baselines.R",
+    "tools/check_identity_migration.R",
+    "tools/check_name_availability.R",
+    "tools/check_predecessor_bridge.R",
+    "tools/check_release_gates.R",
+    "tools/check_serialization_bugfix.R",
+    "tools/check_workflow_identity_policy.R",
+    "tools/ci/build-pkgdown-site.R",
+    "tools/ci/check-license-decision.R",
+    "tools/ci/check-public-content.cjs",
+    "tools/ci/check-public-content.test.cjs",
+    "tools/ci/check-vignette-help-links.R",
+    "tools/ci/collect-matrix-catalog.py",
+    "tools/ci/install-matrix-source.R",
+    "tools/ci/normalize-matrix-provenance.py",
+    "tools/ci/record-matrix-candidate.R",
+    "tools/ci/resolve-matrix-current.R",
+    "tools/ci/run-installed-core-tests.R",
+    "tools/ci/run-installed-release-smoke.R",
+    "tools/ci/summarize-r-cmd-check.R",
+    "tools/ci/test-matrix-floor-evidence.R",
+    "tools/ci/test-matrix-source-download.R",
+    "tools/ci/verify-matrix-floor-evidence.R",
+    "tools/provenance_inventory.R",
+    "tools/qualify_phase03_migration.R",
+    "tools/refresh_phase02_baselines.R",
+    "tools/release/README.md",
+    "tools/release/prepare-release.cjs",
+    "tools/release/prepare-release.test.cjs",
+    "tools/seal_phase03_identity.R",
+    "vignettes/architecture.Rmd",
+    "vignettes/backend-selection.Rmd",
+    "vignettes/contributing.Rmd",
+    "vignettes/diagnostics-memory-budgeting.Rmd",
+    "vignettes/external-full-scale-benchmarking.Rmd",
+    "vignettes/first-simulation.Rmd",
+    "vignettes/helpers.R",
+    "vignettes/legacy-to-sparse.Rmd"
+  ],
+  "exclude": [
+    {
+      "path": ".gitattributes",
+      "reason": "Private hosted-evidence path bindings; not needed by the public source tree"
+    },
+    {
+      "path": ".planning/PROJECT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/REQUIREMENTS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/ROADMAP.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/STATE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/WINDOWS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/ARCHITECTURE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/CONCERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/CONVENTIONS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/INTEGRATIONS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/STACK.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/STRUCTURE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/codebase/TESTING.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/config.json",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-07-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-07-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-08-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-08-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-09-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-09-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-10-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-10-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-11-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-11-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-OVERRIDE-DECISIONS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-SECURITY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-UAT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/01-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/COVERAGE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/01-provenance-and-release-boundary/deferred-items.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-REVIEW-FIX.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/02-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/02-compatibility-and-numerical-baseline/deferred-items.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-07-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-07-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-08-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-08-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-09-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-09-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-10-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-10-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-11-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-11-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-12-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-12-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-13-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-13-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-14-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-14-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-15-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-15-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-16-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-16-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-17-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-17-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-18-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-18-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-19-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-19-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-20-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-20-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-21-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-21-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/03-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/03-gemodelr-identity-migration/deferred-items.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-REVIEW-FIX.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-SECURITY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-UI-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/04-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/04-public-api-and-solver-boundaries/deferred-items.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-07-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-07-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-REGRESSION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-REVIEW-FIX.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/05-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/HOSTED-COMPATIBILITY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE-FINAL-METADATA.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/deferred-items.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.6-5.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-0.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-1.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-2.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-3.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-4.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-5.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/Matrix_1.7-6.DESCRIPTION",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/archive-index.html",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/releases.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/cran-catalog/snapshot.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37273713572-1.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37274723569-1.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-provenance-37277215498-1.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273389483-1.json",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37273713572-1.json",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37274723569-1.json",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/hosted-run-37277215498-1.json",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/matrix-candidate-evidence-37273389483-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/matrix-candidate-evidence-37273713572-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/matrix-candidate-evidence-37274723569-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/matrix-candidate-evidence-37277215498-1.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/matrix-current-endpoint-37277215498-1.txt",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015630.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015645.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015648.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015652.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015660.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015671.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015673.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015673.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015676.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015685.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015685.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015690.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015693.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015695.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015703.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015706.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015707.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015708.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015711.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015718.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015718.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015722.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015731.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015737.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015737.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015741.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015756.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015756.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015757.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015759.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015759.log",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015772.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015776.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015780.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015789.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37273713572-1/111646015860.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136303.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136335.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136339.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136351.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136369.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136370.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136374.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136375.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136379.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136385.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136392.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136398.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136401.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136403.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136405.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136407.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136429.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136431.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136466.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136474.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136478.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136512.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136533.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37274723569-1/111649136593.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995027.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995037.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995086.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995089.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995098.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995100.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995106.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995137.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995142.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995155.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995164.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995169.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995171.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995190.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995198.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995199.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995211.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995215.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995216.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995228.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995259.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995268.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995270.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/payloads-37277215498-1/111656995303.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/representative-check-37273389483-1.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/representative-check-37273713572-1.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/hosted-evidence/representative-check-37277215498-1.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/05-portable-native-build-and-ci/matrix-candidate-evidence.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-03-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/CANONICAL-APPLY-CHECKSUMS.sha256",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/CANONICAL-APPLY-RECEIPT.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/FINALIZATION-CHECKSUMS.sha256",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/PROPOSAL.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/REPAIR-CHECKSUMS.sha256",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/REVIEW-APPROVAL.dcf",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-ATTRIBUTION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-EXPECTED-KEYS.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-PROVENANCE.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-review-delta.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/candidate-source-inventory.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-ATTRIBUTION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-EXPECTED-KEYS.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-INVENTORY-REVIEW.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/final-PROVENANCE.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/finalize-candidate.R",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/generate-candidate.R",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/reference-alias-map.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-04-provenance-repair-proposal/verify-finalization.R",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-05-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-05-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-06-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-06-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-07-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-07-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-08-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-08-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-09-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-09-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-10-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-10-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-11-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-11-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-12-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-12-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-13-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-13-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-14-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-14-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-provenance-reconciliation/APPROVAL.txt",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-provenance-reconciliation/PROVENANCE-RECONCILIATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-provenance-reconciliation/SHA256SUMS",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-provenance-reconciliation/candidate-review-delta.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-15-provenance-reconciliation/generate-candidate.R",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-16-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-16-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-17-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-17-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-18-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-18-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-19-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-19-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-20-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-20-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-20-provenance-evidence/INDEPENDENT-EVIDENCE-INDEX.csv",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-21-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-21-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-22-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-22-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-ACCEPTANCE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-DISCUSSION-LOG.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-REVIEW.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-UAT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-USER-SETUP.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/06-documentation-and-release-qualification/06-VERIFICATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-01-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-01-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-02-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-02-SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-03-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-04-PLAN.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-CONTEXT.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-PATTERNS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-RESEARCH.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-VALIDATION.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/research/ARCHITECTURE.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/research/FEATURES.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/research/PITFALLS.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/research/STACK.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/research/SUMMARY.md",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/ui-reviews/.gitignore",
+      "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": "benchmarks/.block-all-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-eliminate-run.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-eliminate.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-gmres-run.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-gmres.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-stats.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.block-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.btf-core-solve.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.btf-solve.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.coarse-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.commodity-block.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.commodity-region-block.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.commodity-region-graph.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.commodity-region-pair.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.diagonal-structure.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.eigen-block-gmres.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.eigen-block.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.eigen-ilut.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.eigen-one-direct.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.eigen-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.factor-commodity-one.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.global-dmperm.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.gmres-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.inspect-large.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.level-stats.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.matrix-incidence.cpp",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.noncomm-reg-dmperm.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.partial-activity.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.partial-one-family.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.probe-remaining-families.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reconstruct-btf.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reconstruct-two-level.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reduced-block-gmres.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reduced-klu.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reduced-solve.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.reduced-umfpack.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.regional-rank.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-block-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-eigen-block-gmres.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-eigen-ilut.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-eigen-one.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-eigen-twolevel.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.saved-tail.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.schur-fgmres-run.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.second-block-eigen.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.second-eliminate-run.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.second-ilut.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.second-structure.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/.sparse-krylov.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "benchmarks/GTAP12A_CPP_RESULTS.md",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/OPTIMIZATION.md",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/benchmark_repairs.R",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/check_repair_tests.R",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/compare_repair_gtap.R",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-check-20261017.txt",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-components-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-gtap-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-gtap-agreement-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-public-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-public-controls-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-source-test-delta-20261017.csv",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/repair-validation-20261017.json",
+      "reason": "Raw benchmark measurements, solutions, repair evidence, or internal optimization notes"
+    },
+    {
+      "path": "benchmarks/sparse-schur-prototype.R",
+      "reason": "Development benchmark scratch/prototype; not part of the supported public runner"
+    },
+    {
+      "path": "docs/migration/PHASE03-EVIDENCE-LIFECYCLE.md",
+      "reason": "Repository-only historical evidence lifecycle record"
+    },
+    {
+      "path": "docs/provenance/ATTRIBUTION.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/CLEANROOM.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/EXPECTED-KEYS.csv",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/HASH-REVIEW.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/INVENTORY-REVIEW.csv",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/LICENSE-DECISION.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/PROVENANCE.csv",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/RIGHTS.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/UPSTREAM-REQUEST.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/provenance/UPSTREAM-RESPONSE.md",
+      "reason": "Private canonical rights, attribution, and source-evidence records"
+    },
+    {
+      "path": "docs/release/BENCHMARK-EVIDENCE.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/LICENSE-DECISION.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/NAME-CHECK.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/PUBLICATION-PLAN.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/RELEASE-CHECKLIST.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/RELEASE-GATES.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/RELEASE-NOTES.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/REPOSITORY.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/VERSION-LIFECYCLE.md",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/public-source.json",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/runiverse/packages.json",
+      "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "inst/migration/old-identity-allowlist.csv",
+      "reason": "Historical private development-path allowlist excluded from package distribution"
+    },
+    {
+      "path": "rcpp-solver-acceleration-plan.md",
+      "reason": "Internal development/cleanroom planning, not a public package artifact"
+    },
+    {
+      "path": "specs/cleanroom/README.md",
+      "reason": "Internal development/cleanroom planning, not a public package artifact"
+    }
+  ]
+}
