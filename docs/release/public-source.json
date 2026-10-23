@@ -1665,6 +1665,10 @@
       "reason": "Private development planning, decisions, and retained evidence"
     },
     {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-03-SUMMARY.md",
+      "reason": "Private development planning or publication authority evidence"
+    },
+    {
       "path": ".planning/phases/07-github-and-r-universe-release/07-04-PLAN.md",
       "reason": "Private development planning, decisions, and retained evidence"
     },
@@ -1679,6 +1683,10 @@
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-RESEARCH.md",
       "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-REVIEW.md",
+      "reason": "Private Phase 07 execution review and resolution evidence"
     },
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-VALIDATION.md",
@@ -2015,6 +2023,10 @@
     {
       "path": "docs/release/NAME-CHECK.md",
       "reason": "Private release proposal, authorization, readiness, and evidence record"
+    },
+    {
+      "path": "docs/release/PUBLICATION-APPROVAL.md",
+      "reason": "Private development planning or publication authority evidence"
     },
     {
       "path": "docs/release/PUBLICATION-PLAN.md",
