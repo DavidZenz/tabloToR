@@ -94,6 +94,7 @@ Task 1's real CLI verification was rerun successfully after its GREEN commit bef
 - The DESCRIPTION-only negative fixtures check rejection before namespace loading; they do not stand in for installed numerical evidence.
 - Fixture canaries confirmed unchanged source index bytes and refs, no dirty/untracked source collection, no remote Git operation, no destructive output replacement, and no read of linked outside manifest content.
 - Scoped staged whitespace checks passed before each implementation commit.
+- The GSD narrative progress updater reported unscoped milestone status and skipped its percentage rewrite; the state counters and roadmap separately reflect one of four Phase 07 summaries. This is tracking output, not a test-suite result.
 
 No package install, dependency upgrade, R CMD check, full package suite, GTAP benchmark, tag creation, push, hosted dispatch, or publication ran. The selected real library's historical bare `Matrix` Imports declaration is accepted syntactically while the project minimum is still enforced; a stricter selected-package declaration also remains binding.
 
