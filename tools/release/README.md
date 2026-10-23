@@ -49,8 +49,15 @@ rtk proxy env GEModelR_TEST_LIBRARY=/tmp/release-library GEModelR_EXPECTED_VERSI
 
 Use `local`, `github`, or `runiverse` as the channel. For GitHub, the caller must
 first verify the tag-to-clone/source identity. For R-universe, installed
-`RemoteSha` must equal the expected commit. The script requires Matrix >=1.6-5,
+`RemoteSha` must equal the expected commit. Other channels record the commit as
+`caller_attested_source`; that field alone is not installed source provenance.
+The script requires both Matrix >=1.6-5 and the selected package's declared floor,
 loads the selected installed namespace once, works from an unrelated temporary
 directory, and asserts the finite expected solution `c(0, 6, 0)` within `1e-12`.
 It does not load source code or discover GTAP inputs. Unsupported libraries fail
 with a stable code and never become a numerical pass through a mock test.
+
+Focused checks are `rtk node --test tools/release/prepare-release.test.cjs
+tools/ci/check-public-content.test.cjs` and an R parse of the standalone runner.
+The DESCRIPTION-only unsupported-runtime fixtures prove rejection before loading;
+they are not evidence that an installed package completed the numerical smoke.

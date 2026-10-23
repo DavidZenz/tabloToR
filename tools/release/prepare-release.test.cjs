@@ -278,3 +278,65 @@ test("preparation invokes only read-only Git operations and preserves index byte
     assert.match(commands, /built-in: git cat-file blob/);
   });
 });
+
+const smokeRunner = path.join(__dirname, "../ci/run-installed-release-smoke.R");
+const smokeInputs = ["GEModelR_TEST_LIBRARY", "GEModelR_EXPECTED_VERSION",
+  "GEModelR_DISTRIBUTION_CHANNEL", "GEModelR_EXPECTED_SOURCE_COMMIT"];
+
+function runSmoke(values) {
+  const env = { ...process.env };
+  for (const name of smokeInputs) delete env[name];
+  Object.assign(env, values);
+  return spawnSync("Rscript", ["--vanilla", smokeRunner], { env, encoding: "utf8" });
+}
+
+test("installed smoke requires explicit inputs and never accepts a missing library", () => {
+  const missing = runSmoke({});
+  assert.equal(missing.status, 1);
+  assert.equal(missing.stderr, "FAIL MISSING_GEModelR_TEST_LIBRARY\n");
+  fixture(({ directory }) => {
+    const result = runSmoke({
+      GEModelR_TEST_LIBRARY: path.join(directory, "absent-library"),
+      GEModelR_EXPECTED_VERSION: "0.1.0", GEModelR_DISTRIBUTION_CHANNEL: "local",
+      GEModelR_EXPECTED_SOURCE_COMMIT: "a".repeat(40)
+    });
+    assert.equal(result.status, 1);
+    assert.equal(result.stderr, "FAIL MISSING_SELECTED_LIBRARY\n");
+    assert.doesNotMatch(result.stdout, /PASS/);
+  });
+});
+
+test("installed smoke rejects bad metadata and the actual declared Matrix floor before loading", () => {
+  fixture(({ directory }) => {
+    const library = path.join(directory, "library");
+    fs.mkdirSync(path.join(library, "GEModelR"), { recursive: true });
+    fs.mkdirSync(path.join(library, "Matrix"));
+    const metadata = path.join(library, "GEModelR/DESCRIPTION");
+    const values = {
+      GEModelR_TEST_LIBRARY: library, GEModelR_EXPECTED_VERSION: "0.1.0",
+      GEModelR_DISTRIBUTION_CHANNEL: "local", GEModelR_EXPECTED_SOURCE_COMMIT: "a".repeat(40)
+    };
+    fs.writeFileSync(metadata, "Package: GEModelR\nVersion: 9.9.9\nImports: Matrix (>= 1.6-5)\n");
+    assert.equal(runSmoke(values).stderr, "FAIL PACKAGE_VERSION_MISMATCH\n");
+    fs.writeFileSync(metadata, "Package: GEModelR\nVersion: 0.1.0\n");
+    assert.equal(runSmoke(values).stderr, "FAIL INVALID_PACKAGE_METADATA\n");
+    // These are DESCRIPTION-only negative fixtures, never installed packages or
+    // mocked numerical passes. The floor must fail before namespace loading.
+    fs.writeFileSync(metadata, "Package: GEModelR\nVersion: 0.1.0\nImports: Matrix (>= 1000.0)\n");
+    fs.writeFileSync(path.join(library, "Matrix/DESCRIPTION"), "Package: Matrix\nVersion: 999.0\n");
+    const unsupported = runSmoke(values);
+    assert.equal(unsupported.status, 1);
+    assert.equal(unsupported.stderr, "FAIL MATRIX_BELOW_FLOOR\n");
+    assert.doesNotMatch(unsupported.stdout, /PASS/);
+    fs.writeFileSync(metadata, "Package: GEModelR\nVersion: 0.1.0\nImports: Matrix\n");
+    fs.writeFileSync(path.join(library, "Matrix/DESCRIPTION"), "Package: Matrix\nVersion: 0.0.0\n");
+    assert.equal(runSmoke(values).stderr, "FAIL MATRIX_BELOW_FLOOR\n");
+    fs.writeFileSync(path.join(library, "Matrix/DESCRIPTION"), "Package: Matrix\nVersion: 999.0\n");
+    fs.writeFileSync(metadata, "Package: GEModelR\nVersion: 0.1.0\nImports: Matrix (>= 1.6-5)\nRemoteSha: " +
+      "b".repeat(40) + "\n");
+    const wrongUniverse = runSmoke({ ...values, GEModelR_DISTRIBUTION_CHANNEL: "runiverse" });
+    assert.equal(wrongUniverse.status, 1);
+    assert.equal(wrongUniverse.stderr, "FAIL RUNIVERSE_SOURCE_MISMATCH\n");
+    assert.doesNotMatch(wrongUniverse.stdout, /PASS/);
+  });
+});
