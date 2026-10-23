@@ -342,7 +342,7 @@ Plans:
   3. Release notes state compatibility, supported platforms/backends, known limits, benchmark evidence, and migration steps.
   4. Maintainers have a documented support, issue-triage, and release cadence for the first public validation period.
 
-**Plans**: 2/4 plans executed
+**Plans**: 3/4 plans executed
 
 **Wave 1** *(local preparation; independent file ownership)*
 
@@ -351,7 +351,7 @@ Plans:
 
 **Wave 2** *(after 07-01 and 07-02)*
 
-- [ ] 07-03-PLAN.md — Freeze the public-source candidate and prepare exact archive qualification evidence
+- [x] 07-03-PLAN.md — Freeze the public-source candidate and prepare exact archive qualification evidence
 
 **Wave 3** *(after local preparation is reviewable)*
 
@@ -369,4 +369,4 @@ Plans:
 | 4. Public API and Solver Boundaries | 6/6 | Complete    | 2026-10-01 |
 | 5. Portable Native Build and CI | 7/7 | Complete    | 2026-10-05 |
 | 6. Documentation and Release Qualification | 22/22 | Complete    | 2026-10-23 |
-| 7. GitHub and R-universe Release | 2/4 | In Progress|  |
+| 7. GitHub and R-universe Release | 3/4 | In Progress|  |
