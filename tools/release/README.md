@@ -18,13 +18,18 @@ output. Invalid commands return stable `FAIL CODE` messages without raw paths.
 edits and untracked files. It is private audit material, never an upload area.
 `private/support/` retains the executing preparation and scanner scripts.
 `private/manifest.json` records their inventories and SHA-256 fingerprints.
+The original Git commit object stays private in `private/support/source-commit.txt`.
 `public/` contains only the same-revision standalone smoke, a tag-pinned
 R-universe registry draft, an allowlisted public manifest, and release notes
 when the selected commit contains a draft. The existing public-content scanner
 checks this public artifact directory. It does not qualify a public Git tree
 or reachable repository history.
 
-Verification compares the whole governed file set and content fingerprints;
+Verification validates field allowlists before reporting identity, rejects linked
+packet entries before reading them, and reconstructs Git blob/tree identities
+against the retained commit object. `INVALID_MANIFEST`, `PACKET_SYMLINK`,
+`PACKET_CONTENT_CHANGED`, and `SOURCE_IDENTITY_MISMATCH` distinguish these failures.
+It compares the whole governed file set and content fingerprints;
 timestamps do not enter its content identity. Never edit a prepared packet to
 make it pass: prepare a new reviewed candidate after a source change.
 

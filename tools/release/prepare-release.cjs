@@ -13,6 +13,11 @@ const SMOKE_PATH = "tools/ci/run-installed-release-smoke.R";
 const NOTES_PATH = "docs/release/RELEASE-NOTES.md";
 const CHECK_NAMES = ["archive_build", "archive_scan", "archive_check", "installed_smoke",
   "github_install", "runiverse_install", "publication"];
+const PUBLIC_KEYS = ["schema_version", "source_commit", "source_tree", "package", "version",
+  "intended_tag", "tag_type", "preparation_status", "publication_authorized", "public_source_commit",
+  "publication_readiness", "release_notes_status", "checks"];
+const OID = /^(?:[0-9a-f]{40}|[0-9a-f]{64})$/;
+const SHA256 = /^[0-9a-f]{64}$/;
 
 class ReleaseError extends Error {
   constructor(code) {
@@ -61,11 +66,15 @@ function safeRelative(name) {
   return typeof name === "string" && name.length > 0 &&
     !/[\\\x00-\x1f\x7f]/.test(name) && !path.posix.isAbsolute(name) &&
     !/^[A-Za-z]:/.test(name) && name.split("/").every((part) =>
-      part !== "" && part !== "." && part !== ".." && part.toLowerCase() !== ".git");
+      part !== "" && part !== "." && part !== ".." && part.toLowerCase() !== ".git" &&
+      !/[<>:"|?*]/.test(part) && !/[. ]$/.test(part) &&
+      !/^(?:con|prn|aux|nul|com[1-9]|lpt[1-9])(?:\.|$)/i.test(part));
 }
 
 function selectedTree(repository, commit) {
-  return git(repository, ["ls-tree", "-r", "-z", "--full-tree", commit])
+  const bytes = git(repository, ["ls-tree", "-r", "-z", "--full-tree", commit], null);
+  if (!Buffer.from(bytes.toString("utf8")).equals(bytes)) fail("UNSAFE_SOURCE_ENTRY");
+  return bytes.toString("utf8")
     .split("\0").filter(Boolean).map((line) => {
       const match = /^(100644|100755) blob ([0-9a-f]{40,64})\t(.+)$/.exec(line);
       if (!match || !safeRelative(match[3])) fail("UNSAFE_SOURCE_ENTRY");
@@ -89,13 +98,14 @@ function canonicalOutput(repository, value) {
   const requested = path.resolve(value);
   let parent = requested;
   const suffix = [];
-  while (!fs.existsSync(parent)) {
+  while (!fs.lstatSync(parent, { throwIfNoEntry: false })) {
     suffix.unshift(path.basename(parent));
     const next = path.dirname(parent);
     if (next === parent) fail("INVALID_OUTPUT");
     parent = next;
   }
-  if (fs.lstatSync(parent).isSymbolicLink() && parent === requested) fail("OUTPUT_SYMLINK");
+  if (fs.lstatSync(parent).isSymbolicLink() &&
+      (parent === requested || !fs.existsSync(parent))) fail("OUTPUT_SYMLINK");
   const target = path.join(fs.realpathSync(parent), ...suffix);
   if (within(repository, target) || within(target, repository)) fail("OUTPUT_SOURCE_OVERLAP");
   if (fs.existsSync(target) && (!fs.lstatSync(target).isDirectory() ||
@@ -129,6 +139,108 @@ function inventory(root) {
   }
   visit(root);
   return entries.sort((a, b) => bytewise(a.path, b.path));
+}
+
+function readPacketFile(root, relative) {
+  if (!safeRelative(relative)) fail("UNSAFE_PACKET_ENTRY");
+  let absolute = root;
+  const parts = relative.split("/");
+  for (let i = 0; i < parts.length; i += 1) {
+    absolute = path.join(absolute, parts[i]);
+    const stat = fs.lstatSync(absolute);
+    if (stat.isSymbolicLink()) fail("PACKET_SYMLINK");
+    if (i < parts.length - 1 ? !stat.isDirectory() : !stat.isFile()) fail("UNSAFE_PACKET_ENTRY");
+  }
+  if (!within(root, fs.realpathSync(absolute))) fail("UNSAFE_PACKET_ENTRY");
+  const descriptor = fs.openSync(absolute, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0));
+  try {
+    const stat = fs.fstatSync(descriptor);
+    if (!stat.isFile() || stat.size > 128 * 1024 * 1024) fail("UNSAFE_PACKET_ENTRY");
+    return fs.readFileSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
+}
+
+function exactKeys(value, keys) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) &&
+    JSON.stringify(Object.keys(value).sort(bytewise)) === JSON.stringify([...keys].sort(bytewise));
+}
+
+function sortedUnique(entries) {
+  return entries.every((entry, i) => i === 0 || bytewise(entries[i - 1].path, entry.path) < 0);
+}
+
+function validateManifest(manifest) {
+  if (!exactKeys(manifest, [...PUBLIC_KEYS, "source_entries", "files", "content_sha256"]) ||
+      manifest.schema_version !== 1 || !OID.test(manifest.source_commit) ||
+      !OID.test(manifest.source_tree) || manifest.source_commit.length !== manifest.source_tree.length ||
+      manifest.package !== "GEModelR" || !/^[0-9]+(?:[.-][0-9]+)+$/.test(manifest.version) ||
+      manifest.intended_tag !== "v" + manifest.version || manifest.tag_type !== "annotated_unsigned" ||
+      manifest.preparation_status !== "prepared" || manifest.publication_authorized !== false ||
+      manifest.public_source_commit !== "not_created" || manifest.publication_readiness !== "unqualified" ||
+      !["ready", "unavailable"].includes(manifest.release_notes_status) ||
+      !exactKeys(manifest.checks, CHECK_NAMES) ||
+      CHECK_NAMES.some((name) => manifest.checks[name] !== "not_run") ||
+      !SHA256.test(manifest.content_sha256) || !Array.isArray(manifest.source_entries) ||
+      !manifest.source_entries.length || !Array.isArray(manifest.files) || !manifest.files.length) {
+    fail("INVALID_MANIFEST");
+  }
+  if (manifest.source_entries.some((entry) => !exactKeys(entry, ["path", "mode", "oid"]) ||
+      !safeRelative(entry.path) || !["100644", "100755"].includes(entry.mode) ||
+      !OID.test(entry.oid) || entry.oid.length !== manifest.source_commit.length) ||
+      !sortedUnique(manifest.source_entries) ||
+      manifest.files.some((entry) => !exactKeys(entry, ["path", "size", "sha256"]) ||
+        !safeRelative(entry.path) || entry.path === INVENTORY_PATH ||
+        !Number.isSafeInteger(entry.size) || entry.size < 0 || !SHA256.test(entry.sha256)) ||
+      !sortedUnique(manifest.files)) fail("INVALID_MANIFEST");
+}
+
+function gitObjectHash(type, bytes, algorithm) {
+  return crypto.createHash(algorithm).update(type + " " + bytes.length + "\0").update(bytes).digest("hex");
+}
+
+function verifySourceIdentity(root, manifest) {
+  const algorithm = manifest.source_commit.length === 40 ? "sha1" : "sha256";
+  const commit = readPacketFile(root, "private/support/source-commit.txt");
+  if (gitObjectHash("commit", commit, algorithm) !== manifest.source_commit ||
+      !commit.toString("utf8").startsWith("tree " + manifest.source_tree + "\n")) {
+    fail("SOURCE_IDENTITY_MISMATCH");
+  }
+  const tree = new Map();
+  for (const entry of manifest.source_entries) {
+    const bytes = readPacketFile(root, "private/source/" + entry.path);
+    if (gitObjectHash("blob", bytes, algorithm) !== entry.oid) fail("SOURCE_IDENTITY_MISMATCH");
+    const parts = entry.path.split("/");
+    const name = parts.pop();
+    let current = tree;
+    for (const part of parts) {
+      if (!current.has(part)) current.set(part, new Map());
+      current = current.get(part);
+      if (!(current instanceof Map)) fail("INVALID_MANIFEST");
+    }
+    if (current.has(name)) fail("INVALID_MANIFEST");
+    current.set(name, entry);
+  }
+  function treeHash(items) {
+    const sorted = [...items.entries()].sort(([a, av], [b, bv]) =>
+      bytewise(a + (av instanceof Map ? "/" : ""), b + (bv instanceof Map ? "/" : "")));
+    const body = Buffer.concat(sorted.map(([name, value]) => {
+      const directory = value instanceof Map;
+      const oid = directory ? treeHash(value) : value.oid;
+      return Buffer.concat([Buffer.from((directory ? "40000" : value.mode) + " " + name + "\0"),
+        Buffer.from(oid, "hex")]);
+    }));
+    return gitObjectHash("tree", body, algorithm);
+  }
+  if (treeHash(tree) !== manifest.source_tree) fail("SOURCE_IDENTITY_MISMATCH");
+  const metadata = parseDescription(readPacketFile(root, "private/source/DESCRIPTION"));
+  if (metadata.version !== manifest.version) fail("SOURCE_IDENTITY_MISMATCH");
+  const actualSource = manifest.files.filter((entry) => entry.path.startsWith("private/source/"))
+    .map((entry) => entry.path.slice("private/source/".length));
+  if (JSON.stringify(actualSource) !== JSON.stringify(manifest.source_entries.map((entry) => entry.path))) {
+    fail("SOURCE_IDENTITY_MISMATCH");
+  }
 }
 
 function scanPublic(directory) {
@@ -175,6 +287,7 @@ function prepareReleasePacket(options) {
     }
     writeFile(staging, "private/support/prepare-release.cjs", fs.readFileSync(__filename));
     writeFile(staging, "private/support/check-public-content.cjs", fs.readFileSync(scannerPath));
+    writeFile(staging, "private/support/source-commit.txt", git(repository, ["cat-file", "commit", commit], null));
     writeFile(staging, "public/run-installed-release-smoke.R",
       fs.readFileSync(path.join(staging, "private/source", SMOKE_PATH)));
     writeFile(staging, "public/registry/packages.json", json([{
@@ -205,15 +318,28 @@ function prepareReleasePacket(options) {
 
 function verifyReleasePacket(options) {
   if (typeof options.packet !== "string" || !options.packet.trim()) fail("MISSING_PACKET");
-  const root = path.resolve(options.packet);
-  if (fs.lstatSync(root).isSymbolicLink()) fail("PACKET_SYMLINK");
-  const contents = fs.readFileSync(path.join(root, INVENTORY_PATH), "utf8");
+  const requested = path.resolve(options.packet);
+  if (fs.lstatSync(requested).isSymbolicLink()) fail("PACKET_SYMLINK");
+  const root = fs.realpathSync(requested);
+  const contents = readPacketFile(root, INVENTORY_PATH).toString("utf8");
   let manifest;
   try { manifest = JSON.parse(contents); } catch { fail("INVALID_MANIFEST"); }
+  validateManifest(manifest);
   const expected = { ...manifest };
   delete expected.content_sha256;
   if (manifest.content_sha256 !== sha256(json(expected))) fail("MANIFEST_CHANGED");
   if (JSON.stringify(manifest.files) !== JSON.stringify(inventory(root))) fail("PACKET_CONTENT_CHANGED");
+  verifySourceIdentity(root, manifest);
+  let publicManifest;
+  try { publicManifest = JSON.parse(readPacketFile(root, "public/manifest.json")); }
+  catch (error) {
+    if (error instanceof ReleaseError) throw error;
+    fail("INVALID_MANIFEST");
+  }
+  if (!exactKeys(publicManifest, PUBLIC_KEYS) ||
+      PUBLIC_KEYS.some((name) => JSON.stringify(manifest[name]) !== JSON.stringify(publicManifest[name]))) {
+    fail("PUBLIC_MANIFEST_MISMATCH");
+  }
   scanPublic(path.join(root, "public"));
   return { status: "verified", source_commit: manifest.source_commit,
     content_sha256: manifest.content_sha256 };

@@ -131,6 +131,9 @@ test("rejects checkout overlap, symlink escape, and output collisions without re
     fs.symlinkSync(repository, alias, "junction");
     assert.equal(prepare(repository, path.join(alias, "packet")).stderr,
       "FAIL OUTPUT_SOURCE_OVERLAP\n");
+    const dangling = path.join(directory, "dangling");
+    fs.symlinkSync(path.join(directory, "missing"), dangling, "junction");
+    assert.equal(prepare(repository, dangling).stderr, "FAIL OUTPUT_SYMLINK\n");
     fs.mkdirSync(output);
     fs.writeFileSync(path.join(output, "keep.txt"), "preserve output\n");
     assert.equal(prepare(repository, output).stderr, "FAIL OUTPUT_NOT_EMPTY\n");
@@ -188,6 +191,21 @@ test("verification rejects malformed manifest fields even after recomputing its 
   });
 });
 
+test("source identity rejects altered source bytes even if inventory hashes are recomputed", () => {
+  fixture(({ repository, output }) => {
+    assert.equal(prepare(repository, output).status, 0);
+    const target = path.join(output, "private/source/R/model.R");
+    fs.writeFileSync(target, "model = function() 999\n");
+    rewriteManifest(output, (manifest) => {
+      const entry = manifest.files.find((item) => item.path === "private/source/R/model.R");
+      entry.size = fs.statSync(target).size;
+      entry.sha256 = crypto.createHash("sha256").update(fs.readFileSync(target)).digest("hex");
+    });
+    assert.equal(run(repository, ["verify", "--packet", output]).stderr,
+      "FAIL SOURCE_IDENTITY_MISMATCH\n");
+  });
+});
+
 test("verification rejects an escaped manifest before reading outside content", () => {
   fixture(({ directory, repository, output }) => {
     assert.equal(prepare(repository, output).status, 0);
@@ -221,8 +239,8 @@ test("verification rejects an escaped manifest before reading outside content", 
 
 test("stable inventory identity is independent of output location and creation order", () => {
   fixture(({ directory, repository, output }) => {
-    for (const name of ["z.txt", "a.txt", "A.txt"]) fs.writeFileSync(path.join(repository, name), name);
-    git(repository, ["add", "z.txt", "a.txt", "A.txt"]);
+    for (const name of ["z.txt", "a-lower.txt", "A-upper.txt"]) fs.writeFileSync(path.join(repository, name), name);
+    git(repository, ["add", "z.txt", "a-lower.txt", "A-upper.txt"]);
     git(repository, ["commit", "--quiet", "-m", "ordering"]);
     assert.equal(prepare(repository, output).status, 0);
     const another = path.join(directory, "another");
