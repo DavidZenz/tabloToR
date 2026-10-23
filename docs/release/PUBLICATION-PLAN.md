@@ -1,6 +1,6 @@
 # GEModelR first-release publication proposal
 
-Status: draft_not_authorized
+Status: local_preparation_complete_not_authorized
 Package: GEModelR
 Version: 0.1.0
 Candidate-Status: development
@@ -12,18 +12,37 @@ Proposed-Public-Branch: main
 Proposed-Registry-Repository: DavidZenz/davidzenz.r-universe.dev
 Proposed-Universe: https://davidzenz.r-universe.dev
 Publication-Authorization: pending
-Publication-Readiness: unqualified
-Development-Source-Commit: not_selected
-Development-Source-Tree: not_selected
-Public-Source-Commit: not_created
-Public-Source-Tree: not_created
+Publication-Readiness: blocked
+Development-Source-Commit: a0a42662a5a1199c5bf67276b97f772f83e68fa8
+Development-Source-Tree: 57ceade529c648b68a1326d2122aff76647aa591
+Public-Source-Commit: 4041517a944ca67724b4ca45b53a6ba27911eea5
+Public-Source-Tree: de6ea107d489528280ed13294320c7996ff4b425
 Archive-Source-Commit: not_built
 Archive-Basename: not_built
 Archive-SHA256: not_built
-Public-Policy-SHA256: not_frozen
-Registry-SHA256: not_frozen
-Release-Notes-SHA256: not_frozen
-Packet-Manifest-SHA256: not_prepared
+Public-Policy-SHA256: 0369647df01eae5b633e20efd9a460cae95f4e8559947c6ae991832066859947
+Registry-SHA256: 18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8
+Release-Notes-SHA256: 7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5
+Installed-Smoke-SHA256: f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15
+Packet-Manifest-SHA256: 7a61380fc34c9c8a632376b9090295b2281e37be12ddf0bc75c5fddd567ab833
+Preparation-Status: complete
+Qualification-Status: unavailable
+Matrix-Version: 1.6.3
+Matrix-Minimum: 1.6-5
+Runtime-Reason: MATRIX_BELOW_FLOOR
+Offline-Release-Guard-State: invalid
+Offline-Release-Guard-Exit: 1
+Offline-Release-Guard-Reasons: PROVENANCE_KEY_MISMATCH
+
+## Completed local handoff — 2026-10-23
+
+The source revision above was deliberately selected after the packet/projection tooling commit. Its policy covers exactly 662 tracked paths: 197 included public files and 465 reasoned exclusions. No new or unknown path was silently selected. The source repository's index bytes and ref/object IDs were unchanged by actual packet preparation, staging and qualification.
+
+The external packet contains the frozen committed development export, a separate public repository with one new root commit and no remote, the original-source private clone used only for one offline guard evaluation, private reachable-object inventories, and the scanned notes/registry/smoke assets above. Local packet verification passed after qualification. The review digest is the recorded private manifest SHA-256. Private local paths and raw logs remain external and are not upload assets.
+
+The actual prerequisite probe found Matrix 1.6.3 below the declared 1.6-5 floor. Therefore no package archive was built, scanned, checked, installed, or run through the actual numerical smoke; their statuses remain `not_run`, with archive fields `not_built`. The single actual offline canonical guard evaluation returned `invalid`, exit 1 and `PROVENANCE_KEY_MISMATCH`. The strict publication predicate correctly returned `FAIL PUBLICATION_NOT_READY`. These are actual outcomes, not mocked fixture results, and do not restart the accepted Phase 06 workflow.
+
+This private handoff document was completed after freezing the selected revision. Its later documentation commit and the Plan 07-03 summary do not change the frozen public source or assets. Any future source change requires a new explicit policy/source selection and packet; do not edit this packet into an apparent pass.
 
 This is a local proposal, not a rights decision, qualification result, or external-action authorization. Phase 06 was accepted for development workflow completion; its existing limitations are retained without reopening that phase. The final decision in Plan 07-04 follows useful local preparation and concerns one exact packet and action list. Public release guards retain their meanings at that boundary.
 
@@ -49,13 +68,13 @@ The public area contains only deliberately selected, scanned artifacts: a redact
 
 | Item | Current disposition |
 |------|---------------------|
-| Local packet tooling | Implemented by Plan 07-01; future real packet is selected and frozen in Plan 07-03 |
+| Local packet tooling and projection | Complete; the real frozen candidate and review digest are recorded above; local integrity verification passed |
 | Version/tag | `0.1.0` development candidate; proposed annotated unsigned `v0.1.0`; no tag published |
 | Local supported-runtime smoke | `not_run`; installed Matrix 1.6.3 is below the declared 1.6-5 floor |
-| Exact public-source archive, scan, check, and installation | Not yet built or qualified for this proposal |
+| Exact public-source archive, scan, check, and installation | `not_built` / `not_run`; actual unsupported Matrix prerequisite prevented these operations |
 | Full-scale benchmark and hosted Windows/serialization evidence | Existing accepted Phase 06 limitations; no new run or passing claim |
 | Benchmark preflight report privacy/reference binding | CR-06 and CR-07 remain known limitations; no new preflight attempt |
-| Canonical release guards | Dependency compatibility and attribution identity remain open; live provenance mismatch remains unresolved |
+| Canonical release guards | Actual offline guard returned `invalid`, exit 1, `PROVENANCE_KEY_MISMATCH`; dependency compatibility and attribution identity remain separately open |
 | Name availability | Must be refreshed immediately before an authorized release; no current release check is claimed |
 | Canonical repository, registry repository, R-universe app/domain | Proposed destinations; current remote state was not probed during this draft |
 | Source/metadata migration | New public root is proposed; no private Git history or private repository metadata is included implicitly |
