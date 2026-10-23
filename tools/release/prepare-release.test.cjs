@@ -370,6 +370,24 @@ function stage(repository, output) {
   return run(repository, ["stage-public-source", "--packet", output]);
 }
 
+const cleanR43CheckLog = [
+  "* using R version 4.3.0 (2023-04-21)",
+  "* using platform: x86_64-pc-linux-gnu (64-bit)",
+  "* using option '--as-cran'",
+  "* checking for file 'GEModelR/DESCRIPTION' ... OK",
+  "* checking extension type ... Package",
+  "* this is package 'GEModelR' version '0.1.0'",
+  "* checking CRAN incoming feasibility ... OK",
+  "* checking package dependencies ... OK",
+  "* checking whether package 'GEModelR' can be installed ... OK",
+  "* checking examples ... OK",
+  "* checking tests ...",
+  "  Running 'testthat.R'",
+  " OK",
+  "* DONE",
+  "Status: OK", ""
+].join("\n");
+
 test("public projection is an exact separate root commit with no private history or original mutation", () => {
   candidateFixture(({ repository, output }) => {
     const refs = git(repository, ["show-ref"]);
@@ -494,6 +512,8 @@ test("qualification builds projected bytes and shares one retained archive acros
       calls.push({ command, args, cwd: options.cwd });
       if (args.includes("--offline")) return { status: 0,
         stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
+      if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
+        stdout: JSON.stringify({ status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
       if (command === "Rscript" && args.includes("-e")) return { status: 0,
         stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5",
           matrix_minimum: "1.6-5" }), stderr: "" };
@@ -505,7 +525,7 @@ test("qualification builds projected bytes and shares one retained archive acros
       if (command === "R" && args[1] === "check") {
         const dir = args.find((arg) => arg.startsWith("--output=")).slice(9);
         fs.mkdirSync(path.join(dir, "GEModelR.Rcheck"), { recursive: true });
-        fs.writeFileSync(path.join(dir, "GEModelR.Rcheck/00check.log"), "* checking URLs ... OK\nStatus: OK\n");
+        fs.writeFileSync(path.join(dir, "GEModelR.Rcheck/00check.log"), cleanR43CheckLog);
       }
       if (command === "Rscript") return { status: 0, stdout: "PASS installed-release-smoke\n", stderr: "" };
       return { status: 0, stdout: "", stderr: "" };
@@ -519,6 +539,9 @@ test("qualification builds projected bytes and shares one retained archive acros
     assert.equal(manifest.archive_sha256, crypto.createHash("sha256").update(archiveBytes).digest("hex"));
     const check = calls.find((item) => item.command === "R" && item.args[1] === "check");
     const install = calls.find((item) => item.command === "R" && item.args[1] === "INSTALL");
+    assert.ok(install, "A clean supported R4.3 log must advance to installation");
+    assert.equal(manifest.checks.archive_check, "passed");
+    assert.equal(manifest.qualification.url_check_status, "passed");
     const scan = calls.find((item) => item.command === process.execPath && item.args.includes("--archive"));
     assert.equal(check.args.at(-1), install.args.at(-1));
     assert.equal(scan.args.at(-1), install.args.at(-1));
@@ -583,6 +606,8 @@ test("guard and build consume frozen blob bytes despite an external Git smudge/E
           assert.deepEqual(fs.readFileSync(args[1]), originalGuard);
           return { status: 0, stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
         }
+        if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
+          stdout: JSON.stringify({ status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
         if (command === "Rscript" && args.includes("-e")) return { status: 0,
           stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5", matrix_minimum: "1.6-5" }), stderr: "" };
         if (command === "R" && args[1] === "build") {
@@ -593,7 +618,7 @@ test("guard and build consume frozen blob bytes despite an external Git smudge/E
         if (command === "R" && args[1] === "check") {
           const check = args.find((arg) => arg.startsWith("--output=")).slice(9);
           fs.mkdirSync(path.join(check, "GEModelR.Rcheck"), { recursive: true });
-          fs.writeFileSync(path.join(check, "GEModelR.Rcheck/00check.log"), "* checking URLs ... OK\nStatus: OK\n");
+          fs.writeFileSync(path.join(check, "GEModelR.Rcheck/00check.log"), cleanR43CheckLog);
         }
         return { status: 0, stdout: command === "Rscript" ? "PASS installed-release-smoke\n" : "", stderr: "" };
       };
@@ -605,5 +630,72 @@ test("guard and build consume frozen blob bytes despite an external Git smudge/E
       if (previous === undefined) delete process.env.GIT_CONFIG_GLOBAL;
       else process.env.GIT_CONFIG_GLOBAL = previous;
     }
+  });
+});
+
+function qualificationRunner(calls, options = {}) {
+  return (command, args, settings) => {
+    calls.push({ command, args });
+    if (args.includes("--offline")) return { status: 0,
+      stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
+    if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) {
+      if (options.actualDisabledURL) return spawnSync(command, args, { ...settings,
+        env: { ...settings.env, _R_CHECK_CRAN_INCOMING_REMOTE_: "false" } });
+      return { status: 0, stdout: JSON.stringify(options.url || { status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
+    }
+    if (command === "Rscript" && args.includes("-e")) return { status: 0,
+      stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5", matrix_minimum: "1.6-5" }), stderr: "" };
+    if (command === "R" && args[1] === "build") fs.writeFileSync(path.join(settings.cwd, "GEModelR_0.1.0.tar.gz"), "fixture archive");
+    if (command === "R" && args[1] === "check") {
+      const directory = args.find((arg) => arg.startsWith("--output=")).slice(9);
+      fs.mkdirSync(path.join(directory, "GEModelR.Rcheck"), { recursive: true });
+      fs.writeFileSync(path.join(directory, "GEModelR.Rcheck/00check.log"), options.checkLog || cleanR43CheckLog);
+    }
+    return { status: 0, stdout: command === "Rscript" ? "PASS installed-release-smoke\n" : "", stderr: "" };
+  };
+}
+
+test("URL failures and unavailable/disabled checks remain separate from a clean R4.3 archive check", () => {
+  for (const variant of [
+    { url: { status: "failed", reason: "URLS_INVALID" }, expected: "failed" },
+    { url: { status: "unavailable", reason: "URL_CHECK_UNAVAILABLE" }, expected: "unavailable" },
+    { actualDisabledURL: true, expected: "unavailable" }
+  ]) {
+    candidateFixture(({ repository, output, directory }) => {
+      assert.equal(stage(repository, output).status, 0);
+      const calls = [];
+      const library = path.join(directory, "library");
+      fs.mkdirSync(library);
+      require(cli).qualifyReleasePacket({ packet: output, library,
+        runner: qualificationRunner(calls, variant) });
+      const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+      assert.equal(manifest.checks.archive_check, "passed");
+      assert.equal(manifest.qualification.url_check_status, variant.expected);
+      if (variant.actualDisabledURL) assert.equal(manifest.qualification.url_check_reason, "URL_CHECK_DISABLED");
+      assert.equal(manifest.qualification.install_status, "passed");
+      assert.equal(manifest.checks.installed_smoke, "passed");
+      assert.equal(manifest.qualification_status, variant.expected);
+      assert.equal(manifest.publication_readiness, "blocked");
+      manifest.qualification.evidence_kind = "actual";
+      assert.throws(() => require(cli).validatePublicationReadiness(manifest), { code: "PUBLICATION_NOT_READY" });
+      assert.ok(calls.some((item) => item.command === "R" && item.args[1] === "INSTALL"));
+    });
+  }
+});
+
+test("realistic R check warnings cannot advance to installation or acquire URL success", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    assert.equal(stage(repository, output).status, 0);
+    const calls = [];
+    const library = path.join(directory, "library");
+    fs.mkdirSync(library);
+    require(cli).qualifyReleasePacket({ packet: output, library,
+      runner: qualificationRunner(calls, { checkLog: cleanR43CheckLog.replace("Status: OK", "Status: 1 WARNING") }) });
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.checks.archive_check, "failed");
+    assert.equal(manifest.qualification.url_check_status, "not_run");
+    assert.equal(manifest.qualification.install_status, "not_run");
+    assert.equal(calls.some((item) => item.command === "R" && item.args[1] === "INSTALL"), false);
+    assert.equal(manifest.publication_readiness, "blocked");
   });
 });

@@ -503,7 +503,9 @@ function stagePublicSource(options) {
 }
 
 function validQualification(value) {
-  return exactKeys(value, ["evidence_kind", "runtime", "guard", "install_status", "archive_check_status", "reason_codes"]) &&
+  const keys = ["evidence_kind", "runtime", "guard", "install_status", "archive_check_status", "reason_codes"];
+  const legacy = exactKeys(value, keys);
+  return (legacy || exactKeys(value, [...keys, "url_check_status", "url_check_reason"])) &&
     ["actual", "fixture"].includes(value.evidence_kind) &&
     exactKeys(value.runtime, ["supported", "reason", "matrix_version", "matrix_minimum"]) &&
     typeof value.runtime.supported === "boolean" && /^[A-Z0-9_]+$/.test(value.runtime.reason) &&
@@ -515,6 +517,8 @@ function validQualification(value) {
     Array.isArray(value.guard.reason_codes) && value.guard.reason_codes.every((code) => /^[A-Z0-9_]+$/.test(code)) &&
     ["not_run", "passed", "failed"].includes(value.install_status) &&
     ["not_run", "passed", "failed"].includes(value.archive_check_status) &&
+    (legacy || (["not_run", "passed", "failed", "unavailable", "not_applicable"].includes(value.url_check_status) &&
+      /^[A-Z0-9_]+$/.test(value.url_check_reason))) &&
     Array.isArray(value.reason_codes) && value.reason_codes.every((code) => /^[A-Z0-9_]+$/.test(code));
 }
 
@@ -527,6 +531,8 @@ function validatePublicationReadiness(manifest) {
       qualification.guard.exit_status !== 0 || qualification.guard.reason_codes.length ||
       qualification.reason_codes.length || qualification.install_status !== "passed" ||
       qualification.archive_check_status !== "passed" || manifest.qualification_status !== "passed" ||
+      !((qualification.url_check_status === "passed" && qualification.url_check_reason === "URLS_VALIDATED") ||
+        (qualification.url_check_status === "not_applicable" && qualification.url_check_reason === "NO_URLS")) ||
       !OID.test(manifest.public_source_commit) || !OID.test(manifest.public_source_tree) ||
       !SHA256.test(manifest.source_policy_sha256) || !SHA256.test(manifest.archive_sha256) ||
       !archive || archive.sha256 !== manifest.archive_sha256 ||
@@ -605,6 +611,27 @@ function runtimeProbeCode() {
   ].join("\n");
 }
 
+function urlProbeCode() {
+  return String.raw`# GEModelR_RELEASE_URL_CHECK: separate evidence; a clean R check is not a URL pass.
+check = function() {
+  controls = tolower(Sys.getenv(c("_R_CHECK_CRAN_INCOMING_", "_R_CHECK_CRAN_INCOMING_REMOTE_"), unset = ""))
+  skip = tolower(Sys.getenv("_R_CHECK_CRAN_INCOMING_SKIP_URL_CHECKS_IF_REMOTE_", unset = ""))
+  if (any(controls %in% c("false", "f", "0", "no")) || skip %in% c("true", "t", "1", "yes"))
+    return(list(status = "unavailable", reason = "URL_CHECK_DISABLED"))
+  if (!capabilities("libcurl")) return(list(status = "unavailable", reason = "URL_CHECK_NO_LIBCURL"))
+  collect = getFromNamespace("url_db_from_package_sources", "tools")
+  validate = getFromNamespace("check_url_db", "tools")
+  urls = withCallingHandlers(collect(commandArgs(TRUE)[[1L]]), warning = function(w) stop("URL_CHECK_WARNING"))
+  if (!NROW(urls)) return(list(status = "not_applicable", reason = "NO_URLS"))
+  bad = withCallingHandlers(validate(urls, remote = TRUE), warning = function(w) stop("URL_CHECK_WARNING"))
+  if (NROW(bad)) list(status = "failed", reason = "URLS_INVALID")
+  else list(status = "passed", reason = "URLS_VALIDATED")
+}
+result = tryCatch(check(), error = function(e) list(status = "unavailable", reason = "URL_CHECK_UNAVAILABLE"))
+cat(sprintf('{"status":"%s","reason":"%s"}', result$status, result$reason))
+`;
+}
+
 function qualifyReleasePacket(options) {
   const { root, manifest } = readVerifiedPacket(options);
   if (manifest.public_source_commit === "not_created") fail("PUBLIC_SOURCE_NOT_STAGED");
@@ -621,7 +648,8 @@ function qualifyReleasePacket(options) {
     evidence_kind: options.runner ? "fixture" : "actual",
     runtime: { supported: false, reason: "RUNTIME_PROBE_FAILED", matrix_version: "unavailable", matrix_minimum: "1.6-5" },
     guard: { status: "unavailable", exit_status: null, reason_codes: ["GUARD_UNAVAILABLE"] },
-    install_status: "not_run", archive_check_status: "not_run", reason_codes: []
+    install_status: "not_run", archive_check_status: "not_run", url_check_status: "not_run",
+    url_check_reason: "NOT_RUN", reason_codes: []
   };
   const env = { ...process.env, R_LIBS_USER: library, R_LIBS_SITE: "" };
   function command(name, args, cwd, label, extraEnv = {}) {
@@ -685,10 +713,25 @@ function qualifyReleasePacket(options) {
           "--output=" + checkDirectory, archive], work, "archive-check");
         const checkLogPath = path.join(checkDirectory, manifest.package + ".Rcheck/00check.log");
         const checkLog = fs.existsSync(checkLogPath) ? fs.readFileSync(checkLogPath, "utf8") : "";
-        manifest.checks.archive_check = check.status === 0 && /^Status: OK\s*$/m.test(checkLog) &&
-          /\* checking URLs? \.\.\. OK/.test(checkLog) ? "passed" : "failed";
+        const statusLines = checkLog.match(/^Status:.*$/gm) || [];
+        manifest.checks.archive_check = check.status === 0 && statusLines.length === 1 &&
+          statusLines[0].trim() === "Status: OK" ? "passed" : "failed";
         qualification.archive_check_status = manifest.checks.archive_check;
         if (manifest.checks.archive_check === "passed") {
+          // R 4.3 reports URL work within CRAN incoming feasibility, without a
+          // standalone URL log step. Retain separate URL evidence rather than
+          // infer a network result from that general check status.
+          const urls = command("Rscript", ["--vanilla", "-e", urlProbeCode(), buildSource], work, "url-check");
+          qualification.url_check_status = "unavailable";
+          qualification.url_check_reason = "URL_CHECK_UNAVAILABLE";
+          try {
+            const result = JSON.parse(urls.stdout);
+            if (urls.status === 0 && exactKeys(result, ["status", "reason"]) &&
+                ["passed", "failed", "unavailable", "not_applicable"].includes(result.status) && /^[A-Z0-9_]+$/.test(result.reason)) {
+              qualification.url_check_status = result.status;
+              qualification.url_check_reason = result.reason;
+            }
+          } catch { /* Unavailable URL evidence cannot become a network pass. */ }
           const install = command("R", ["CMD", "INSTALL", "--library=" + installLibrary, archive], work, "archive-install");
           qualification.install_status = install.status === 0 ? "passed" : "failed";
           if (install.status === 0) {
@@ -704,6 +747,13 @@ function qualifyReleasePacket(options) {
     manifest.qualification_status = ["archive_build", "archive_scan", "archive_check", "installed_smoke"]
       .every((name) => manifest.checks[name] === "passed") ? "passed" : "failed";
     if (manifest.qualification_status !== "passed") qualification.reason_codes.push("ARCHIVE_QUALIFICATION_FAILED");
+    else if (qualification.url_check_status === "failed") {
+      manifest.qualification_status = "failed";
+      qualification.reason_codes.push("URL_CHECK_FAILED");
+    } else if (!["passed", "not_applicable"].includes(qualification.url_check_status)) {
+      manifest.qualification_status = "unavailable";
+      qualification.reason_codes.push("URL_CHECK_UNAVAILABLE");
+    }
   }
   manifest.qualification = qualification;
   manifest.publication_readiness = "blocked";

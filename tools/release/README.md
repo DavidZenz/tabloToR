@@ -75,8 +75,17 @@ HEAD/tree identifier alone is not proof of the files consumed by that command.
 When supported prerequisites exist, it builds solely from this verified checkout of
 the frozen projected public commit, then scans, checks and installs the same
 retained archive. `archive_source_commit` must equal `public_source_commit`, and
-the retained archive must match its declared SHA-256. The actual check requires
-`Status: OK`, zero exit status and a passing URL check, as in the existing workflow.
+the retained archive must match its declared SHA-256. The archive check requires
+one `Status: OK` line and zero exit status. This accepts supported R4.3 logs,
+which report URL work within CRAN incoming feasibility without a standalone URL
+line, and allows a clean archive check to advance to installation.
+
+URL disposition is separate evidence from a dedicated R tools URL check against
+the same verified source. It is `passed`, `failed`, `unavailable`, `not_applicable`
+(no URLs), or `not_run`; disabled checks, missing capabilities or failed probes
+never imply a network pass. Raw URL results stay private. Publication requires a
+successful explicit URL disposition as well as all package checks; failed or
+unavailable URLs remain blocking even if a clean package can install locally.
 
 An unsupported runtime completes local preparation with
 `qualification_status=unavailable`, archive fields `not_built`, and untouched
