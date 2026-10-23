@@ -300,6 +300,7 @@ Plans:
 **Wave 12** *(after Wave 11; hosted archive and serialization evidence)*
 
 - [x] 06-18-PLAN.md — Qualify the exact archive and installed serialization behavior on a supported hosted Matrix environment
+- [ ] 06-22-PLAN.md — Reassess user-confirmed benchmark evidence and local Matrix/archive qualification
 
 **Wave 13** *(after Wave 12; hosted Windows evidence)*
 
@@ -326,10 +327,6 @@ Plans:
 
 - [x] 06-06-PLAN.md
 - [x] 06-21-PLAN.md — Halted: matched reference artifacts and configured GTAP 12a inputs are unavailable
-
-**Wave 6** *(after the 06-21 preflight; supplied local evidence and runtime gates)*
-
-- [ ] 06-22-PLAN.md — Reassess user-confirmed benchmark evidence and local Matrix/archive qualification
 
 ### Phase 7: GitHub and R-universe Release
 
