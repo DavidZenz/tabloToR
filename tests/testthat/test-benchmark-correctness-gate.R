@@ -24,12 +24,24 @@ benchmark_gate_source_root = function() {
   candidates = candidates[vapply(candidates, function(path) {
     file.exists(file.path(path, "DESCRIPTION")) &&
       dir.exists(file.path(path, "R")) &&
-      dir.exists(file.path(path, "benchmarks"))
+      (dir.exists(file.path(path, "benchmarks")) ||
+       dir.exists(file.path(path, "inst", "benchmarks")))
   }, logical(1L))]
   if (!length(candidates)) {
     stop("GEModelR source tree is unavailable", call. = FALSE)
   }
   normalizePath(candidates[[1L]], winslash = "/", mustWork = TRUE)
+}
+
+benchmark_gate_source_script = function() {
+  root = benchmark_gate_source_root()
+  candidates = c(
+    file.path(root, "benchmarks", "check_benchmark_gate.R"),
+    file.path(root, "inst", "benchmarks", "check_benchmark_gate.R")
+  )
+  hit = candidates[file.exists(candidates)]
+  if (!length(hit)) stop("Benchmark correctness script is unavailable", call. = FALSE)
+  normalizePath(hit[[1L]], mustWork = TRUE)
 }
 
 benchmark_gate_test_install = function() {
@@ -165,9 +177,7 @@ benchmark_gate_test_cli = function(script, input_dir, output) {
 }
 
 test_that("installed benchmark gate requires a matched solution pair", {
-  source_script = file.path(
-    benchmark_gate_source_root(), "benchmarks", "check_benchmark_gate.R"
-  )
+  source_script = benchmark_gate_source_script()
   source_environment = new.env(parent = globalenv())
   sys.source(source_script, envir = source_environment)
   expect_true(is.function(source_environment$benchmark_validate_solution_artifacts))
@@ -224,10 +234,7 @@ test_that("installed benchmark gate requires a matched solution pair", {
 
 
 benchmark_gate_task2_source_script = function() {
-  normalizePath(
-    file.path(benchmark_gate_source_root(), "benchmarks", "check_benchmark_gate.R"),
-    mustWork = TRUE
-  )
+  benchmark_gate_source_script()
 }
 
 benchmark_gate_task2_run_id = function(backend, repetition = 1L,

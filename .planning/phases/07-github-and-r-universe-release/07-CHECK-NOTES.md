@@ -54,3 +54,9 @@ filter now excludes all root docs and specs as well. These paths and Rbuildignor
 are outside the fingerprinted runtime scope; the one identity refresh remains
 valid unchanged. The intermediate archive/logs are retained; the final archive
 will be rebuilt into a separate directory, never overwritten while being checked.
+
+The intermediate archive's full suite also exposed five benchmark test errors
+from two additional hardcoded root benchmark lookups. Their source locators now
+support inst/benchmarks in source archives; execution and independent installed
+script hash assertions remain intact. No tests are disabled to clear these
+errors. The changes are test-only and outside the runtime fingerprint scope.

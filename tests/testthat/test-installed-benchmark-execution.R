@@ -241,6 +241,7 @@ test_that("installed sweep executes the packaged child with RDS input", {
   installed_child = benchmark_gap_script(
     state, "benchmark_gtap12a_run.R"
   )
+  if (!file.exists(source_child)) source_child = packaged_child
   if (!file.exists(packaged_child)) packaged_child = source_child
   testthat::expect_true(file.exists(packaged_child))
   testthat::expect_identical(
