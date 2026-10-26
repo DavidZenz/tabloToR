@@ -11,7 +11,9 @@ benchmark_source_script_path <- function(name) {
              file.path("..", "..", ".."))
   candidates <- unique(unlist(lapply(roots, function(root) c(
     file.path(root, "benchmarks", name),
-    file.path(root, "00_pkg_src", "GEModelR", "benchmarks", name)
+    file.path(root, "inst", "benchmarks", name),
+    file.path(root, "00_pkg_src", "GEModelR", "benchmarks", name),
+    file.path(root, "00_pkg_src", "GEModelR", "inst", "benchmarks", name)
   ))))
   hit <- candidates[file.exists(candidates)]
   if (!length(hit)) return("")
@@ -161,7 +163,7 @@ test_that("active benchmark producers use exact GEModelR identity", {
     )
   )
   # Three producer scripts are intentionally source-only. Their source audit
-  # still runs from the repository and R CMD check source fixture.
+  # still runs from the repository; these drivers are outside the archive.
   skip_if_not(all(vapply(names(expected), function(name) {
     nzchar(benchmark_source_script_path(name))
   }, logical(1))), "Complete source-only producer audit requires package sources")

@@ -20,9 +20,10 @@
 ^AGENTS\.md$
 ^CONTRIBUTORS\.md$
 ^GOVERNANCE\.md$
-^benchmarks/\.
-^benchmarks/repair-[^/]*$
-^benchmarks/(deep-review-[^/]*|optimization-(check|repetitions|results|test-delta)-[^/]*)$
+^_pkgdown\.yml$
+^pkgdown$
+^MIGRATION\.md$
+^benchmarks$
 ^docs/provenance$
 ^docs/release$
 ^inst/migration/old-identity-allowlist\.csv$

@@ -305,7 +305,8 @@ test_that("DESCRIPTION applies the reviewed current identity without licensing",
   expect_true("Authors@R" %in% colnames(description))
   expect_identical(
     unname(description[[1L, "Author"]]),
-    "David Zenz [aut, cre, cph], Maros Ivanic [aut]"
+    paste0("David Zenz [aut, cre, cph], Maros Ivanic [aut] ",
+           "(Author of the reviewed public-domain/CC0 upstream tabloToR baseline)")
   )
   authorEnvironment = list2env(
     list(person = utils::person), parent = baseenv()

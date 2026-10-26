@@ -130,6 +130,7 @@
     "tests/testthat/test-compatibility-helpers.R",
     "tests/testthat/test-compatibility-manifest.R",
     "tests/testthat/test-documented-workflow.R",
+    "tests/testthat/test-formula-processing.R",
     "tests/testthat/test-gtap12a-reference-preflight.R",
     "tests/testthat/test-identity-migration.R",
     "tests/testthat/test-installed-benchmark-execution.R",
@@ -1679,6 +1680,10 @@
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-04-PLAN.md",
       "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-CHECK-NOTES.md",
+      "reason": "Private local package-check cleanup and validation evidence"
     },
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md",

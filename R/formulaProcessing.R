@@ -1,5 +1,5 @@
 sumToMap = function(expr) {
-    if (class(expr) == 'name') {
+  if (inherits(expr, "name")) {
     return(expr)
   }
 
