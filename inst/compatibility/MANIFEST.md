@@ -15,7 +15,7 @@ finalized; categories use only the reviewed audit vocabulary.
 |---|---|---:|---|
 | `README.md` | upstream-attribution, migration-instruction | 4 | Exact upstream repository, audited commit, and migration route |
 | `MIGRATION.md` | upstream-attribution, migration-instruction, old-option-replacement | 41 | Exact mechanical replacements and approved immutable saved-state bridge |
-| `inst/CITATION` | upstream-attribution | 3 | Truthful separately cited predecessor source |
+| `inst/CITATION` | upstream-attribution | 4 | Truthful separately cited predecessor source and upstream attribution |
 | `tests/testthat/test-identity-migration.R` | migration-instruction, old-option-replacement | 23 | Regression assertions for exact predecessor-to-current replacements |
 
 `R/main.R` and `inst/compatibility/GEModel-contract.csv` contain current GEModelR

@@ -83,6 +83,7 @@
     "inst/migration/predecessor-fingerprints.dcf",
     "inst/migration/serialization-bugfix.dcf",
     "inst/migration/serialization-bugfix.patch",
+    "inst/migration/source-identity-review.dcf",
     "inst/migration/workflow-evidence-policy-review.dcf",
     "inst/migration/workflow-evidence-policy.csv",
     "inst/tools/accept_phase02_baselines.R",
@@ -1686,6 +1687,10 @@
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-CONTEXT.md",
       "reason": "Private development planning, decisions, and retained evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-IDENTITY-REFRESH.md",
+      "reason": "Private technical identity review and local validation evidence"
     },
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-PATTERNS.md",

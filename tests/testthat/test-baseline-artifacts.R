@@ -497,6 +497,38 @@ test_that("migration identity map has a strict reviewed schema", {
   }
 })
 
+test_that("current source identity review binds the exact refreshed evidence", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  root = refresh$phase02_repository_root()
+  record = read.dcf(file.path(root, "inst", "migration",
+                              "source-identity-review.dcf"))[1L, ]
+  expect_identical(unname(record[["Schema"]]),
+                   "gemodelr-source-identity-review-v1")
+  expect_identical(unname(record[["Review-Type"]]),
+                   "automated technical review; maintainer-authorized update")
+  files = c(
+    "Map-SHA256" = "benchmark-identity-map.dcf",
+    "Registry-SHA256" = "historical-evidence.dcf",
+    "Allowlist-SHA256" = "old-identity-allowlist.csv"
+  )
+  for (field in names(files)) {
+    expect_identical(unname(record[[field]]),
+      refresh$phase02_original_sha256_file(
+        file.path(root, "inst", "migration", files[[field]])
+      ), info = field)
+  }
+  map = refresh$phase02_load_identity_map(root = root)
+  expect_identical(unname(record[["Normalized-Source-Fingerprint"]]),
+                   unique(map$`Normalized-Source-Fingerprint`))
+  expect_identical(unname(record[["Mixed-Case-Occurrences"]]),
+                   map$`Expected-Occurrences`[[1L]])
+  expect_identical(unname(record[["Upper-Case-Occurrences"]]),
+                   map$`Expected-Occurrences`[[2L]])
+  expect_identical(unname(record[["Immutable-Evidence-Changed"]]), "false")
+  expect_true(refresh$phase02_check_original_artifacts(root = root)$clean)
+})
+
 test_that("migration source gate accepts identity-only substitutions", {
   phase02_require_source_tree()
   refresh = load_phase02_tool("refresh_phase02_baselines.R")
@@ -525,8 +557,8 @@ test_that("migration source gate rejects every non-identity contract drift", {
   map = refresh$phase02_load_identity_map()
   mutations = list(
     algorithm = c(
-      "R/sparseSolver.R", "residual_norm / max(1, rhs_norm)",
-      "residual_norm / max(2, rhs_norm)"
+      "R/sparseSolver.R", "sparse_relative_l2(residual, rhs)",
+      "sparse_relative_l2(residual, rhs, absolute_floor = 2)"
     ),
     signature = c(
       "R/GEModel.R", "solveModel = function(iter = 3",
@@ -544,7 +576,7 @@ test_that("migration source gate rejects every non-identity contract drift", {
       "order_value = order(j, i)"
     ),
     residual = c(
-      "R/sparseSolver.R", "relative_l2 = residual_norm / max(1, rhs_norm)",
+      "R/sparseSolver.R", "relative_l2 = sparse_relative_l2(residual, rhs)",
       "relative_l2 = 0"
     ),
     unmapped_identity = c(

@@ -56,7 +56,12 @@ test_that("historical registry freezes evidence and numerical source", {
   expect_true(all(source$`Identity-Mode` == "exact-map-v1"))
   expect_identical(
     registry$Region[registry$`Record-Id` == "gemodel-warning-region"],
-    "lines-228-228"
+    "lines-615-615"
+  )
+  expect_identical(
+    readLines(file.path(tool$identity_repository_root(), "R", "GEModel.R"),
+              warn = FALSE)[[615L]],
+    "      data$eqcoeff = Matrix::sparseMatrix("
   )
 })
 

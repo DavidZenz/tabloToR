@@ -257,7 +257,7 @@ identity_expected_registry_metadata = function() {
     Region = c(
       rep("whole-file", 5L),
       rep("identity-normalized-whole-file", 4L),
-      "lines-228-228"
+      "lines-615-615"
     ),
     `Identity-Mode` = c(rep("raw", 5L), rep("exact-map-v1", 4L), "raw"),
     stringsAsFactors = FALSE,
@@ -567,7 +567,7 @@ identity_validate_numerical_contracts = function(
     c("gemodel", 'engine = c("legacy", "sparse"),'),
     c("gemodel", 'backend = "Matrix",'),
     c("solver", "order_value = order(i, j)"),
-    c("solver", "relative_l2 = residual_norm / max(1, rhs_norm)"),
+    c("solver", "relative_l2 = sparse_relative_l2(residual, rhs)"),
     c("solver", "residual_tolerance = 2e-7"),
     c("solver", 'getOption("<<PACKAGE-IDENTITY-MIXED>>.sparse.lu_order", 3L)'),
     c("solver", '"<<PACKAGE-IDENTITY-MIXED>>.sparse.elimination_pivot_tolerance", 1e-12'),
@@ -749,6 +749,12 @@ identity_active_owner = function(path, line, position) {
   ) || (
     path == "NEWS.md" &&
     identical(line, paste0(
+      "- Maros Ivanic authored the upstream `", old_name,
+      "` baseline; David Zenz authored the"
+    ))
+  ) || (
+    path == "NEWS.md" &&
+    identical(line, paste0(
       "- Credited Maros Ivanic for the upstream `", old_name,
       "` baseline under the reviewed"
     ))
@@ -830,7 +836,8 @@ identity_occurrence_category = function(
     "tests/testthat/test-model-serialization.R",
     "tests/testthat/test-serialization-leaf-types.R",
     "tools/check_predecessor_bridge.R",
-    "tools/check_serialization_bugfix.R"
+    "tools/check_serialization_bugfix.R",
+    "docs/release/public-source.json"
   )) {
     return("reviewed-serialization-fingerprint")
   }
@@ -858,13 +865,15 @@ identity_occurrence_category = function(
     "tests/testthat/test-benchmark-harness.R",
     "tools/check_identity_migration.R",
     "tools/qualify_phase03_migration.R",
-    "tests/testthat/test-phase03-identity-reseal.R"
+    "tests/testthat/test-phase03-identity-reseal.R",
+    "pkgdown/index.md", "vignettes/backend-selection.Rmd",
+    "vignettes/legacy-to-sparse.Rmd", "tools/ci/verify-matrix-floor-evidence.R"
   )) {
     return("migration-instruction")
   }
   if (grepl("^docs/provenance/", path) ||
       path %in% c(
-        "DESCRIPTION", "inst/CITATION",
+        "DESCRIPTION", "inst/CITATION", "man/GEModelR-package.Rd",
         "CONTRIBUTORS.md", "NEWS.md",
         "tests/testthat/test-attribution-contract.R",
         "tests/testthat/test-release-gates.R"
