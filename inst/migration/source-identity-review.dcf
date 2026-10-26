@@ -1,18 +1,18 @@
 Schema: gemodelr-source-identity-review-v1
-Source-Commit: 5e23ca046dc4c12a2e25528756d5d5de6ddddb50
-Previous-Map-SHA256: ab22940ea1f27568e02007cf841abafabaf48767d12ed520698320f1128e7be7
-Map-SHA256: bc86a9f7663c6102ea92b95492c8e06f7039982f4aa7a90fed318cd92498b9ca
-Previous-Registry-SHA256: 1ef7e42f6af7ca02b71d68744530afcc673d6f8d985c89021e5258ed14f56673
+Source-Commit: 8d4d9c9ee183fbe391fdb3e3e3876331f8c0ef8e
+Previous-Map-SHA256: bc86a9f7663c6102ea92b95492c8e06f7039982f4aa7a90fed318cd92498b9ca
+Map-SHA256: eea9db2264234e7b9cf1129bb4e568fd6d904235b7c0b20146c3337e00545f97
+Previous-Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
 Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
-Previous-Allowlist-SHA256: 1bf1d3117bce193ef4ca6018ac6dec2fc55e2605f9fb89939d894cba82ae60ac
-Allowlist-SHA256: 5582aa37a3932e2f293064d7bf0d3423b19820cf2702355c56e9caa3bb2a133a
-Normalized-Source-Fingerprint: edc688b8dc55aa908dd41f7afb420375
-Mixed-Case-Occurrences: 420
+Previous-Allowlist-SHA256: 5582aa37a3932e2f293064d7bf0d3423b19820cf2702355c56e9caa3bb2a133a
+Allowlist-SHA256: 5f7fb37bc9ce20d940d7402babb7248fecd852944fe96bae20ac4d51d1d5dba4
+Normalized-Source-Fingerprint: 99cc904fa2d5934dd9aa8294782175ad
+Mixed-Case-Occurrences: 421
 Upper-Case-Occurrences: 2
 Protected-Region: R/GEModel.R:615-615
 Immutable-Evidence-Changed: false
 Review-Type: automated technical review; maintainer-authorized update
-Authorization: Maintainer instruction on 2026-10-26: update the identity evidence
+Authorization: Maintainer instruction on 2026-10-26: apply the three proposed routine package-check fixes and refresh affected identity fingerprints once
 Reviewer: Codex automated source and regression review
-Reviewed-UTC: 2026-10-26T19:45:10Z
-Scope: Current committed source following API, lifecycle, residual-scaling and cache fixes; the prior numerical baseline and predecessor bridge are unchanged. Existing uncommitted solver edits are excluded. This record is technical evidence, not a rights attestation or publication approval.
+Reviewed-UTC: 2026-10-26T20:08:56Z
+Scope: Committed author metadata, archive exclusions and equivalent formula symbol checks; protected solver sources, historical numerical/predecessor artifacts, human serialization approval and rights/provenance are unchanged. Uncommitted solver work is excluded.

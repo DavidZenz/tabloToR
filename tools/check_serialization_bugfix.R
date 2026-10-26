@@ -316,7 +316,7 @@ serialization_bugfix_validate_protection = function(root) {
     rep("R/modelSerialization.R", 2L)
   ) || !identical(
     unname(map[["Normalized-Source-Fingerprint"]]),
-    rep("edc688b8dc55aa908dd41f7afb420375", 2L)
+    rep("99cc904fa2d5934dd9aa8294782175ad", 2L)
   )) {
     serialization_bugfix_stop(
       "identity map does not retain the exact reviewed serialization exclusion"
