@@ -24,8 +24,8 @@
 ^pkgdown$
 ^MIGRATION\.md$
 ^benchmarks$
-^docs/provenance$
-^docs/release$
+^docs$
+^specs$
 ^inst/migration/old-identity-allowlist\.csv$
 ^inst/tools$
 ^tests/testthat/test-(attribution-contract|release-gates)\.R$

@@ -46,3 +46,11 @@ Protected registry SHA256 remains
 Focused formula regressions pass all 5 assertions, including independently
 calculated nested-sum results. Source benchmark contracts pass all 6 tests and
 57 assertions with zero skips; source-only producer coverage is preserved.
+
+The initial direct-check archive confirmed the author and R-code checks are OK.
+Its top-level check exposed two additional repository-only directories that
+earlier projected builds omitted: docs/migration and specs/cleanroom. The build
+filter now excludes all root docs and specs as well. These paths and Rbuildignore
+are outside the fingerprinted runtime scope; the one identity refresh remains
+valid unchanged. The intermediate archive/logs are retained; the final archive
+will be rebuilt into a separate directory, never overwritten while being checked.
