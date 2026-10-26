@@ -88,6 +88,10 @@ data.frame(
 
 If your code still names the predecessor package, replace `tabloToR` with
 `GEModelR` directly. GEModelR does not provide a compatibility shim. The root
-[`MIGRATION.md`](https://github.com/DavidZenz/GEModelR/blob/master/MIGRATION.md) is authoritative for package, option,
+`MIGRATION.md` in the source checkout is authoritative for package, option,
 environment-variable, and saved-state replacements; this vignette covers only
 the legacy-versus-sparse runtime choice.
+
+The canonical repository's first source publication and hosted documentation
+are pending. This installed vignette and the local source guide remain usable
+before those publication links are available.

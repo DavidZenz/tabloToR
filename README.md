@@ -289,3 +289,18 @@ The external benchmark preflight also has known report-redaction and reference-f
 binding limitations; its eligibility report alone is not publication-grade
 correctness evidence. Private model inputs, full solutions, and raw measurements
 are not part of the proposed public source distribution.
+
+## Development and publication links
+
+The canonical [GEModelR repository](https://github.com/DavidZenz/GEModelR) is a
+separate publication target. Its first source snapshot and release are pending;
+the [issue tracker](https://github.com/DavidZenz/GEModelR/issues) is available.
+The documentation address remains a planned destination until the site is
+published. Use the bundled guides locally with
+`browseVignettes("GEModelR")` or read `MIGRATION.md` in this checkout.
+After the first publication on `main`, the complete migration reference will be
+at `https://github.com/DavidZenz/GEModelR/blob/main/MIGRATION.md`.
+
+Development keeps its existing repository and full history. Publication uses a
+separate, allowlisted source snapshot with no development-history parents;
+creating the empty publication repository does not itself publish that snapshot.

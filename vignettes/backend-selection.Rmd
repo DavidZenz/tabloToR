@@ -94,5 +94,7 @@ model$solveModel(engine = "sparse", backend = "SuiteSparse")
 ```
 
 For package-name, option, and saved-state replacements from `tabloToR`, use the
-authoritative root [`MIGRATION.md`](https://github.com/DavidZenz/GEModelR/blob/master/MIGRATION.md). Backend selection does
-not change that package identity migration.
+[local migration guide](legacy-to-sparse.html) and the authoritative
+`MIGRATION.md` in the source checkout. The canonical repository's first source
+publication and hosted documentation are pending. Backend selection does not
+change that package identity migration.

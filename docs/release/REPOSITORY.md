@@ -110,3 +110,20 @@ blocking-human authorization for the exact commit, tag, artifacts, visibility,
 and publication destinations. This includes GitHub releases, public source,
 package archives, documentation sites, and R-universe. The current marker is
 `Release-Authorization: not-authorized`.
+
+## Maintainer-created publication target (2026-10-26)
+
+The maintainer created `git@github.com:DavidZenz/GEModelR.git` and selected a
+development/publication split. Read-only GitHub checks confirm repository ID
+`1434914481`, public visibility, an empty source history, and issues enabled.
+The intended first public branch is `main`; no branch commit exists yet.
+The earlier private-target creation instructions are historical preparation
+guidance. The current boundary protects private development history and evidence
+by publishing only an allowlisted snapshot into this maintainer-created target.
+
+The existing development checkout and its `origin` retain full history. The
+initial publication is an independently verified root commit prepared by
+`tools/release/prepare-release.cjs`; later releases should retain only public
+release history. No development-history mirror, remote rewrite, force-push,
+repository setting change, or deployment follows implicitly from this choice.
+Keep-local remains active until an exact snapshot publication is requested.

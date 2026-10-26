@@ -8,7 +8,7 @@ diagnostics, migration, and package development.
 
 - [Run your first simulation](articles/first-simulation.html)
 - [Choose a solver backend](articles/backend-selection.html)
-- [Migrate from `tabloToR`](https://github.com/DavidZenz/GEModelR/blob/master/MIGRATION.md)
+- [Migrate from `tabloToR`](articles/legacy-to-sparse.html)
 
 ## Guides
 
@@ -19,3 +19,7 @@ diagnostics, migration, and package development.
 - [Contributing](articles/contributing.html)
 
 Browse the [package reference](reference/index.html) for the documented API.
+
+The canonical repository is reserved for publication snapshots. The hosted
+documentation site and first public source release are pending; the guides also
+work in a locally built site and as installed package vignettes.

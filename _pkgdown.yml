@@ -50,7 +50,7 @@ navbar:
           href: articles/contributing.html
     migration:
       text: Migration
-      href: https://github.com/DavidZenz/GEModelR/blob/master/MIGRATION.md
+      href: articles/legacy-to-sparse.html
 
 articles:
   - title: User guides

@@ -30,6 +30,20 @@ if (!dir.exists(packageRoot)) {
   stop("Extracted package directory is missing: ", packageRoot, call. = FALSE)
 }
 
+# Site configuration and the curated landing page belong to the checkout,
+# while R source archives deliberately exclude those repository-only files.
+for (input in c("_pkgdown.yml", file.path("pkgdown", "index.md"))) {
+  link = Sys.readlink(input)
+  if (!isTRUE(file_test("-f", input)) || (!is.na(link) && nzchar(link))) {
+    stop("Documentation input is missing or linked: ", input, call. = FALSE)
+  }
+  target = file.path(packageRoot, input)
+  dir.create(dirname(target), recursive = TRUE, showWarnings = FALSE)
+  if (!isTRUE(file.copy(input, target, overwrite = TRUE))) {
+    stop("Unable to stage documentation input: ", input, call. = FALSE)
+  }
+}
+
 pkgdown::build_site(pkg = packageRoot)
 
 siteRoot = file.path(packageRoot, ".pkgdown-site")

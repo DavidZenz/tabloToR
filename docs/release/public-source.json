@@ -1698,6 +1698,10 @@
       "reason": "Private technical identity review and local validation evidence"
     },
     {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-LINKS-AND-PUBLIC-SOURCE.md",
+      "reason": "Private link verification and publication-source preparation evidence"
+    },
+    {
       "path": ".planning/phases/07-github-and-r-universe-release/07-PATTERNS.md",
       "reason": "Private development planning, decisions, and retained evidence"
     },

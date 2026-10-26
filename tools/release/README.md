@@ -149,3 +149,28 @@ packet CLI does not record this additional test result; retain its log alongside
 the packet evidence. Keep the raw result separate from the packet manifest and
 from the installed suite's status. PDF/HTML checks need actual `qpdf` and `tidy`
 executables, and Markdown checks need Pandoc on `PATH`.
+
+## Development and publication history
+
+Keep the current development checkout's `origin` and full history unchanged.
+The canonical `git@github.com:DavidZenz/GEModelR.git` repository is a separate
+publication destination; the maintainer has created it as an empty public repo.
+Its initial public branch is intended to be `main`.
+
+For the first publication, `prepare` freezes one development commit and
+`stage-public-source` writes only its explicit public allowlist into a new local
+repository. That repository has one root commit, no development-history parents,
+and no remote. Its public tree, source files and separate development/public
+identities are verified before any publication decision. Do not push development
+`master`, mirror development refs, copy `.git`, or merge development history into
+the publication repository. The CLI commands above never push or deploy.
+
+Later releases should append commits to the existing public release history from
+a clean public checkout, applying only the new reviewed snapshot. Use normal
+fast-forward updates and retain prior public tags; do not force-push another
+orphan root. The current staging CLI prepares an initial root, so repeat-release
+parenting must be handled explicitly before a later publication, rather than
+assuming that a newly staged root can fast-forward the existing public branch.
+
+The maintainer's creation of the empty target establishes its location, not
+approval of any particular source snapshot, archive, tag, or hosted deployment.
