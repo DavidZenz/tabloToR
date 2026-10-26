@@ -69,9 +69,8 @@ technical review record and excludes this private report.
 - Tracked-source audit: passed; 1063 exact allowlisted occurrences, zero active
   owners, 11 workflow-policy occurrences.
 - Numerical defaults/ordering/tolerance identity contracts: passed.
-- Source serialization group passed in the preliminary combined run. A stale
-  citation count discovered there is fixed. The reseal lifecycle test clones
-  committed HEAD and must be rerun after committing the candidate evidence.
+- Source identity migration and serialization groups pass. A stale citation
+  count discovered in the preliminary run is fixed.
 - The independent release guard remains invalid with PROVENANCE_KEY_MISMATCH;
   canonical provenance and rights records were not edited.
 
@@ -86,10 +85,48 @@ rtk proxy Rscript --vanilla tools/check_identity_migration.R --tracked-source
 rtk proxy Rscript --vanilla tools/ci/run-source-tool-tests.R SOURCE_ROOT ARCHIVE_LIBRARY
 ```
 
-The final combined source/serialization/reseal regressions will be recorded
-after the evidence commit so Git lifecycle tests consume the actual update.
+### Committed-source verification
+
+Commit `5c252ab8ca95aa8559bc49ddc0d01f7ce0cae57d` contains the evidence update.
+A fresh clone at `/tmp/GEModelR-identity-refresh-WRkH9w/verified-source` was used
+for the combined run, with one installed namespace and source evaluation only
+in separate processes. Results in `logs/verified-regressions.log` and
+`verified-regressions.rds`:
+
+| Group | Passing assertions | Failures | Errors | Skips |
+|-------|-------------------:|---------:|-------:|------:|
+| baseline-artifacts | 132 | 0 | 0 | 0 |
+| gtap12a-reference-preflight | 20 | 0 | 0 | 0 |
+| identity-migration | 147 | 0 | 0 | 0 |
+| model-serialization | 243 | 0 | 0 | 0 |
+| phase03-identity-reseal | 23 | 0 | 1 | 0 |
+
+64 of 65 tests completed without an error, with 565 passing assertions and no
+failed expectations or skips. All previously reported identity-map source errors,
+including the source-only serialization exclusion check, are resolved.
+
+The broader clone-based final-tree reseal exposed one further hardcoded old
+identity fingerprint in `tools/check_serialization_bugfix.R`. That pin is updated
+to the same current fingerprint; its direct protection check now passes. The
+unchanged approved serialization BUGFIX record then rejects the live source for
+a distinct pre-existing reason: approved After-SHA256 is
+`c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e`, whereas current
+committed source is `dc2d3f3ba4fbaae6fc4b20ec7403fc19cf70f9db8c309c93566142e775dee874`.
+This is recorded in `logs/serialization-protection-final.log`; it is not converted
+into a pass or a new human approval. The historical BUGFIX record and patch
+remain byte-identical, as do all seven original/predecessor files. A current
+serialization technical review would be a separate update from this identity
+reseal. Full-tree reseal is therefore still blocked despite the passing identity
+audits and current serialization regression tests.
+
+The public-source policy has 673 exact tracked-path dispositions. R syntax and
+whitespace checks pass; sixteen pre-existing working-file hashes are unchanged.
+No production R/native source changed in this task. The last auxiliary identity
+pin was verified directly; the combined run above is not relabeled as passing.
+
 The previous archive's full check (3053 passes, zero errors/warnings, six notes)
 is historical evidence, not a newly qualified archive of these metadata bytes.
 No GTAP or full R baseline benchmark is rerun; no tag, push, hosted job or
-publication occurs. The six check notes and provenance mismatch remain separate
-release blockers. Frozen release packets are not edited.
+publication occurs. The six check notes, provenance mismatch, and the newly
+exposed stale historical serialization BUGFIX approval remain release
+limitations. Frozen release packets are not edited.

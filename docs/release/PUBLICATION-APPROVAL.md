@@ -48,7 +48,7 @@ On 2026-10-26, the final repaired packet at `/tmp/GEModelR-check-repair-1jttZn/f
 | Runtime qualification | Supported |
 | Exact archive build / scan / check | Build and scan passed; check has 0 errors, 0 warnings, 6 notes; 3053 assertions passed, 0 failed, 113 skipped. The strict `Status: OK` archive gate remains failed |
 | Installed numerical smoke | Separate fresh-process smoke passed against the check-installed archive; pipeline-gated smoke remains `not_run` |
-| Separate source-tool tests | Preflight passes; seven pre-existing stale reviewed identity-count errors remain, with zero source-tool skips |
+| Separate source-tool tests | Frozen packet history: seven stale identity-count errors; the later current-source identity refresh below resolves them |
 | Separate explicit URL check | `not_run`; no network URL pass claimed |
 | Offline canonical release guard | `invalid`, exit 1; `PROVENANCE_KEY_MISMATCH` |
 | Canonical Git installation | `not_run` |
@@ -58,6 +58,17 @@ On 2026-10-26, the final repaired packet at `/tmp/GEModelR-check-repair-1jttZn/f
 These actual outcomes make this candidate unready for publication. No executable publication approval is being requested for it. The accepted Phase 06 limitations remain recorded under `06-ACCEPTANCE.md`; they are not reopened, converted into passing results, or treated as rights or publication authority. Dependency compatibility and attribution identity also retain their existing release dispositions. Current public-CI dependencies on excluded private evidence remain a documented readiness limitation.
 
 The identities above refer to the final committed test-context repair, including explicit source/installed separation, restored namespace mocking, declared test dependencies, fixture-order isolation, and administrative script path fixes. Production R/C++ implementations and unrelated dirty work were excluded from these changes. Earlier packets were not edited. See `.planning/phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md` for actual results and evidence locations; `07-SUPPORTED-RUNTIME.md` retains the preceding failed candidate's history. Local repair authorization grants no external action: the packet-specific publication decision is still `not_received` and Plan 07-04 remains at its existing checkpoint.
+
+The subsequent maintainer-authorized identity refresh (`5c252ab`) passes current
+historical/tracked-source audits, all 152 source-tool assertions, 147
+identity-migration assertions and 243 current serialization assertions, with zero
+skips in those groups. Original historical artifacts and rights/provenance are
+unchanged. The broader reseal check exposed a separate stale historical
+serialization BUGFIX approval whose After-SHA256 differs from current source;
+that approval is preserved. See `07-IDENTITY-REFRESH.md` in the same private
+planning directory. This follow-up does not change the frozen packet identities
+above or claim a newly qualified archive; it remains local, with provenance,
+historical serialization approval and the preceding six check notes unresolved.
 
 ## Standing instruction and pending decision
 

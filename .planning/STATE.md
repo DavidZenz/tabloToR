@@ -5,12 +5,12 @@ current_phase: 07
 current_phase_name: GitHub and R-universe Release
 status: paused
 paused_at: 2026-10-23T12:40:36Z
-pause_reason: Plan 07-04 local publication checkpoint; tests repaired but six check notes and stale release evidence remain
-stopped_at: Final repaired archive checked; 3053 passes and no test failures; exact local packet retained
-last_updated: "2026-10-26T19:31:38Z"
+pause_reason: Plan 07-04 local publication checkpoint; identity refreshed, with provenance and historical serialization evidence still blocking
+stopped_at: Identity evidence updated and audited; original fixtures unchanged; broader historical serialization mismatch recorded
+last_updated: "2026-10-26T19:55:31Z"
 last_activity: 2026-10-26
-last_activity_desc: Test context and order repairs complete; check has zero errors/warnings and six notes; source evidence mismatches retained
-state_head: 0ac93368be49b814998868b6fe56c9ad097a2e7f
+last_activity_desc: Identity audits and source/serialization groups pass; wider reseal retains a distinct historical BUGFIX approval mismatch
+state_head: 5c252ab8ca95aa8559bc49ddc0d01f7ce0cae57d
 progress:
   total_phases: 7
   completed_phases: 6
@@ -33,9 +33,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 Phase: 07 (GitHub and R-universe Release) — PUBLICATION CHECKPOINT
 Plan: 4 of 4
 Status: Local preparation complete; waiting on actual publication readiness and exact authority
-Last activity: 2026-10-26 — Repaired committed archive: 3053 assertions pass, 0 fail, 113 skip; independent installed smoke and shuffled focused tests pass
+Last activity: 2026-10-26 — Identity evidence refreshed in 5c252ab; 152 source-tool assertions, 147 identity-migration assertions, and 243 serialization assertions pass with zero skips
 
-Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. The ten installed-test failures are repaired, with separate source-tool checks and fixture-order isolation. The final committed archive has 0 errors, 0 warnings, 6 notes; 3053 assertions pass, 0 fail, 113 skip. Independent installed numerical smoke and shuffled focused tests pass (177 assertions). Supported isolated Matrix is 1.6-5; shared Matrix 1.6-3 is unchanged. Seven source-tool checks retain a pre-existing stale reviewed identity-count mismatch; the canonical guard remains invalid with PROVENANCE_KEY_MISMATCH. The strict archive gate rejects the remaining six notes. See `phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md` for exact final candidate identities and evidence. Local packet verification passes; publication verification fails. Plan 07-04, REL-02, and the keep-local publication boundary remain pending.
+Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. The maintainer authorized the identity evidence update: counts, normalized fingerprint, protected-source pins, exact occurrence rows, citation count and residual-contract audit now match the committed implementation. Historical and tracked-source audits pass, as do the formerly failing source-tool checks and current serialization tests. Original numerical/predecessor artifacts, rights/provenance, and uncommitted solver work are unchanged. The wider reseal audit exposed a distinct stale historical serialization BUGFIX approval; current source differs from its approved After-SHA256. This remains blocking, along with PROVENANCE_KEY_MISMATCH and the six notes in the preceding archive check. The preceding frozen archive still records 3053 passes, zero errors/warnings, 113 skips, and six notes; it was not rebuilt or rewritten by this metadata update. See `phases/07-github-and-r-universe-release/07-IDENTITY-REFRESH.md`. Supported isolated Matrix remains 1.6-5, shared Matrix remains 1.6-3. Plan 07-04, REL-02, and keep-local remain pending.
 
 ## Performance Metrics
 
