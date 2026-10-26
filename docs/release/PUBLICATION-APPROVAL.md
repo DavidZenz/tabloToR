@@ -19,18 +19,18 @@ REL-02-Status: pending
 
 | Identity | Value |
 |----------|-------|
-| Development source commit | `e46ea70e737bc709880458ab1548244a2fd525cd` |
-| Development source tree | `6ef6c2d60b4dce13bea34f31b47473bc96b40673` |
-| Proposed public root commit | `ee8f5d26c9565db3407567e065633a0b0252da9a` |
-| Proposed public source tree | `cb74d2a4000c3d84ae005d05c63769597988d24a` |
-| Review content digest (`content_sha256`) | `3af1f9e1531fb4f1bbd4b928b2c4142d4937135acccf411501316d23aa8a4ba5` |
-| Private manifest file SHA-256 | `47b9f90590eafc97e690844f62552bfcf2e8bfa93133a4e115c015077486a7e6` |
-| Public manifest file SHA-256 | `47cec1df5139c4aa192df924407084dd7eabed772d902bebc9b63075826ba8c0` |
-| Explicit source-policy SHA-256 | `d5df0943ae5ce47c8aba148732fecf69da899e3345b54578566c7f96167215cd` |
+| Development source commit | `0ac93368be49b814998868b6fe56c9ad097a2e7f` |
+| Development source tree | `f0415116ec4f874718f7242db32c6f1f5584eb34` |
+| Proposed public root commit | `382af3d087c5f545ce523cf52dfff475a2197e8b` |
+| Proposed public source tree | `d22deb4414a67bc3756c4ae6b5ae1988b40e303e` |
+| Review content digest (`content_sha256`) | `9e776314b8528ba7533fac415015e2ae59a5011a2efacc018b58e7a9674f0d77` |
+| Private manifest file SHA-256 | `ca8faae2376c748d828a55da51756ea679581c7b80ec0d5fd9f07d0efbd64132` |
+| Public manifest file SHA-256 | `4e56bf73805074762251c27316eade50e90565aa851b6230f1cdd50c52d3d2a9` |
+| Explicit source-policy SHA-256 | `c2a64e5c2810d5f29e45163c510e42c4af52e8d7dc3eed0c45483472fcb6b5ef` |
 | Release notes SHA-256 | `7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5` |
 | Tag-pinned registry SHA-256 | `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` |
 | Installed smoke runner SHA-256 | `f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15` |
-| Archive source commit / basename / SHA-256 | `ee8f5d26c9565db3407567e065633a0b0252da9a` / `GEModelR_0.1.0.tar.gz` / `6e67efd755634735a67bf8fb9cfcf3b95421694f9709d2e3418d8b61e9c1b317` |
+| Archive source commit / basename / SHA-256 | `382af3d087c5f545ce523cf52dfff475a2197e8b` / `GEModelR_0.1.0.tar.gz` / `c4c0d237cb438e3330fa59d61dfa8204587b9f173a55179a426a9844ef41ced7` |
 
 The review content digest and the private manifest file SHA-256 are different identities: the former is the manifest's recorded content identity, while the latter hashes the complete serialized manifest bytes. Neither is a cryptographic signature or a maintainer approval.
 
@@ -38,7 +38,7 @@ The public-source proposal has one new root commit and no inherited private deve
 
 ## Actual local verification and readiness
 
-On 2026-10-23, the retained external packet was reverified with `prepare-release.cjs verify`: exit 0, `status=verified`, and the exact source/public commits and review content digest above. The stricter `verify --for-publication` returned exit 1 with `FAIL PUBLICATION_NOT_READY`.
+On 2026-10-26, the final repaired packet at `/tmp/GEModelR-check-repair-1jttZn/final-packet` was verified with `prepare-release.cjs verify`: exit 0, `status=verified`, and the exact source/public commits and review content digest above. The stricter `verify --for-publication` returned exit 1 with `FAIL PUBLICATION_NOT_READY`.
 
 | Check | Actual disposition |
 |-------|--------------------|
@@ -46,8 +46,9 @@ On 2026-10-23, the retained external packet was reverified with `prepare-release
 | Qualification evidence kind | `actual` |
 | Installed Matrix / declared minimum | Isolated `1.6.5` / `1.6-5`; shared `1.6.3` unchanged |
 | Runtime qualification | Supported |
-| Exact archive build / scan / check | Build and scan passed; check failed: 1 ERROR, 2 WARNINGs, 7 NOTEs; 3036 assertions passed, 10 failed, 102 skipped |
+| Exact archive build / scan / check | Build and scan passed; check has 0 errors, 0 warnings, 6 notes; 3053 assertions passed, 0 failed, 113 skipped. The strict `Status: OK` archive gate remains failed |
 | Installed numerical smoke | Separate fresh-process smoke passed against the check-installed archive; pipeline-gated smoke remains `not_run` |
+| Separate source-tool tests | Preflight passes; seven pre-existing stale reviewed identity-count errors remain, with zero source-tool skips |
 | Separate explicit URL check | `not_run`; no network URL pass claimed |
 | Offline canonical release guard | `invalid`, exit 1; `PROVENANCE_KEY_MISMATCH` |
 | Canonical Git installation | `not_run` |
@@ -56,7 +57,7 @@ On 2026-10-23, the retained external packet was reverified with `prepare-release
 
 These actual outcomes make this candidate unready for publication. No executable publication approval is being requested for it. The accepted Phase 06 limitations remain recorded under `06-ACCEPTANCE.md`; they are not reopened, converted into passing results, or treated as rights or publication authority. Dependency compatibility and attribution identity also retain their existing release dispositions. Current public-CI dependencies on excluded private evidence remain a documented readiness limitation.
 
-The identities above refer to the new supported-runtime qualification packet made after explicit authorization of isolated Matrix setup. Development and public source bytes are unchanged; a real archive and failed check result now exist. Earlier packets were not edited. See `.planning/phases/07-github-and-r-universe-release/07-SUPPORTED-RUNTIME.md` for the actual test failures and external evidence locations. The runtime setup authorization grants no external action: the packet-specific publication decision is still `not_received` and Plan 07-04 remains at its existing checkpoint.
+The identities above refer to the final committed test-context repair, including explicit source/installed separation, restored namespace mocking, declared test dependencies, fixture-order isolation, and administrative script path fixes. Production R/C++ implementations and unrelated dirty work were excluded from these changes. Earlier packets were not edited. See `.planning/phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md` for actual results and evidence locations; `07-SUPPORTED-RUNTIME.md` retains the preceding failed candidate's history. Local repair authorization grants no external action: the packet-specific publication decision is still `not_received` and Plan 07-04 remains at its existing checkpoint.
 
 ## Standing instruction and pending decision
 

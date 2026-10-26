@@ -5,12 +5,12 @@ current_phase: 07
 current_phase_name: GitHub and R-universe Release
 status: paused
 paused_at: 2026-10-23T12:40:36Z
-pause_reason: Plan 07-04 publication checkpoint; supported-runtime archive check failed and release guard remains invalid
-stopped_at: Supported Matrix setup and actual qualification finished; concrete test failures recorded
-last_updated: "2026-10-23T13:04:28Z"
-last_activity: 2026-10-23
-last_activity_desc: Isolated Matrix 1.6-5 installed; archive build/scan and independent installed smoke pass; check reports 10 failures
-state_head: e577d7e37a7293753405c2a245980f1a206fa74d
+pause_reason: Plan 07-04 local publication checkpoint; tests repaired but six check notes and stale release evidence remain
+stopped_at: Final repaired archive checked; 3053 passes and no test failures; exact local packet retained
+last_updated: "2026-10-26T19:31:38Z"
+last_activity: 2026-10-26
+last_activity_desc: Test context and order repairs complete; check has zero errors/warnings and six notes; source evidence mismatches retained
+state_head: 0ac93368be49b814998868b6fe56c9ad097a2e7f
 progress:
   total_phases: 7
   completed_phases: 6
@@ -33,9 +33,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 Phase: 07 (GitHub and R-universe Release) — PUBLICATION CHECKPOINT
 Plan: 4 of 4
 Status: Local preparation complete; waiting on actual publication readiness and exact authority
-Last activity: 2026-10-23 — Supported-runtime qualification completed; 3036 assertions pass, 10 fail, 102 skip; independent installed smoke passes
+Last activity: 2026-10-26 — Repaired committed archive: 3053 assertions pass, 0 fail, 113 skip; independent installed smoke and shuffled focused tests pass
 
-Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. Explicitly authorized isolated Matrix 1.6-5 setup is complete, with shared Matrix 1.6-3 unchanged. The same frozen public source now has a built/scanned archive and a real R CMD check result: 1 ERROR, 2 WARNINGs, 7 NOTEs (3036 pass, 10 fail, 102 skip). A separate installed numerical smoke passed. The actual release guard remains invalid with PROVENANCE_KEY_MISMATCH. See `phases/07-github-and-r-universe-release/07-SUPPORTED-RUNTIME.md` for concrete test-context failures. Local packet verification passes; publication verification fails. Plan 07-04, REL-02, and the local-only publication boundary remain pending.
+Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. The ten installed-test failures are repaired, with separate source-tool checks and fixture-order isolation. The final committed archive has 0 errors, 0 warnings, 6 notes; 3053 assertions pass, 0 fail, 113 skip. Independent installed numerical smoke and shuffled focused tests pass (177 assertions). Supported isolated Matrix is 1.6-5; shared Matrix 1.6-3 is unchanged. Seven source-tool checks retain a pre-existing stale reviewed identity-count mismatch; the canonical guard remains invalid with PROVENANCE_KEY_MISMATCH. The strict archive gate rejects the remaining six notes. See `phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md` for exact final candidate identities and evidence. Local packet verification passes; publication verification fails. Plan 07-04, REL-02, and the keep-local publication boundary remain pending.
 
 ## Performance Metrics
 
