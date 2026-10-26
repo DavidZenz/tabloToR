@@ -60,3 +60,73 @@ from two additional hardcoded root benchmark lookups. Their source locators now
 support inst/benchmarks in source archives; execution and independent installed
 script hash assertions remain intact. No tests are disabled to clear these
 errors. The changes are test-only and outside the runtime fingerprint scope.
+
+## Final archive and validation
+
+The final archive is built from committed source
+`c3bca33d06190ad5afd48880aee058d7a819adf1` after all archive-layout corrections.
+It is retained at
+`/tmp/GEModelR-check-cleanup-ZGGkPD/release/GEModelR_0.1.0.tar.gz`.
+SHA256: `e0c6da89610e5ca8cea37e7904f26f93c793022dac08aeb03eeed14227425763`.
+Size: 283589 bytes, versus 306101 bytes in the preceding qualified-build attempt.
+The content scan passes on all 183 entries. All six nonstandard root paths are
+absent; all five installed benchmark drivers remain present.
+
+The first intermediate check's five benchmark lookup errors were reproduced and
+fixed without removing assertions. The targeted archive-layout run now passes
+all 6 tests and 95 assertions, with zero skips. The six affected source groups
+pass 68 tests and 604 assertions with zero failures/errors/skips, using one
+installed namespace in a separate fresh process. Focused combined coverage is
+therefore 699 passing assertions. Logs are `logs/layout-tests.log` and
+`logs/source-tests.log`; their RDS reports retain per-test results.
+
+An attempted reuse of unchanged rendered vignette outputs caused an intermediate
+freshness warning because the fresh checkout had newer source timestamps. That
+check was stopped; its logs remain at `logs/verified-R-CMD-check.log`. The final
+archive uses normal vignette regeneration (`logs/release-build.log`), and its
+actual output freshness was checked before the final package check. No timestamp
+warning is waived or converted into a pass.
+
+The final archive-installed numerical smoke passes with supported Matrix 1.6-5
+and expected solution `(0, 6, 0)` within 1e-12. The recorded source basis is
+caller-attested local source; surrounding archive/check records bind it to the
+retained archive. Historical and tracked-source identity audits also pass against
+the final committed source, without regenerating the identity records again.
+Logs: `logs/release-installed-smoke.log` and
+`logs/release-identity-validation.log`.
+
+All three requested check steps, plus actual vignette freshness, report OK in the
+completed final check: **zero errors, zero warnings, three notes**. Installed tests
+report **3037 passes, zero failures/warnings, 115 skips**, taking 200.183 seconds
+wall time (236.190 user + 9.348 system CPU seconds). Vignette rebuild, PDF and HTML
+manual checks pass. Raw results are
+`release/check/GEModelR.Rcheck/00check.log` and `tests/testthat.Rout`; the command
+log is `logs/release-R-CMD-check.log`.
+
+Compared with the earlier 3053-pass installed suite, 21 source-only producer
+assertions now execute in the separately verified source benchmark audit, and
+five new formula assertions run in the installed suite. Their source-only audit
+is explicitly skipped when the development drivers are absent from the archive.
+The second added skip versus the earlier archive is the source-only identity
+review regression introduced in the preceding identity task. No assertion was
+removed to suppress a numerical failure.
+
+The remaining three notes are CRAN incoming/unpublished canonical URLs (404),
+installed size (9.3 MB; native library 8.1 MB), and inability to verify current
+time. The preceding six-note archive is preserved as history. The normal build
+also retains its pre-existing automatic R >=3.5.0 dependency notice for the
+unchanged version-3 serialized predecessor fixture; this is separate from the
+zero-warning final R CMD check result.
+
+No source archive is published and no frozen release packet is rewritten by this
+standalone local check. The original historical serialization approval and patch,
+numerical/predecessor evidence, provenance/rights, and sixteen pre-existing working
+file hashes remain unchanged. No full-scale data or benchmark is used.
+
+Implementation commits: `8d4d9c9` (routine cleanup), `fc92bb0` (single identity
+refresh), `bc040dd` (complete repository documentation exclusions), and `c3bca33`
+(archive-layout test corrections). The public-source policy has 675 exact
+tracked-path dispositions. No shared R package was installed/upgraded. The
+remaining provenance and historical serialization approval limitations are
+unchanged, and the strict release gate still requires a note-free check and
+publication authority.

@@ -5,12 +5,12 @@ current_phase: 07
 current_phase_name: GitHub and R-universe Release
 status: paused
 paused_at: 2026-10-23T12:40:36Z
-pause_reason: Plan 07-04 local publication checkpoint; identity refreshed, with provenance and historical serialization evidence still blocking
-stopped_at: Identity evidence updated and audited; original fixtures unchanged; broader historical serialization mismatch recorded
-last_updated: "2026-10-26T19:55:31Z"
+pause_reason: Plan 07-04 local publication checkpoint; routine notes cleared, with three notes and evidence limitations remaining
+stopped_at: Final cleanup archive checked; zero errors/warnings, three notes; 3037 installed and 699 focused assertions pass
+last_updated: "2026-10-26T20:30:01Z"
 last_activity: 2026-10-26
-last_activity_desc: Identity audits and source/serialization groups pass; wider reseal retains a distinct historical BUGFIX approval mismatch
-state_head: 5c252ab8ca95aa8559bc49ddc0d01f7ce0cae57d
+last_activity_desc: Author, archive layout and formula notes fixed; final full package check has three notes and no errors/warnings
+state_head: c3bca33d06190ad5afd48880aee058d7a819adf1
 progress:
   total_phases: 7
   completed_phases: 6
@@ -33,9 +33,9 @@ See: `.planning/PROJECT.md` (updated 2026-10-05)
 Phase: 07 (GitHub and R-universe Release) — PUBLICATION CHECKPOINT
 Plan: 4 of 4
 Status: Local preparation complete; waiting on actual publication readiness and exact authority
-Last activity: 2026-10-26 — Identity evidence refreshed in 5c252ab; 152 source-tool assertions, 147 identity-migration assertions, and 243 serialization assertions pass with zero skips
+Last activity: 2026-10-26 — Routine cleanup archive checked: 3037 installed assertions pass, zero failures/warnings, 115 skips; 699 focused source/archive assertions pass with zero skips
 
-Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. The maintainer authorized the identity evidence update: counts, normalized fingerprint, protected-source pins, exact occurrence rows, citation count and residual-contract audit now match the committed implementation. Historical and tracked-source audits pass, as do the formerly failing source-tool checks and current serialization tests. Original numerical/predecessor artifacts, rights/provenance, and uncommitted solver work are unchanged. The wider reseal audit exposed a distinct stale historical serialization BUGFIX approval; current source differs from its approved After-SHA256. This remains blocking, along with PROVENANCE_KEY_MISMATCH and the six notes in the preceding archive check. The preceding frozen archive still records 3053 passes, zero errors/warnings, 113 skips, and six notes; it was not rebuilt or rewritten by this metadata update. See `phases/07-github-and-r-universe-release/07-IDENTITY-REFRESH.md`. Supported isolated Matrix remains 1.6-5, shared Matrix remains 1.6-3. Plan 07-04, REL-02, and keep-local remain pending.
+Progress: Phase 06 remains complete by maintainer acceptance; do not restart its accepted gap/UAT cycle. Phase 07 has 3/4 plan summaries. The authorized routine cleanup aligns author credit, excludes repository-only archive content while preserving installed benchmark drivers, and uses inherits for formula symbols. Final standalone archive from c3bca33 checks with zero errors/warnings and three notes, down from six. Installed tests: 3037 pass, 0 fail, 115 skip; focused source/archive tests: 699 pass, zero skips. Identity evidence was refreshed once (421/2 occurrences; normalized fingerprint 99cc904fa2d5934dd9aa8294782175ad), with both audits passing. Historical/predecessor artifacts, rights/provenance and unrelated solver work remain unchanged. Remaining notes concern incoming URLs, installed size and time verification. Provenance and the historical serialization BUGFIX approval mismatch remain separate release limitations. Earlier frozen packets were not rewritten; this is a newly checked local standalone archive. See `phases/07-github-and-r-universe-release/07-CHECK-NOTES.md`. Isolated Matrix remains 1.6-5, shared Matrix remains 1.6-3. Plan 07-04, REL-02 and keep-local remain pending.
 
 ## Performance Metrics
 

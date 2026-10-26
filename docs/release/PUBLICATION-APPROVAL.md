@@ -70,6 +70,21 @@ planning directory. This follow-up does not change the frozen packet identities
 above or claim a newly qualified archive; it remains local, with provenance,
 historical serialization approval and the preceding six check notes unresolved.
 
+The further maintainer-authorized routine cleanup is now checked as a separate
+local archive from `c3bca33d06190ad5afd48880aee058d7a819adf1`, SHA256
+`e0c6da89610e5ca8cea37e7904f26f93c793022dac08aeb03eeed14227425763`.
+Its full R CMD check reports zero errors, zero warnings and three notes, with
+3037 passing installed assertions, zero failures, and 115 skips. Source and
+archive-layout groups separately pass 699 assertions with zero skips; the
+installed numerical smoke passes. Author metadata, top-level archive content and
+formula class-check notes are cleared. Identity was refreshed once to 421/2
+occurrences and normalized fingerprint `99cc904fa2d5934dd9aa8294782175ad`.
+See `07-CHECK-NOTES.md` in the private planning directory. Remaining notes concern
+incoming/unpublished URLs, installed size and clock verification. Provenance and
+historical serialization approval limitations remain. This standalone archive
+does not change the older frozen packet's identities/statuses above, supply a
+new publication authorization, or initiate any external operation.
+
 ## Standing instruction and pending decision
 
 The maintainer's existing instruction was:
