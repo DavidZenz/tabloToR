@@ -40,7 +40,7 @@ jobs:
         shell: bash
         run: |
           sudo apt-get update
-          sudo apt-get install --yes texlive-latex-base texlive-latex-recommended texlive-fonts-recommended
+          sudo apt-get install --yes texlive-latex-base texlive-latex-recommended texlive-fonts-recommended qpdf tidy
           command -v pdflatex
 
       - name: Install package and check dependencies
@@ -185,6 +185,18 @@ jobs:
             "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
             >> "$GITHUB_OUTPUT"
           exit "$qualification_status"
+
+      - name: Check source-only administrative tools in a fresh process
+        if: always() && steps.build-source-archive.outcome == 'success'
+        shell: bash
+        run: |
+          set +e
+          Rscript --vanilla tools/ci/run-source-tool-tests.R "$GITHUB_WORKSPACE" "$GEModelR_RELEASE_LIBRARY" > "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests.log" 2>&1
+          source_status=$?
+          set -e
+          cat "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests.log"
+          printf 'source_tool_tests_exit_status=%s\n' "$source_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests-status.txt"
+          exit "$source_status"
 
       - name: Record qualification status
         if: always()

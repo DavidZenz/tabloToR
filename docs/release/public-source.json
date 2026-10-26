@@ -179,6 +179,7 @@
     "tools/ci/resolve-matrix-current.R",
     "tools/ci/run-installed-core-tests.R",
     "tools/ci/run-installed-release-smoke.R",
+    "tools/ci/run-source-tool-tests.R",
     "tools/ci/summarize-r-cmd-check.R",
     "tools/ci/test-matrix-floor-evidence.R",
     "tools/ci/test-matrix-source-download.R",
@@ -1645,6 +1646,10 @@
       "reason": "Private development planning, decisions, and retained evidence"
     },
     {
+      "path": ".planning/phases/07-github-and-r-universe-release/.continue-here.md",
+      "reason": "Private development planning or publication authority evidence"
+    },
+    {
       "path": ".planning/phases/07-github-and-r-universe-release/07-01-PLAN.md",
       "reason": "Private development planning, decisions, and retained evidence"
     },
@@ -1673,6 +1678,10 @@
       "reason": "Private development planning, decisions, and retained evidence"
     },
     {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md",
+      "reason": "Private development planning or publication authority evidence"
+    },
+    {
       "path": ".planning/phases/07-github-and-r-universe-release/07-CONTEXT.md",
       "reason": "Private development planning, decisions, and retained evidence"
     },
@@ -1687,6 +1696,10 @@
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-REVIEW.md",
       "reason": "Private Phase 07 execution review and resolution evidence"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-SUPPORTED-RUNTIME.md",
+      "reason": "Private development planning or publication authority evidence"
     },
     {
       "path": ".planning/phases/07-github-and-r-universe-release/07-VALIDATION.md",

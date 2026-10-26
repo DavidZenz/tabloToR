@@ -1,10 +1,24 @@
 gtap12a_preflight_source = function() {
+  testthat::skip_if_not(
+    file.exists(testthat::test_path("..", "..", "DESCRIPTION")) &&
+      dir.exists(testthat::test_path("..", "..", "R")),
+    "Reference preflight tool tests require the package source tree"
+  )
   path = testthat::test_path("..", "..", "benchmarks",
                              "preflight_gtap12a_reference.R")
   environment = new.env(parent = globalenv())
   sys.source(path, envir = environment)
   environment
 }
+
+test_that("sourced preflight identifies its own file rather than the caller", {
+  preflight = gtap12a_preflight_source()
+  expect_identical(preflight$preflight_script_file, normalizePath(
+    testthat::test_path("..", "..", "benchmarks",
+                       "preflight_gtap12a_reference.R"), mustWork = TRUE
+  ))
+  expect_true(is.function(preflight$benchmark_signature))
+})
 
 gtap12a_preflight_fixture = function(preflight) {
   skip_if_not_installed("GEModelR")

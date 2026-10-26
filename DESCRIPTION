@@ -30,7 +30,8 @@ Suggests:
     knitr,
     pkgdown,
     rmarkdown,
-    testthat
+    testthat (>= 3.2.0),
+    withr
 Config/testthat/edition: 3
 VignetteBuilder: knitr
 Config/Attribution-People: David Zenz; Maros Ivanic

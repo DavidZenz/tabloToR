@@ -1,19 +1,23 @@
 preflight_script_file = local({
+  script_name = "preflight_gtap12a_reference.R"
+  source_files = vapply(sys.frames(), function(frame) {
+    for (name in c("ofile", "file")) {
+      value = frame[[name]]
+      if (is.character(value) && length(value) == 1L && !is.na(value) &&
+          identical(basename(value), script_name)) return(value)
+    }
+    ""
+  }, character(1))
+  source_files = source_files[nzchar(source_files) & file.exists(source_files)]
   file_arg = grep("^--file=", commandArgs(FALSE), value = TRUE)
-  if (length(file_arg)) {
+  if (length(source_files)) {
+    normalizePath(tail(source_files, 1L), mustWork = TRUE)
+  } else if (length(file_arg)) {
     candidate = sub("^--file=", "", file_arg[[1L]])
-    if (file.exists(candidate)) normalizePath(candidate, mustWork = TRUE)
-    else NULL
-  } else {
-    frames = sys.frames()
-    ofiles = vapply(frames, function(frame) {
-      value = frame$ofile
-      if (is.null(value) || length(value) != 1L) "" else as.character(value)
-    }, character(1))
-    hit = ofiles[nzchar(ofiles) & file.exists(ofiles)]
-    if (length(hit)) normalizePath(hit[[length(hit)]], mustWork = TRUE)
-    else NULL
-  }
+    if (identical(basename(candidate), script_name) && file.exists(candidate)) {
+      normalizePath(candidate, mustWork = TRUE)
+    } else NULL
+  } else NULL
 })
 
 if (is.null(preflight_script_file)) {

@@ -710,23 +710,32 @@ test_that("genuine predecessor fixture enforces lineage and content integrity", 
 
   fingerprint_environment = environment(.serialization_object_fingerprint)
   original_fingerprint = .serialization_object_fingerprint
-  assign(".serialization_object_fingerprint", function(value) {
-    if (is.raw(value)) return(simulated_current_fingerprints[["tablo"]])
-    if (identical(value, payload$source$loaded_data)) {
-      return(simulated_current_fingerprints[["data"]])
-    }
-    original_fingerprint(value)
-  }, envir = fingerprint_environment)
-  on.exit(assign(
-    ".serialization_object_fingerprint", original_fingerprint,
-    envir = fingerprint_environment
-  ), add = TRUE)
+  original_binding_locked = bindingIsLocked(
+    ".serialization_object_fingerprint", fingerprint_environment
+  )
 
   receiver = GEModel$new()
-  returned = receiver$loadState(fixture)
-  assign(
-    ".serialization_object_fingerprint", original_fingerprint,
-    envir = fingerprint_environment
+  load_with_simulated_fingerprints = function() {
+    testthat::local_mocked_bindings(
+      .serialization_object_fingerprint = function(value) {
+        if (is.raw(value)) return(simulated_current_fingerprints[["tablo"]])
+        if (identical(value, payload$source$loaded_data)) {
+          return(simulated_current_fingerprints[["data"]])
+        }
+        original_fingerprint(value)
+      },
+      .package = "GEModelR"
+    )
+    receiver$loadState(fixture)
+  }
+  returned = load_with_simulated_fingerprints()
+  expect_identical(
+    get(".serialization_object_fingerprint", envir = fingerprint_environment),
+    original_fingerprint
+  )
+  expect_identical(
+    bindingIsLocked(".serialization_object_fingerprint", fingerprint_environment),
+    original_binding_locked
   )
   expect_identical(returned, receiver)
   expect_identical(receiver$loadedEngine, "sparse")

@@ -129,3 +129,23 @@ Focused checks are `rtk node --test tools/release/prepare-release.test.cjs
 tools/ci/check-public-content.test.cjs` and an R parse of the standalone runner.
 The DESCRIPTION-only unsupported-runtime fixtures prove rejection before loading;
 they are not evidence that an installed package completed the numerical smoke.
+
+Source-only administrative tests are separate from installed-package checks.
+The baseline regeneration/acceptance tools are deliberately excluded from the
+archive installation, and benchmark preflight scripts require a source checkout.
+Those tests skip explicitly in installed contexts; their assertions must also run
+from the selected committed source in another fresh process, using the package
+installed from the same archive:
+
+```sh
+rtk proxy Rscript --vanilla tools/ci/run-source-tool-tests.R /path/to/selected-source /path/to/archive-library
+```
+
+Use the same supported dependency library as qualification (via `R_LIBS` when
+needed). This runner requires both source groups to execute with zero skips,
+checks the installed namespace path, and never loads/reloads source package code.
+The source-archive workflow also runs it as a separate required step. The local
+packet CLI does not record this additional test result; retain its log alongside
+the packet evidence. Keep the raw result separate from the packet manifest and
+from the installed suite's status. PDF/HTML checks need actual `qpdf` and `tidy`
+executables, and Markdown checks need Pandoc on `PATH`.

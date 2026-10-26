@@ -4,7 +4,13 @@ phase02_tool_path = function(name) {
     return(normalizePath(source_candidate, mustWork = TRUE))
   }
   installed_candidate = system.file("tools", name, package = "GEModelR")
-  normalizePath(installed_candidate, mustWork = TRUE)
+  if (nzchar(installed_candidate)) {
+    return(normalizePath(installed_candidate, mustWork = TRUE))
+  }
+  # Administrative tools are deliberately excluded from installed packages.
+  # A missing tool in a source checkout must still fail rather than skip.
+  phase02_require_source_tree()
+  stop("Missing Phase 02 source tool: ", name, call. = FALSE)
 }
 
 phase02_cli_path = function(name) {
