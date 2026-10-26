@@ -468,7 +468,9 @@ function stagePublicSource(options) {
   fs.mkdirSync(repository);
   try {
     const algorithm = manifest.source_commit.length === 40 ? "sha1" : "sha256";
-    git(repository, ["init", "--quiet", "--initial-branch=main", "--object-format=" + algorithm]);
+    // SHA-1 is Git's original format; avoid newer init options on older clients.
+    git(repository, ["init", "--quiet", ...(algorithm === "sha256" ? ["--object-format=sha256"] : [])]);
+    git(repository, ["symbolic-ref", "HEAD", "refs/heads/main"]);
     for (const entry of manifest.source_entries.filter((item) => policy.include.includes(item.path))) {
       writeFile(repository, entry.path, readPacketFile(root, "private/source/" + entry.path),
         entry.mode === "100755" ? 0o755 : 0o644);

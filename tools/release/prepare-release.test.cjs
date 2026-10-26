@@ -401,6 +401,9 @@ test("public projection is an exact separate root commit with no private history
     const projected = path.join(output, "private/public-source");
     assert.equal(git(projected, ["rev-parse", "HEAD"]), manifest.public_source_commit);
     assert.equal(git(projected, ["rev-list", "--count", "HEAD"]), "1");
+    assert.equal(git(projected, ["symbolic-ref", "HEAD"]), "refs/heads/main");
+    assert.equal(git(projected, ["rev-list", "--parents", "-n", "1", "HEAD"]), manifest.public_source_commit);
+    assert.notEqual(spawnSync("git", ["-C", projected, "cat-file", "-e", manifest.source_commit + "^{commit}"]).status, 0);
     assert.equal(git(projected, ["remote"]), "");
     assert.equal(fs.existsSync(path.join(projected, ".planning")), false);
     assert.equal(fs.existsSync(path.join(projected, "docs/release")), false);
