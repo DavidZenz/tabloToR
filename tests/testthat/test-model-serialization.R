@@ -1,36 +1,3 @@
-if (!exists("GEModel", inherits = TRUE)) {
-  serialization_source_root = normalizePath(
-    testthat::test_path("..", ".."), mustWork = TRUE
-  )
-  serialization_r_files = sort(list.files(
-    file.path(serialization_source_root, "R"),
-    pattern = "\\.R$", full.names = TRUE
-  ))
-  for (serialization_r_file in serialization_r_files) {
-    sys.source(serialization_r_file, envir = .GlobalEnv)
-  }
-}
-serializationCompleteReceiverSnapshot = function(model) {
-  fields = names(GEModel$fields())
-  snapshot = lapply(fields, function(field) {
-    value = model[[field]]
-    if (identical(field, "sparseState") && is.environment(value)) {
-      return(as.list.environment(value, all.names = TRUE))
-    }
-    value
-  })
-  names(snapshot) = fields
-  snapshot
-}
-
-serializationPayloadFields = function() {
-  c(
-    "schema", "schema_version", "package_lineage", "source",
-    "engine", "levels", "closure", "shocks", "accepted",
-    "memory_budget", "diagnostics"
-  )
-}
-
 test_that("saveState writes exact current GEModelR package lineage", {
   registry = .serialization_package_lineage_registry()
   expect_identical(nrow(registry), 1L)

@@ -28,6 +28,15 @@ own CLI basename. Six focused preflight tests pass (20 assertions). The genuine
 predecessor serialization test now passes 25 assertions in an installed context,
 including restoration and all existing rejection/normalization checks.
 
+Order validation exposed top-level fixture definitions that testthat can shuffle
+after their callers. Baseline/preflight helpers now live in dedicated helper
+files; the serialization snapshot helper also moved to its existing helper file.
+The duplicate serialization field helper and fallback that sourced all R files
+into the global environment were removed. Shuffled installed-context groups pass:
+46 tests, 177 assertions, 27 explicit source-only skips, seed 709. The acceptance
+and identity audit tools also resolve their own `sys.source()` frames instead of
+the runner's relative `--file` argument; a focused regression checks their paths.
+
 The baseline source run additionally reported eight migration-evidence errors
 (seven in baseline-artifacts and one in serialization): reviewed identity counts
 are stale, `package-mixed-case=420/328`. These exist in the untouched committed
@@ -61,7 +70,16 @@ baseline benchmark is part of this repair.
 
 ## Refreshed qualification
 
-Pending the committed repair candidate's actual archive check. The original
-failed packet remains intact. The canonical guard's previously observed
+The first repair commit, `482e73be4305d445a1a80a9502ba052f60ff0f34`, built
+and scanned successfully in `/tmp/GEModelR-check-repair-1jttZn/packet`.
+Its actual `R CMD check --as-cran` finished with **0 errors, 0 warnings, 6 notes**;
+testthat reported **3053 passes, 0 failures, 112 skips**, and tests took 202.092
+seconds wall time (248 CPU seconds). Vignettes and PDF/HTML manual checks passed.
+The separate installed numerical smoke passed. This is an intermediate candidate:
+the final helper/order isolation changes require their own committed archive.
+The packet's strict archive gate rejects notes, so gated smoke/URL steps correctly
+remain not_run; an independent smoke pass does not override that state.
+
+The original failed packet remains intact. The canonical guard's previously observed
 PROVENANCE_KEY_MISMATCH and unpublished canonical URLs are independent blockers;
 the installed numerical smoke alone cannot authorize publication.

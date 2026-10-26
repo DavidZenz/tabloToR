@@ -16,6 +16,8 @@ runSourceToolTests = function() {
     "inst/tools/refresh_phase02_baselines.R",
     "inst/tools/accept_phase02_baselines.R",
     "benchmarks/preflight_gtap12a_reference.R",
+    "tests/testthat/helper-baseline-artifacts.R",
+    "tests/testthat/helper-gtap12a-reference-preflight.R",
     file.path("tests", "testthat", files))
   missing = required[!file.exists(file.path(root, required))]
   if (length(missing)) {

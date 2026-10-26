@@ -109,14 +109,22 @@ identity_validate_approved_workflow_policy = function(
 
 identity_script_path = local({
   source_files = vapply(sys.frames(), function(frame) {
-    value = frame$ofile
-    if (is.null(value) || !length(value)) "" else as.character(value[[1L]])
+    for (name in c("ofile", "file")) {
+      value = frame[[name]]
+      if (is.character(value) && length(value) == 1L && !is.na(value) &&
+          identical(basename(value), "check_identity_migration.R")) {
+        return(value)
+      }
+    }
+    ""
   }, character(1))
   source_files = source_files[nzchar(source_files)]
   file_argument = grep("^--file=", commandArgs(FALSE), value = TRUE)
   if (length(source_files)) {
     normalizePath(tail(source_files, 1L), mustWork = TRUE)
-  } else if (length(file_argument)) {
+  } else if (length(file_argument) && identical(
+      basename(sub("^--file=", "", file_argument[[1L]])),
+      "check_identity_migration.R")) {
     normalizePath(sub("^--file=", "", file_argument[[1L]]), mustWork = TRUE)
   } else {
     NA_character_

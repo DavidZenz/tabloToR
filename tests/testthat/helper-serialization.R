@@ -1,3 +1,16 @@
+serializationCompleteReceiverSnapshot = function(model) {
+  fields = names(GEModel$fields())
+  snapshot = lapply(fields, function(field) {
+    value = model[[field]]
+    if (identical(field, "sparseState") && is.environment(value)) {
+      return(as.list.environment(value, all.names = TRUE))
+    }
+    value
+  })
+  names(snapshot) = fields
+  snapshot
+}
+
 serializationPayloadFields = function() {
   c(
     "schema", "schema_version", "package_lineage", "source",
