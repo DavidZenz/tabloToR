@@ -549,6 +549,16 @@ function validatePublicationReadiness(manifest) {
   return true;
 }
 
+function updatePublicationReadiness(root, manifest) {
+  // Include newly produced assets before assessing them. saveManifest refreshes
+  // this inventory again after writing the final public manifest.
+  manifest.files = inventory(root);
+  manifest.publication_readiness = "blocked";
+  try { validatePublicationReadiness(manifest); manifest.publication_readiness = "ready"; }
+  catch (error) { if (!(error instanceof ReleaseError)) throw error; }
+  return manifest.publication_readiness;
+}
+
 function verifyCheckoutBytes(repository, commit) {
   const entries = selectedTree(repository, commit);
   const names = [];
@@ -744,11 +754,9 @@ function qualifyReleasePacket(options) {
     }
   }
   manifest.qualification = qualification;
-  manifest.publication_readiness = "blocked";
-  try { validatePublicationReadiness(manifest); manifest.publication_readiness = "ready"; }
-  catch (error) { if (!(error instanceof ReleaseError)) throw error; }
-  // Recheck the selected public bytes after all commands and before freezing evidence.
+  // Recheck selected bytes and refresh the asset inventory before readiness.
   verifyPublicSource(root, manifest);
+  updatePublicationReadiness(root, manifest);
   saveManifest(root, manifest);
   return { status: "qualified", qualification_status: manifest.qualification_status,
     publication_readiness: manifest.publication_readiness, public_source_commit: manifest.public_source_commit,
@@ -790,4 +798,4 @@ if (require.main === module) {
 }
 
 module.exports = { prepareReleasePacket, verifyReleasePacket, stagePublicSource,
-  qualifyReleasePacket, validatePublicationReadiness };
+  qualifyReleasePacket, validatePublicationReadiness, updatePublicationReadiness };

@@ -554,6 +554,15 @@ test("qualification builds projected bytes and shares one retained archive acros
     const actualShape = structuredClone(manifest);
     actualShape.qualification.evidence_kind = "actual";
     assert.doesNotThrow(() => validatePublicationReadiness(actualShape));
+    // Model the pre-save state: the real archive exists, but its inventory row
+    // was not in the manifest loaded before build/check. This is shape-only
+    // fixture data; no actual evidence or ready packet is serialized here.
+    actualShape.files = [];
+    assert.throws(() => validatePublicationReadiness(actualShape), { code: "PUBLICATION_NOT_READY" });
+    const { updatePublicationReadiness } = require(cli);
+    assert.equal(updatePublicationReadiness(output, actualShape), "ready");
+    assert.equal(updatePublicationReadiness(output, manifest), "blocked");
+    assert.equal(manifest.qualification.evidence_kind, "fixture");
     for (const change of [
       (m) => { m.archive_source_commit = "a".repeat(40); },
       (m) => { m.archive_sha256 = "not_built"; },
