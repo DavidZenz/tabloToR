@@ -33,3 +33,8 @@ metadata remains in the package at `inst/CITATION`.
 The Phase 1 dependency-compatibility and attribution-identity blockers remain
 open. This record does not clear either blocker and does not authorize a public
 release, repository change, or publication.
+
+The package-license choice is complete; no new license selection or confirmation
+is pending. The remaining licensing task is the dependency compatibility audit,
+recorded by `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING`. This clarification does not
+claim that audit has run or resolve the separate attribution identity blocker.

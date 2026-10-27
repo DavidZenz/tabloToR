@@ -1571,7 +1571,7 @@ writeIntegratedAttributionEvidence = function(root, ledger, blockers) {
   )[blockers]
   blockerFacts = c(
     DEPENDENCY_COMPATIBILITY_AUDIT_PENDING =
-      "PACKAGE_LICENSE_UNFINALIZED",
+      "DEPENDENCY_COMPATIBILITY_UNREVIEWED",
     ATTRIBUTION_IDENTITY_UNRESOLVED =
       "GIT_IDENTITY_ALIAS_UNRESOLVED"
   )
@@ -2398,7 +2398,7 @@ test_that("unreviewed attribution roles and blocker keys fail closed", {
     blockerRoot, "docs", "provenance", "ATTRIBUTION.md"
   )
   lines = readLines(path, warn = FALSE, encoding = "UTF-8")
-  blockerRow = grepl("^\\| PACKAGE_LICENSE_UNFINALIZED", lines)
+  blockerRow = grepl("^\\| DEPENDENCY_COMPATIBILITY_UNREVIEWED", lines)
   lines[blockerRow] = sub(
     "R/sparseSolver.R::sparse_solve_model",
     "R/missing.R::missing", lines[blockerRow], fixed = TRUE

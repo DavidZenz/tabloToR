@@ -22,8 +22,8 @@ A changed inventory requires a fresh attribution review.
 
 | person/entity | role | evidence_keys | rights_basis | destination | reviewer | review_date | status |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| David Zenz | aut | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed independent post-baseline authorship; original-code licensing remains provisional pending the dependency compatibility audit | DESCRIPTION; CONTRIBUTORS.md; NEWS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
-| David Zenz | cph | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed copyright holder for the cited independent post-baseline expression; this does not finalize the package license | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
+| David Zenz | aut | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed independent post-baseline authorship; package license selected as GPL-3.0-or-later, with dependency compatibility audit pending | DESCRIPTION; CONTRIBUTORS.md; NEWS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
+| David Zenz | cph | R/sparseCompiler.R::sparse_compile_spec; R/sparseSolver.R::sparse_solve_model; src/sparse-schur.cpp::GEModelR_schur_accumulate_global | Reviewed copyright holder for the cited independent post-baseline expression; the dependency compatibility audit remains separate | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
 | David Zenz | cre | R/sparseSolver.R::sparse_solve_model | Reviewed substantive contribution plus the approved maintainer identity in GOVERNANCE.md | DESCRIPTION; CONTRIBUTORS.md; inst/CITATION | David Zenz | 2026-08-25 | reviewed |
 | Maros Ivanic | aut | R/GEModel.R::GEModel$loadTablo; R/GEModel.R::GEModel$solveModel; R/processTablo.R::processTablo | Reviewed upstream authorship under the accepted public-domain/CC0 response for the audited baseline | DESCRIPTION; README.md; inst/CITATION; docs/provenance/PROVENANCE.csv; CONTRIBUTORS.md; NEWS.md | David Zenz | 2026-08-25 | reviewed |
 
@@ -37,7 +37,7 @@ Commit counts and author strings are audit leads only.
 
 | fact | evidence_key | destination | reason | reviewer | review_date | status |
 | --- | --- | --- | --- | --- | --- | --- |
-| PACKAGE_LICENSE_UNFINALIZED | R/sparseSolver.R::sparse_solve_model | DESCRIPTION License; public release metadata | DEPENDENCY_COMPATIBILITY_AUDIT_PENDING | David Zenz | 2026-08-25 | blocking |
+| DEPENDENCY_COMPATIBILITY_UNREVIEWED | R/sparseSolver.R::sparse_solve_model | Dependency compatibility audit; public release metadata | DEPENDENCY_COMPATIBILITY_AUDIT_PENDING | David Zenz | 2026-08-25 | blocking |
 | GIT_IDENTITY_ALIAS_UNRESOLVED | R/GEModel.R::GEModel$solveModel | DESCRIPTION; CONTRIBUTORS.md; NEWS.md; inst/CITATION | ATTRIBUTION_IDENTITY_UNRESOLVED | David Zenz | 2026-08-25 | blocking |
 
 `mivanicERS` appears in Git-derived contributor evidence, but no reviewed public
@@ -73,11 +73,19 @@ reviewed assignment is `ATTRIBUTION_ROLE_UNREVIEWED`; destination drift is
 Maros Ivanic is credited accurately for the upstream `tabloToR` baseline even
 though the accepted public-domain/CC0 basis does not require attribution. David
 Zenz is credited for reviewed post-baseline work and as the approved maintainer.
-These facts support attribution, not package renaming, final license selection,
-repository reservation, or publication.
+These facts support attribution. The selected GPL-3.0-or-later package license
+is recorded separately; repository reservation and publication need their own authority.
 
 ## Privacy boundary
 
 Only reviewed public repository paths, symbols, commits, URLs, names, and
 governance facts are used. Private correspondence, credentials, proprietary
 model inputs, unapproved contacts, and full solver results are excluded.
+
+## License blocker clarification
+
+The package-license choice is complete. The dependency compatibility fact replaces
+the earlier unfinished-license label; its existing release reason remains
+`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING`. No further package-license choice or
+confirmation is required. The dependency audit has not been completed by this
+wording update, and the independent attribution identity blocker remains open.

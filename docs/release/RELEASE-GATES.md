@@ -19,6 +19,11 @@ dependency audit. A Git identity alias remains unresolved and cannot be
 silently merged into a public attribution identity. Neither blocker authorizes
 an external repository or publication action.
 
+The package-license choice is complete and needs no further confirmation.
+`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` refers only to the outstanding dependency
+compatibility audit, including bundled native code. It must not be reported as
+an undecided package license.
+
 | Gate | Evidence | Passing predicate | Blocking result |
 | --- | --- | --- | --- |
 | Integrated contract | `RIGHTS.md` | Exactly one `Integrated-Evidence-Version: 1` before any base eligibility is consulted | `INTEGRATED_EVIDENCE_VERSION_INVALID` |

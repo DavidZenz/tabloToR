@@ -32,3 +32,12 @@ mutation, release, or publication. The `selected` status keeps the exact
 maintainer-approved package license visible while the compatibility blocker
 remains active. Only a reviewed transition satisfying every predicate clears
 that blocker.
+
+## Current blocker scope
+
+The GPL-3.0-or-later package-license choice is complete and needs no further
+maintainer confirmation. `Decision-Status: selected` records that settled choice;
+the later `reviewed` transition also requires the separate dependency audit.
+The remaining licensing-related release reason is
+`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING`, covering dependencies and bundled native
+code. It does not mean that the package license is undecided.

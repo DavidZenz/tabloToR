@@ -217,7 +217,7 @@ test_that("contributors and NEWS use the reviewed evidence key set", {
 
 test_that("unresolved facts remain blockers rather than people or roles", {
   contract = attributionReadContract()
-  expect_true("PACKAGE_LICENSE_UNFINALIZED" %in% contract$blockers$fact)
+  expect_true("DEPENDENCY_COMPATIBILITY_UNREVIEWED" %in% contract$blockers$fact)
   expect_true("GIT_IDENTITY_ALIAS_UNRESOLVED" %in% contract$blockers$fact)
   expect_false(any(grepl(
     "mivanicERS", contract$rows[["person/entity"]], fixed = TRUE
@@ -284,7 +284,7 @@ attributionCitationRecords = function(path, meta) {
   environment$records
 }
 
-test_that("DESCRIPTION applies the reviewed current identity without licensing", {
+test_that("DESCRIPTION applies the reviewed identity and selected GPL license", {
   description = read.dcf(attributionPath("DESCRIPTION"))
   expect_identical(unname(description[[1L, "Package"]]), "GEModelR")
   expect_identical(
@@ -293,14 +293,14 @@ test_that("DESCRIPTION applies the reviewed current identity without licensing",
   )
   expect_identical(
     unname(description[[1L, "URL"]]),
-    "https://github.com/DavidZenz/GEModelR"
+    "https://github.com/DavidZenz/GEModelR,\nhttps://davidzenz.github.io/GEModelR/"
   )
   expect_identical(
     unname(description[[1L, "BugReports"]]),
     "https://github.com/DavidZenz/GEModelR/issues"
   )
   expect_identical(
-    unname(description[[1L, "License"]]), "What license is it under?"
+    unname(description[[1L, "License"]]), "GPL (>= 3)"
   )
   expect_true("Authors@R" %in% colnames(description))
   expect_identical(
@@ -417,4 +417,34 @@ test_that("historical identity maps stay separate from current provenance", {
     paste0("github.com/mivanic/", predecessor), provenance$upstream_repository,
     fixed = TRUE
   )))
+})
+
+test_that("the settled GPL choice leaves only the dependency audit licensing blocker", {
+  contract = attributionReadContract()
+  dependency = contract$blockers[
+    contract$blockers$reason == "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
+    , drop = FALSE
+  ]
+  expect_equal(nrow(dependency), 1L)
+  expect_identical(dependency$fact, "DEPENDENCY_COMPATIBILITY_UNREVIEWED")
+  expect_match(dependency$destination, "Dependency compatibility audit", fixed = TRUE)
+  expect_false(any(grepl("LICENSE_UNFINALIZED", contract$blockers$fact, fixed = TRUE)))
+
+  description = read.dcf(attributionPath("DESCRIPTION"))
+  provenance = readLines(attributionPath(
+    "docs", "provenance", "LICENSE-DECISION.md"
+  ), warn = FALSE)
+  release = readLines(attributionPath(
+    "docs", "release", "LICENSE-DECISION.md"
+  ), warn = FALSE)
+  expect_identical(unname(description[1L, "License"]), "GPL (>= 3)")
+  expect_identical(attributionMarker(provenance, "Description-License"),
+                   unname(description[1L, "License"]))
+  expect_identical(attributionMarker(release, "Description-License"),
+                   unname(description[1L, "License"]))
+  expect_identical(attributionMarker(release, "SPDX-License-Identifier"),
+                   "GPL-3.0-or-later")
+  expect_identical(attributionMarker(provenance, "Decision-Status"), "selected")
+  expect_identical(attributionMarker(provenance, "Dependency-Audit-Artifact"),
+                   "pending")
 })

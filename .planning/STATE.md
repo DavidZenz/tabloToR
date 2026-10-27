@@ -117,7 +117,7 @@ Decisions are logged in `.planning/PROJECT.md`.
 - [Phase 1]: Accept the upstream public-domain/CC0 response as the modification and redistribution basis for the audited inherited baseline.
 - [Phase 1]: Use GEModelR as the reviewed successor name and David Zenz / DavidZenz / zenz@wiiw.ac.at as the approved v1 identity.
 - [Phase 1]: Treat the 250-key provenance ledger and six attribution destinations as the canonical reviewed source/credit boundary; Git evidence alone assigns no rights or roles.
-- [Phase 1]: Keep Apache-2.0 provisional and public release fail-closed on `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED`.
+- [Phase 1, superseded license choice]: The provisional Apache-2.0 choice was replaced by the maintainer-approved GPL-3.0-or-later decision on 2026-10-19. Only the dependency compatibility audit and separate attribution identity remain open under `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and `ATTRIBUTION_IDENTITY_UNRESOLVED`.
 - [Phase 1]: Keep repository mutation and publication separately unauthorized; technical readiness never grants external-action authority.
 - [Phase 02]: Phase 2 Plan 01: Keep GEModel as the supported namespace entry point while inventorying other alphabetic exports as internal until Phase 4 narrowing.
 - [Phase 02]: Phase 2 Plan 01: Treat raw saveRDS(model) as compatibility-only same-version best effort and legacy execution as workflow smoke rather than numerical authority.
@@ -234,7 +234,7 @@ Phase 06 Plan 05: The earlier four measured C++ full-scale runs and the later 12
 
 Phase 06 entries below retain the historical evidence. Their workflow-closure requirements are superseded by the maintainer acceptance in `06-ACCEPTANCE.md`; they must not automatically reopen Phase 06. Public release restrictions remain applicable.
 
-- Phase 1: Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING and ATTRIBUTION_IDENTITY_UNRESOLVED; GPL-3.0-or-later is selected, but compatibility clearance and the attribution alias still need reviewed dispositions.
+- Phase 1: The GPL-3.0-or-later license choice is complete; no further license confirmation is needed. Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING (dependency compatibility audit only) and ATTRIBUTION_IDENTITY_UNRESOLVED (separate attribution alias).
 - Phase 1: A fresh GEModelR name availability check remains required immediately before release.
 - Phase 2: The read-only identity map reports package-mixed-case=416/328 (uppercase remains 2/2); preserve the reviewed map and handle any refresh as a separate approved baseline change.
 - Phase 4: The inherited source-tree check baseline remains 19 failures, 2,364 passes, 65 skips, 4 warnings, and 4 notes; it is preserved separately from later runs. See `04-VERIFICATION.md`.
