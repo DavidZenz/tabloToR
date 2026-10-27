@@ -680,11 +680,11 @@ function qualifyReleasePacket(options) {
   if (fs.existsSync(guardScript)) {
     verifyCheckoutBytes(original, manifest.source_commit);
     const guard = command("Rscript", ["--vanilla", guardScript, "--root", original, "--offline"], original, "release-guard");
-    const state = /^repository_state=(ready|blocked|invalid)$/m.exec(guard.stdout || "");
+    const state = /^repository_state=(eligible|ready|blocked|invalid)$/m.exec(guard.stdout || "");
     const ready = /^release_ready=true$/m.test(guard.stdout || "");
     const reasons = /^reason_codes=([A-Z0-9_,]+)$/m.exec(guard.stdout || "");
     const codes = reasons ? (reasons[1] === "NONE" ? [] : reasons[1].split(",")) : ["GUARD_OUTPUT_INVALID"];
-    qualification.guard = { status: guard.status === 0 && state?.[1] === "ready" && ready && !codes.length ? "passed" :
+    qualification.guard = { status: guard.status === 0 && ["eligible", "ready"].includes(state?.[1]) && ready && !codes.length ? "passed" :
       state?.[1] === "blocked" ? "blocked" : state?.[1] === "invalid" ? "invalid" : "failed",
     exit_status: Number.isInteger(guard.status) ? guard.status : null, reason_codes: codes };
   }

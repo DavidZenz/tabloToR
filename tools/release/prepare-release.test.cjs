@@ -514,7 +514,7 @@ test("qualification builds projected bytes and shares one retained archive acros
     const runner = (command, args, options) => {
       calls.push({ command, args, cwd: options.cwd, timeout: options.timeout });
       if (args.includes("--offline")) return { status: 0,
-        stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
+        stdout: "repository_state=eligible\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
       if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
         stdout: JSON.stringify({ status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
       if (command === "Rscript" && args.includes("-e")) return { status: 0,
@@ -544,6 +544,7 @@ test("qualification builds projected bytes and shares one retained archive acros
     assert.equal(check.timeout, 1800000);
     const install = calls.find((item) => item.command === "R" && item.args[1] === "INSTALL");
     assert.ok(install, "A clean supported R4.3 log must advance to installation");
+    assert.equal(manifest.qualification.guard.status, "passed");
     assert.equal(manifest.checks.archive_check, "passed");
     assert.equal(manifest.qualification.url_check_status, "passed");
     const scan = calls.find((item) => item.command === process.execPath && item.args.includes("--archive"));

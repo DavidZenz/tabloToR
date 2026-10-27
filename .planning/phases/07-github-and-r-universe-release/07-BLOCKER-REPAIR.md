@@ -144,3 +144,13 @@ A bounded informational NOTE assessor has been prepared and tested, but remains
 inactive pending the maintainer's specific policy decision. It rejects the old
 actual check's invalid URLs. Actual current advertised URLs were separately
 validated successfully using R tools; no disabled URL check is treated as a pass.
+
+## Canonical eligibility integration
+
+The actual canonical offline guard now reports `repository_state=eligible`,
+`release_ready=true`, `reason_codes=NONE`, and all twelve parse stages passed.
+This exposed a latent CLI integration defect: it recognized only the synthetic
+`ready` state used in earlier unit fixtures. The parser now recognizes the
+canonical `eligible` state too, still requiring zero command exit, explicit
+readiness and no reason codes. The same-archive integration fixture now uses
+the actual canonical spelling and asserts a passed guard disposition.
