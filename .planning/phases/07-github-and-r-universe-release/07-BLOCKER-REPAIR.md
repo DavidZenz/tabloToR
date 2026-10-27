@@ -229,3 +229,44 @@ the installable archive, retained in selected Git source, and never replaced by
 a fixture in canonical qualification. The actual development runner previously
 passed29tests161assertions; its expanded required group will verify167assertions.
 The first same-archive pkgdown build completed successfully.
+
+## Final verified handoff
+
+Selected source `a70bf28c6186775eee0f3a35752ab59edc9286c6`, public root
+`f8c2876cb49f8cfef6371ed445dd641ebc1f760f`, archiveSHA
+`6a84b4f80b599a69946fa2dd42b72f106b1c05681b22629dc2c4b3ffa6d644fe`, review digest
+`32ddcc5775eb803975b9cb9a3938a98284c123b1d25d9df86b994b1a7b8ad408`. Actual qualification and publication-readiness both
+pass; strict for-publication verification passes. No publication is authorized.
+
+Final full check:0errors/0warnings/3precisely approved notes,3037passes,
+0failures/0testwarnings/122contextskips. Actual URL/install/smoke pass. Final
+archive-matched source groups pass public117 and development167 assertions with
+zero skips. Final same-archive site builds and both61-entry scans pass; site
+inventorySHA `ba30afa8a0a2300595274b3f8d5fbe1a3b8e311c12112b5a4ab2ccbd53241f82`. Public-only license/build contracts pass.
+
+All production R/C++ and original canonical numerical/approval artifacts are
+unchanged; all16 pre-existing local work files remain preserved. No new native
+performance claim or GTAP rerun is made. Earlier failures and their precise
+corrections above remain honest historical evidence.
+
+Focused implementation commits:
+
+```text
+1901e60 Repair release provenance and public CI evidence
+86b0920 Refresh name reservation and pending documentation metadata
+d315781 Isolate public and development source checks
+b173f7d Verify current serialization chain and refresh identity evidence
+db80043 Make license fixtures work in public source checkouts
+3db490a Allow full archive checks enough time to finish
+1c0cccb Recognize canonical eligibility during archive qualification
+c8f1b64 Apply approved bounded check-note policy and verify URLs
+e127e58 Keep administrative checks out of the installable archive
+5995234 Compute readiness after refreshing retained assets
+a70bf28 Separate canonical identity checks from public parser tests
+```
+
+Current pending publication record names the exact qualified candidate and
+proposed first-source/tag/draft/registry scope. Both handoff files are explicitly
+excluded from the public policy, so this result-only commit does not require
+rebuilding or changing the selected candidate. Development push remains authorized;
+canonical publication retains the separate AGENTS maintainer gate.

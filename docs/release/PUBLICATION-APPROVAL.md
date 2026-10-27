@@ -1,13 +1,13 @@
-# GEModelR publication decision — pending
+# GEModelR publication decision — ready locally, authorization pending
 
 Status: pending_local_only
 Package: GEModelR
 Version: 0.1.0
-Candidate-Status: development
+Candidate-Status: locally_qualified
 Intended-Tag: v0.1.0
 Tag-Type: annotated_unsigned
 Preparation-Status: complete
-Publication-Readiness: blocked
+Publication-Readiness: ready
 Packet-Specific-Maintainer-Decision: not_received
 Publication-Authorization: not_authorized
 Authorized-External-Actions: none
@@ -15,96 +15,113 @@ Standing-Instruction: keep local
 Standing-Instruction-Superseded: false
 REL-02-Status: pending
 
-## Exact prepared candidate
+## Exact reviewable candidate
 
 | Identity | Value |
-|----------|-------|
-| Development source commit | `0ac93368be49b814998868b6fe56c9ad097a2e7f` |
-| Development source tree | `f0415116ec4f874718f7242db32c6f1f5584eb34` |
-| Proposed public root commit | `382af3d087c5f545ce523cf52dfff475a2197e8b` |
-| Proposed public source tree | `d22deb4414a67bc3756c4ae6b5ae1988b40e303e` |
-| Review content digest (`content_sha256`) | `9e776314b8528ba7533fac415015e2ae59a5011a2efacc018b58e7a9674f0d77` |
-| Private manifest file SHA-256 | `ca8faae2376c748d828a55da51756ea679581c7b80ec0d5fd9f07d0efbd64132` |
-| Public manifest file SHA-256 | `4e56bf73805074762251c27316eade50e90565aa851b6230f1cdd50c52d3d2a9` |
-| Explicit source-policy SHA-256 | `c2a64e5c2810d5f29e45163c510e42c4af52e8d7dc3eed0c45483472fcb6b5ef` |
-| Release notes SHA-256 | `7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5` |
-| Tag-pinned registry SHA-256 | `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` |
-| Installed smoke runner SHA-256 | `f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15` |
-| Archive source commit / basename / SHA-256 | `382af3d087c5f545ce523cf52dfff475a2197e8b` / `GEModelR_0.1.0.tar.gz` / `c4c0d237cb438e3330fa59d61dfa8204587b9f173a55179a426a9844ef41ced7` |
+| --- | --- |
+| Development source commit | `a70bf28c6186775eee0f3a35752ab59edc9286c6` |
+| Development source tree | `685d2e41315feca7911976e4f0bba283a3793689` |
+| Public root commit | `f8c2876cb49f8cfef6371ed445dd641ebc1f760f` |
+| Public source tree | `ac0f4e73f298223c0b0d186ee9d8e622f516c4fa` |
+| Archive SHA256 | `6a84b4f80b599a69946fa2dd42b72f106b1c05681b22629dc2c4b3ffa6d644fe` |
+| Review content digest | `32ddcc5775eb803975b9cb9a3938a98284c123b1d25d9df86b994b1a7b8ad408` |
+| Private manifest file SHA256 | `ddddc102e271fb02f3b4d01559a16059a8d5f48be8a5dfd2a720acdc6e5b88aa` |
+| Public manifest file SHA256 | `09059db13a8ccc879c125a7471b66e13dad5ec2e7b1f30e2f5a8316562675556` |
+| Source policy SHA256 | `c5c416f5a28326b9644a9a8b8f547856eea799060b8815a00e0b72750ba31704` |
+| Release notes SHA256 | `7a7498688223ce803eb3a4b0989c433ee3b43f831a7da7ea19e18a52df04a8b5` |
+| Registry draft SHA256 | `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` |
+| Smoke runner SHA256 | `f7241b877ff0112151fc22634930bc5f43ef9ed90d0c414599f7b2055d877d15` |
+| Documentation inventory SHA256 | `ba30afa8a0a2300595274b3f8d5fbe1a3b8e311c12112b5a4ab2ccbd53241f82` |
 
-The review content digest and the private manifest file SHA-256 are different identities: the former is the manifest's recorded content identity, while the latter hashes the complete serialized manifest bytes. Neither is a cryptographic signature or a maintainer approval.
+The frozen packet is `/tmp/GEModelR-release-repair-j9oha8/release-packet`.
+Its source archive is `public/GEModelR_0.1.0.tar.gz`. The review content digest
+and serialized private-manifest file hash identify different bytes. Neither
+supplies a maintainer signature or publication authority. The selected source
+remains the committed revision above; the following private handoff commit is
+excluded from the public policy and does not change these frozen identities.
 
-The public-source proposal has one new root commit and no inherited private development history. Only the explicitly included public tree is proposed for `main` and the annotated unsigned `v0.1.0` tag. The original development repository, its refs/index, and unrelated working changes remain outside this publication proposal. Private paths, guard logs, planning records, proprietary GTAP inputs, raw solutions, and raw measurements are not upload assets.
+## Actual completed verification
 
-## Actual local verification and readiness
+- Actual-kind supported runtime: R 4.3.0, GCC 8.3, isolated Matrix 1.6.5 against
+  declared floor 1.6-5. Shared installed libraries were not changed.
+- Canonical guard: eligible, ready=true, no reason codes, all 12 stages passed.
+- Exact public source: one root commit, no inherited development parents,
+  no development commit objects, no remote, complete selected-file policy.
+- Exact archive: build and strict scan passed; full R CMD check exits0 with
+  0 errors,0 warnings,3 notes. All 3,037 installed assertions pass,0 failures,
+  0 test warnings,122 explicit context/platform skips.
+- The three notes are only New submission, native installed size9.3MB
+  (libs8.1MB), and unavailable external clock verification. The explicitly
+  approved bounded GitHub-source policy accepts these exact dispositions;
+  raw notes/counts/log hash/assessor hash remain retained. This is not CRAN approval.
+- Actual URL validation, installation and installed numerical smoke passed.
+  Smoke checks the finite expected solution within 1e-12 and verifies namespace
+  ownership. Local source provenance is correctly labeled caller-attested.
+- Separate clean-process source checks use the same final archive installation:
+  public 4 groups / 28 tests / 117 assertions and development 4 groups / 30 tests / 167 assertions,
+  all passing with zero skips and no namespace/native reloads.
+- Final public-only license/dependency and Matrix build-contract checks passed.
+- The same final archive builds pkgdown successfully. Complete generated site
+  and complete staged artifact both pass strict scans (61 entries each, including 48 regular files).
+- Strict `verify --for-publication` passes with the exact review digest above.
+  Frozen manifest still records publication_authorized=false.
+- All 44 Node packet/scanner/policy tests passed; the affected 26 packet tests
+  were rerun after the readiness ordering correction and passed. Source identity,
+  original numerical artifacts and preserved historical approval checks pass.
 
-On 2026-10-26, the final repaired packet at `/tmp/GEModelR-check-repair-1jttZn/final-packet` was verified with `prepare-release.cjs verify`: exit 0, `status=verified`, and the exact source/public commits and review content digest above. The stricter `verify --for-publication` returned exit 1 with `FAIL PUBLICATION_NOT_READY`.
+Final sidecar evidence lives under `/tmp/GEModelR-release-repair-j9oha8/logs`
+and `validation/`; it is deliberately outside the immutable packet inventory.
+The final documentation artifact is
+`validation/final-site-build/pkgdown-site` and its exact 48-file inventory is
+`validation/final-site-inventory.json`.
 
-| Check | Actual disposition |
-|-------|--------------------|
-| Packet integrity and retained source identities | Verified locally |
-| Qualification evidence kind | `actual` |
-| Installed Matrix / declared minimum | Isolated `1.6.5` / `1.6-5`; shared `1.6.3` unchanged |
-| Runtime qualification | Supported |
-| Exact archive build / scan / check | Build and scan passed; check has 0 errors, 0 warnings, 6 notes; 3053 assertions passed, 0 failed, 113 skipped. The strict `Status: OK` archive gate remains failed |
-| Installed numerical smoke | Separate fresh-process smoke passed against the check-installed archive; pipeline-gated smoke remains `not_run` |
-| Separate source-tool tests | Frozen packet history: seven stale identity-count errors; the later current-source identity refresh below resolves them |
-| Separate explicit URL check | `not_run`; no network URL pass claimed |
-| Offline canonical release guard | `invalid`, exit 1; `PROVENANCE_KEY_MISMATCH` |
-| Canonical Git installation | `not_run` |
-| R-universe installation | `not_run` |
-| External publication | `not_run` |
+Production R/C++ implementations and accepted numerical baselines were unchanged.
+The pre-existing local solver/benchmark edits remain outside this committed
+candidate and are preserved. No GTAP workload or historical benchmark was rerun.
+Earlier failed/provisional packets remain unchanged with their actual failures;
+they were not edited into passing results. Prior candidate history and accepted
+Phase 06 limitations remain in the existing private repair reports and Git history.
 
-These actual outcomes make this candidate unready for publication. No executable publication approval is being requested for it. The accepted Phase 06 limitations remain recorded under `06-ACCEPTANCE.md`; they are not reopened, converted into passing results, or treated as rights or publication authority. Dependency compatibility and attribution identity also retain their existing release dispositions. Current public-CI dependencies on excluded private evidence remain a documented readiness limitation.
+## Resolved decisions
 
-The identities above refer to the final committed test-context repair, including explicit source/installed separation, restored namespace mocking, declared test dependencies, fixture-order isolation, and administrative script path fixes. Production R/C++ implementations and unrelated dirty work were excluded from these changes. Earlier packets were not edited. See `.planning/phases/07-github-and-r-universe-release/07-CHECK-REPAIR.md` for actual results and evidence locations; `07-SUPPORTED-RUNTIME.md` retains the preceding failed candidate's history. Local repair authorization grants no external action: the packet-specific publication decision is still `not_received` and Plan 07-04 remains at its existing checkpoint.
+GPL-3.0-or-later remains the existing human-selected license. Dependency audit,
+347-row current provenance, and the confirmed Maros Ivanic attribution are
+complete. The maintainer separately approved the exact canonical name reservation,
+the labeled automated current serialization verification (original human approval
+unchanged), and the bounded informational NOTE policy. These approvals repair
+qualification rules and do not authorize publication.
 
-The subsequent maintainer-authorized identity refresh (`5c252ab`) passes current
-historical/tracked-source audits, all 152 source-tool assertions, 147
-identity-migration assertions and 243 current serialization assertions, with zero
-skips in those groups. Original historical artifacts and rights/provenance are
-unchanged. The broader reseal check exposed a separate stale historical
-serialization BUGFIX approval whose After-SHA256 differs from current source;
-that approval is preserved. See `07-IDENTITY-REFRESH.md` in the same private
-planning directory. This follow-up does not change the frozen packet identities
-above or claim a newly qualified archive; it remains local, with provenance,
-historical serialization approval and the preceding six check notes unresolved.
+## Proposed external actions — none executed
 
-The further maintainer-authorized routine cleanup is now checked as a separate
-local archive from `c3bca33d06190ad5afd48880aee058d7a819adf1`, SHA256
-`e0c6da89610e5ca8cea37e7904f26f93c793022dac08aeb03eeed14227425763`.
-Its full R CMD check reports zero errors, zero warnings and three notes, with
-3037 passing installed assertions, zero failures, and 115 skips. Source and
-archive-layout groups separately pass 699 assertions with zero skips; the
-installed numerical smoke passes. Author metadata, top-level archive content and
-formula class-check notes are cleared. Identity was refreshed once to 421/2
-occurrences and normalized fingerprint `99cc904fa2d5934dd9aa8294782175ad`.
-See `07-CHECK-NOTES.md` in the private planning directory. Remaining notes concern
-incoming/unpublished URLs, installed size and clock verification. Provenance and
-historical serialization approval limitations remain. This standalone archive
-does not change the older frozen packet's identities/statuses above, supply a
-new publication authorization, or initiate any external operation.
+A concrete publication approval may authorize the following exact scope:
 
-## Standing instruction and pending decision
+1. Push only public root `f8c2876cb49f8cfef6371ed445dd641ebc1f760f` to `main` in
+   `DavidZenz/GEModelR`, and create an annotated unsigned `v0.1.0` tag targeting
+   that public commit. Require the destination still be empty; use no force push,
+   development refs, private history, or repository visibility/default-branch changes.
+2. Create a GitHub **draft** release at that tag with the exact source archive,
+   frozen release notes, public manifest and standalone smoke from this packet.
+   Allow normal workflows triggered by these pushes, retain their actual results,
+   and perform the clean GitHub tag installation/smoke. Draft promotion is separate.
+3. Create the public registry repository `DavidZenz/davidzenz.r-universe.dev`
+   with the exact prepared `packages.json` entry at `main`, pinning the canonical
+   package source to `v0.1.0`; verify the R-universe installation and RemoteSha
+   against the public commit. A read-only probe currently returns 404 for that
+   repository. Any required interactive account/app authorization remains explicit;
+   no access to private repositories or new app permission grant is inferred.
 
-The maintainer's existing instruction was:
+The canonical source repository is currently public/empty/default main by
+read-only GitHub metadata and a successful empty Git ref listing. No source/tag,
+release, registry, Pages deployment, app permission or remote settings change was
+performed. GitHub/R-universe channel installs and newly triggered hosted CI are
+not_run until publication is authorized. Current prior hosted Matrix evidence
+is retained honestly; no fresh hosted platform results are claimed.
 
-> keep local
+The built site is ready for a later explicit Pages deployment decision. Pages
+settings/branch publication, GitHub draft promotion, protection changes, app grants,
+private evidence upload and force pushes are outside this proposal. Planned site
+metadata remains pending; bundled vignettes work without public deployment.
 
-That restriction continues to apply. This file records the reviewable local handoff and the absence of a new packet-specific decision; it does not interpret the standing restriction as approval of these candidate bytes, the new public history, or any external action. No prior local-only restriction is superseded.
-
-Plan 07-04 remains at Task 1. Tasks 2 and 3 have not run, and REL-02 remains pending. A future publication decision is relevant only after actual readiness is satisfied and must name the exact then-current packet, assets, destinations, actions, and identities. Changed candidate bytes or actions require a fresh recorded scope; this draft cannot authorize them.
-
-## Proposed external scope for a future ready candidate
-
-The concrete proposal in `PUBLICATION-PLAN.md` remains unapproved:
-
-1. Canonical source destination: `DavidZenz/GEModelR`, `https://github.com/DavidZenz/GEModelR`; proposed public `main` and exact tag `v0.1.0` at the approved public commit. Current remote state has not been probed for this decision.
-2. Repository creation/visibility, default-branch/protection/required-check settings, or hosted CI dispatches only if each is explicitly named in the eventual authorization. A push may itself trigger the listed workflows.
-3. An annotated unsigned tag and a GitHub draft release containing the exact retained R-built archive and frozen notes, using the named repository and verified tag. An archive now exists, but it has not passed release qualification and is not approved for upload.
-4. Registry destination: `DavidZenz/davidzenz.r-universe.dev`; proposed universe `https://davidzenz.r-universe.dev`; one `GEModelR` entry with canonical URL and branch `v0.1.0`. Registry publication and GitHub app authorization require their own expressly included scope.
-5. Two clean supported-library installations and the same exact numerical smoke, with Git tag/source and R-universe `RemoteSha`/`RemoteRef` evidence retained. Any later GitHub draft promotion must be included in the same exact authorization and wait for both real channel results.
-
-The candidate retains GPL-3.0-or-later, existing credit, migration/backend/platform limits, and the proposed capacity-dependent weekly triage/monthly patch cadence in the frozen release notes. These are available for review; this pending record does not newly approve the cadence or claim a published support service.
-
-Pages deployment, private history/evidence publication, force-push, destructive ref recovery, credential transfer, and changes to canonical rights/license/provenance records are outside the proposal. The retained packet stays local without another Phase 06 gap or UAT cycle.
+The standing keep-local instruction remains in force. AGENTS.md requires explicit
+maintainer authorization of the concrete publication action after local preparation.
+This file records a reviewable proposal, not that authorization.
