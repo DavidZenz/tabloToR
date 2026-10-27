@@ -87,6 +87,8 @@
     "inst/migration/predecessor-fingerprints.dcf",
     "inst/migration/serialization-bugfix.dcf",
     "inst/migration/serialization-bugfix.patch",
+    "inst/migration/serialization-current-review.dcf",
+    "inst/migration/serialization-current.patch",
     "inst/migration/source-identity-review.dcf",
     "inst/migration/workflow-evidence-policy-review.dcf",
     "inst/migration/workflow-evidence-policy.csv",

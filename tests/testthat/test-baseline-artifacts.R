@@ -136,11 +136,11 @@ test_that("proposal and check modes cannot mutate accepted canonical artifacts",
   expect_false(clean$clean)
   changed = refresh$phase02_diff_frame(canonical, proposal)
   changed = changed[changed$status != "unchanged", , drop = FALSE]
-  expect_equal(nrow(changed), 3L)
+  expect_equal(nrow(changed), 4L)
   expect_identical(sort(unique(changed$artifact)), "fingerprints.dcf")
   expect_setequal(
     changed$key,
-    c("Source-Fingerprint", "Package-Name", "Package-Signature")
+    c("Source-Fingerprint", "Source-File-Count", "Package-Name", "Package-Signature")
   )
   expect_true(all(changed$status == "changed"))
 
@@ -742,4 +742,31 @@ test_that("acceptance publication is locked and rolls back atomically", {
   )
   expect_false(dir.exists(lock))
   expect_false(dir.exists(backup))
+})
+
+
+test_that("metadata count changes require the exact reviewed source transition", {
+  phase02_require_source_tree()
+  refresh = load_phase02_tool("refresh_phase02_baselines.R")
+  root = refresh$phase02_repository_root()
+  map = refresh$phase02_load_identity_map(root = root)
+  canonical = refresh$phase02_canonical_dir(root)
+  observed = tempfile("metadata-count-")
+  on.exit(unlink(observed, recursive = TRUE), add = TRUE)
+  copy_phase02_artifacts(refresh, canonical, observed)
+  path = file.path(observed, "fingerprints.dcf")
+  original = as.data.frame(read.dcf(path), stringsAsFactors = FALSE, check.names = FALSE)
+  state = refresh$phase02_identity_source_state(root, map)
+  changed = original
+  changed$`Source-File-Count` = "26"
+  write.dcf(changed, path, keep.white = names(changed))
+  expect_error(refresh$phase02_compare_migration_artifacts(canonical, observed, map, state),
+    "non-identity baseline field drifted: Source-File-Count")
+  changed$`Source-File-Count` = "25"
+  write.dcf(changed, path, keep.white = names(changed))
+  expect_error(refresh$phase02_compare_migration_artifacts(canonical, observed, map),
+    "non-identity baseline field drifted: Source-File-Count")
+  state$normalized_fingerprint = paste(rep("0", 32), collapse = "")
+  expect_error(refresh$phase02_compare_migration_artifacts(canonical, observed, map, state),
+    "non-identity baseline field drifted: Source-File-Count")
 })

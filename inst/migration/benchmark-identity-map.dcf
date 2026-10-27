@@ -3,8 +3,8 @@ Rule-Id: package-mixed-case
 Predecessor: tabloToR
 Current: GEModelR
 Canonical: <<PACKAGE-IDENTITY-MIXED>>
-Expected-Occurrences: 421
-Normalized-Source-Fingerprint: 99cc904fa2d5934dd9aa8294782175ad
+Expected-Occurrences: 423
+Normalized-Source-Fingerprint: 9a52cf31b10837387ec658f95e0754ab
 Reviewed-Non-Numerical-Exclusions: R/modelSerialization.R
 Review-State: reviewed
 
@@ -14,6 +14,6 @@ Predecessor: TABLOTOR
 Current: GEMODELR
 Canonical: <<PACKAGE-IDENTITY-UPPER>>
 Expected-Occurrences: 2
-Normalized-Source-Fingerprint: 99cc904fa2d5934dd9aa8294782175ad
+Normalized-Source-Fingerprint: 9a52cf31b10837387ec658f95e0754ab
 Reviewed-Non-Numerical-Exclusions: R/modelSerialization.R
 Review-State: reviewed

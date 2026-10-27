@@ -316,7 +316,7 @@ serialization_bugfix_validate_protection = function(root) {
     rep("R/modelSerialization.R", 2L)
   ) || !identical(
     unname(map[["Normalized-Source-Fingerprint"]]),
-    rep("99cc904fa2d5934dd9aa8294782175ad", 2L)
+    rep("9a52cf31b10837387ec658f95e0754ab", 2L)
   )) {
     serialization_bugfix_stop(
       "identity map does not retain the exact reviewed serialization exclusion"
@@ -628,25 +628,134 @@ serialization_bugfix_verify_delta = function(
   )
 }
 
+serialization_bugfix_verify_current = function(root = serialization_bugfix_repository_root(), review_path = NULL) {
+  root = serialization_bugfix_repository_root(root)
+  historical = serialization_bugfix_validate_record(root = root)
+  if (!identical(historical$`Review-State`, "approved")) {
+    serialization_bugfix_stop("current verification requires the original approved fix")
+  }
+  if (is.null(review_path)) review_path = file.path(root, "inst", "migration", "serialization-current-review.dcf")
+  link = Sys.readlink(review_path)
+  review_path = normalizePath(review_path, winslash = "/", mustWork = TRUE)
+  if (!serialization_bugfix_path_contains(root, review_path) || (!is.na(link) && nzchar(link))) {
+    serialization_bugfix_stop("current review escapes root or is linked")
+  }
+  review = read.dcf(review_path)
+  fields = c("Schema", "Source-Path", "Historical-Record-SHA256", "Historical-Patch-SHA256",
+    "Historical-After-SHA256", "Current-Source-Commit", "Current-Source-SHA256",
+    "Current-Patch-Path", "Current-Patch-SHA256", "Added-Functions", "Changed-Functions",
+    "Review-State", "Reviewer", "Reviewed-UTC", "Authorization")
+  if (nrow(review) != 1L || !identical(colnames(review), fields) ||
+      anyNA(review) || any(!nzchar(review)) || any(review != trimws(review))) {
+    serialization_bugfix_stop("current review schema is invalid")
+  }
+  review = as.list(review[1L, ])
+  if (review$Schema != "gemodelr-serialization-current-v1" ||
+      review$`Review-State` != "technically-verified" ||
+      review$Reviewer != "Codex automated technical review (maintainer-requested)" ||
+      !grepl("^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$", review$`Reviewed-UTC`)) {
+    serialization_bugfix_stop("current technical review is incomplete")
+  }
+  source = serialization_bugfix_validate_relative_path(root, review$`Source-Path`, "R/modelSerialization.R", "Source-Path")
+  patch = serialization_bugfix_validate_relative_path(root, review$`Current-Patch-Path`,
+    "inst/migration/serialization-current.patch", "Current-Patch-Path")
+  same = function(value, expected) if (!identical(value, expected)) {
+    serialization_bugfix_stop("current review hash binding failed")
+  }
+  same(review$`Historical-Record-SHA256`, serialization_bugfix_hash_file(
+    file.path(root, "inst", "migration", "serialization-bugfix.dcf"), "historical record"))
+  same(review$`Historical-Patch-SHA256`, historical$`Patch-SHA256`)
+  same(review$`Historical-After-SHA256`, historical$`After-SHA256`)
+  current = serialization_bugfix_read_raw(source, "current serialization source")
+  same(review$`Current-Source-SHA256`, serialization_bugfix_hash_raw(current))
+  committed = serialization_bugfix_git_source(root, review$`Current-Source-Commit`, review$`Source-Path`)
+  same(serialization_bugfix_hash_raw(committed), review$`Current-Source-SHA256`)
+  same(review$`Current-Patch-SHA256`, serialization_bugfix_hash_file(patch, "current patch"))
+  before = serialization_bugfix_git_source(root, historical$`Before-Commit`, historical$`Source-Path`)
+  approved = serialization_bugfix_apply_candidate(root, before,
+    file.path(root, historical$`Patch-Path`), historical$`Source-Path`, historical)
+  # The original approval and exact patch remain independently verified. This
+  # technical follow-up never rewrites them or claims new human approval.
+  protection = serialization_bugfix_validate_protection(root)
+  lines = readLines(patch, warn = FALSE)
+  if (length(lines) < 3L || !identical(lines[1:2],
+      c("--- a/R/modelSerialization.R", "+++ b/R/modelSerialization.R")) ||
+      sum(startsWith(lines, "--- ")) != 1L || sum(startsWith(lines, "+++ ")) != 1L ||
+      any(grepl("^(diff --git|index |old mode|new mode|rename |GIT binary)", lines))) {
+    serialization_bugfix_stop("current patch exceeds its one-file scope")
+  }
+  workspace = tempfile("serialization-current-")
+  dir.create(file.path(workspace, "R"), recursive = TRUE)
+  on.exit(unlink(workspace, recursive = TRUE), add = TRUE)
+  candidate = file.path(workspace, "R", "modelSerialization.R")
+  writeBin(approved$after, candidate)
+  local({
+    previous = getwd()
+    setwd(workspace)
+    on.exit(setwd(previous))
+    serialization_bugfix_command("patch", c("--batch", "--forward", "--fuzz=0", "-p1", "-i", patch),
+      label = "current patch replay")
+  })
+  replayed = serialization_bugfix_read_raw(candidate, "replayed current source")
+  same(serialization_bugfix_hash_raw(replayed), review$`Current-Source-SHA256`)
+  expressions = function(bytes) {
+    values = as.list(parse(text = rawToChar(bytes), keep.source = FALSE))
+    names(values) = vapply(values, function(value) {
+      if (!is.call(value) || !as.character(value[[1L]]) %in% c("=", "<-") || !is.symbol(value[[2L]])) {
+        serialization_bugfix_stop("unrecognized serialization expression")
+      }
+      as.character(value[[2L]])
+    }, character(1))
+    if (anyDuplicated(names(values))) serialization_bugfix_stop("duplicate serialization expression")
+    values
+  }
+  old = expressions(approved$after)
+  new = expressions(replayed)
+  added = sort(setdiff(names(new), names(old)))
+  changed = sort(intersect(names(old), names(new))[!vapply(intersect(names(old), names(new)),
+    function(name) identical(old[[name]], new[[name]]), logical(1))])
+  allowedAdded = c(".serialization_atomic_save_rds", ".serialization_is_exact_predecessor_source",
+    ".serialization_predecessor_data", ".serialization_raw_fingerprint", ".serialization_source_fingerprints_match")
+  allowedChanged = c(".validate_logical_state_payload", ".validate_reconstructed_logical_state")
+  if (length(setdiff(names(old), names(new))) || !identical(added, allowedAdded) ||
+      !identical(changed, allowedChanged) ||
+      review$`Added-Functions` != paste(allowedAdded, collapse = ";") ||
+      review$`Changed-Functions` != paste(allowedChanged, collapse = ";")) {
+    serialization_bugfix_stop("current source exceeds the reviewed function delta")
+  }
+  predecessor = file.path(root, "tests", "testthat", "fixtures", "serialization", "tabloToR-schema1-lineage.rds")
+  historicalResult = serialization_bugfix_run_candidate(root, approved$after, predecessor)
+  currentResult = serialization_bugfix_run_candidate(root, current, predecessor)
+  list(clean = TRUE, mode = "current", record = historical, current_review = review,
+    protection = protection, candidate = currentResult, historical_candidate = historicalResult,
+    before_sha256 = historical$`Before-SHA256`, after_sha256 = review$`Current-Source-SHA256`,
+    historical_after_sha256 = historical$`After-SHA256`, patch_sha256 = review$`Current-Patch-SHA256`)
+}
+
 serialization_bugfix_main = function(
     arguments = commandArgs(trailingOnly = TRUE)) {
   if (identical(arguments, "--help")) {
     cat(
       "Usage: rtk Rscript --vanilla tools/check_serialization_bugfix.R",
-      "--proposal | --verify-approved\n"
+      "--proposal | --verify-approved | --verify-current\n"
     )
     return(invisible(0L))
   }
   if (length(arguments) != 1L ||
-      !arguments[[1L]] %in% c("--proposal", "--verify-approved")) {
+      !arguments[[1L]] %in% c("--proposal", "--verify-approved", "--verify-current")) {
     serialization_bugfix_stop(
-      "choose exactly one of --proposal or --verify-approved"
+      "choose exactly one of --proposal, --verify-approved or --verify-current"
     )
   }
   mode = if (identical(arguments[[1L]], "--proposal")) "proposal" else "approved"
-  result = serialization_bugfix_verify_delta(mode = mode)
+  result = if (identical(arguments[[1L]], "--verify-current")) {
+    serialization_bugfix_verify_current()
+  } else serialization_bugfix_verify_delta(mode = mode)
   if (identical(mode, "proposal")) {
     cat("Serialization BUGFIX proposal: PASS\n")
+  } else if (identical(arguments[[1L]], "--verify-current")) {
+    cat("Serialization historical fix and current technical follow-up: PASS\n")
+    cat("Original-Human-Approval: preserved\n")
   } else {
     cat("Serialization BUGFIX gate: PASS\n")
     cat("Change-Kind: BUGFIX\n")

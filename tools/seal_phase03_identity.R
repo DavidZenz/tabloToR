@@ -579,7 +579,7 @@ seal_validate_manifest = function(manifest) {
       identical(original$Command, migration$Command) ||
       !grepl("immutable original", original$Result, fixed = TRUE) ||
       !grepl("migration source gate", migration$Result, fixed = TRUE) ||
-      !grepl("--verify-approved", bugfix$Command) ||
+      !grepl("--verify-(approved|current)([[:space:]]|$)", bugfix$Command) ||
       !grepl("BUGFIX", bugfix$Result, fixed = TRUE)) {
     seal_abort("QUALIFICATION_TRANSCRIPT_STAGE_BINDING")
   }
@@ -685,8 +685,9 @@ seal_check_final_tree = function(root = seal_repository_root()) {
   )
   seal_run_gate(
     root, file.path("tools", "check_serialization_bugfix.R"),
-    "--verify-approved", "IDENTITY_RESEAL_BUGFIX_GATE",
-    c("Serialization BUGFIX gate: PASS", "Change-Kind: BUGFIX")
+    "--verify-current", "IDENTITY_RESEAL_BUGFIX_GATE",
+    c("Serialization historical fix and current technical follow-up: PASS",
+      "Original-Human-Approval: preserved")
   )
   after_head = seal_git_head(root)
   after_status = seal_git_status(root)

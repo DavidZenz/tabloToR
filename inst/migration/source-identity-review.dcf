@@ -1,18 +1,18 @@
 Schema: gemodelr-source-identity-review-v1
-Source-Commit: e86a5cdd99e9bb2dad6359d37095f6b7aef88db5
+Source-Commit: d3157813926ea4aa8912dbea46cca2e48c13f9f6
 Previous-Map-SHA256: eea9db2264234e7b9cf1129bb4e568fd6d904235b7c0b20146c3337e00545f97
-Map-SHA256: eea9db2264234e7b9cf1129bb4e568fd6d904235b7c0b20146c3337e00545f97
+Map-SHA256: dfd154eac2fd9a1000fccc46a0c95f90313bb075ca9b78362caadfd0776e8cc8
 Previous-Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
 Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
-Previous-Allowlist-SHA256: 3749d2f121715390a7037bfbcd97e55b83155c1384dfd2ea9850a739f6011537
-Allowlist-SHA256: c776336410481918a3ae420520b53c8cf0d91c723a5b5c35c49d77b1f83b2b52
-Normalized-Source-Fingerprint: 99cc904fa2d5934dd9aa8294782175ad
-Mixed-Case-Occurrences: 421
+Previous-Allowlist-SHA256: c776336410481918a3ae420520b53c8cf0d91c723a5b5c35c49d77b1f83b2b52
+Allowlist-SHA256: f6d7efe7b3b0c5b677dd0b3555d470c17dbb9dfb9afe3b0edb66f5897a87b00e
+Normalized-Source-Fingerprint: 9a52cf31b10837387ec658f95e0754ab
+Mixed-Case-Occurrences: 423
 Upper-Case-Occurrences: 2
 Protected-Region: R/GEModel.R:615-615
 Immutable-Evidence-Changed: false
 Review-Type: automated technical review; maintainer-authorized update
-Authorization: Maintainer requested a publication contract in AGENTS.md, then targeted commits and a push to the development repository
+Authorization: Maintainer requested all remaining blockers fixed; explicitly approved name reservation and current serialization verification on 2026-10-27
 Reviewer: Codex automated source and regression review
-Reviewed-UTC: 2026-10-27T07:58:11Z
-Scope: Track the development-only publication contract and add one exact migration-instruction row for its two development-name references. All existing occurrence rows, runtime counts/fingerprint, identity mapping, protected source and historical records are unchanged. Redundant new handoff references were corrected without changing the workflow identity policy. Development push is authorized; publication to GEModelR remains pending.
+Reviewed-UTC: 2026-10-27T09:57:16Z
+Scope: Refresh DESCRIPTION and four public compatibility records in the existing source fingerprint scope (423/2 occurrences). Numerical runtime and accepted original artifacts are byte-identical. Refresh finite references for repaired provenance, metadata, tools and approved serialization follow-up; original human approvals, registry and workflow policy are unchanged. Development only; no publication authority.

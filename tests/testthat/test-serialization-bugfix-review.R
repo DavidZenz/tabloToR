@@ -35,67 +35,49 @@ loadSerializationBugfixTool = function() {
   environment
 }
 
-test_that("applied BUGFIX gate proves the exact revised candidate", {
+test_that("current verification preserves original approval and verifies both candidates", {
   skipUnlessSerializationBugfixSourceTree()
   tool = loadSerializationBugfixTool()
-  review_record = tool$serialization_bugfix_validate_record()
-  proposal_record_path = NULL
-  if (identical(review_record[["Review-State"]], "approved")) {
-    proposal_record_path = tempfile(tmpdir = tool$serialization_bugfix_repository_root(), fileext = ".dcf")
-    on.exit(unlink(proposal_record_path), add = TRUE)
-    record_lines = readLines(
-      file.path(tool$serialization_bugfix_repository_root(), "inst", "migration", "serialization-bugfix.dcf"),
-      encoding = "bytes"
-    )
-    record_lines[startsWith(record_lines, "Review-State:")] =
-      "Review-State: proposed"
-    record_lines[startsWith(record_lines, "Reviewer:")] =
-      "Reviewer: pending"
-    record_lines[startsWith(record_lines, "Reviewed-UTC:")] =
-      "Reviewed-UTC: pending"
-    writeLines(record_lines, proposal_record_path, useBytes = TRUE)
-  }
-  applied = identical(
-    tool[["serialization_bugfix_hash_file"]](
-      file.path(tool[["serialization_bugfix_repository_root"]](), "R", "modelSerialization.R")
-    ),
-    review_record[["After-SHA256"]]
-  )
-  result = if (applied) {
-    tool[["serialization_bugfix_verify_delta"]](mode = "approved")
-  } else {
-    tool[["serialization_bugfix_verify_delta"]](
-      mode = "proposal", record_path = proposal_record_path
-    )
-  }
-
+  result = tool$serialization_bugfix_verify_current()
   expect_true(result$clean)
-  expect_identical(result$record$`Schema`, "gemodelr-serialization-bugfix-v1")
-  expect_identical(result$record$`Finding`, "CR-04")
-  expect_identical(result$record$`Change-Kind`, "BUGFIX")
-  expect_identical(result[["record"]][["Review-State"]], if (applied) "approved" else "proposed")
-  expect_identical(result[["record"]][["Reviewer"]], if (applied) "David Zenz" else "pending")
-  expect_identical(result[["record"]][["Reviewed-UTC"]], if (applied) "2026-09-18T12:26:01Z" else "pending")
-  expect_match(result$record$`Before-Commit`, "^[0-9a-f]{40}$")
-  expect_match(result$record$`Before-SHA256`, "^[0-9a-f]{64}$")
-  expect_match(result$record$`After-SHA256`, "^[0-9a-f]{64}$")
-  expect_match(result$record$`Patch-SHA256`, "^[0-9a-f]{64}$")
-  expect_identical(result$candidate$rejected, TRUE)
-  expect_identical(result$candidate$unchanged, TRUE)
-  expect_identical(result$candidate$predecessor_loaded, TRUE)
-  if (identical(review_record[["Review-State"]], "approved")) {
-    expect_identical(review_record[["Reviewer"]], "David Zenz")
-    expect_identical(review_record[["Reviewed-UTC"]], "2026-09-18T12:26:01Z")
-    expect_identical(review_record[["Before-SHA256"]], "957f15724e76cbd9c43132b224f0e8e4ae9a1e1f68206a8c7af2fadc2d55da1a")
-    expect_identical(review_record[["After-SHA256"]], "c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e")
-    expect_identical(review_record[["Patch-SHA256"]], "87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f")
+  expect_identical(result$mode, "current")
+  expect_identical(result$record$`Review-State`, "approved")
+  expect_identical(result$record$Reviewer, "David Zenz")
+  expect_identical(result$record$`Reviewed-UTC`, "2026-09-18T12:26:01Z")
+  expect_identical(result$historical_after_sha256,
+    "c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e")
+  expect_identical(result$after_sha256,
+    "dc2d3f3ba4fbaae6fc4b20ec7403fc19cf70f9db8c309c93566142e775dee874")
+  expect_identical(result$current_review$`Review-State`, "technically-verified")
+  expect_match(result$current_review$Reviewer, "automated technical review", fixed = TRUE)
+  for (candidate in list(result$candidate, result$historical_candidate)) {
+    expect_true(candidate$rejected)
+    expect_true(candidate$unchanged)
+    expect_true(candidate$predecessor_loaded)
   }
-  if (!applied) {
-    expect_error(
-      tool[["serialization_bugfix_verify_delta"]](mode = "approved"),
-      "proposed|approval|approved",
-      ignore.case = TRUE
-    )
+  expect_error(tool$serialization_bugfix_verify_delta(mode = "approved"),
+    "approval|approved", ignore.case = TRUE)
+})
+
+test_that("current technical review rejects altered bindings and scope", {
+  skipUnlessSerializationBugfixSourceTree()
+  tool = loadSerializationBugfixTool()
+  root = tool$serialization_bugfix_repository_root()
+  record = read.dcf(file.path(root, "inst/migration/serialization-current-review.dcf"))
+  path = tempfile("serialization-review-", tmpdir = root, fileext = ".dcf")
+  on.exit(unlink(path), add = TRUE)
+  mutations = list(`Historical-Record-SHA256` = paste(rep("0", 64), collapse = ""),
+    `Current-Source-SHA256` = paste(rep("0", 64), collapse = ""),
+    `Current-Patch-SHA256` = paste(rep("0", 64), collapse = ""),
+    `Source-Path` = "../outside.R", `Current-Patch-Path` = "../outside.patch",
+    `Added-Functions` = "unreviewed", `Changed-Functions` = "unreviewed",
+    `Review-State` = "approved", `Reviewer` = "David Zenz")
+  for (field in names(mutations)) {
+    changed = record
+    changed[1L, field] = mutations[[field]]
+    write.dcf(changed, path, keep.white = colnames(changed))
+    expect_error(tool$serialization_bugfix_verify_current(review_path = path),
+      "hash binding|path|root|scope|delta|technical review", info = field)
   }
 })
 

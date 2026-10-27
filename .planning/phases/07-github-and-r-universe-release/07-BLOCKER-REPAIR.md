@@ -86,3 +86,36 @@ fetches full history and selects the appropriate mode; it cannot bypass private
 checks by deleting working-tree folders. Two focused tests / six assertions
 passed, including a private-history deletion bypass. Full positive public-mode
 integration is part of the final exact archive check and is not yet claimed.
+
+## Current serialization chain and metadata identity
+
+The maintainer explicitly approved current-source verification for release
+qualification. The original human-approved record and patch remain byte-identical:
+record SHA256 `d90948247e41b763dc740dc1f043a04f8b490d7507e13af44e39e6cad74904e6`,
+patch SHA256 `87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f`.
+The separate technical record binds current source
+`dc2d3f3ba4fbaae6fc4b20ec7403fc19cf70f9db8c309c93566142e775dee874`
+and exact follow-up patch
+`e90c3770b8be82c7cbc556aea258b4e131944dc763dd2ea521a20350be1fa4f2`.
+The verifier replays both patches with zero fuzz, permits exactly five added and
+two changed functions, verifies all other AST expressions unchanged, and tests
+both historical/current adversarial rejection, receiver nonmutation and genuine
+predecessor loading. The historical approved-only mode remains strict. Three
+serialization-review tests / 29 assertions pass, including hash/scope/reviewer
+tampering rejection. No runtime serialization source was modified.
+
+The identity map is refreshed to 423/2 occurrences and normalized fingerprint
+`9a52cf31b10837387ec658f95e0754ab`, accounting for DESCRIPTION and four new
+public compatibility records. The source file count transition 21 to 25 is
+permitted only with this exact validated source state and those four paths.
+Arbitrary counts, missing source state and other fingerprints fail. Accepted
+numerical artifacts, protected runtime, original historical registry and workflow
+policy are unchanged. The first source-only run exposed the count assumption;
+its corrected rerun passes both full groups: 27 tests / 155 assertions, no skips.
+The finite occurrence table now has 150 exact rows. Review records identify the
+actual automated reviewer and maintainer-authorized scope.
+
+All 38 release-packet/content-scanner Node tests pass. A combined R identity/reseal
+run passed identity and serialization assertions but exposed a test fixture cloning
+the previous HEAD while calling the new verifier. Re-running the complete reseal
+group after this coherent commit is required before claiming its final result.

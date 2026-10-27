@@ -831,6 +831,7 @@ identity_occurrence_category = function(
   }
   if (path %in% c(
     "inst/migration/predecessor-fingerprints.dcf",
+    "inst/migration/serialization-current.patch",
     "tests/testthat/fixtures/serialization/tabloToR-schema1-lineage.rds",
     "R/modelSerialization.R",
     "tests/testthat/test-model-serialization.R",

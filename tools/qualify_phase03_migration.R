@@ -1100,15 +1100,15 @@ qualification_execute = function(root = qualification_repository_root()) {
     c(
       "--vanilla",
       file.path(root, "tools", "check_serialization_bugfix.R"),
-      "--verify-approved"
+      "--verify-current"
     ),
     directory = root, log_directory = logs
   )
   qualification_assert_output(
     serialization_bugfix_result$output,
     c(
-      "Serialization BUGFIX gate: PASS",
-      "Change-Kind: BUGFIX",
+      "Serialization historical fix and current technical follow-up: PASS",
+      "Original-Human-Approval: preserved",
       "Before-SHA256:",
       "After-SHA256:"
     ),
