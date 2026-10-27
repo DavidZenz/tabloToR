@@ -7,6 +7,8 @@ const path = require("node:path");
 const { spawnSync } = require("node:child_process");
 const scannerPath = path.join(__dirname, "../ci/check-public-content.cjs");
 const { inspect } = require(scannerPath);
+const assessorPath = path.join(__dirname, "../ci/assess-r-cmd-check.cjs");
+const urlCheckerPath = path.join(__dirname, "../ci/check-release-urls.R");
 
 const INVENTORY_PATH = "private/manifest.json";
 const SMOKE_PATH = "tools/ci/run-installed-release-smoke.R";
@@ -311,6 +313,8 @@ function prepareReleasePacket(options) {
     }
     writeFile(staging, "private/support/prepare-release.cjs", fs.readFileSync(__filename));
     writeFile(staging, "private/support/check-public-content.cjs", fs.readFileSync(scannerPath));
+    writeFile(staging, "private/support/assess-r-cmd-check.cjs", fs.readFileSync(assessorPath));
+    writeFile(staging, "private/support/check-release-urls.R", fs.readFileSync(urlCheckerPath));
     writeFile(staging, "private/support/source-commit.txt", git(repository, ["cat-file", "commit", commit], null));
     writeFile(staging, "private/support/source-origin.txt", repository);
     writeFile(staging, "public/run-installed-release-smoke.R",
@@ -613,26 +617,6 @@ function runtimeProbeCode() {
   ].join("\n");
 }
 
-function urlProbeCode() {
-  return String.raw`# GEModelR_RELEASE_URL_CHECK: separate evidence; a clean R check is not a URL pass.
-check = function() {
-  controls = tolower(Sys.getenv(c("_R_CHECK_CRAN_INCOMING_", "_R_CHECK_CRAN_INCOMING_REMOTE_"), unset = ""))
-  skip = tolower(Sys.getenv("_R_CHECK_CRAN_INCOMING_SKIP_URL_CHECKS_IF_REMOTE_", unset = ""))
-  if (any(controls %in% c("false", "f", "0", "no")) || skip %in% c("true", "t", "1", "yes"))
-    return(list(status = "unavailable", reason = "URL_CHECK_DISABLED"))
-  if (!capabilities("libcurl")) return(list(status = "unavailable", reason = "URL_CHECK_NO_LIBCURL"))
-  collect = getFromNamespace("url_db_from_package_sources", "tools")
-  validate = getFromNamespace("check_url_db", "tools")
-  urls = withCallingHandlers(collect(commandArgs(TRUE)[[1L]]), warning = function(w) stop("URL_CHECK_WARNING"))
-  if (!NROW(urls)) return(list(status = "not_applicable", reason = "NO_URLS"))
-  bad = withCallingHandlers(validate(urls, remote = TRUE), warning = function(w) stop("URL_CHECK_WARNING"))
-  if (NROW(bad)) list(status = "failed", reason = "URLS_INVALID")
-  else list(status = "passed", reason = "URLS_VALIDATED")
-}
-result = tryCatch(check(), error = function(e) list(status = "unavailable", reason = "URL_CHECK_UNAVAILABLE"))
-cat(sprintf('{"status":"%s","reason":"%s"}', result$status, result$reason))
-`;
-}
 
 function qualifyReleasePacket(options) {
   const { root, manifest } = readVerifiedPacket(options);
@@ -716,20 +700,21 @@ function qualifyReleasePacket(options) {
           "--output=" + checkDirectory, archive], work, "archive-check");
         const checkLogPath = path.join(checkDirectory, manifest.package + ".Rcheck/00check.log");
         const checkLog = fs.existsSync(checkLogPath) ? fs.readFileSync(checkLogPath, "utf8") : "";
-        const statusLines = checkLog.match(/^Status:.*$/gm) || [];
-        manifest.checks.archive_check = check.status === 0 && statusLines.length === 1 &&
-          statusLines[0].trim() === "Status: OK" ? "passed" : "failed";
+        const { assessCheckLog } = require(path.join(root, "private/support/assess-r-cmd-check.cjs"));
+        const assessment = assessCheckLog(checkLog, check.status);
+        fs.writeFileSync(path.join(evidence, "archive-check-assessment.json"), json(assessment));
+        manifest.checks.archive_check = assessment.assessment_status;
         qualification.archive_check_status = manifest.checks.archive_check;
         if (manifest.checks.archive_check === "passed") {
           // R 4.3 reports URL work within CRAN incoming feasibility, without a
           // standalone URL log step. Retain separate URL evidence rather than
           // infer a network result from that general check status.
-          const urls = command("Rscript", ["--vanilla", "-e", urlProbeCode(), buildSource], work, "url-check");
+          const urls = command("Rscript", ["--vanilla", path.join(root, "private/support/check-release-urls.R"), buildSource], work, "url-check");
           qualification.url_check_status = "unavailable";
           qualification.url_check_reason = "URL_CHECK_UNAVAILABLE";
           try {
             const result = JSON.parse(urls.stdout);
-            if (urls.status === 0 && exactKeys(result, ["status", "reason"]) &&
+            if ((urls.status === 0 || ["failed", "unavailable"].includes(result.status)) && exactKeys(result, ["status", "reason"]) &&
                 ["passed", "failed", "unavailable", "not_applicable"].includes(result.status) && /^[A-Z0-9_]+$/.test(result.reason)) {
               qualification.url_check_status = result.status;
               qualification.url_check_reason = result.reason;

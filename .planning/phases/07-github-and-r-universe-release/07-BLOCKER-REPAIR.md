@@ -154,3 +154,26 @@ This exposed a latent CLI integration defect: it recognized only the synthetic
 canonical `eligible` state too, still requiring zero command exit, explicit
 readiness and no reason codes. The same-archive integration fixture now uses
 the actual canonical spelling and asserts a passed guard disposition.
+
+## Explicitly approved bounded NOTE policy
+
+The maintainer approved the precise GitHub-source NOTE policy on 2026-10-27:
+only “New submission” by itself, inability to verify external clock time, and
+R-reported installed/native-library size within 12/10 MB. Errors, warnings, unknown
+notes, additional incoming messages (including URL failures), duplicate check
+sections and larger sizes still fail. Original status, raw counts, note bodies,
+check-log SHA256 and assessor SHA256 are retained. No CRAN approval is claimed.
+
+Local and hosted qualification use the same assessor and actual R tools URL
+checker. The URL helper rejects disabled/unavailable network validation rather
+than inferring success from a general check status. The local packet freezes both
+helper files as hashed execution evidence. All 44 Node packet/scanner/policy tests
+pass with zero skips, including accepted-note advancement, unknown-note blocking,
+unchanged publication authority, real-state parsing and timeout handling. R parse,
+workflow shell syntax, status count alignment and the actual source URL check pass.
+
+The short provisional qualification attempt was stopped before archive building
+when the policy approval arrived; it is not claimed as a package check. A fresh
+coherent packet will provide the actual archive result. The original serialization
+approval digests are also pinned independently of the follow-up record, preventing
+coupled record edits from falsely claiming that the original approval is preserved.

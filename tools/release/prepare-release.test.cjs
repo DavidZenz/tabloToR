@@ -515,7 +515,7 @@ test("qualification builds projected bytes and shares one retained archive acros
       calls.push({ command, args, cwd: options.cwd, timeout: options.timeout });
       if (args.includes("--offline")) return { status: 0,
         stdout: "repository_state=eligible\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
-      if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
+      if (args.some((arg) => arg.includes("check-release-urls.R"))) return { status: 0,
         stdout: JSON.stringify({ status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
       if (command === "Rscript" && args.includes("-e")) return { status: 0,
         stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5",
@@ -611,7 +611,7 @@ test("guard and build consume frozen blob bytes despite an external Git smudge/E
           assert.deepEqual(fs.readFileSync(args[1]), originalGuard);
           return { status: 0, stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
         }
-        if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
+        if (args.some((arg) => arg.includes("check-release-urls.R"))) return { status: 0,
           stdout: JSON.stringify({ status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
         if (command === "Rscript" && args.includes("-e")) return { status: 0,
           stdout: JSON.stringify({ supported: true, reason: "SUPPORTED", matrix_version: "1.6.5", matrix_minimum: "1.6-5" }), stderr: "" };
@@ -643,7 +643,7 @@ function qualificationRunner(calls, options = {}) {
     calls.push({ command, args });
     if (args.includes("--offline")) return { status: 0,
       stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
-    if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) {
+    if (args.some((arg) => arg.includes("check-release-urls.R"))) {
       if (options.actualDisabledURL) return spawnSync(command, args, { ...settings,
         env: { ...settings.env, _R_CHECK_CRAN_INCOMING_REMOTE_: "false" } });
       return { status: 0, stdout: JSON.stringify(options.url || { status: "passed", reason: "URLS_VALIDATED" }), stderr: "" };
@@ -702,5 +702,53 @@ test("realistic R check warnings cannot advance to installation or acquire URL s
     assert.equal(manifest.qualification.install_status, "not_run");
     assert.equal(calls.some((item) => item.command === "R" && item.args[1] === "INSTALL"), false);
     assert.equal(manifest.publication_readiness, "blocked");
+  });
+});
+
+
+test("approved informational notes advance with raw counts while unexpected notes block", () => {
+  const noteLog = cleanR43CheckLog.replace("* checking CRAN incoming feasibility ... OK",
+    "* checking CRAN incoming feasibility ... NOTE\nMaintainer: ‘David Zenz <zenz@wiiw.ac.at>’\n\nNew submission")
+    .replace("* DONE", "* checking installed package size ... NOTE\n  installed size is  9.3Mb\n  sub-directories of 1Mb or more:\n    libs   8.1Mb\n* checking for future file timestamps ... NOTE\nunable to verify current time\n* DONE")
+    .replace("Status: OK", "Status: 3 NOTEs");
+  for (const changed of [false, true]) {
+    candidateFixture(({ repository, output, directory }) => {
+      assert.equal(stage(repository, output).status, 0);
+      const library = path.join(directory, "library");
+      fs.mkdirSync(library);
+      const calls = [];
+      const checkLog = changed ? noteLog.replace("New submission", "New submission\nFound invalid URLs: 404") : noteLog;
+      const { qualifyReleasePacket } = require(cli);
+      qualifyReleasePacket({ packet: output, library, runner: qualificationRunner(calls, { checkLog }) });
+      const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+      const assessment = JSON.parse(fs.readFileSync(path.join(output, "private/evidence/archive-check-assessment.json")));
+      assert.equal(assessment.notes, 3);
+      assert.equal(assessment.status_line, "Status: 3 NOTEs");
+      assert.equal(assessment.log_sha256, crypto.createHash("sha256").update(checkLog).digest("hex"));
+      assert.equal(assessment.assessor_sha256, crypto.createHash("sha256").update(fs.readFileSync(path.join(output, "private/support/assess-r-cmd-check.cjs"))).digest("hex"));
+      assert.equal(manifest.checks.archive_check, changed ? "failed" : "passed");
+      assert.equal(manifest.qualification.install_status, changed ? "not_run" : "passed");
+      assert.equal(manifest.publication_authorized, false);
+    });
+  }
+});
+
+test("a timed out archive check is retained as a failure without installation", () => {
+  candidateFixture(({ repository, output, directory }) => {
+    assert.equal(stage(repository, output).status, 0);
+    const library = path.join(directory, "library");
+    fs.mkdirSync(library);
+    const calls = [];
+    const base = qualificationRunner(calls);
+    const runner = (command, args, options) => {
+      const result = base(command, args, options);
+      return command === "R" && args[1] === "check" ? { ...result, status: null } : result;
+    };
+    require(cli).qualifyReleasePacket({ packet: output, library, runner });
+    const manifest = JSON.parse(fs.readFileSync(path.join(output, "private/manifest.json")));
+    assert.equal(manifest.checks.archive_check, "failed");
+    assert.equal(manifest.qualification.install_status, "not_run");
+    const assessment = JSON.parse(fs.readFileSync(path.join(output, "private/evidence/archive-check-assessment.json")));
+    assert.equal(assessment.exit_status, null);
   });
 });

@@ -76,9 +76,16 @@ When supported prerequisites exist, it builds solely from this verified checkout
 the frozen projected public commit, then scans, checks and installs the same
 retained archive. `archive_source_commit` must equal `public_source_commit`, and
 the retained archive must match its declared SHA-256. The archive check requires
-one `Status: OK` line and zero exit status. This accepts supported R4.3 logs,
-which report URL work within CRAN incoming feasibility without a standalone URL
-line, and allows a clean archive check to advance to installation.
+zero exit status, errors and warnings. The shared
+`tools/ci/assess-r-cmd-check.cjs` assessor permits only three explicitly reviewed
+informational NOTEs: CRAN “New submission” alone, inability to verify external
+clock time, and an installed size no greater than 12 MB with only a native-library
+subdirectory no greater than 10 MB. Additional messages (including invalid URLs),
+unknown notes, duplicate check sections and size regressions fail. The original
+status, counts, note bodies, log SHA256 and assessor SHA256 remain in private
+assessment evidence. This GitHub-source policy was explicitly approved by the
+maintainer on 2026-10-27 and does not claim CRAN acceptance. Supported R4.3 logs
+need not contain a standalone URL line.
 
 URL disposition is separate evidence from a dedicated R tools URL check against
 the same verified source. It is `passed`, `failed`, `unavailable`, `not_applicable`

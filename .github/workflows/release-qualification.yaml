@@ -138,38 +138,41 @@ jobs:
           set -e
           printf '%s\n' "$check_status" > "$GEModelR_RELEASE_EVIDENCE_DIR/check-exit-status.txt"
           check_log=$(find "$GEModelR_RELEASE_CHECK_DIR" -maxdepth 2 -type f -name 00check.log -print -quit)
-          qualification_status=$check_status
+          qualification_status=1
           check_status_line='Status: MISSING'
           check_error_count=not_run
           check_warning_count=not_run
+          check_note_count=not_run
           unexplained_significant_note_count=not_run
           url_check_status=not_run
           if [[ -n "$check_log" ]]; then
             cp "$check_log" "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check-00check.log"
-            check_status_line=$(grep -m1 '^Status:' "$check_log" || printf '%s' 'Status: MISSING')
-            check_error_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ ERROR(S)?' | awk '{print $1}' | head -n 1 || true)
-            check_warning_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ WARNING(S)?' | awk '{print $1}' | head -n 1 || true)
-            unexplained_significant_note_count=$(printf '%s\n' "$check_status_line" | grep -Eo '[0-9]+ NOTE(S)?' | awk '{print $1}' | head -n 1 || true)
-            [[ -n "$check_error_count" ]] || check_error_count=0
-            [[ -n "$check_warning_count" ]] || check_warning_count=0
-            [[ -n "$unexplained_significant_note_count" ]] || unexplained_significant_note_count=0
-
-            if grep -Eiq '(^|[^[:digit:]])404([^[:digit:]]|$)|404 Not Found' "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log" "$check_log"; then
-              url_check_status=failed_404
-            elif grep -Eiq '\* checking URLs? \.\.\. OK' "$check_log"; then
-              url_check_status=passed
-            elif grep -Eiq 'Could not resolve host|Could not resolve proxy|Connection timed out|Failed to connect|unable to access.*URL|cannot open URL' "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log" "$check_log"; then
-              url_check_status=blocked_external
-            elif grep -Eiq '\* checking URLs? \.\.\. (ERROR|WARNING|NOTE)' "$check_log"; then
-              url_check_status=failed
+            assessment_path="$GEModelR_RELEASE_EVIDENCE_DIR/check-assessment.json"
+            assessment_status=1
+            if node tools/ci/assess-r-cmd-check.cjs "$check_log" "$check_status" > "$assessment_path"; then
+              assessment_status=0
+            fi
+            mapfile -t assessed < <(node -e 'const a = require(process.argv[1]); console.log([a.status_line, a.errors, a.warnings, a.notes, a.unexplained_findings].join("\n"))' "$assessment_path")
+            if [[ ${#assessed[@]} -eq 5 ]]; then
+              check_status_line=${assessed[0]}
+              check_error_count=${assessed[1]}
+              check_warning_count=${assessed[2]}
+              check_note_count=${assessed[3]}
+              unexplained_significant_note_count=${assessed[4]}
+            else
+              assessment_status=1
             fi
 
-            if [[ "$check_status_line" != 'Status: OK' || "$check_status" -ne 0 || "$check_error_count" != 0 || "$check_warning_count" != 0 || "$unexplained_significant_note_count" != 0 || "$url_check_status" != passed ]]; then
-              qualification_status=1
+            url_status=1
+            if Rscript --vanilla tools/ci/check-release-urls.R "$GITHUB_WORKSPACE" > "$GEModelR_RELEASE_EVIDENCE_DIR/url-check.json"; then
+              url_status=0
+            fi
+            url_check_status=$(node -e 'const fs = require("fs"); const u = JSON.parse(fs.readFileSync(process.argv[1], "utf8")); if (!["passed", "failed", "unavailable", "not_applicable"].includes(u.status)) process.exit(1); process.stdout.write(u.status)' "$GEModelR_RELEASE_EVIDENCE_DIR/url-check.json" || printf '%s' unavailable)
+            if [[ "$assessment_status" -eq 0 && "$url_status" -eq 0 && ( "$url_check_status" == passed || "$url_check_status" == not_applicable ) ]]; then
+              qualification_status=0
             fi
           else
             printf '%s\n' 'R CMD check did not produce a 00check.log.' >> "$GEModelR_RELEASE_EVIDENCE_DIR/R-CMD-check.log"
-            qualification_status=1
           fi
 
           while IFS= read -r -d '' test_log; do
@@ -179,11 +182,11 @@ jobs:
             cp "$test_log" "$destination"
           done < <(find "$GEModelR_RELEASE_CHECK_DIR" -type f \( -name testthat.Rout -o -name testthat.Rout.fail \) -print0)
 
-          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
-            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
+          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\ncheck_note_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$check_note_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
             > "$GEModelR_RELEASE_EVIDENCE_DIR/check-status.txt"
-          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
-            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
+          printf 'check_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\ncheck_note_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+            "$check_status" "$check_status_line" "$check_error_count" "$check_warning_count" "$check_note_count" "$unexplained_significant_note_count" "$url_check_status" "$qualification_status" \
             >> "$GITHUB_OUTPUT"
           exit "$qualification_status"
 
@@ -219,6 +222,7 @@ jobs:
           CHECK_STATUS_LINE: ${{ steps.check-source-archive.outputs.check_status_line }}
           CHECK_ERROR_COUNT: ${{ steps.check-source-archive.outputs.check_error_count }}
           CHECK_WARNING_COUNT: ${{ steps.check-source-archive.outputs.check_warning_count }}
+          CHECK_NOTE_COUNT: ${{ steps.check-source-archive.outputs.check_note_count }}
           UNEXPLAINED_SIGNIFICANT_NOTE_COUNT: ${{ steps.check-source-archive.outputs.unexplained_significant_note_count }}
           URL_CHECK_STATUS: ${{ steps.check-source-archive.outputs.url_check_status }}
           QUALIFICATION_STATUS: ${{ steps.check-source-archive.outputs.qualification_status }}
@@ -230,7 +234,7 @@ jobs:
           value_or() {
             if [[ -n "$1" ]]; then printf '%s' "$1"; else printf '%s' "$2"; fi
           }
-          printf 'head_sha=%s\nmatrix_version=%s\nmatrix_minimum_version=%s\nmatrix_preflight_status=%s\nbuild_exit_status=%s\narchive_path=%s\narchive_sha256=%s\narchive_scan_status=%s\ncheck_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
+          printf 'head_sha=%s\nmatrix_version=%s\nmatrix_minimum_version=%s\nmatrix_preflight_status=%s\nbuild_exit_status=%s\narchive_path=%s\narchive_sha256=%s\narchive_scan_status=%s\ncheck_exit_status=%s\ncheck_status_line=%s\ncheck_error_count=%s\ncheck_warning_count=%s\ncheck_note_count=%s\nunexplained_significant_note_count=%s\nurl_check_status=%s\nqualification_status=%s\n' \
             "$(value_or "$HEAD_SHA" not_available)" \
             "$(value_or "$MATRIX_VERSION" not_available)" \
             "$(value_or "$MATRIX_MINIMUM_VERSION" not_available)" \
@@ -243,10 +247,12 @@ jobs:
             "$(value_or "$CHECK_STATUS_LINE" not_run)" \
             "$(value_or "$CHECK_ERROR_COUNT" not_run)" \
             "$(value_or "$CHECK_WARNING_COUNT" not_run)" \
+            "$(value_or "$CHECK_NOTE_COUNT" not_run)" \
             "$(value_or "$UNEXPLAINED_SIGNIFICANT_NOTE_COUNT" not_run)" \
             "$(value_or "$URL_CHECK_STATUS" not_run)" \
             "$(value_or "$QUALIFICATION_STATUS" not_run)" \
             > "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-status.txt"
+          printf 'reviewed_note_policy=github-source-check-v1\n' >> "$GEModelR_RELEASE_EVIDENCE_DIR/qualification-status.txt"
 
       - name: Scan staged qualification evidence
         id: scan-qualification-evidence

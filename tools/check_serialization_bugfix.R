@@ -662,6 +662,14 @@ serialization_bugfix_verify_current = function(root = serialization_bugfix_repos
   same = function(value, expected) if (!identical(value, expected)) {
     serialization_bugfix_stop("current review hash binding failed")
   }
+  # Pin the original approved evidence independently of the follow-up record,
+  # so changing both records cannot manufacture preservation of that approval.
+  same(review$`Historical-Record-SHA256`,
+    "d90948247e41b763dc740dc1f043a04f8b490d7507e13af44e39e6cad74904e6")
+  same(review$`Historical-Patch-SHA256`,
+    "87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f")
+  same(review$`Historical-After-SHA256`,
+    "c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e")
   same(review$`Historical-Record-SHA256`, serialization_bugfix_hash_file(
     file.path(root, "inst", "migration", "serialization-bugfix.dcf"), "historical record"))
   same(review$`Historical-Patch-SHA256`, historical$`Patch-SHA256`)

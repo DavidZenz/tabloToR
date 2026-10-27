@@ -144,7 +144,7 @@
 "tests/testthat/test-transactional-state.R","old-option-replacement","11","a05e2aa9644b36f85d19404ca89ea639be6637753db4a43e915b30fb5ad0f106","","Exact predecessor option key retained only to reject it and name its replacement"
 "tools/check_identity_migration.R","migration-instruction","5","281a3720a4d4a0377f46f395bd51ba009d5b9d0a0304fa4819dc78dc42b3efd2","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
 "tools/check_predecessor_bridge.R","reviewed-serialization-fingerprint","14","2cad2211726129b1b19f274d55a4de5563c66a95b9357b4638ffd563ea5bcbd7","","Reviewed predecessor lineage, fixture, locator, or serialization fingerprint"
-"tools/check_serialization_bugfix.R","reviewed-serialization-fingerprint","2","da5958a5a07540a8aaded663fe5c20efb4b69a721b787537fd0273ee647a1901","","Reviewed predecessor lineage, fixture, locator, or serialization fingerprint"
+"tools/check_serialization_bugfix.R","reviewed-serialization-fingerprint","2","79e4310b2af540da60486d446ec690f2aff9c72f6d828d52df70fb32f3a7b233","","Reviewed predecessor lineage, fixture, locator, or serialization fingerprint"
 "tools/ci/verify-matrix-floor-evidence.R","migration-instruction","1","24bb83daebdcd67a94ba972658bb3c79ba3703ea4bd606f008346b15df3f3252","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
 "tools/qualify_phase03_migration.R","migration-instruction","1","829be36b0be96883f3cb66f2eca96d5f633235c5d2ce1c3bb634fd7397ccb830","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
 "vignettes/backend-selection.Rmd","migration-instruction","1","43f8208d5387380093c46ed95f82a317597c5694a6ef7df5a076900ac25bd0f1","","Explicit predecessor-to-GEModelR migration instruction or audit contract"
