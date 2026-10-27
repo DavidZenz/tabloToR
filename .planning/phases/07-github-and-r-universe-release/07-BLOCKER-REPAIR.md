@@ -127,3 +127,20 @@ markers when no private decision exists in their source checkout. This preserves
 both private/public conflict coverage and positive public-only execution; it
 never supplies a substitute to the actual canonical guard. The complete license
 test file passes with the additional public-only fixture case.
+
+## Committed-tree and timeout validation
+
+The complete reseal group now passes against the coherent serialization commit,
+including both final tracked-tree audits with zero unexpected occurrences and
+zero stale records. The prior mismatch came from its fixture cloning the earlier
+HEAD while invoking the new local verifier; no assertion was removed.
+
+The local runner now gives the full archive check thirty minutes, retaining five
+minutes for other commands. Its affected same-archive integration test passes and
+asserts the timeout explicitly. The preceding complete Node packet/scanner run
+passed 38 tests. This execution-limit correction changes no acceptance rule.
+
+A bounded informational NOTE assessor has been prepared and tested, but remains
+inactive pending the maintainer's specific policy decision. It rejects the old
+actual check's invalid URLs. Actual current advertised URLs were separately
+validated successfully using R tools; no disabled URL check is treated as a pass.

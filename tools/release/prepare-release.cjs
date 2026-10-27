@@ -656,7 +656,8 @@ function qualifyReleasePacket(options) {
   const env = { ...process.env, R_LIBS_USER: library, R_LIBS_SITE: "" };
   function command(name, args, cwd, label, extraEnv = {}) {
     const result = runner(name, args, { cwd, encoding: "utf8", maxBuffer: 128 * 1024 * 1024,
-      timeout: 300000, windowsHide: true, env: { ...env, ...extraEnv } });
+      timeout: label === "archive-check" ? 1800000 : 300000,
+      windowsHide: true, env: { ...env, ...extraEnv } });
     fs.writeFileSync(path.join(evidence, label + ".stdout.log"), result.stdout || "");
     fs.writeFileSync(path.join(evidence, label + ".stderr.log"), result.stderr || "");
     fs.writeFileSync(path.join(evidence, label + ".exit.txt"), String(result.status ?? "unavailable") + "\n");

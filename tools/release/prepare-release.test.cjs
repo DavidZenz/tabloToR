@@ -512,7 +512,7 @@ test("qualification builds projected bytes and shares one retained archive acros
     const calls = [];
     const archiveBytes = Buffer.from("synthetic archive evidence is never real qualification");
     const runner = (command, args, options) => {
-      calls.push({ command, args, cwd: options.cwd });
+      calls.push({ command, args, cwd: options.cwd, timeout: options.timeout });
       if (args.includes("--offline")) return { status: 0,
         stdout: "repository_state=ready\nrelease_ready=true\nreason_codes=NONE\n", stderr: "" };
       if (args.some((arg) => arg.includes("GEModelR_RELEASE_URL_CHECK"))) return { status: 0,
@@ -541,6 +541,7 @@ test("qualification builds projected bytes and shares one retained archive acros
     assert.equal(manifest.archive_source_commit, manifest.public_source_commit);
     assert.equal(manifest.archive_sha256, crypto.createHash("sha256").update(archiveBytes).digest("hex"));
     const check = calls.find((item) => item.command === "R" && item.args[1] === "check");
+    assert.equal(check.timeout, 1800000);
     const install = calls.find((item) => item.command === "R" && item.args[1] === "INSTALL");
     assert.ok(install, "A clean supported R4.3 log must advance to installation");
     assert.equal(manifest.checks.archive_check, "passed");

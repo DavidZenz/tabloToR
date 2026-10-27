@@ -179,3 +179,7 @@ assuming that a newly staged root can fast-forward the existing public branch.
 
 The maintainer's creation of the empty target establishes its location, not
 approval of any particular source snapshot, archive, tag, or hosted deployment.
+
+The local qualification runner permits thirty minutes for the complete archive
+check and five minutes for each other command. A timeout remains a real command
+failure with its raw evidence retained.
