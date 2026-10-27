@@ -360,3 +360,30 @@ rows are refreshed (one additional test-fixture literal), with no new active own
 fingerprint dff2b8054c4f03051dfa919fc46c00b1 and original canonical artifacts remain
 unchanged; R/modelSerialization.R is the pre-existing reviewed non-numerical exclusion.
 No new public source, tag, registry pin or assets are authorized by this review.
+
+
+## Completed local follow-up qualification and remaining external work
+
+Development d4e8ed0 and prepared append-only public commit9b257ccf9baf9a79b5b3748d2ee60bcb10e84508
+(public tree1ad42e570b1cc5a55282d42b61bb1e5d234c9313) both pass actual full local
+archive checks:3060passes,0failures/0testwarnings,121contextskips,0checkerrors,
+0checkwarnings and3approved notes. Development/public source groups pass167/117
+assertions with zero skips. All45affected Node tests pass. Newpublic archiveSHA
+3e2ef62c79eae95b32deed16dacda9bf9328995620fdc822a45a2c9f728d8a39. Installed
+numerical smoke and live URL checks pass. The original GitHub installation fails
+only the new runtime-fingerprint regression; repaired implementation passes it.
+Original numerical migration, original human approval and immutable packet verify.
+
+Latest hosted snapshot13:18:43UTC: documentation passes,20/26native jobs pass
+including all8Windows; no failures,6setup/dependency jobs pending. Dedicated archive
+job waits in R setup. The completed representative R4.6.1/Matrix1.7.6 package tests
+pass3086assertions,0testfailures,123skips; overall informational check still fails
+with1error/1warning for absent PDF tooling. Do not describe that as full hosted
+qualification. Next CI poll13:33:43UTC or later.
+
+R-universe13:11probe still404. Public setup run40508566340 lists1207installed app
+accounts but no DavidZenz. The maintainer then checked Installed GitHub Apps and
+found no R-universe. Supplied direct app-install steps for accountDavidZenz and
+only the2public repositories; awaiting final Install/Save. Do not repeat unrelated
+package/benchmark runs while waiting. No app permissions were granted by the agent.
+The reviewed public repair remains local; a new publication decision is required.

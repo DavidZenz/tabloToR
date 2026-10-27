@@ -7,7 +7,7 @@ Candidate-Status: public_tag_published
 Intended-Tag: v0.1.0
 Tag-Type: annotated_unsigned
 Preparation-Status: complete
-Publication-Readiness: ready
+Publication-Readiness: hosted_followup_and_channel_verification_required
 Packet-Specific-Maintainer-Decision: approved_in_conversation
 Publication-Authorization: authorized_for_scoped_plan
 Authorized-External-Actions: canonical-main-and-tag; github-draft-and-four-assets; public-pinned-registry; channel-verification
@@ -138,9 +138,20 @@ supplies the actual later authority.
   R-universe API reports no package yet; first build/activation and R-universe
   installation verification remain pending. Its generated build repository was
   not yet visible at the first post-install check. This is not a package pass.
-- Normal push-triggered hosted jobs are in progress for the public commit:
-  native portability40500796258, archive qualification40500796263,
-  documentation40500796318. Poll no more frequently than every15minutes.
+- Actual hosted results for the published source: documentation40500796318
+  passed; native40500796258 failed only the Windows evidence scanner's shell;
+  archive40500796263 failed with an unset OpenMP test profile, missing PDF font,
+  and cross-version author metadata. These failures remain recorded, not waived.
+- Development repair d9be316 fixed those causes. Its R4.6.1 archive run40504984250
+  exposed six additional serialization failures (two predecessor re-save errors,
+  four runtime leaf-shape assumptions). The corrected archive has no warnings;
+  it still fails tests and is not reported as qualified.
+- At2026-10-27T13:11:28Z the R-universe package API and generated build repository
+  still return404. Its public onboarding run40508566340 (13:02) listed1207
+  installed app accounts, with no DavidZenz, and reported no new installations.
+  The maintainer's installation confirmation remains recorded. The agent asked
+  for the saved installation's account/status in GitHub Settings, without
+  requesting broader repository access or changing any app permission.
 
 External evidence is retained under `/tmp/GEModelR-publication-s456sck4`,
 including authorization.json, actual tag clone identity, remote refs, draft
@@ -152,3 +163,115 @@ private evidence upload and app grants remain outside agent authorization.
 Bundled vignettes and prepared local site remain usable; planned hosted-site
 metadata stays pending. No earlier technical approval is reinterpreted as broader
 publication authority.
+
+
+## Verified development repair; canonical publication not yet authorized
+
+Focused development commits d9be316,7f01c1a,3150115 and d4e8ed0 are pushed to
+the development repository only. They fix the owned CI profiles, Bash evidence scan,
+standard PDF fonts, author comment rendering and timed check-log parsing.
+The serialization correction recomputes fingerprints only when saving the exact
+immutable predecessor source; strict read-time lineage/content checks remain.
+Legacy leaf tests compare actual runtime metadata before/after serialization and
+retain explicit numeric values/type/names. No numerical solver or native code changed.
+The new fingerprint regression fails on the original GitHub installation and
+passes on the repair, including altered-content rejection and unchanged receiver.
+Original human approval/patch and the frozen original publication packet verify unchanged.
+
+Concrete proposed append-only public repair (local only):
+
+- Development source: d4e8ed0d16df483357a0f32ca441917fe7755ab7.
+- Public parent: f8c2876cb49f8cfef6371ed445dd641ebc1f760f.
+- Public commit: 9b257ccf9baf9a79b5b3748d2ee60bcb10e84508.
+- Public tree: 1ad42e570b1cc5a55282d42b61bb1e5d234c9313.
+- New local archiveSHA256:3e2ef62c79eae95b32deed16dacda9bf9328995620fdc822a45a2c9f728d8a39.
+
+Both exact development/public archives pass full R4.3.0/Matrix1.6.5 checks:
+3060assertions,0failures,0testwarnings,121contextskips,0checkerrors/0checkwarnings,
+only the three approved informational notes. Separate source-tool groups pass
+167development and117public assertions with zero skips. Forty-five affected Node
+tests pass. Installed public-repair numerical smoke and live URL checks pass.
+The original numerical canonical hashf6f2297a6ab257c9737a64354c82d7f1 remains exact.
+At13:18:43UTC, d4e8ed0 documentation40508573786 passes. Native40508573943 has20
+successful jobs, including all8Windows, with6R-setup/dependency jobs pending and
+no failures. Dedicated archive40508573946 is still setting up R; it has not reached
+package checking. Next CI poll no earlier than13:33:43UTC. The completed
+representative R4.6.1/Matrix1.7.6 serial check passes3086assertions,0testfailures,
+123skips. Its actual overall1error/1warning is missing PDF tooling, retained as
+informational evidence rather than claimed as full release qualification.
+
+No new canonical source bytes, tag, registry pin or draft assets are authorized
+by the earlier one-snapshot publication decision. The proposed action is only a
+normal fast-forward of GEModelR/main to the reviewed repair; a new maintainer
+decision is required under AGENTS.md. The existing v0.1.0 tag and its R-universe
+pin would retain their original source and known defects after a main-only repair;
+a later corrected distribution needs its own reviewed release decision. Neither
+an unchanged tag nor a future green main run is claimed to repair that old tag.
+
+
+The maintainer subsequently checked GitHub Installed Apps and reported that
+R-universe is absent. The earlier installation confirmation therefore does not
+establish a saved app installation. Direct installation instructions were supplied:
+https://github.com/apps/r-universe/installations/new, accountDavidZenz, only
+GEModelR and davidzenz.r-universe.dev, final Install/Save. Awaiting completion;
+no agent app permission grant or new external settings action was performed.
+
+
+## Separate approved repair publication — executed
+
+After reviewing the concrete repair and registry proposal, the maintainer explicitly
+selected “Approve repaired main + R-universe” in conversation. This authorizes only
+normal fast-forward updates of the two reviewed branches and channel verification;
+original v0.1.0 tag/draft/assets, Pages and app/settings changes remain excluded.
+
+At2026-10-27T13:25:32.643025+00:00 the approved public main advanced to
+9b257ccf9baf9a79b5b3748d2ee60bcb10e84508 (tree1ad42e570b1cc5a55282d42b61bb1e5d234c9313),
+sole parentf8c2876cb49f8cfef6371ed445dd641ebc1f760f. Registry main advanced to
+fc01ef428bfd64cea2d63d11f775784ba28375b7, sole parent58a4125. Both remote refs
+were read back and verified; original annotated v0.1.0 tag object/target are exact.
+No development commit object exists in the public repair repository. Registry
+packages.json now follows only the separate reviewed public main; exact SHA256
+95fee4de1d0721e388227a8eb66454cec06daf1a024ef726da5b9d2c066101c1. Future approved
+public main snapshots rebuild automatically. The original tag is not represented
+as containing these repairs. No old draft asset was replaced or promoted.
+
+The maintainer completed the previously absent R-universe app installation at
+about13:22UTC using the direct app page and confirmed it. Initial post-install
+service/build-repo probes remain404; next probe no earlier than13:37:34UTC.
+Earlier absent-installation evidence is retained as historical, not current failure.
+Actual corrected GitHub main installation/smoke and R-universe RemoteSha verification
+are being recorded under /tmp/GEModelR-publication-s456sck4. No channel pass is
+inferred from app installation or a branch push.
+
+
+Corrected GitHub main verification is complete: fresh actual remote clone verifies
+9b257cc/tree1ad42e57, exactly two public commits and no development commit objects.
+Isolated installation in github-repaired-library and fresh-process numerical smoke
+PASS using Matrix1.6.5. The smoke labels local source provenance caller-attested;
+actual remote identity is independently retained. Shared R libraries are unchanged.
+
+
+## Actual R-universe onboarding and first-build race
+
+R-universe setup run40511398497 detects accountdavidzenz, installed13:21:59UTC,
+and creates r-universe/davidzenz at13:25:00UTC. Installation is therefore verified.
+The first sync starts13:25:20UTC and commits submodulef8c2876 at13:25:38UTC,
+just before the approved registry push is verified13:25:40UTC. Build40511938593
+therefore builds the original v0.1.0 source, not the repaired public main. This
+old-source run is not counted as corrected-source verification. The package API
+still404 at13:37:51UTC. Wait for the normal service sync to pick up registryfc01ef4.
+
+A detached temporary verifier (PID2702; watch-runiverse.py under the external
+evidence root) polls no more frequently than15minutes, first13:52:51UTC. It requires
+actual API RemoteSha9b257cc, then performs source installation into the isolated
+runiverse-library, asserts installed Version/RemoteSha, and runs the approved
+fresh-process numerical smoke. Success/failure is written to runiverse-completion.json;
+raw install/smoke and JSONL probe logs are retained. It runs for at most3hours and
+records pending rather than success if the service never exposes the source. No
+shared R library or release packet is changed; no channel pass is assumed.
+
+Canonical current-source CI at13:33:59UTC: docs40511924192 passes; archive40511924193
+has reached exact-source checking. Native40511924185 contains a Windows CRAN Matrix
+source-download timeout before GEModelR compilation/tests. A targeted retry is
+not yet allowed by GitHub because the workflow is still running (HTTP403); original
+failure evidence is retained and no check rule/source is changed to mask it.
