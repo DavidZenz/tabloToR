@@ -1,8 +1,8 @@
 Schema: gemodelr-identity-reseal-review-v1
-Before-Allowlist-SHA256: 5f7fb37bc9ce20d940d7402babb7248fecd852944fe96bae20ac4d51d1d5dba4
-Approved-Allowlist-SHA256: 3749d2f121715390a7037bfbcd97e55b83155c1384dfd2ea9850a739f6011537
+Before-Allowlist-SHA256: 3749d2f121715390a7037bfbcd97e55b83155c1384dfd2ea9850a739f6011537
+Approved-Allowlist-SHA256: c776336410481918a3ae420520b53c8cf0d91c723a5b5c35c49d77b1f83b2b52
 Policy-SHA256: 882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e
-Scope: Maintainer-authorized documentation-link update: one exact landing-page occurrence row refreshed, none added or removed; mapping, runtime, historical artifacts, human approvals and workflow policy remain unchanged. Publication preparation remains local.
+Scope: Maintainer-authorized development contract tracking: one exact AGENTS.md occurrence row added for two references; every existing row, numerical source, historical evidence and workflow policy is unchanged. Development push only; no GEModelR publication authorization is inferred.
 Reviewer: Codex automated technical review (maintainer-authorized update)
-Reviewed-UTC: 2026-10-26T20:58:45Z
+Reviewed-UTC: 2026-10-27T07:58:11Z
 Review-State: approved

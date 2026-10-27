@@ -1,18 +1,18 @@
 Schema: gemodelr-source-identity-review-v1
-Source-Commit: 7d10315db33ee1995bac4d6ccdfcb395393fe96f
+Source-Commit: e86a5cdd99e9bb2dad6359d37095f6b7aef88db5
 Previous-Map-SHA256: eea9db2264234e7b9cf1129bb4e568fd6d904235b7c0b20146c3337e00545f97
 Map-SHA256: eea9db2264234e7b9cf1129bb4e568fd6d904235b7c0b20146c3337e00545f97
 Previous-Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
 Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
-Previous-Allowlist-SHA256: 5f7fb37bc9ce20d940d7402babb7248fecd852944fe96bae20ac4d51d1d5dba4
-Allowlist-SHA256: 3749d2f121715390a7037bfbcd97e55b83155c1384dfd2ea9850a739f6011537
+Previous-Allowlist-SHA256: 3749d2f121715390a7037bfbcd97e55b83155c1384dfd2ea9850a739f6011537
+Allowlist-SHA256: c776336410481918a3ae420520b53c8cf0d91c723a5b5c35c49d77b1f83b2b52
 Normalized-Source-Fingerprint: 99cc904fa2d5934dd9aa8294782175ad
 Mixed-Case-Occurrences: 421
 Upper-Case-Occurrences: 2
 Protected-Region: R/GEModel.R:615-615
 Immutable-Evidence-Changed: false
 Review-Type: automated technical review; maintainer-authorized update
-Authorization: Maintainer selected keeping GEModelR publication links pending and requested separate development/full-history and publication/source-only repositories
+Authorization: Maintainer requested a publication contract in AGENTS.md, then targeted commits and a push to the development repository
 Reviewer: Codex automated source and regression review
-Reviewed-UTC: 2026-10-26T20:58:45Z
-Scope: Documentation navigation and publication-history flow only. Canonical GEModelR destinations remain selected; bundled migration guides work before publication. One exact landing-page occurrence row changes. Runtime source, identity mapping, protected solver hashes, historical artifacts and rights are unchanged. No push is authorized.
+Reviewed-UTC: 2026-10-27T07:58:11Z
+Scope: Track the development-only publication contract and add one exact migration-instruction row for its two development-name references. All existing occurrence rows, runtime counts/fingerprint, identity mapping, protected source and historical records are unchanged. Redundant new handoff references were corrected without changing the workflow identity policy. Development push is authorized; publication to GEModelR remains pending.
