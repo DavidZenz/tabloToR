@@ -1,18 +1,18 @@
-# GEModelR publication decision — ready locally, authorization pending
+# GEModelR publication decision — source published, channel verification in progress
 
-Status: pending_local_only
+Status: publication_in_progress
 Package: GEModelR
 Version: 0.1.0
-Candidate-Status: locally_qualified
+Candidate-Status: public_tag_published
 Intended-Tag: v0.1.0
 Tag-Type: annotated_unsigned
 Preparation-Status: complete
 Publication-Readiness: ready
-Packet-Specific-Maintainer-Decision: not_received
-Publication-Authorization: not_authorized
-Authorized-External-Actions: none
+Packet-Specific-Maintainer-Decision: approved_in_conversation
+Publication-Authorization: authorized_for_scoped_plan
+Authorized-External-Actions: canonical-main-and-tag; github-draft-and-four-assets; public-pinned-registry; channel-verification
 Standing-Instruction: keep local
-Standing-Instruction-Superseded: false
+Standing-Instruction-Superseded: true_for_exact_approved_scope_only
 REL-02-Status: pending
 
 ## Exact reviewable candidate
@@ -91,9 +91,9 @@ the labeled automated current serialization verification (original human approva
 unchanged), and the bounded informational NOTE policy. These approvals repair
 qualification rules and do not authorize publication.
 
-## Proposed external actions — none executed
+## Approved scope and actual execution
 
-A concrete publication approval may authorize the following exact scope:
+The maintainer answered yes to this exact scope after all local qualification was complete:
 
 1. Push only public root `f8c2876cb49f8cfef6371ed445dd641ebc1f760f` to `main` in
    `DavidZenz/GEModelR`, and create an annotated unsigned `v0.1.0` tag targeting
@@ -110,18 +110,45 @@ A concrete publication approval may authorize the following exact scope:
    repository. Any required interactive account/app authorization remains explicit;
    no access to private repositories or new app permission grant is inferred.
 
-The canonical source repository is currently public/empty/default main by
-read-only GitHub metadata and a successful empty Git ref listing. No source/tag,
-release, registry, Pages deployment, app permission or remote settings change was
-performed. GitHub/R-universe channel installs and newly triggered hosted CI are
-not_run until publication is authorized. Current prior hosted Matrix evidence
-is retained honestly; no fresh hosted platform results are claimed.
+## Actual publication results
 
-The built site is ready for a later explicit Pages deployment decision. Pages
-settings/branch publication, GitHub draft promotion, protection changes, app grants,
-private evidence upload and force pushes are outside this proposal. Planned site
-metadata remains pending; bundled vignettes work without public deployment.
+The maintainer explicitly approved this plan in conversation on
+2026-10-27T12:02:53Z. This supersedes the former keep-local restriction
+only for the named actions. The immutable packet remains unchanged: its recorded
+publication_authorized=false describes preparation; this separate decision record
+supplies the actual later authority.
 
-The standing keep-local instruction remains in force. AGENTS.md requires explicit
-maintainer authorization of the concrete publication action after local preparation.
-This file records a reviewable proposal, not that authorization.
+- Public main and tag are published at the exact approved commit. A new clone
+  fetched from GitHub verifies the root tree and one-commit history, with no
+  development parents or development commit objects.
+- Annotated unsigned tag object: `14c160546b34490701fbcc81979ac1181c4ce42d`; peeled target:
+  `f8c2876cb49f8cfef6371ed445dd641ebc1f760f`. No GPG key, force push or development ref was used.
+- GitHub draft release ID `425404563`:
+  https://github.com/DavidZenz/GEModelR/releases/tag/untagged-226e90e0204123894133. It remains a draft. All four approved assets were
+  downloaded again and matched their frozen SHA256 bytes exactly.
+- Public registry: https://github.com/DavidZenz/davidzenz.r-universe.dev/blob/main/packages.json; initial commit
+  `58a4125ef436a1482b51f40e68b3822dc7a48480`. Its exact packages.json SHA256 is
+  `18fc79f3540ebdccc05b393eaf6c7d5b0cde663dc5b49cf3ba365e73d6ba70a8` and its source is pinned to v0.1.0.
+- GitHub channel installation and fresh-process numerical smoke passed in
+  `/tmp/GEModelR-publication-s456sck4/github-library`, Matrix1.6.5. The actual
+  remote tag/tree is verified separately; smoke honestly labels its local source
+  basis caller-attested. No shared library was changed.
+- The maintainer confirmed installation of the R-universe app for the two new
+  public repositories. No agent performed an app permission grant. The initial
+  R-universe API reports no package yet; first build/activation and R-universe
+  installation verification remain pending. Its generated build repository was
+  not yet visible at the first post-install check. This is not a package pass.
+- Normal push-triggered hosted jobs are in progress for the public commit:
+  native portability40500796258, archive qualification40500796263,
+  documentation40500796318. Poll no more frequently than every15minutes.
+
+External evidence is retained under `/tmp/GEModelR-publication-s456sck4`,
+including authorization.json, actual tag clone identity, remote refs, draft
+metadata, re-downloaded asset checksums, registry bytes, channel logs and probes.
+The frozen qualified packet is not edited to represent these later actions.
+
+Pages publication/settings, draft promotion, branch protection/default settings,
+private evidence upload and app grants remain outside agent authorization.
+Bundled vignettes and prepared local site remain usable; planned hosted-site
+metadata stays pending. No earlier technical approval is reinterpreted as broader
+publication authority.

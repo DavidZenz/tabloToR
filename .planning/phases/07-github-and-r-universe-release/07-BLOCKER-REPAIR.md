@@ -270,3 +270,21 @@ proposed first-source/tag/draft/registry scope. Both handoff files are explicitl
 excluded from the public policy, so this result-only commit does not require
 rebuilding or changing the selected candidate. Development push remains authorized;
 canonical publication retains the separate AGENTS maintainer gate.
+
+## Approved first publication — in progress
+
+The maintainer explicitly answered yes to the concrete plan after qualification.
+The agent published only the approved public root/main, unsigned annotated
+v0.1.0 tag object `14c160546b34490701fbcc81979ac1181c4ce42d`, a GitHub draft release with exactly
+four byte-verified assets, and public pinned registry commit58a4125. No private
+history, force push, Pages/settings change or draft promotion occurred.
+The actual GitHub tag was fetched cleanly and its exact root/tree/history verified;
+isolated installation and fresh-process numerical smoke PASS with Matrix1.6.5.
+Registry bytes match the approved SHA18fc79f3..., v0.1.0 pin.
+
+The user confirmed the required R-universe app installation for only the two
+public repos. Initial service probe returns404/no packages and generated
+monorepo is not yet visible; first build and R-universe installation remain
+pending. Hosted jobs40500796258/263/318 are running; preserve actual results and
+space polls15minutes. External evidence lives in /tmp/GEModelR-publication-s456sck4.
+Final packet identities, source/rights approvals and user work remain unchanged.
