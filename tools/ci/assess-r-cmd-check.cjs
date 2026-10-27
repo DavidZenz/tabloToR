@@ -25,7 +25,7 @@ function assessCheckLog(log, exitStatus) {
   }
   const findings = [];
   for (let i = 0; i < lines.length; i++) {
-    const header = /^\* checking (.+) \.\.\. (ERROR|WARNING|NOTE)$/.exec(lines[i]);
+    const header = /^\* checking (.+) \.\.\. (?:\[[0-9]+(?:\.[0-9]+)?s(?:\/[0-9]+(?:\.[0-9]+)?s)?\] )?(ERROR|WARNING|NOTE)$/.exec(lines[i]);
     if (!header) continue;
     const body = [];
     for (let j = i + 1; j < lines.length && !/^\* /.test(lines[j]) && !/^Status:/.test(lines[j]); j++) {

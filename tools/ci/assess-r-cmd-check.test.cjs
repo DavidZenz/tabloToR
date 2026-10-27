@@ -22,6 +22,24 @@ test("URL failures and extra incoming messages remain unreviewed", () => {
     assert.equal(assessCheckLog(log.replace("New submission\n", "New submission\n" + extra), 0).assessment_status, "failed");
   }
 });
+test("R check timing prefixes preserve the same strict finding policy", () => {
+  for (const timing of ["[4s/13s]", "[0.5s/2.75s]", "[9s]"]) {
+    const timed = log.replaceAll("... NOTE", "... " + timing + " NOTE");
+    const result = assessCheckLog(timed, 0);
+    assert.equal(result.assessment_status, "passed");
+    assert.equal(result.findings.length, 3);
+    assert.equal(result.findings[0].reason, "CRAN_NEW_SUBMISSION");
+    assert.equal(assessCheckLog(timed.replace("New submission", "Unknown finding"), 0).assessment_status, "failed");
+  }
+  for (const timing of ["[ignored]", "[-1s/2s]", "[1s/2s] unexpected"]) {
+    assert.equal(assessCheckLog(log.replace("... NOTE", "... " + timing + " NOTE"), 0).assessment_status, "failed");
+  }
+  for (const severity of ["ERROR", "WARNING"]) {
+    const result = assessCheckLog("* checking tests ... [1s/2s] " + severity + "\n* DONE\nStatus: 1 " + severity + "\n", 0);
+    assert.equal(result.assessment_status, "failed");
+    assert.equal(result.findings[0].severity, severity);
+  }
+});
 test("unknown notes, larger binaries and additional large directories fail", () => {
   for (const changed of [log.replace("9.3Mb", "12.1Mb"), log.replace("8.1Mb", "10.1Mb"),
     log.replace("libs   8.1Mb", "libs   8.1Mb\n doc 2.0Mb"), log.replace("unable to verify current time", "future timestamps found"),
