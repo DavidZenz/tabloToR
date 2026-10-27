@@ -162,6 +162,7 @@
     "tests/testthat/test-scaled-residuals.R",
     "tests/testthat/test-serialization-bugfix-review.R",
     "tests/testthat/test-serialization-leaf-types.R",
+    "tests/testthat/test-source-tool-mode.R",
     "tests/testthat/test-sparse-core.R",
     "tests/testthat/test-sparse-cpp-cache.R",
     "tests/testthat/test-sparse-lu-cpp.R",

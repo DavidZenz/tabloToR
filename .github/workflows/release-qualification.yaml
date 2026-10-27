@@ -18,6 +18,7 @@ jobs:
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
         with:
           persist-credentials: false
+          fetch-depth: 0
 
       - name: Require authoritative license evidence
         shell: bash
@@ -191,7 +192,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          Rscript --vanilla tools/ci/run-source-tool-tests.R "$GITHUB_WORKSPACE" "$GEModelR_RELEASE_LIBRARY" > "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests.log" 2>&1
+          source_mode=()
+          if [[ ! -d .planning && ! -d docs/provenance && ! -d docs/release ]]; then
+            source_mode=(--public-source)
+          fi
+          Rscript --vanilla tools/ci/run-source-tool-tests.R "$GITHUB_WORKSPACE" "$GEModelR_RELEASE_LIBRARY" "${source_mode[@]}" > "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests.log" 2>&1
           source_status=$?
           set -e
           cat "$GEModelR_RELEASE_EVIDENCE_DIR/source-tool-tests.log"

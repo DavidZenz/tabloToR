@@ -74,3 +74,15 @@ Complete test files passed: name availability 21 tests / 96 assertions; release
 gates 64 / 639; attribution 10 / 60. All have zero failures, errors, and skips.
 Synthetic intentionally blocked fixtures retain their rejection assertions.
 A passing eligibility check grants no publication authorization.
+
+## Separate public and development source checks
+
+The source-only runner has an explicit public mode for the projected repository.
+It rejects private working-tree paths and private paths anywhere in reachable
+Git history. It runs public license, Matrix build-contract and registry-tool
+assertions against a single archive-installed namespace in a fresh R process.
+Development mode retains the historical/preflight groups. The hosted workflow
+fetches full history and selects the appropriate mode; it cannot bypass private
+checks by deleting working-tree folders. Two focused tests / six assertions
+passed, including a private-history deletion bypass. Full positive public-mode
+integration is part of the final exact archive check and is not yet claimed.

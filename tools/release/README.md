@@ -141,8 +141,13 @@ installed from the same archive:
 rtk proxy Rscript --vanilla tools/ci/run-source-tool-tests.R /path/to/selected-source /path/to/archive-library
 ```
 
+For a projected public repository, add `--public-source`. That mode requires a
+Git history without private planning/release/provenance paths and runs the public
+license, build-contract, and name-check groups. Development mode retains the two
+historical/preflight groups. Both modes use the same installed namespace.
+
 Use the same supported dependency library as qualification (via `R_LIBS` when
-needed). This runner requires both source groups to execute with zero skips,
+needed). This runner requires all selected groups to execute with zero skips,
 checks the installed namespace path, and never loads/reloads source package code.
 The source-archive workflow also runs it as a separate required step. The local
 packet CLI does not record this additional test result; retain its log alongside

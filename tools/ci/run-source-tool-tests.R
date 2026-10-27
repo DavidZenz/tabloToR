@@ -2,23 +2,39 @@
 
 # Source-only administrative assertions run in a fresh process against one
 # installed namespace. Never load_all() or reload native code between groups.
-runSourceToolTests = function() {
-  args = commandArgs(trailingOnly = TRUE)
-  if (length(args) != 2L) {
-    stop("Usage: run-source-tool-tests.R SOURCE_ROOT INSTALLED_LIBRARY",
+runSourceToolTests = function(args = commandArgs(trailingOnly = TRUE)) {
+  public = length(args) == 3L && identical(args[[3L]], "--public-source")
+  if (!length(args) %in% c(2L, 3L) || (length(args) == 3L && !public)) {
+    stop("Usage: run-source-tool-tests.R SOURCE_ROOT INSTALLED_LIBRARY [--public-source]",
          call. = FALSE)
   }
   root = normalizePath(args[[1L]], winslash = "/", mustWork = TRUE)
   lib = normalizePath(args[[2L]], winslash = "/", mustWork = TRUE)
-  groups = c("baseline-artifacts", "gtap12a-reference-preflight")
+  groups = if (public) c("public-license-evidence", "public-build-contract", "name-availability") else
+    c("baseline-artifacts", "gtap12a-reference-preflight")
   files = paste0("test-", groups, ".R")
   required = c("DESCRIPTION", "R/GEModel.R", "src/RcppExports.cpp",
-    "inst/tools/refresh_phase02_baselines.R",
+    file.path("tests", "testthat", files))
+  if (public) {
+    private = c(".planning", "docs/provenance", "docs/release")
+    if (any(file.exists(file.path(root, private)))) {
+      stop("Public-source mode cannot bypass development evidence checks", call. = FALSE)
+    }
+    git = if (file.exists("/usr/bin/git")) "/usr/bin/git" else "git"
+    output = suppressWarnings(system2(git,
+      c("-C", shQuote(root), "rev-list", "--objects", "--all"), stdout = TRUE, stderr = TRUE))
+    if (!is.null(attr(output, "status")) || !length(output) ||
+        any(grepl("^[a-f0-9]+ (?:[.]planning|docs/(?:provenance|release))(?:/|$)", output, perl = TRUE))) {
+      stop("Public-source mode requires history without private development paths", call. = FALSE)
+    }
+    required = c(required, "tools/ci/check-license-decision.R", "tools/ci/check-public-build-contract.R",
+      "inst/compatibility/release-license.dcf", "inst/compatibility/matrix-support.dcf")
+  } else required = c(required, "inst/tools/refresh_phase02_baselines.R",
     "inst/tools/accept_phase02_baselines.R",
     "benchmarks/preflight_gtap12a_reference.R",
     "tests/testthat/helper-baseline-artifacts.R",
     "tests/testthat/helper-gtap12a-reference-preflight.R",
-    file.path("tests", "testthat", files))
+    "tools/check_serialization_bugfix.R")
   missing = required[!file.exists(file.path(root, required))]
   if (length(missing)) {
     stop(paste("Incomplete source-tool checkout:", paste(missing, collapse = ", ")),
@@ -65,4 +81,4 @@ runSourceToolTests = function() {
   invisible(results)
 }
 
-runSourceToolTests()
+if (sys.nframe() == 0L) runSourceToolTests()
