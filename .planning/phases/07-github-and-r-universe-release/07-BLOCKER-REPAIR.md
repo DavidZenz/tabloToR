@@ -387,3 +387,36 @@ found no R-universe. Supplied direct app-install steps for accountDavidZenz and
 only the2public repositories; awaiting final Install/Save. Do not repeat unrelated
 package/benchmark runs while waiting. No app permissions were granted by the agent.
 The reviewed public repair remains local; a new publication decision is required.
+
+
+## Corrected public archive qualification passed; autonomous service verification
+
+Canonical run40511924193 for exact public source9b257cc completes successfully.
+Actual R4.6.1 full --as-cran check:3060passes,0failures/0testwarnings,121context
+skips,0checkerrors,0checkwarnings,1NOTE only New submission. The approved assessor
+passes, URLs pass, source-only public groups117assertions/zero skips, strict archive
+scan190entries. Hosted archiveSHA8cf2feb321f8a918567c7e6da3ebc5ed9dbd6f1976b61b13699d812fd5dd0a12.
+This is distinct from the locally qualified archiveSHA3e2ef62c...; actual build
+artifacts remain tied to their own runtime/bytes. Canonical docs40511924192 passes.
+Raw hosted evidence is in canonical-repaired-archive-evidence under the external
+publication root, artifact12738067781/digestb6f4842378103ca856477b37192f4b5be1013cb70b91ed27b8404453f549c672.
+
+At14:07:51UTC the R-universe API first exposes0.1.0 with RemoteShaf8c2876 and
+RemoteRefv0.1.0. The verifier rejects this old source for corrected-source acceptance.
+No new sync has run as of14:08; wait for the service's normal hourly registry sync
+of approved public main9b257cc. No extra user installation/permission step remains.
+The detached verifier continues15-minute probes, next14:22:51UTC, and will perform
+isolated source install plus fresh-process smoke only when actual RemoteSha matches9b257cc.
+
+Native CI40511924185 is still running. Last detailed result:22successful jobs,
+1known Windows Matrix-download timeout before GEModelR compilation/tests,
+3R-setup/dependency jobs pending (one representative informational job). A detached
+observer PID6466 polls15minutes, next14:19:17UTC, and may retry at most2times only
+the exact known Windows tuple after the workflow completes, with source9b257cc,
+failed Matrix-install step, skipped core tests and literal download-timeout log all
+required. Any unknown/numerical failure stops for review; no gate is waived. It
+records native-ci-completion.json; R-universe records runiverse-completion.json.
+Both processes have PPID1 and run independently of the editor session, with a3hour
+monitor window and honest pending/failure output if external services remain blocked.
+Original tag/draft/four assets, frozen packet, human approval and all16pre-existing
+local work files remain unchanged. No Pages publication or draft promotion occurred.
