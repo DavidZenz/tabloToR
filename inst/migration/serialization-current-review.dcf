@@ -3,13 +3,13 @@ Source-Path: R/modelSerialization.R
 Historical-Record-SHA256: d90948247e41b763dc740dc1f043a04f8b490d7507e13af44e39e6cad74904e6
 Historical-Patch-SHA256: 87aa97e3a61c07b2c072420b248a264315f7ffd29a0f10881cc12352274cf52f
 Historical-After-SHA256: c62a9223ab857b5ed871b856cf8feda0f3c4dd8386fe5d12e0888ffa1416ad3e
-Current-Source-Commit: 7c7a5d93923d72b6807eb4bbdc3edac7f8723a9c
-Current-Source-SHA256: dc2d3f3ba4fbaae6fc4b20ec7403fc19cf70f9db8c309c93566142e775dee874
+Current-Source-Commit: 3150115826dcb00f9d83b87cb2a3d79e7270e180
+Current-Source-SHA256: b908a98fd01ea45fd3616dcd480d1ab44ba22b44162d89439ef710fee4b9be2a
 Current-Patch-Path: inst/migration/serialization-current.patch
-Current-Patch-SHA256: e90c3770b8be82c7cbc556aea258b4e131944dc763dd2ea521a20350be1fa4f2
+Current-Patch-SHA256: 563b09cfa1dd5daaf4fc9a10562eed44dc77ad447fda30a280ae1dc57d8c54b8
 Added-Functions: .serialization_atomic_save_rds;.serialization_is_exact_predecessor_source;.serialization_predecessor_data;.serialization_raw_fingerprint;.serialization_source_fingerprints_match
-Changed-Functions: .validate_logical_state_payload;.validate_reconstructed_logical_state
+Changed-Functions: .build_logical_state_payload;.validate_logical_state_payload;.validate_reconstructed_logical_state
 Review-State: technically-verified
 Reviewer: Codex automated technical review (maintainer-requested)
-Reviewed-UTC: 2026-10-27T09:19:53Z
-Authorization: Maintainer explicitly approved current-source verification for release qualification, 2026-10-27; original human approval is preserved
+Reviewed-UTC: 2026-10-27T12:59:29Z
+Authorization: Maintainer-approved automated current-source verification; follow-up technical review for the requested release-blocker repair. Exact predecessor re-save normalization is regression-tested; original human approval and strict historical verifier remain unchanged. This record does not authorize publication.

@@ -1,9 +1,11 @@
 --- a/R/modelSerialization.R
 +++ b/R/modelSerialization.R
-@@ -250,6 +250,69 @@
+@@ -248,6 +248,69 @@
+   fingerprint = unname(tools::md5sum(path))
+   unlink(path)
    fingerprint
- }
- 
++}
++
 +.serialization_predecessor_data = function() {
 +  regions = c("north", "south", "east")
 +  list(basedata = list(
@@ -65,11 +67,9 @@
 +    return(TRUE)
 +  }
 +  .serialization_is_exact_predecessor_source(source, lineage)
-+}
-+
+ }
+ 
  .serialization_capture_tablo = function(path) {
-   if (!is.character(path) || length(path) != 1L || is.na(path) ||
-       !nzchar(path) || !file.exists(path)) {
 @@ -447,6 +510,28 @@
    sparse_normalize_shocks(model$shocks)
  }
@@ -99,7 +99,23 @@
  .build_logical_state_payload = function(model) {
    if (!inherits(model, "GEModel")) {
      stop("model must be a GEModel reference object", call. = FALSE)
-@@ -516,7 +601,7 @@
+@@ -464,6 +549,15 @@
+       ),
+       call. = FALSE
+     )
++  }
++  # R's serialization header records the writer version. Re-save the exact
++  # allowlisted predecessor source with this runtime's fingerprints after its
++  # immutable content has been checked; read-time lineage checks stay strict.
++  if (.serialization_is_exact_predecessor_source(source, "predecessor")) {
++    source$tablo_fingerprint =
++      .serialization_object_fingerprint(source$tablo_source)
++    source$data_fingerprint =
++      .serialization_object_fingerprint(source$loaded_data)
+   }
+   levels = if (identical(model$loadedEngine, "sparse") &&
+                is.environment(model$sparseState)) {
+@@ -516,7 +610,7 @@
        !identical(payload$schema_version, .serialization_schema_version)) {
      .serialization_stop("schema version is unsupported")
    }
@@ -108,31 +124,31 @@
    if (!is.character(payload$engine) || length(payload$engine) != 1L ||
        is.na(payload$engine) ||
        !payload$engine %in% c("legacy", "sparse")) {
-@@ -562,16 +647,14 @@
+@@ -562,16 +656,14 @@
        "source fingerprints must be 32 hexadecimal characters"
      )
    }
 -  if (!identical(
 -    source$tablo_fingerprint,
 -    .serialization_object_fingerprint(source$tablo_source)
--  )) {
--    .serialization_stop("TABLO source fingerprint mismatch")
--  }
--  if (!identical(
--    source$data_fingerprint,
--    .serialization_object_fingerprint(source$loaded_data)
 +  tablo_fingerprint = .serialization_object_fingerprint(source$tablo_source)
 +  data_fingerprint = .serialization_object_fingerprint(source$loaded_data)
 +  if (!.serialization_source_fingerprints_match(
 +    source, lineage, tablo_fingerprint, data_fingerprint
    )) {
+-    .serialization_stop("TABLO source fingerprint mismatch")
+-  }
+-  if (!identical(
+-    source$data_fingerprint,
+-    .serialization_object_fingerprint(source$loaded_data)
+-  )) {
 +    if (!identical(source$tablo_fingerprint, tablo_fingerprint)) {
 +      .serialization_stop("TABLO source fingerprint mismatch")
 +    }
      .serialization_stop("loaded source data fingerprint mismatch")
    }
    if (!is.list(payload$levels) || is.object(payload$levels)) {
-@@ -730,9 +813,22 @@
+@@ -730,9 +822,22 @@
      length(payload[["accepted"]][["solution"]])
    ) {
      fields = available_variables

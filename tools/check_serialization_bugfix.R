@@ -724,7 +724,10 @@ serialization_bugfix_verify_current = function(root = serialization_bugfix_repos
     function(name) identical(old[[name]], new[[name]]), logical(1))])
   allowedAdded = c(".serialization_atomic_save_rds", ".serialization_is_exact_predecessor_source",
     ".serialization_predecessor_data", ".serialization_raw_fingerprint", ".serialization_source_fingerprints_match")
-  allowedChanged = c(".validate_logical_state_payload", ".validate_reconstructed_logical_state")
+  # The follow-up also normalizes only the exact predecessor source at save;
+  # loading, source identity and unchanged-state protection remain checked.
+  allowedChanged = c(".build_logical_state_payload", ".validate_logical_state_payload",
+    ".validate_reconstructed_logical_state")
   if (length(setdiff(names(old), names(new))) || !identical(added, allowedAdded) ||
       !identical(changed, allowedChanged) ||
       review$`Added-Functions` != paste(allowedAdded, collapse = ";") ||

@@ -1,11 +1,11 @@
 Schema: gemodelr-source-identity-review-v1
-Source-Commit: c4f5046c599324418c0aa45ea4dc07193532101f
-Previous-Map-SHA256: b595947f594459a317e3a69f5a6719edfb340a96bab29f4f14e124b4d39fa238
+Source-Commit: 3150115826dcb00f9d83b87cb2a3d79e7270e180
+Previous-Map-SHA256: 7d0987b85b2ce22cdbcb0e11388594069a59b829d8b5cd5c23804bd0191802ae
 Map-SHA256: 7d0987b85b2ce22cdbcb0e11388594069a59b829d8b5cd5c23804bd0191802ae
 Previous-Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
 Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
-Previous-Allowlist-SHA256: 85464ea7ad32273a9475fab388cd5b12fc4bb6c4dfcfd6eca3f7ce7361514ae3
-Allowlist-SHA256: 79c7abed84f2328847e7d8b235fe56af77f9d3b44c794adba1fd1a96af02ced3
+Previous-Allowlist-SHA256: 79c7abed84f2328847e7d8b235fe56af77f9d3b44c794adba1fd1a96af02ced3
+Allowlist-SHA256: 48525c0d70630ba2011220db967bb19e674f1e80973bc06b9cab0e79e4370333
 Normalized-Source-Fingerprint: dff2b8054c4f03051dfa919fc46c00b1
 Mixed-Case-Occurrences: 423
 Upper-Case-Occurrences: 2
@@ -14,5 +14,5 @@ Immutable-Evidence-Changed: false
 Review-Type: automated technical review; maintainer-authorized update
 Authorization: Maintainer requested all remaining release blockers repaired; preserve strict archive scanning and explicitly approved qualification policies, 2026-10-27
 Reviewer: Codex automated source and regression review
-Reviewed-UTC: 2026-10-27T12:33:04Z
-Scope: Normalize the Authors@R attribution comment rendering across R4.3/R4.6 and bind focused CI/test repairs for actual hosted failures. Numerical runtime, original artifacts, authority records and the published v0.1.0 snapshot remain unchanged. No new public snapshot is authorized by this metadata review.
+Reviewed-UTC: 2026-10-27T13:00:30Z
+Scope: Bind the exact predecessor re-save normalization and cross-runtime regressions; refresh only five finite source/test occurrence rows (one extra fixture literal). Preserve original numerical artifacts, human approval, strict read-time lineage and the published v0.1.0 snapshot. Automated technical review does not authorize a new public snapshot.

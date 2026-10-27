@@ -321,3 +321,42 @@ hashf6f2297a6ab257c9737a64354c82d7f1 remain exact. The new metadata-only fingerp
 isdff2b8054c4f03051dfa919fc46c00b1, counts423/2, and source count25 unchanged.
 These fixes will run through development CI; no new canonical snapshot or tag
 is published under the existing one-snapshot approval.
+
+
+## Cross-runtime follow-up after the first CI repair
+
+Development d9be316 documentation passes; its R4.6.1 archive check now has no
+warnings and only the New submission note, but six serialization failures remain.
+Two genuine predecessor loads cannot be saved again: R serializes its writer
+version into object fingerprints, and the save path retained the old fixture's
+fingerprints after normalizing lineage. Four other assertions incorrectly assume
+that the legacy runtime always drops one-dimensional array metadata. The corrected
+tests compare exact leaves before and after serialization and keep explicit
+numeric values, type and names checks; production legacy solve behavior is unchanged.
+
+Commit3150115 normalizes fingerprints only after matching the complete immutable
+allowlisted predecessor source at save time. Read-time lineage/content checks are
+unchanged; unknown or altered source still fails before writing or receiver mutation.
+Both focused serialization groups pass, including a simulated cross-runtime re-save
+and altered-content rejection. Actual R4.6 hosted rerun remains pending. Production
+numerical solver and native code remain unchanged; this is a serialization correction.
+
+Commit7f01c1a fixes parsing of R CMD check's numeric timing prefixes (e.g.
+[4s/13s]) without changing the approved NOTE policy. Five Node groups pass,
+including timed ERROR/WARNING rejection, unknown-note and malformed-prefix checks.
+The previous public repair's actual local full check passes3047assertions with
+0errors/0warnings/3approved notes; its original assessor rejection is retained
+and the corrected assessor now recognizes all three notes. The latest complete
+archive check is running separately and is not yet claimed as passing.
+
+The clearly labeled current-source technical review now binds sourceSHA
+b908a98fd01ea45fd3616dcd480d1ab44ba22b44162d89439ef710fee4b9be2a and exact patchSHA
+563b09cfa1dd5daaf4fc9a10562eed44dc77ad447fda30a280ae1dc57d8c54b8. Original human
+approval, original patch and strict historical verifier are preserved. The replay,
+adversarial unchanged-state and predecessor checks pass. Five finite occurrence
+rows are refreshed (one additional test-fixture literal), with no new active owner;
+1073allowlisted occurrences and11workflow-policy occurrences pass. New allowlistSHA
+48525c0d70630ba2011220db967bb19e674f1e80973bc06b9cab0e79e4370333. Numerical baseline
+fingerprint dff2b8054c4f03051dfa919fc46c00b1 and original canonical artifacts remain
+unchanged; R/modelSerialization.R is the pre-existing reviewed non-numerical exclusion.
+No new public source, tag, registry pin or assets are authorized by this review.
