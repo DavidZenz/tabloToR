@@ -297,6 +297,9 @@ the [issue tracker](https://github.com/DavidZenz/GEModelR/issues) is available.
 The documentation address remains a planned destination until the site is
 published. Use the bundled guides locally with
 `browseVignettes("GEModelR")` or read `MIGRATION.md` in this checkout.
+Until Pages is deployed, DESCRIPTION advertises the live repository URL and
+records documentation status as pending. The planned site stays configured;
+its URL will enter package metadata when deployment and URL checks succeed.
 After the first publication on `main`, the complete migration reference will be
 at `https://github.com/DavidZenz/GEModelR/blob/main/MIGRATION.md`.
 

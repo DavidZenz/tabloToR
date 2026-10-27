@@ -299,7 +299,7 @@ test_that("DESCRIPTION applies the reviewed identity and selected GPL license", 
   )
   expect_identical(
     unname(description[[1L, "URL"]]),
-    "https://github.com/DavidZenz/GEModelR,\nhttps://davidzenz.github.io/GEModelR/"
+    "https://github.com/DavidZenz/GEModelR"
   )
   expect_identical(
     unname(description[[1L, "BugReports"]]),

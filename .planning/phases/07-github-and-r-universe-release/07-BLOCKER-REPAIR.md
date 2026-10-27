@@ -53,3 +53,24 @@ No historical serialization approval/patch, predecessor fixture, accepted
 numerical baseline, shared R library, external repository setting, or GEModelR
 publication has been changed by this evidence repair. Concrete publication
 authority remains a final boundary after local qualification.
+
+## Fresh name reservation and pending site metadata
+
+The maintainer explicitly approved recognizing only the canonical
+`DavidZenz/GEModelR` repository as an authorized reservation and accepting a
+clearly labeled automated registry verification. The live scan includes CRAN
+current/archive, all discovered Bioconductor repositories and historical
+releases, R-universe, and GitHub; its complete timestamped details and hashes
+are retained in the canonical name report. Other owners and registry matches
+still fail. Bioconductor release-table and repository-discovery parsing now
+handle the actual current markup.
+
+The package URL advertises the live repository while documentation status is
+explicitly pending. The configured Pages destination remains the intended site;
+it enters DESCRIPTION only after actual deployment and URL verification.
+Unknown states and arbitrary additional URLs fail the metadata gate.
+
+Complete test files passed: name availability 21 tests / 96 assertions; release
+gates 64 / 639; attribution 10 / 60. All have zero failures, errors, and skips.
+Synthetic intentionally blocked fixtures retain their rejection assertions.
+A passing eligibility check grants no publication authorization.

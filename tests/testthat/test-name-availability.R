@@ -885,3 +885,56 @@ test_that("approved identity enforces derived URLs and signature parity", {
     fixed = TRUE
   )
 })
+
+test_that("Bioconductor release tables support current markup without matching R columns", {
+  tool = nameCheckTool()
+  html = charToRaw(paste0(
+    '<table><tr><td align="left"><a href="/news/release">3.23</a></td><td>4.6</td></tr>',
+    '<tr><td style="text-align: left">3.9</td><td>4.1</td></tr>',
+    '<tr><td>3.10</td><td>4.2</td></tr></table>'
+  ))
+  expect_identical(tool$name_check_bioc_versions(html), c("3.23", "3.10", "3.9"))
+  expect_error(tool$name_check_bioc_versions(charToRaw("<html>not a release table</html>")), "MALFORMED")
+})
+
+test_that("current BiocViews package links retain every advertised repository", {
+  tool = nameCheckTool()
+  html = paste0(rawToChar(nameCheckBiocReleaseManifest("3.23", "bioc")),
+    '<a href="/packages/3.23/data/annotation/html/A.html">A</a>',
+    '<a href="/packages/3.23/data/experiment/html/B.html">B</a>',
+    '<a href="/packages/3.23/workflows/html/C.html">C</a>')
+  rows = tool$name_check_bioc_repositories("3.23", charToRaw(html),
+    nameCheckBiocRepositoryManifest(), "bioconductor-current")
+  expect_identical(rows$repository, c("bioc", "data/annotation", "data/experiment", "workflows", "books"))
+})
+
+test_that("only the explicitly authorized GitHub repository is a name reservation", {
+  tool = nameCheckTool()
+  fixture = tool$name_check_test_fixture()
+  make = function(names) charToRaw(paste0(
+    '{"total_count":', length(names), ',"incomplete_results":false,"items":[',
+    paste0('{"full_name":"', names, '"}', collapse = ","), ']}'))
+  fixture[[6L]]$raw = make("DavidZenz/GEModelR")
+  expect_error(tool$name_check_evaluate_fixture("GEModelR", fixture), "NAME_EXACT_COLLISION")
+  result = tool$name_check_evaluate_fixture("GEModelR", fixture,
+    authorized_repository = "DavidZenz/GEModelR")
+  expect_identical(result$overall_result, "NAME_AVAILABLE_WITH_AUTHORIZED_RESERVATION")
+  path = tempfile(fileext = ".md")
+  on.exit(unlink(path), add = TRUE)
+  tool$name_check_write_report(result, path)
+  expect_error(tool$name_check_verify_report(path, require_review = FALSE), "RESERVATION_UNAUTHORIZED")
+  expect_true(tool$name_check_verify_report(path, require_review = FALSE,
+    authorized_repository = "DavidZenz/GEModelR"))
+  expect_error(tool$name_check_verify_report(path, require_review = FALSE,
+    authorized_repository = "Other/GEModelR"), "RESERVATION_UNAUTHORIZED")
+  fixture[[6L]]$raw = make(c("DavidZenz/GEModelR", "Other/GEModelR"))
+  expect_error(tool$name_check_evaluate_fixture("GEModelR", fixture,
+    authorized_repository = "DavidZenz/GEModelR"), "NAME_EXACT_COLLISION")
+  fixture[[6L]]$raw = make("Other/GEModelR")
+  expect_error(tool$name_check_evaluate_fixture("GEModelR", fixture,
+    authorized_repository = "DavidZenz/GEModelR"), "NAME_EXACT_COLLISION")
+  fixture[[6L]]$raw = make("DavidZenz/GEModelR")
+  fixture[[1L]]$raw = charToRaw("Package: GEModelR\nVersion: 1.0.0\n")
+  expect_error(tool$name_check_evaluate_fixture("GEModelR", fixture,
+    authorized_repository = "DavidZenz/GEModelR"), "NAME_EXACT_COLLISION")
+})

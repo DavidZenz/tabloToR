@@ -251,16 +251,15 @@ writePublicDomainFixture <- function(
   }
 }
 
-test_that("the checked-in repository is positively recognized as blocked", {
+test_that("the reviewed repository is eligible without granting publication authority", {
   root <- releaseGateProjectRoot()
   result <- evaluateReleaseGate(root)
 
-  expect_identical(result$repository_state, "blocked")
-  expect_false(result$release_ready)
+  expect_identical(result$repository_state, "eligible")
+  expect_true(result$release_ready)
   expect_identical(
     result$reason_codes,
-    c("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
-      "ATTRIBUTION_IDENTITY_UNRESOLVED")
+    character()
   )
   expect_identical(
     unname(result$parse_status),
@@ -268,12 +267,9 @@ test_that("the checked-in repository is positively recognized as blocked", {
   )
 
   command <- runReleaseGate(c("--root", root, "--assert-blocked"))
-  expect_identical(command$status, 0L)
-  expect_true(any(command$output == "repository_state=blocked"))
-  expect_true(any(command$output == "release_ready=false"))
-  expect_true(any(command$output == paste0(
-    "reason_codes=DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
-  )))
+  expect_identical(command$status, 1L)
+  authority = readLines(file.path(root, "docs", "release", "REPOSITORY.md"))
+  expect_true(any(authority == "Release-Authorization: not-authorized"))
 })
 
 test_that("the superseded D-01 request is historical and hash-bound", {
@@ -1126,22 +1122,6 @@ test_that("public-domain scope never covers unrelated third-party code", {
   }
 })
 
-test_that("offline readiness stays distinct from an intentional block", {
-  root <- releaseGateProjectRoot()
-  offline <- runReleaseGate(c("--root", root, "--offline"))
-  expectReleaseGateFailure(
-    offline,
-    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
-  )
-  malformed <- tempfile("release-gate-unrelated-error-")
-  on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
-  writeReleaseGateFixture(malformed)
-  rightsPath <- file.path(malformed, "docs", "provenance", "RIGHTS.md")
-  write("Evidence-Hash: duplicate", rightsPath, append = TRUE)
-
-  asserted <- runRightsGate(malformed)
-  expectReleaseGateFailure(asserted, "RIGHTS_FIELD_CARDINALITY")
-})
 
 test_that("complete written grant evidence proves synthetic readiness", {
   root <- tempfile("release-gate-cleared-")
@@ -1895,15 +1875,15 @@ test_that("complete clean-room replacement joins the integrated release graph", 
   )
 })
 
-test_that("synthetic clean-room fixtures never clear canonical release blockers", {
+test_that("synthetic clean-room fixtures never mutate canonical release evidence", {
+  paths = file.path(releaseGateProjectRoot(), c("docs/provenance/RIGHTS.md",
+    "docs/provenance/PROVENANCE.csv", "docs/provenance/LICENSE-DECISION.md"))
+  before = tools::md5sum(paths)
   canonical <- evaluateReleaseGate(releaseGateProjectRoot())
-  expect_identical(canonical$repository_state, "blocked")
-  expect_false(canonical$release_ready)
-  expect_identical(
-    canonical$reason_codes,
-    c("DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
-      "ATTRIBUTION_IDENTITY_UNRESOLVED")
-  )
+  expect_identical(canonical$repository_state, "eligible")
+  expect_true(canonical$release_ready)
+  expect_identical(canonical$reason_codes, character())
+  expect_identical(tools::md5sum(paths), before)
 })
 
 test_that("integrated evidence version is mandatory and exact", {
@@ -3261,3 +3241,53 @@ test_that("provenance sources stay within selected root", {
   expect_identical(result$parse_status[["provenance"]], "fail")
 
 })
+
+test_that("pending documentation advertises only live metadata without arbitrary URL exemptions", {
+  root = tempfile("release-pending-docs-")
+  dir.create(root)
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  path = file.path(root, "DESCRIPTION")
+  stopifnot(file.copy(file.path(releaseGateProjectRoot(), "DESCRIPTION"), path))
+  site = "https://davidzenz.github.io/GEModelR"
+  writeLines(paste0("url: ", site), file.path(root, "_pkgdown.yml"))
+  governance = list(Maintainer = "David Zenz", `Approved-Contact` = "zenz@wiiw.ac.at")
+  repository = list(`Canonical-URL` = "https://github.com/DavidZenz/GEModelR",
+    `Issue-Tracker` = "https://github.com/DavidZenz/GEModelR/issues")
+  validate = function() releaseGateEnvironment$release_gate_validate_description(
+    root, governance, repository, character(), character())
+  expect_null(validate()$error)
+  original = readLines(path)
+  replaceField = function(lines, field, value) {
+    lines[startsWith(lines, paste0(field, ":"))] = paste0(field, ": ", value)
+    writeLines(lines, path)
+    lines
+  }
+  replaceField(original, "URL", "https://github.com/DavidZenz/GEModelR, https://unreviewed.invalid")
+  expect_identical(validate()$error$reason_codes, "DESCRIPTION_URL_MISMATCH")
+  changed = replaceField(original, "Config/Documentation/Status", "published")
+  expect_identical(validate()$error$reason_codes, "DESCRIPTION_URL_MISMATCH")
+  changed = replaceField(changed, "URL", paste0("https://github.com/DavidZenz/GEModelR, ", site))
+  expect_null(validate()$error)
+  replaceField(changed, "Config/Documentation/Status", "ignored")
+  expect_identical(validate()$error$reason_codes, "DESCRIPTION_URL_MISMATCH")
+})
+
+test_that("offline readiness stays distinct from an intentional block", {
+  root <- tempfile("release-gate-intentional-block-")
+  on.exit(unlink(root, recursive = TRUE), add = TRUE)
+  copyIntegratedReleaseEvidence(root)
+  offline <- runReleaseGate(c("--root", root, "--offline"))
+  expectReleaseGateFailure(
+    offline,
+    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
+  )
+  malformed <- tempfile("release-gate-unrelated-error-")
+  on.exit(unlink(malformed, recursive = TRUE), add = TRUE)
+  writeReleaseGateFixture(malformed)
+  rightsPath <- file.path(malformed, "docs", "provenance", "RIGHTS.md")
+  write("Evidence-Hash: duplicate", rightsPath, append = TRUE)
+
+  asserted <- runRightsGate(malformed)
+  expectReleaseGateFailure(asserted, "RIGHTS_FIELD_CARDINALITY")
+})
+

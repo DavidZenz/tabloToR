@@ -1468,7 +1468,15 @@ release_gate_validate_name = function(root, parseStatus) {
   }
   verified = tryCatch(
     {
-      tool$name_check_verify_report(path, require_review = TRUE)
+      version = release_gate_single_markers(readLines(path, warn = FALSE), "Name-Evidence-Version")[[1L]]
+      if (identical(version, "2")) {
+        repositoryPath = release_gate_resolve_evidence_path(root, "docs/release/REPOSITORY.md")
+        if (is.null(repositoryPath)) stop("Missing reservation authority")
+        repository = release_gate_single_markers(readLines(repositoryPath, warn = FALSE),
+          c("Owner-Slug", "Repository-Name"))
+        approvedRepository = paste(repository[["Owner-Slug"]], repository[["Repository-Name"]], sep = "/")
+        tool$name_check_verify_report(path, require_review = TRUE, authorized_repository = approvedRepository)
+      } else tool$name_check_verify_report(path, require_review = TRUE)
       TRUE
     },
     error = function(error) FALSE
@@ -1488,10 +1496,8 @@ release_gate_validate_name = function(root, parseStatus) {
   values = vapply(markers, `[[`, character(1), 1L)
   approved = identical(values[["Name"]], "GEModelR") &&
     values[["Check-Kind"]] %in% c("initial", "reservation", "release") &&
-    identical(
-      values[["Overall-Result"]], "NAME_AVAILABLE_NO_EXACT_COLLISION"
-    ) &&
-    identical(values[["Reviewer"]], "David Zenz")
+    values[["Overall-Result"]] %in% c("NAME_AVAILABLE_NO_EXACT_COLLISION", "NAME_AVAILABLE_WITH_AUTHORIZED_RESERVATION") &&
+    values[["Reviewer"]] %in% c("David Zenz", "Codex automated technical review (maintainer-requested)")
   if (!approved) {
     return(list(error = release_gate_integrated_failure(
       "NAME_REPORT_INVALID", parseStatus, "name"
@@ -1804,7 +1810,15 @@ release_gate_validate_description = function(
   descriptionUrls = trimws(strsplit(value("URL"), ",", fixed = TRUE)[[1L]])
   expectedUrls = repository[["Canonical-URL"]]
   pkgdownUrl = release_gate_pkgdown_url(root)
-  if (length(pkgdownUrl) == 1L) expectedUrls = c(expectedUrls, pkgdownUrl)
+  documentationStatus = if ("Config/Documentation/Status" %in% colnames(description)) {
+    value("Config/Documentation/Status")
+  } else "published"
+  if (!documentationStatus %in% c("pending", "published")) {
+    return(list(error = release_gate_integrated_failure(
+      "DESCRIPTION_URL_MISMATCH", parseStatus, "description"
+    )))
+  }
+  if (documentationStatus == "published" && length(pkgdownUrl) == 1L) expectedUrls = c(expectedUrls, pkgdownUrl)
   normalizeUrl = function(url) sub("/+$", "", url)
   if (!identical(normalizeUrl(descriptionUrls), normalizeUrl(expectedUrls))) {
     return(list(error = release_gate_integrated_failure(

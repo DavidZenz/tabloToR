@@ -226,6 +226,22 @@ name_check_parse_github_candidates = function(text, source_id) {
   values
 }
 
+name_check_github_reservation = function(raw, name, repository) {
+  if (!is.character(repository) || length(repository) != 1L || is.na(repository) ||
+      !grepl("^[A-Za-z0-9][A-Za-z0-9-]*/[A-Za-z0-9._-]+$", repository) ||
+      !identical(name_check_ascii_fold(sub(".*/", "", repository)), name_check_ascii_fold(name))) {
+    name_check_fail("NAME_RESERVATION_INVALID")
+  }
+  text = name_check_raw_text(raw, "github")
+  candidates = name_check_parse_github_candidates(text, "github")
+  full = name_check_regex_values(text,
+    '"full_name"[[:space:]]*:[[:space:]]*"([A-Za-z0-9-]+/[A-Za-z0-9._-]+)"', "\\1")
+  if (length(full) != length(candidates)) name_check_fail("NAME_SOURCE_MALFORMED_GITHUB")
+  matching = name_check_ascii_fold(candidates) == name_check_ascii_fold(name)
+  owned = name_check_ascii_fold(full) == name_check_ascii_fold(repository)
+  list(reserved = any(matching) && all(owned[matching]), count = sum(matching & owned))
+}
+
 name_check_parse_count = function(source_id, value) {
   if (!source_id %in% c("github", "r-universe")) {
     name_check_fail("NAME_SOURCE_COUNT_UNSUPPORTED")
@@ -500,7 +516,8 @@ name_check_timestamp = function() {
 name_check_evaluate_fixture = function(name, sources,
                                         check_kind = "initial",
                                         checked_at = name_check_timestamp(),
-                                        fail_on_collision = TRUE) {
+                                        fail_on_collision = TRUE,
+                                        authorized_repository = NULL) {
   name = name_check_validate_name(name)
   check_kind = name_check_validate_kind(check_kind)
   if (!is.character(checked_at) || length(checked_at) != 1L ||
@@ -532,6 +549,7 @@ name_check_evaluate_fixture = function(name, sources,
   detail_sets = vector("list", length(required))
   names(detail_sets) = required
   collisions = character()
+  reservation_count = 0L
   for (index in seq_along(required)) {
     source_id = required[[index]]
     source = sources[[index]]
@@ -603,11 +621,21 @@ name_check_evaluate_fixture = function(name, sources,
     details$available = "yes"
     details$exact_matches = detail_matches
     details$result = ifelse(detail_matches == "NONE", "pass", "collision")
+    if (identical(source_id, "github") && !is.null(authorized_repository)) {
+      reservation = lapply(pages, function(page) {
+        name_check_github_reservation(page$raw, name, authorized_repository)
+      })
+      owned = vapply(reservation, `[[`, logical(1), "reserved")
+      reservation_count = sum(vapply(reservation, `[[`, integer(1), "count"))
+      details$result[owned] = "reserved"
+    }
     query = paste(details$query, collapse = " + ")
     raw_md5 = name_check_parent_hash(details)
     detail_sets[[source_id]] = details
     exact = unique(name_check_exact_matches(name, candidates))
-    if (length(exact)) {
+    reserved = identical(source_id, "github") && any(details$result == "reserved") &&
+      !any(details$result == "collision")
+    if (length(exact) && !reserved) {
       collisions = c(collisions, paste0(source_id, ":", exact))
     }
     rows[[index]] = data.frame(
@@ -617,7 +645,7 @@ name_check_evaluate_fixture = function(name, sources,
       available = "yes",
       raw_md5 = raw_md5,
       exact_matches = if (length(exact)) paste(exact, collapse = ",") else "NONE",
-      result = if (length(exact)) "collision" else "pass",
+      result = if (reserved) "reserved" else if (length(exact)) "collision" else "pass",
       stringsAsFactors = FALSE
     )
   }
@@ -629,12 +657,17 @@ name_check_evaluate_fixture = function(name, sources,
     checked_at_utc = checked_at,
     overall_result = if (length(collisions)) {
       "NAME_EXACT_COLLISION"
+    } else if (reservation_count > 0L) {
+      "NAME_AVAILABLE_WITH_AUTHORIZED_RESERVATION"
     } else {
       "NAME_AVAILABLE_NO_EXACT_COLLISION"
     },
     sources = source_frame,
     source_details = detail_sets,
-    collisions = collisions
+    collisions = collisions,
+    reservation = if (reservation_count > 0L) list(
+      repository = authorized_repository, count = reservation_count
+    ) else NULL
   )
   if (length(collisions) && isTRUE(fail_on_collision)) {
     condition = simpleError("NAME_EXACT_COLLISION")
@@ -706,13 +739,17 @@ name_check_write_report = function(result, output) {
     "",
     "## Configuration",
     "",
-    "Name-Evidence-Version: 1",
+    paste0("Name-Evidence-Version: ", if (is.null(result$reservation)) "1" else "2"),
     paste0("Name: ", result$name),
     paste0("Check-Kind: ", result$check_kind),
     paste0("Checked-At-UTC: ", result$checked_at_utc),
     paste0("Overall-Result: ", result$overall_result),
     "Reviewer: awaiting-human-approval",
     "Review-Date-UTC: awaiting-human-approval",
+    if (!is.null(result$reservation)) c(
+      paste0("Authorized-Repository: ", result$reservation$repository),
+      paste0("Reserved-Repository-Count: ", result$reservation$count)
+    ),
     "",
     "The check uses ASCII case-folded exact matching. Substrings and Unicode",
     "lookalikes are not exact package or repository-name collisions.",
@@ -790,7 +827,7 @@ name_check_parse_machine_rows = function(lines, prefix, fields) {
                 stringsAsFactors = FALSE)
 }
 
-name_check_verify_report = function(path, require_review = TRUE) {
+name_check_verify_report = function(path, require_review = TRUE, authorized_repository = NULL) {
   if (!file.exists(path)) name_check_fail("NAME_REPORT_MISSING")
   lines = tryCatch(
     readLines(path, warn = FALSE, encoding = "UTF-8"),
@@ -806,14 +843,24 @@ name_check_verify_report = function(path, require_review = TRUE) {
     name_check_fail("NAME_REPORT_MALFORMED")
   }
   values = vapply(values, `[[`, character(1), 1L)
-  if (!identical(values[["Name-Evidence-Version"]], "1")) {
+  if (!values[["Name-Evidence-Version"]] %in% c("1", "2")) {
     name_check_fail("NAME_REPORT_VERSION_UNSUPPORTED")
   }
   name_check_validate_name(values[["Name"]])
   name_check_validate_kind(values[["Check-Kind"]])
-  if (!identical(
-    values[["Overall-Result"]], "NAME_AVAILABLE_NO_EXACT_COLLISION"
-  )) {
+  reserved_report = identical(values[["Name-Evidence-Version"]], "2")
+  if (reserved_report) {
+    repository = name_check_marker(lines, "Authorized-Repository")
+    count = name_check_marker(lines, "Reserved-Repository-Count")
+    if (is.null(authorized_repository) || length(repository) != 1L ||
+        !identical(repository, authorized_repository) || !identical(count, "1") ||
+        !identical(sub(".*/", "", repository), values[["Name"]])) {
+      name_check_fail("NAME_REPORT_RESERVATION_UNAUTHORIZED")
+    }
+  }
+  expected_result = if (reserved_report) "NAME_AVAILABLE_WITH_AUTHORIZED_RESERVATION" else
+    "NAME_AVAILABLE_NO_EXACT_COLLISION"
+  if (!identical(values[["Overall-Result"]], expected_result)) {
     name_check_fail("NAME_REPORT_NOT_CLEAR")
   }
   if (!grepl(
@@ -826,11 +873,14 @@ name_check_verify_report = function(path, require_review = TRUE) {
     lines, "Source-Row",
     c("source_id", "available", "raw-md5", "matches", "result", "query")
   )
+  reserved_rows = reserved_report & source_rows$source_id == "github" &
+    source_rows$matches == values[["Name"]] & source_rows$result == "reserved"
+  if (reserved_report && sum(reserved_rows) != 1L) name_check_fail("NAME_REPORT_RESERVATION_UNAUTHORIZED")
   if (!identical(source_rows$source_id, name_check_source_ids()) ||
       any(source_rows$available != "yes") ||
       any(!grepl("^[0-9a-f]{32}$", source_rows[["raw-md5"]])) ||
-      any(source_rows$matches != "NONE") ||
-      any(source_rows$result != "pass") ||
+      any(source_rows$matches != "NONE" & !reserved_rows) ||
+      any(source_rows$result != "pass" & !reserved_rows) ||
       any(!grepl("^https://", source_rows$query))) {
     name_check_fail("NAME_REPORT_SOURCE_ROWS_INVALID")
   }
@@ -842,13 +892,16 @@ name_check_verify_report = function(path, require_review = TRUE) {
       "raw-md5", "matches", "result", "query"
     )
   )
+  reserved_details = reserved_report & detail_rows$source_id == "github" &
+    detail_rows$matches == values[["Name"]] & detail_rows$result == "reserved"
+  if (reserved_report && sum(reserved_details) != 1L) name_check_fail("NAME_REPORT_RESERVATION_UNAUTHORIZED")
   if (nrow(detail_rows) < length(name_check_source_ids()) ||
       !identical(unique(detail_rows$source_id), name_check_source_ids()) ||
       anyDuplicated(detail_rows[["detail-id"]]) ||
       any(detail_rows$available != "yes") ||
       any(!grepl("^[0-9a-f]{32}$", detail_rows[["raw-md5"]])) ||
-      any(detail_rows$matches != "NONE") ||
-      any(detail_rows$result != "pass") ||
+      any(detail_rows$matches != "NONE" & !reserved_details) ||
+      any(detail_rows$result != "pass" & !reserved_details) ||
       any(!grepl("^https://", detail_rows$query)) ||
       any(!detail_rows$completeness %in% c(
         "manifest", "complete", "count-probe"
@@ -886,8 +939,8 @@ name_check_verify_report = function(path, require_review = TRUE) {
     if (nrow(parent) != 1L ||
         !identical(parent$query, paste(normalized$query, collapse = " + ")) ||
         !identical(parent[["raw-md5"]], name_check_parent_hash(normalized)) ||
-        !identical(parent$matches, "NONE") ||
-        !identical(parent$result, "pass")) {
+        (!identical(parent$matches, "NONE") && !(reserved_report && source_id == "github" && parent$matches == values[["Name"]])) ||
+        (!identical(parent$result, "pass") && !(reserved_report && source_id == "github" && parent$result == "reserved"))) {
       name_check_fail("NAME_REPORT_SOURCE_ROWS_INVALID")
     }
   }
@@ -1100,6 +1153,10 @@ name_check_bioc_repositories = function(
     ),
     "\\1"
   )
+  repositories = unique(c(repositories, name_check_regex_values(
+    release_text, paste0('/packages/', version_pattern,
+      '/(bioc|data/annotation|data/experiment|workflows|books)/html/'), "\\1"
+  )))
   if (!length(repositories)) {
     if (!grepl("BiocView|AnnotationData[.]html|ExperimentData[.]html",
                release_text)) {
@@ -1326,7 +1383,7 @@ name_check_parent_hash = function(details) {
 name_check_bioc_versions = function(release_index) {
   text = name_check_raw_text(release_index, "bioconductor-history")
   matches = name_check_regex_values(
-    text, '<tr>[[:space:]]*<td style="text-align: left">(?:<a[^>]*>)?([0-9]+[.][0-9]+)(?:</a>)?</td>', paste0(intToUtf8(92L), "1")
+    text, '<tr[^>]*>[[:space:]]*<td(?:[[:space:]][^>]*)?>[[:space:]]*(?:<a[^>]*>)?([0-9]+[.][0-9]+)(?:</a>)?[[:space:]]*</td>', paste0(intToUtf8(92L), "1")
   )
   versions = unique(matches)
   versions = versions[grepl("^[0-9]+[.][0-9]+$", versions)]
@@ -1417,7 +1474,7 @@ name_check_collect_live = function(name, timeout_seconds = 30L) {
     release_index_url, "bioconductor-history", timeout_seconds
   )
   versions = name_check_bioc_versions(release_index)
-  indexed = versions[as.numeric(versions) >= 1.8]
+  indexed = versions[vapply(versions, name_check_version_at_least, logical(1), minimum = "1.8")]
   if (length(indexed) < 2L) {
     name_check_fail("NAME_SOURCE_MALFORMED_BIOCONDUCTOR_HISTORY")
   }
@@ -1597,7 +1654,8 @@ name_check_main = function(args = commandArgs(trailingOnly = TRUE)) {
   }
   verify_report = name_check_cli_value(args, "--verify-report")
   if (!is.null(verify_report)) {
-    name_check_verify_report(verify_report, require_review = TRUE)
+    name_check_verify_report(verify_report, require_review = TRUE,
+      authorized_repository = name_check_cli_value(args, "--authorized-repository"))
     message("report_status=approved")
     return(invisible(TRUE))
   }
@@ -1622,17 +1680,17 @@ name_check_main = function(args = commandArgs(trailingOnly = TRUE)) {
   check_kind = name_check_cli_value(
     args, "--check-kind", default = "initial"
   )
+  authorized_repository = name_check_cli_value(args, "--authorized-repository")
   sources = name_check_collect_live(name)
   result = name_check_evaluate_fixture(
-    name, sources, check_kind = check_kind, fail_on_collision = FALSE
+    name, sources, check_kind = check_kind, fail_on_collision = FALSE,
+    authorized_repository = authorized_repository
   )
   name_check_write_report(result, output)
-  if (!identical(
-    result$overall_result, "NAME_AVAILABLE_NO_EXACT_COLLISION"
-  )) {
+  if (!result$overall_result %in% c("NAME_AVAILABLE_NO_EXACT_COLLISION", "NAME_AVAILABLE_WITH_AUTHORIZED_RESERVATION")) {
     name_check_fail("NAME_EXACT_COLLISION")
   }
-  message("overall_result=NAME_AVAILABLE_NO_EXACT_COLLISION")
+  message(paste0("overall_result=", result$overall_result))
   invisible(TRUE)
 }
 
