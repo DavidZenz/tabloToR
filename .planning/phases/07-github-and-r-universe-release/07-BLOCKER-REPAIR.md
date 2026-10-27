@@ -119,3 +119,11 @@ All 38 release-packet/content-scanner Node tests pass. A combined R identity/res
 run passed identity and serialization assertions but exposed a test fixture cloning
 the previous HEAD while calling the new verifier. Re-running the complete reseal
 group after this coherent commit is required before claiming its final result.
+
+## Public-only fixture follow-up
+
+The public license tests now synthesize a private-branch fixture from the public
+markers when no private decision exists in their source checkout. This preserves
+both private/public conflict coverage and positive public-only execution; it
+never supplies a substitute to the actual canonical guard. The complete license
+test file passes with the additional public-only fixture case.

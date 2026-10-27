@@ -16,7 +16,13 @@ publicLicenseFixture = function(source, private = FALSE) {
   if (private) paths = c(paths, "docs/release/LICENSE-DECISION.md")
   for (path in paths) {
     dir.create(dirname(file.path(root, path)), recursive = TRUE, showWarnings = FALSE)
-    stopifnot(file.copy(file.path(source, path), file.path(root, path)))
+    input = file.path(source, path)
+    # Public checkouts deliberately omit the private decision. Recreate that
+    # branch only inside this synthetic fixture from the same public markers.
+    if (private && identical(path, "docs/release/LICENSE-DECISION.md") && !file.exists(input)) {
+      input = file.path(source, "inst/compatibility/release-license.dcf")
+    }
+    stopifnot(file.copy(input, file.path(root, path)))
   }
   root
 }
@@ -28,6 +34,10 @@ test_that("license CI validates public evidence without private release records"
     expect_true(loaded$tool$runLicenseDecisionCheck(root, inspectInstalled = FALSE))
     unlink(root, recursive = TRUE)
   }
+  public = publicLicenseFixture(loaded$root)
+  privateFixture = publicLicenseFixture(public, private = TRUE)
+  on.exit(unlink(c(public, privateFixture), recursive = TRUE), add = TRUE)
+  expect_true(loaded$tool$runLicenseDecisionCheck(privateFixture, inspectInstalled = FALSE))
 })
 
 test_that("license CI rejects stale public summaries and missing or changed audits", {
