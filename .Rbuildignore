@@ -34,3 +34,4 @@
 ^src/[^/]*\.(o|so|dll|a|dylib)$
 ^tests/testthat/test-public-license-evidence\.R$
 ^tests/testthat/test-source-tool-mode\.R$
+^tests/testthat/test-name-identity-records\.R$

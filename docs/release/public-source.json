@@ -145,6 +145,7 @@
     "tests/testthat/test-memory-cache-lifecycle.R",
     "tests/testthat/test-model-serialization.R",
     "tests/testthat/test-name-availability.R",
+    "tests/testthat/test-name-identity-records.R",
     "tests/testthat/test-native-portability.R",
     "tests/testthat/test-numerical-baseline.R",
     "tests/testthat/test-phase02-original-gate.R",

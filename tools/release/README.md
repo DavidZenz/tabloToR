@@ -151,7 +151,8 @@ rtk proxy Rscript --vanilla tools/ci/run-source-tool-tests.R /path/to/selected-s
 For a projected public repository, add `--public-source`. That mode requires a
 Git history without private planning/release/provenance paths and runs the public
 license, build-contract, and name-check groups. Development mode retains the two
-historical/preflight groups. Both modes additionally require the source-mode
+historical/preflight groups and the canonical private identity-record checks.
+Both modes additionally require the source-mode
 isolation regressions and use the same installed namespace.
 
 Use the same supported dependency library as qualification (via `R_LIBS` when

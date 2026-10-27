@@ -195,3 +195,37 @@ floor or runtime. The exact metadata fingerprint is
 `50be5b8808810330b202b7ec4f4bc773`, with unchanged counts423/2 and source count25.
 Both exact metadata guards bind this new reviewed fingerprint. All production
 R/C++ code, original numerical artifacts and human-approved records are preserved.
+
+## Actual package pass and readiness inventory ordering
+
+The corrected archive passes the strict scanner (190 entries), full R CMD check
+with 0 errors / 0 warnings / 3 precisely reviewed notes, all3037 installed
+assertions (0failures,123context skips), actual URL validation, installation and
+installed numerical smoke. Its archiveSHA is
+`f4ad0241b68f0b56e1b579033f38871c57dac3e981e074748987c495d8d73c12`.
+It retains real actual-kind qualification and a passing twelve-stage canonical
+guard. No numerical test failure or unknown note is waived.
+
+The live run exposed a bookkeeping defect: readiness was computed against the
+pre-build file inventory, before the new archive row existed. On the saved
+manifest, strict readiness validation already succeeds. The runner now refreshes
+its inventory before computing the label; fixture-kind evidence remains blocked.
+A regression models the missing pre-save inventory without serializing synthetic
+actual evidence. The earlier passing packet remains unchanged. A final coherent
+source packet will contain this tooling fix and retain its own exact archive proof.
+
+## Required public/private administrative test split
+
+Actual source-only checks against the passing archive exposed one canonical
+private identity-record assertion inside the otherwise portable name-parser
+group. It is moved intact to a development-only source test, retaining the six
+authority assertions. Its stale version1 human name-report expectation is updated
+to the explicitly approved version2 automated technical report and exact own-repo
+reservation; original human governance/repository approvals remain exact.
+The development runner now requires this group as well as historical/preflight
+and source-mode groups. Public mode requires portable name, license, build and
+source-mode groups with zero skips. The private-record file is excluded only from
+the installable archive, retained in selected Git source, and never replaced by
+a fixture in canonical qualification. The actual development runner previously
+passed29tests161assertions; its expanded required group will verify167assertions.
+The first same-archive pkgdown build completed successfully.
