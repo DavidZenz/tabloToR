@@ -69,3 +69,16 @@ test_that("bounded OpenMP Schur batches match serial execution", {
       parallel$diagnostics$panels_solved
   )
 })
+
+
+test_that("third-party CI flags do not select a package native profile", {
+  withr::local_envvar(c(CI = "true", GITHUB_ACTIONS = "true",
+    GEModelR_TEST_LIBRARY = NA_character_, GEModelR_CI_LIBRARY = NA_character_,
+    GEModelR_EXPECT_OPENMP = NA_character_))
+  expect_null(nativeOpenmpExpectation())
+  caps = nativeOpenmpCapabilities()
+  expect_type(caps$openmp, "logical")
+  expect_true(is.finite(caps$max_threads) && caps$max_threads >= 1L)
+  withr::local_envvar(c(GEModelR_TEST_LIBRARY = "package-owned-test-library"))
+  expect_error(nativeOpenmpExpectation(), "GEModelR_EXPECT_OPENMP.*required or forbidden")
+})

@@ -213,6 +213,7 @@ jobs:
       - name: Scan provisional candidate evidence
         id: scan-candidate-evidence
         if: always()
+        shell: bash
         run: node tools/ci/check-public-content.cjs --artifact-dir "$GEModelR_EVIDENCE_DIR"
 
       - name: Preserve every provisional candidate row and logs

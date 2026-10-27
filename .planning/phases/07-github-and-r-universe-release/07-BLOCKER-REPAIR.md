@@ -288,3 +288,36 @@ monorepo is not yet visible; first build and R-universe installation remain
 pending. Hosted jobs40500796258/263/318 are running; preserve actual results and
 space polls15minutes. External evidence lives in /tmp/GEModelR-publication-s456sck4.
 Final packet identities, source/rights approvals and user work remain unchanged.
+
+## First published hosted checks — actual findings
+
+Published commit f8c2876 remains unchanged. Documentation run40500796318 passed.
+Native run40500796258 failed only eight Windows evidence-scan steps: the native
+builds and core groups passed, but the scanner step defaulted to PowerShell and
+expanded the Bash environment syntax to an empty path. Its representative
+Windows4.5.3/OpenMP core result is26tests444assertions,zero skipped.
+
+Archive run40500796263 on R4.6.1 reports1error/1warning/3notes. The error is nine
+test failures caused by an unset package OpenMP expectation in CI; the manual
+warning is missing inconsolata.sty, with a resulting TeX detritus note. A separate
+author metadata note reflects R4.6 adding the name of a named Authors@R comment.
+These are not accepted or masked as passing checks. Exact raw evidence is under
+/tmp/GEModelR-publication-s456sck4/hosted-archive-evidence.
+
+Minimal development follow-up sets Bash explicitly for Windows scanning, supplies
+the owned archive job's required OpenMP profile and2threads, chooses the supported
+standard Times/Hyperref PDF fonts while retaining the full PDF check, and makes
+the attribution comment unnamed so its text renders consistently across R4.3/4.6.
+Third-party CI flags alone no longer demand an unstated package native profile;
+package-owned test-library signals still require one. All native numerical and
+profile assertions remain, with a focused third-party/owned-CI regression added.
+This follow-up is not published and does not move v0.1.0 or change approved assets.
+
+Follow-up verification: the full OpenMP group passes20assertions, including the
+new generic-CI versus owned-job regression; all60attribution assertions pass.
+Both workflow shell syntaxes validate. The complete six-page manual builds with
+R_RD4PDF=times,hyper. Trusted numerical migration comparison and original canonical
+hashf6f2297a6ab257c9737a64354c82d7f1 remain exact. The new metadata-only fingerprint
+isdff2b8054c4f03051dfa919fc46c00b1, counts423/2, and source count25 unchanged.
+These fixes will run through development CI; no new canonical snapshot or tag
+is published under the existing one-snapshot approval.

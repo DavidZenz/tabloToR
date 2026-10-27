@@ -1,8 +1,8 @@
 nativeOpenmpExpectation = function(
     expectation = Sys.getenv("GEModelR_EXPECT_OPENMP", unset = ""),
-    ci = tolower(Sys.getenv("CI", unset = "")) %in% c("true", "1") ||
-      tolower(Sys.getenv("GITHUB_ACTIONS", unset = "")) == "true" ||
-      nzchar(Sys.getenv("GEModelR_TEST_LIBRARY", unset = "")) ||
+    # Package-controlled native jobs require an explicit profile. Third-party
+    # builders can set generic CI flags without selecting our native job mode.
+    ci = nzchar(Sys.getenv("GEModelR_TEST_LIBRARY", unset = "")) ||
       nzchar(Sys.getenv("GEModelR_CI_LIBRARY", unset = ""))) {
   if (identical(expectation, "") && !ci) return(NULL)
   if (!expectation %in% c("required", "forbidden")) {
