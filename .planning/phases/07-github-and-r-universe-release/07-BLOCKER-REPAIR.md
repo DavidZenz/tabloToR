@@ -177,3 +177,21 @@ when the policy approval arrived; it is not claimed as a package check. A fresh
 coherent packet will provide the actual archive result. The original serialization
 approval digests are also pinned independently of the follow-up record, preventing
 coupled record edits from falsely claiming that the original approval is preserved.
+
+## Archive scanner input correction
+
+The first complete-policy packet built its archive successfully, then the strict
+scanner rejected private-path strings inside two new source-only test files.
+It did not reach R CMD check, so no package-check pass or failed numerical result
+is claimed for that packet. Both files remain in the public Git source and are
+excluded only from the installable archive. The source runner now additionally
+requires the six source-mode isolation assertions in both public/development
+modes; no meaningful assertion is removed or weakened.
+
+DESCRIPTION now declares R >=3.5.0, the minimum already required by Matrix1.6-5
+and version-3 serialization. Unused LazyData metadata is removed. This avoids
+build-time normalization warnings without changing the effective dependency
+floor or runtime. The exact metadata fingerprint is
+`50be5b8808810330b202b7ec4f4bc773`, with unchanged counts423/2 and source count25.
+Both exact metadata guards bind this new reviewed fingerprint. All production
+R/C++ code, original numerical artifacts and human-approved records are preserved.

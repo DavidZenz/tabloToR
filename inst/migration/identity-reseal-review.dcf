@@ -1,8 +1,8 @@
 Schema: gemodelr-identity-reseal-review-v1
-Before-Allowlist-SHA256: f6d7efe7b3b0c5b677dd0b3555d470c17dbb9dfb9afe3b0edb66f5897a87b00e
-Approved-Allowlist-SHA256: 8743aabd2feaefb1528b31144b8cf108a1ef7ee30586ee160de1c2f57d2537d1
+Before-Allowlist-SHA256: 8743aabd2feaefb1528b31144b8cf108a1ef7ee30586ee160de1c2f57d2537d1
+Approved-Allowlist-SHA256: 85464ea7ad32273a9475fab388cd5b12fc4bb6c4dfcfd6eca3f7ce7361514ae3
 Policy-SHA256: 882f3f92a8afe84fdd50b4565ed189af5242afd8cfc2bfd72a22db4553f2ce1e
-Scope: Maintainer-approved bounded NOTE policy documentation: refresh the exact serialization-verifier occurrence row after adding independent historical approval pins; the NOTE policy documentation adds no predecessor occurrence. The existing metadata fingerprint, serialization verification, human approvals, numerical runtime, accepted artifacts and workflow policy are unchanged. GEModelR publication remains unauthorized.
+Scope: Maintainer-authorized archive qualification repair: bind normalized existing R minimum and exact source/tool reference rows; preserve strict scanner, historical approvals, numerical runtime, accepted artifacts and workflow policy. GEModelR publication remains unauthorized.
 Reviewer: Codex automated technical review (maintainer-authorized update)
-Reviewed-UTC: 2026-10-27T10:20:29Z
+Reviewed-UTC: 2026-10-27T10:38:34Z
 Review-State: approved

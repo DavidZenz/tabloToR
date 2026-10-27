@@ -32,3 +32,5 @@
 ^tools$
 ^rcpp-solver-acceleration-plan\.md$
 ^src/[^/]*\.(o|so|dll|a|dylib)$
+^tests/testthat/test-public-license-evidence\.R$
+^tests/testthat/test-source-tool-mode\.R$

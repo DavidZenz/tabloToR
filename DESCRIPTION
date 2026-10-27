@@ -2,6 +2,7 @@ Package: GEModelR
 Type: Package
 Title: TABLO Models in R with Legacy and Sparse Solvers
 Version: 0.1.0
+Depends: R (>= 3.5.0)
 Authors@R: c(
     person("David", "Zenz", email = "zenz@wiiw.ac.at",
            role = c("aut", "cre", "cph")),
@@ -18,7 +19,6 @@ Description: Interpret GEMPACK-style TABLO models in R.  The package keeps
     execution engine for low-memory simulations.
 License: GPL (>= 3)
 Encoding: UTF-8
-LazyData: true
 Imports:
     Matrix (>= 1.6-5),
     Rcpp,

@@ -318,3 +318,7 @@ Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
 
 The dependency/native license audit is bundled at
 [Dependency license audit](inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md).
+
+The declared R minimum is 3.5.0, matching Matrix's existing dependency floor
+and the version-3 serialization format already used for saved states. Current
+platform qualification remains the separately documented native CI matrix.

@@ -1,18 +1,18 @@
 Schema: gemodelr-source-identity-review-v1
-Source-Commit: 1c0cccb6602084069bd06fa54a384fdf025921eb
+Source-Commit: c8f1b64f7c23dd8b237daa35cec544bc547489ed
 Previous-Map-SHA256: dfd154eac2fd9a1000fccc46a0c95f90313bb075ca9b78362caadfd0776e8cc8
-Map-SHA256: dfd154eac2fd9a1000fccc46a0c95f90313bb075ca9b78362caadfd0776e8cc8
+Map-SHA256: b595947f594459a317e3a69f5a6719edfb340a96bab29f4f14e124b4d39fa238
 Previous-Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
 Registry-SHA256: 3ed6b5601d207cad56dd6d88a6eecac250e12bf1c612d9a06f82201cd1e72b0a
-Previous-Allowlist-SHA256: f6d7efe7b3b0c5b677dd0b3555d470c17dbb9dfb9afe3b0edb66f5897a87b00e
-Allowlist-SHA256: 8743aabd2feaefb1528b31144b8cf108a1ef7ee30586ee160de1c2f57d2537d1
-Normalized-Source-Fingerprint: 9a52cf31b10837387ec658f95e0754ab
+Previous-Allowlist-SHA256: 8743aabd2feaefb1528b31144b8cf108a1ef7ee30586ee160de1c2f57d2537d1
+Allowlist-SHA256: 85464ea7ad32273a9475fab388cd5b12fc4bb6c4dfcfd6eca3f7ce7361514ae3
+Normalized-Source-Fingerprint: 50be5b8808810330b202b7ec4f4bc773
 Mixed-Case-Occurrences: 423
 Upper-Case-Occurrences: 2
 Protected-Region: R/GEModel.R:615-615
 Immutable-Evidence-Changed: false
 Review-Type: automated technical review; maintainer-authorized update
-Authorization: Maintainer explicitly approved bounded informational NOTE policy for GitHub qualification on 2026-10-27; all earlier approvals retain their existing scope
+Authorization: Maintainer requested all remaining release blockers repaired; preserve strict archive scanning and explicitly approved qualification policies, 2026-10-27
 Reviewer: Codex automated source and regression review
-Reviewed-UTC: 2026-10-27T10:20:29Z
-Scope: Refresh the exact serialization-verifier occurrence row for independent historical-approval pins while documenting the approved NOTE policy; no row or occurrence is added or removed. Existing source fingerprint 9a52cf31b10837387ec658f95e0754ab and counts 423/2 are unchanged. Numerical runtime, accepted original artifacts, human approvals, historical registry and workflow policy are unchanged. Development only; no publication authority.
+Reviewed-UTC: 2026-10-27T10:38:34Z
+Scope: Normalize the existing effective R minimum and remove unused LazyData metadata; keep source-only private-path tests outside the archive and require them in fresh-process source checks. Refresh only exact metadata/tool occurrence bindings. Numerical runtime, accepted original artifacts, human approvals, historical registry and workflow policy are unchanged. Development only; no publication authority.

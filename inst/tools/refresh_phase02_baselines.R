@@ -1204,7 +1204,7 @@ phase02_compare_migration_artifacts = function(
     "DEPENDENCY-LICENSE-AUDIT.md", "release-license.dcf",
     "matrix-support.dcf", "matrix-supported.csv"
   ))
-  reviewed_fingerprint = "9a52cf31b10837387ec658f95e0754ab"
+  reviewed_fingerprint = "50be5b8808810330b202b7ec4f4bc773"
   if ("Source-File-Count" %in% drift && !is.null(source_state) &&
       identical(unname(canonical[["Source-File-Count"]]), "21") &&
       identical(unname(observed[["Source-File-Count"]]), "25") &&

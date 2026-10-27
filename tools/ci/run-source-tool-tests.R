@@ -12,6 +12,7 @@ runSourceToolTests = function(args = commandArgs(trailingOnly = TRUE)) {
   lib = normalizePath(args[[2L]], winslash = "/", mustWork = TRUE)
   groups = if (public) c("public-license-evidence", "public-build-contract", "name-availability") else
     c("baseline-artifacts", "gtap12a-reference-preflight")
+  groups = c(groups, "source-tool-mode")
   files = paste0("test-", groups, ".R")
   required = c("DESCRIPTION", "R/GEModel.R", "src/RcppExports.cpp",
     file.path("tests", "testthat", files))
