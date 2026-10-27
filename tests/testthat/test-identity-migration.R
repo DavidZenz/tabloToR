@@ -463,3 +463,22 @@ test_that("occurrence allowlist rejects active, broad, duplicate, and stale rows
     )
   }
 })
+
+test_that("development contract identity references need exact occurrence rows", {
+  tool = load_identity_migration_tool()
+  line = paste("Development repository:", tool$identity_old_token())
+  position = regexpr(tool$identity_old_token(), line, fixed = TRUE)[[1L]]
+  expect_identical(
+    tool$identity_occurrence_category("AGENTS.md", line, position),
+    "migration-instruction"
+  )
+  expect_true(is.na(tool$identity_occurrence_category(
+    "other/AGENTS.md", line, position
+  )))
+  allowlist = tool$identity_build_occurrence_allowlist()
+  row = allowlist[allowlist$path == "AGENTS.md", , drop = FALSE]
+  expect_equal(nrow(row), 1L)
+  expect_identical(row$category, "migration-instruction")
+  expect_identical(row$expected_count, "2")
+  expect_match(row$literal_or_line_digest, "^[a-f0-9]{64}$")
+})

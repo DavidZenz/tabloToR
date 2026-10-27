@@ -44,5 +44,4 @@ vignettes/*.pdf
 # R Environment Variables
 .Renviron
 !.Rbuildignore
-AGENTS.md
 .benchmark-data/

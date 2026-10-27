@@ -859,7 +859,7 @@ identity_occurrence_category = function(
     return("old-option-replacement")
   }
   if (path %in% c(
-    "MIGRATION.md", "README.md",
+    "AGENTS.md", "MIGRATION.md", "README.md",
     "tests/testthat/test-identity-migration.R",
     "tests/testthat/test-baseline-artifacts.R",
     "tests/testthat/test-benchmark-harness.R",

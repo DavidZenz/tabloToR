@@ -206,6 +206,10 @@
   ],
   "exclude": [
     {
+      "path": "AGENTS.md",
+      "reason": "Development agent guidance and publication contract; retained only in the development repository"
+    },
+    {
       "path": ".gitattributes",
       "reason": "Private hosted-evidence path bindings; not needed by the public source tree"
     },
