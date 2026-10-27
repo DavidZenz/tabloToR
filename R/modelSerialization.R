@@ -550,6 +550,15 @@
       call. = FALSE
     )
   }
+  # R's serialization header records the writer version. Re-save the exact
+  # allowlisted predecessor source with this runtime's fingerprints after its
+  # immutable content has been checked; read-time lineage checks stay strict.
+  if (.serialization_is_exact_predecessor_source(source, "predecessor")) {
+    source$tablo_fingerprint =
+      .serialization_object_fingerprint(source$tablo_source)
+    source$data_fingerprint =
+      .serialization_object_fingerprint(source$loaded_data)
+  }
   levels = if (identical(model$loadedEngine, "sparse") &&
                is.environment(model$sparseState)) {
     sparse_state_data(model$sparseState)

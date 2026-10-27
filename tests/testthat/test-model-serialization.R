@@ -746,6 +746,47 @@ test_that("genuine predecessor fixture enforces lineage and content integrity", 
   }
 })
 
+test_that("exact predecessor source is re-saved with runtime fingerprints", {
+  fixture = testthat::test_path(
+    "fixtures", "serialization", "tabloToR-schema1-lineage.rds"
+  )
+  receiver = GEModel$new()
+  receiver$loadState(fixture)
+  original_source = receiver$sourceData
+  original_fingerprint = .serialization_object_fingerprint
+  normalized_file = tempfile(fileext = ".rds")
+  on.exit(unlink(normalized_file), add = TRUE)
+  simulated_fingerprints = c(
+    tablo = paste(rep("0", 32L), collapse = ""),
+    data = paste(rep("1", 32L), collapse = "")
+  )
+  testthat::local_mocked_bindings(
+    .serialization_object_fingerprint = function(value) {
+      if (is.raw(value)) return(simulated_fingerprints[["tablo"]])
+      if (identical(value, original_source$loaded_data)) {
+        return(simulated_fingerprints[["data"]])
+      }
+      original_fingerprint(value)
+    },
+    .package = "GEModelR"
+  )
+  expect_identical(receiver$saveState(normalized_file), receiver)
+  normalized = readRDS(normalized_file)
+  expect_identical(normalized$package_lineage, .serialization_current_package_lineage())
+  expect_identical(normalized$source$tablo_fingerprint, simulated_fingerprints[["tablo"]])
+  expect_identical(normalized$source$data_fingerprint, simulated_fingerprints[["data"]])
+  expect_identical(normalized$source$loaded_data, original_source$loaded_data)
+  expect_identical(receiver$sourceData, original_source)
+  restored = GEModel$new()
+  expect_identical(restored$loadState(normalized_file), restored)
+  expect_identical(sparse_state_data(restored$sparseState), sparse_state_data(receiver$sparseState))
+
+  receiver$sourceData$loaded_data$basedata$stock[[1L]] = 101
+  before = serialize(serializationReceiverSnapshot(receiver), NULL, version = 3L)
+  expect_error(receiver$saveState(normalized_file), "fingerprint mismatch")
+  expect_identical(serialize(serializationReceiverSnapshot(receiver), NULL, version = 3L), before)
+})
+
 test_that("serialization predecessor options fail at save and load boundaries", {
   model = make_three_region_model("sparse")
   input_file = tempfile(fileext = ".rds")

@@ -82,7 +82,7 @@ serializationReplaceLeafValues = function(value, type) {
   replacement
 }
 
-serializationBuildCurrentPayload = function(
+serializationBuildCurrentModel = function(
     engine = "sparse", output = "unsolved") {
   model = if (identical(engine, "legacy")) {
     legacy_data = three_region_input_data()
@@ -98,7 +98,7 @@ serializationBuildCurrentPayload = function(
     make_three_region_model(engine)
   }
   if (identical(output, "unsolved")) {
-    return(.build_logical_state_payload(model))
+    return(model)
   }
   if (!identical(engine, "legacy")) {
     set_three_region_shocks(model, "preferred", c(1, 2, -1))
@@ -119,7 +119,12 @@ serializationBuildCurrentPayload = function(
       diagnostics = TRUE, output = "full", backend = "Matrix", reduction = "off"
     ))
   }
-  .build_logical_state_payload(model)
+  model
+}
+
+serializationBuildCurrentPayload = function(
+    engine = "sparse", output = "unsolved") {
+  .build_logical_state_payload(serializationBuildCurrentModel(engine, output))
 }
 
 serializationResavePayload = function(payload) {
@@ -198,13 +203,6 @@ test_that("current and predecessor round trips preserve exact leaf metadata", {
     dim = 3L,
     dimnames = list(reg = regions)
   )
-  expected_legacy = list(
-    typeof = "double",
-    class = "numeric",
-    names = regions,
-    dim = NULL,
-    dimnames = NULL
-  )
   expected_compact = list(
     typeof = "double",
     class = "array",
@@ -276,7 +274,14 @@ test_that("current and predecessor round trips preserve exact leaf metadata", {
     expected_compact
   )
 
-  legacy = serializationBuildCurrentPayload("legacy", "full")
+  legacy_model = serializationBuildCurrentModel("legacy", "full")
+  # Compare to the actual pre-serialization leaf: R versions can retain the
+  # generated one-dimensional array attributes during legacy updates.
+  expected_legacy = serializationLeafStructure(legacy_model$data$stock)
+  expect_identical(typeof(legacy_model$data$stock), "double")
+  expect_equal(as.numeric(legacy_model$data$stock), c(100, 200, 300))
+  expect_identical(names(legacy_model$data$stock), regions)
+  legacy = .build_logical_state_payload(legacy_model)
   serializationAssertCurrentLineage(legacy)
   expect_identical(
     serializationLeafStructure(legacy$levels$stock), expected_legacy
