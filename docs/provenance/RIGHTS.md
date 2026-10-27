@@ -29,8 +29,7 @@ Response-Review-Status: accepted-public-domain-cc0
 Successor-Name-Basis: independently-selected
 Name-Availability-Status: approved-initial-report
 Integrated-Evidence-Version: 1
-Unresolved-Release-Blocker: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING
-Unresolved-Release-Blocker: ATTRIBUTION_IDENTITY_UNRESOLVED
+Unresolved-Release-Blocker: NONE
 
 The upstream commit is the inherited baseline immediately before the local
 sparse-solver development history. The maintainer accepts the linked public
@@ -61,9 +60,10 @@ still fails closed through the integrated release checker.
 ## Result
 
 Private development may continue. Public source, binaries, package archives,
-release tags, documentation sites, and R-universe publication remain blocked by
-the dependency compatibility audit and unresolved Git identity alias recorded
-in ATTRIBUTION.md. No additional upstream request is required or authorized.
+release tags, documentation sites, and R-universe publication still require
+qualified artifacts and the maintainer's publication authority. The dependency
+compatibility audit is complete and the maintainer has confirmed the Git identity
+alias recorded in ATTRIBUTION.md. No additional upstream request is required or authorized.
 
 `cleared` records the accepted basis only for the scoped upstream-authored
 baseline; it is not equivalent to repository release readiness. Any unrelated

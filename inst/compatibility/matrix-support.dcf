@@ -1,0 +1,7 @@
+Schema: gemodelr-matrix-support-v1
+Minimum: 1.6-5
+Maximum: 1.7-6
+Evidence-File: matrix-supported.csv
+Evidence-MD5: 7eb5c02a6830873fe7663a2db2449f87
+Evidence-Kind: recorded-hosted-results
+Evidence-Run: 37274723569

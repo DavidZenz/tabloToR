@@ -17,10 +17,9 @@ not require attribution.
 The current package identity is `GEModelR`, licensed under GPL-3.0-or-later
 (`GPL (>= 3)` in R package metadata). Maros Ivanic authored the upstream
 baseline; David Zenz authored the reviewed post-baseline sparse and native
-solver work. Public release remains blocked by
-`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
-`ATTRIBUTION_IDENTITY_UNRESOLVED`; the license decision and identity migration
-do not authorize release or publication.
+solver work. Dependency compatibility and the upstream Git alias have been
+reviewed. Public release remains pending exact artifact qualification and
+publication; the license decision alone does not publish a release.
 
 ## Migrating from the predecessor package
 
@@ -304,3 +303,15 @@ at `https://github.com/DavidZenz/GEModelR/blob/main/MIGRATION.md`.
 Development keeps its existing repository and full history. Publication uses a
 separate, allowlisted source snapshot with no development-history parents;
 creating the empty publication repository does not itself publish that snapshot.
+
+## Reviewed attribution evidence
+
+Evidence-Key: R/GEModel.R::GEModel$loadTablo
+Evidence-Key: R/GEModel.R::GEModel$solveModel
+Evidence-Key: R/processTablo.R::processTablo
+Evidence-Key: R/sparseCompiler.R::sparse_compile_spec
+Evidence-Key: R/sparseSolver.R::sparse_solve_model
+Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
+
+The dependency/native license audit is bundled at
+[Dependency license audit](inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md).

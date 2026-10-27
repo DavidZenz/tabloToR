@@ -4,7 +4,7 @@ name: Native portability
   workflow_dispatch:
   pull_request:
   push:
-    branches: [master]
+    branches: [master, main]
   schedule:
     - cron: '23 4 * * 1'
 
@@ -34,8 +34,7 @@ jobs:
       - name: Verify declared floor and recorded compatibility interval
         shell: bash
         run: |
-          Rscript --vanilla tools/ci/verify-matrix-floor-evidence.R --verify-final-metadata --evidence .planning/phases/05-portable-native-build-and-ci/MATRIX-FLOOR-EVIDENCE.md
-          Rscript --vanilla tools/ci/test-matrix-floor-evidence.R --expect-final-metadata
+          Rscript --vanilla tools/ci/check-public-build-contract.R
       - name: Stage exact endpoint evidence
         shell: bash
         run: |

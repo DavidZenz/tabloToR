@@ -69,11 +69,15 @@
     "inst/benchmarks/run_gtap12a_scaling.R",
     "inst/benchmarks/run_gtap12a_sweep.R",
     "inst/compatibility/BASELINE-PROCESS.md",
+    "inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md",
     "inst/compatibility/FAILURE-SEMANTICS.md",
     "inst/compatibility/GEModel-contract.csv",
     "inst/compatibility/MANIFEST.md",
     "inst/compatibility/SERIALIZATION.md",
     "inst/compatibility/WORKFLOWS.md",
+    "inst/compatibility/matrix-support.dcf",
+    "inst/compatibility/matrix-supported.csv",
+    "inst/compatibility/release-license.dcf",
     "inst/cpp/sparse-elimination.cpp",
     "inst/cpp/tablo-sparse-lu.h",
     "inst/migration/benchmark-identity-map.dcf",
@@ -147,7 +151,9 @@
     "tests/testthat/test-prepared-factor-preflight.R",
     "tests/testthat/test-prepared-sparse-factors.R",
     "tests/testthat/test-provenance-inventory.R",
+    "tests/testthat/test-public-build-contract.R",
     "tests/testthat/test-public-cpp-backend.R",
+    "tests/testthat/test-public-license-evidence.R",
     "tests/testthat/test-public-solver-contract.R",
     "tests/testthat/test-randomized-native-reuse.R",
     "tests/testthat/test-regional-reuse.R",
@@ -173,6 +179,7 @@
     "tools/check_workflow_identity_policy.R",
     "tools/ci/build-pkgdown-site.R",
     "tools/ci/check-license-decision.R",
+    "tools/ci/check-public-build-contract.R",
     "tools/ci/check-public-content.cjs",
     "tools/ci/check-public-content.test.cjs",
     "tools/ci/check-vignette-help-links.R",
@@ -2104,6 +2111,10 @@
     {
       "path": "specs/cleanroom/README.md",
       "reason": "Internal development/cleanroom planning, not a public package artifact"
+    },
+    {
+      "path": ".planning/phases/07-github-and-r-universe-release/07-BLOCKER-REPAIR.md",
+      "reason": "Private release-blocker repair evidence and publication handoff"
     }
   ]
 }

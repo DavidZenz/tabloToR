@@ -31,7 +31,14 @@ citFooter(paste(
   "The separately cited tabloToR baseline remains credited as predecessor source.",
   "Commercial users are encouraged to disclose GEModelR use in relevant outputs.",
   "Citation and disclosure are requests, not additional GPL conditions.",
-  "Public release remains blocked by DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
-  "and ATTRIBUTION_IDENTITY_UNRESOLVED.",
-  "This citation does not authorize redistribution or publication."
+  "Dependency compatibility and upstream author identities have been reviewed.",
+  "Published status is recorded by the tagged release and its exact artifacts.",
+  "This citation does not grant publication authority."
 ))
+
+# Evidence-Key: R/GEModel.R::GEModel$loadTablo
+# Evidence-Key: R/GEModel.R::GEModel$solveModel
+# Evidence-Key: R/processTablo.R::processTablo
+# Evidence-Key: R/sparseCompiler.R::sparse_compile_spec
+# Evidence-Key: R/sparseSolver.R::sparse_solve_model
+# Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global

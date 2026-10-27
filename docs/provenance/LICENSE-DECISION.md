@@ -3,41 +3,23 @@
 ## Canonical status
 
 License-Decision-Version: 1
-Decision-Status: selected
+Decision-Status: reviewed
 Description-License: GPL (>= 3)
-Dependency-Audit-Artifact: pending
-Dependency-Audit-MD5: pending
-Reviewer: David Zenz
-Review-Date-UTC: 2026-10-19
+Dependency-Audit-Artifact: inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md
+Dependency-Audit-MD5: 7e92c9e09bd509fca57a1a368e7061e9
+Reviewer: Codex automated technical review (maintainer-requested)
+Review-Date-UTC: 2026-10-27
 
-The maintainer selected GPL-3.0-or-later for the package. The exact R metadata
-expression is recorded above and in `DESCRIPTION`. This is an authoritative
-license choice, not compatibility clearance: the dependency audit remains
-pending, so public redistribution is still blocked.
+The maintainer selected GPL-3.0-or-later on 2026-10-19. That selection is
+unchanged. The 2026-10-27 automated technical review completed the separate
+dependency/native compatibility audit bound above. Reviewer/date fields here
+identify that technical review; the original human license authority remains
+David Zenz and is not replaced by an invented human audit signature.
 
-## Final review transition contract
-
-A future transition from `selected` to `reviewed` is valid only when every
-condition below is satisfied in the same evaluated root:
-
-- `Description-License` exactly equals the `DESCRIPTION` `License` field.
-- `Dependency-Audit-Artifact` is a relative, under-root file path.
-- `Dependency-Audit-MD5` exactly matches that artifact.
-- `Reviewer` and `Review-Date-UTC` identify a completed review.
-- R's package-license checker accepts the exact license expression.
-- `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` is absent from all blocker records.
-
-This record does not perform the dependency audit or authorize repository
-mutation, release, or publication. The `selected` status keeps the exact
-maintainer-approved package license visible while the compatibility blocker
-remains active. Only a reviewed transition satisfying every predicate clears
-that blocker.
-
-## Current blocker scope
-
-The GPL-3.0-or-later package-license choice is complete and needs no further
-maintainer confirmation. `Decision-Status: selected` records that settled choice;
-the later `reviewed` transition also requires the separate dependency audit.
-The remaining licensing-related release reason is
-`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING`, covering dependencies and bundled native
-code. It does not mean that the package license is undecided.
+The audit covers the mandatory package closure, LinkingTo, native include/link
+inputs, and the inspected standard runtime. Its compatible result clears
+DEPENDENCY_COMPATIBILITY_AUDIT_PENDING for this source scope. Alternative
+runtime bundles or future dependency license changes require a new review.
+The artifact must remain under-root, nonlinked, and match Dependency-Audit-MD5;
+DESCRIPTION must retain GPL (>= 3), and no dependency blocker may coexist with
+the reviewed state. Publication authority remains a separate boundary.

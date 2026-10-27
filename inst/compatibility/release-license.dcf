@@ -1,0 +1,14 @@
+Decision-Record-Version: 1
+Decision-Status: reviewed
+SPDX-License-Identifier: GPL-3.0-or-later
+Description-License: GPL (>= 3)
+Decision-Authority: GOVERNANCE.md
+Reviewer: Codex automated technical review (maintainer-requested)
+Review-Date-UTC: 2026-10-27
+Referenced-License-Files: none
+Citation-File: inst/CITATION
+Outstanding-Blockers: NONE
+Dependency-Audit-Artifact: inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md
+Dependency-Audit-MD5: 7e92c9e09bd509fca57a1a368e7061e9
+License-Selection-Authority: David Zenz
+License-Selection-Date: 2026-10-19

@@ -25,7 +25,7 @@ David Zenz authored the reviewed post-baseline sparse compiler, solver, and
 native structured-solver work represented by the evidence keys above. He is the
 approved v1 maintainer and release authority. His `aut`, `cre`, and `cph` roles
 are defined in `docs/provenance/ATTRIBUTION.md`; the `cph` role covers reviewed
-original expression and does not finalize the package license.
+original expression. The selected package license is GPL-3.0-or-later.
 
 ### Maros Ivanic
 
@@ -35,12 +35,15 @@ evidence keys above. The upstream public response records that this work was
 created as U.S. federal government work and placed in the public domain/CC0.
 GEModelR credits that authorship even though attribution is not required by CC0.
 
-## Unresolved identities
+## Reviewed Git identity alias
 
-The Git-derived label `mivanicERS` is not listed as a separate person and is not
-silently merged into another identity. Its status remains
-`ATTRIBUTION_IDENTITY_UNRESOLVED` until reviewed public evidence resolves it.
+On 2026-10-27 the maintainer confirmed that `mivanicERS` and GitHub account
+`MarosIvanic-USDA` identify Maros Ivanic. GitHub maps upstream commit
+`78d3fc16759aa3102d566aa2bae68178498a2113` to that account, ID `67010332`.
+The alias is explicitly resolved to the existing credited author; no new person
+or extra package role is added. Raw Git author history is preserved.
 
-For the complete evidence-to-role mapping, inventory snapshot, and privacy
-boundary, see `docs/provenance/ATTRIBUTION.md`. For the accepted upstream rights
-basis and redistribution scope, see `docs/provenance/RIGHTS.md`.
+The bundled [dependency audit](inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md)
+records the compatible runtime/native license scope. Detailed source/rights
+review history remains in the development repository; publication authority
+and exact release qualification are separate.

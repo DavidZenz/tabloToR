@@ -34,7 +34,18 @@
   releases carry compatible fixes. After 1.0.0, Semantic Versioning applies:
   patches are compatible, minors add backward-compatible functionality, and
   majors may change documented interfaces incompatibly.
-- Public release remains blocked by
-  `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` and
-  `ATTRIBUTION_IDENTITY_UNRESOLVED`. This entry does not authorize source
-  redistribution or publication.
+- Dependency/native compatibility has been audited and the maintainer has
+  confirmed the upstream Git identity alias. Public release remains pending
+  artifact qualification and actual publication; no channel is claimed live.
+
+## Reviewed source attribution
+
+Evidence-Key: R/GEModel.R::GEModel$loadTablo
+Evidence-Key: R/GEModel.R::GEModel$solveModel
+Evidence-Key: R/processTablo.R::processTablo
+Evidence-Key: R/sparseCompiler.R::sparse_compile_spec
+Evidence-Key: R/sparseSolver.R::sparse_solve_model
+Evidence-Key: src/sparse-schur.cpp::GEModelR_schur_accumulate_global
+
+Attribution-Role: David Zenz|aut,cre,cph
+Attribution-Role: Maros Ivanic|aut

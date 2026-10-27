@@ -22,7 +22,7 @@ jobs:
       - name: Require authoritative license evidence
         shell: bash
         run: |
-          if [[ ! -f docs/release/LICENSE-DECISION.md || ! -f tools/ci/check-license-decision.R ]]; then
+          if [[ ! -f tools/ci/check-license-decision.R || ( ! -f docs/release/LICENSE-DECISION.md && ! -f inst/compatibility/release-license.dcf ) ]]; then
             echo "CI-02 blocked: authoritative package license evidence is not recorded."
             exit 1
           fi

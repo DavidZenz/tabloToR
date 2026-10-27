@@ -17,20 +17,51 @@ requireField = function(fields, name, expected) {
   invisible(actual)
 }
 
-runLicenseDecisionCheck = function(root) {
-  root = normalizePath(root, winslash = "/", mustWork = TRUE)
-  decisionPath = file.path(root, "docs", "release", "LICENSE-DECISION.md")
-  descriptionPath = file.path(root, "DESCRIPTION")
-  if (!file.exists(decisionPath) || !file.exists(descriptionPath)) {
-    stop("License decision or DESCRIPTION is missing", call. = FALSE)
+licenseEvidencePath = function(root, relative) {
+  if (length(relative) != 1L || is.na(relative) || !nzchar(relative) ||
+      grepl("^/|^[A-Za-z]:|\\\\|(^|/)[.][.]?(/|$)", relative)) {
+    stop("Invalid license evidence path", call. = FALSE)
   }
+  current = root
+  for (part in strsplit(relative, "/", fixed = TRUE)[[1L]]) {
+    current = file.path(current, part)
+    link = Sys.readlink(current)
+    if (!is.na(link) && nzchar(link)) stop("Linked license evidence is forbidden", call. = FALSE)
+  }
+  if (!isTRUE(file_test("-f", current)) ||
+      !startsWith(normalizePath(current, winslash = "/"), paste0(root, "/"))) {
+    stop("License evidence is missing or outside root", call. = FALSE)
+  }
+  current
+}
+
+licensePackageNames = function(value) {
+  if (is.na(value) || !nzchar(value)) return(character())
+  sort(trimws(sub("[[:space:]]*\\(.*$", "", strsplit(value, ",", fixed = TRUE)[[1L]])))
+}
+
+licenseDependencyCompatible = function(package, expression) {
+  expression = gsub("[[:space:]]", "", expression)
+  expression %in% c("GPL(>=2)", "GPL(>=3)", "GPL-3", "GPL-2|GPL-3") ||
+    (identical(package, "Matrix") && identical(expression, "GPL(>=2)|fileLICENCE")) ||
+    (identical(package, "methods") && grepl("^PartofR[0-9]+[.][0-9]+[.][0-9]+$", expression))
+}
+
+runLicenseDecisionCheck = function(root, inspectInstalled = TRUE) {
+  root = normalizePath(root, winslash = "/", mustWork = TRUE)
+  relative = if (file.exists(file.path(root, "docs", "release", "LICENSE-DECISION.md"))) {
+    "docs/release/LICENSE-DECISION.md"
+  } else "inst/compatibility/release-license.dcf"
+  decisionPath = licenseEvidencePath(root, relative)
+  descriptionPath = licenseEvidencePath(root, "DESCRIPTION")
 
   decision = parseDecisionRecord(decisionPath)
   required = c(
     "Decision-Record-Version", "Decision-Status", "SPDX-License-Identifier",
     "Description-License", "Decision-Authority", "Reviewer",
     "Review-Date-UTC", "Referenced-License-Files", "Citation-File",
-    "Outstanding-Blockers"
+    "Outstanding-Blockers", "Dependency-Audit-Artifact", "Dependency-Audit-MD5",
+    "License-Selection-Authority", "License-Selection-Date"
   )
   missing = setdiff(required, names(decision))
   if (length(missing)) {
@@ -45,14 +76,36 @@ runLicenseDecisionCheck = function(root) {
   requireField(decision, "SPDX-License-Identifier", "GPL-3.0-or-later")
   requireField(decision, "Description-License", "GPL (>= 3)")
   requireField(decision, "Decision-Authority", "GOVERNANCE.md")
-  requireField(decision, "Reviewer", "David Zenz")
-  requireField(decision, "Review-Date-UTC", "2026-10-19")
+  requireField(decision, "License-Selection-Authority", "David Zenz")
+  requireField(decision, "License-Selection-Date", "2026-10-19")
+  date = suppressWarnings(as.Date(decision[["Review-Date-UTC"]], format = "%Y-%m-%d"))
+  if (!nzchar(decision[["Reviewer"]]) || decision[["Reviewer"]] == "pending" ||
+      is.na(date) || format(date, "%Y-%m-%d") != decision[["Review-Date-UTC"]]) {
+    stop("License technical review is incomplete", call. = FALSE)
+  }
   requireField(decision, "Referenced-License-Files", "none")
   requireField(decision, "Citation-File", "inst/CITATION")
   requireField(
     decision, "Outstanding-Blockers",
-    "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED"
+    "NONE"
   )
+  publicPath = file.path(root, "inst", "compatibility", "release-license.dcf")
+  if (file.exists(publicPath)) {
+    public = parseDecisionRecord(licenseEvidencePath(root, "inst/compatibility/release-license.dcf"))
+    if (!identical(decision[required], public[required])) {
+      stop("Public license summary disagrees with decision", call. = FALSE)
+    }
+  }
+  requireField(decision, "Dependency-Audit-Artifact", "inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md")
+  auditPath = licenseEvidencePath(root, decision[["Dependency-Audit-Artifact"]])
+  digest = decision[["Dependency-Audit-MD5"]]
+  if (!grepl("^[a-f0-9]{32}$", digest) || !identical(unname(tools::md5sum(auditPath)), digest)) {
+    stop("Dependency audit digest mismatch", call. = FALSE)
+  }
+  audit = parseDecisionRecord(auditPath)
+  requireField(audit, "Audit-Version", "1")
+  requireField(audit, "Audit-Result", "compatible")
+  requireField(audit, "Package-License", "GPL-3.0-or-later")
 
   description = tryCatch(
     read.dcf(descriptionPath),
@@ -64,8 +117,8 @@ runLicenseDecisionCheck = function(root) {
     stop("DESCRIPTION package identity or License field disagrees with the decision", call. = FALSE)
   }
 
-  authorityPath = file.path(root, decision[["Decision-Authority"]])
-  citationPath = file.path(root, decision[["Citation-File"]])
+  authorityPath = licenseEvidencePath(root, decision[["Decision-Authority"]])
+  citationPath = licenseEvidencePath(root, decision[["Citation-File"]])
   if (!file.exists(authorityPath) || !file.exists(citationPath)) {
     stop("A referenced authority or citation file is missing", call. = FALSE)
   }
@@ -74,6 +127,19 @@ runLicenseDecisionCheck = function(root) {
       !any(authority == "Release-Authority: David Zenz") ||
       !any(authority == "Identity-Approval: approved")) {
     stop("The named decision authority does not match approved governance", call. = FALSE)
+  }
+  if (!identical(licensePackageNames(description[1L, "Imports"]), sort(c("Matrix", "Rcpp", "SparseM", "methods"))) ||
+      !identical(licensePackageNames(description[1L, "LinkingTo"]), "Rcpp")) {
+    stop("Dependency declarations changed beyond the reviewed audit", call. = FALSE)
+  }
+  if (isTRUE(inspectInstalled)) {
+    for (package in c("Matrix", "Rcpp", "SparseM", "methods")) {
+      value = utils::packageDescription(package)
+      if (!is.list(value) || length(value$License) != 1L ||
+          !licenseDependencyCompatible(package, value$License)) {
+        stop(paste("Dependency license needs review:", package), call. = FALSE)
+      }
+    }
   }
 
   analyzeLicense = get0("analyze_license", envir = asNamespace("tools"), inherits = FALSE)
@@ -91,10 +157,11 @@ runLicenseDecisionCheck = function(root) {
     stop("R does not recognize the selected expression as a canonical free/open-source license", call. = FALSE)
   }
 
-  message("License decision verified: GPL-3.0-or-later (GPL (>= 3)).")
+  message("License decision and dependency audit verified: GPL-3.0-or-later.")
   invisible(TRUE)
 }
 
+if (sys.nframe() == 0L) {
 arguments = commandArgs(trailingOnly = TRUE)
 if (length(arguments) == 0L) {
   packageRoot = getwd()
@@ -105,3 +172,4 @@ if (length(arguments) == 0L) {
 }
 
 runLicenseDecisionCheck(packageRoot)
+}

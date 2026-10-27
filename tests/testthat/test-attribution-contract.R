@@ -43,9 +43,11 @@ attributionTable = function(lines, heading) {
     stop("ATTRIBUTION_SCHEMA_INVALID", call. = FALSE)
   }
   first = candidates[[1L]]
-  tableLines = lines[first:length(lines)]
+  nextHeading = which(grepl("^##[[:space:]]", lines) & seq_along(lines) > first)
+  last = if (length(nextHeading)) nextHeading[[1L]] - 1L else length(lines)
+  tableLines = lines[first:last]
   tableLines = tableLines[startsWith(trimws(tableLines), "|")]
-  if (length(tableLines) < 3L) {
+  if (length(tableLines) < 2L) {
     stop("ATTRIBUTION_SCHEMA_INVALID", call. = FALSE)
   }
   splitRow = function(line) {
@@ -56,6 +58,10 @@ attributionTable = function(lines, heading) {
   if (length(separator) != length(header) ||
       !all(grepl("^:?-{3,}:?$", separator))) {
     stop("ATTRIBUTION_SCHEMA_INVALID", call. = FALSE)
+  }
+  if (length(tableLines) == 2L) {
+    return(as.data.frame(stats::setNames(rep(list(character()), length(header)), header),
+                         stringsAsFactors = FALSE, check.names = FALSE))
   }
   rows = lapply(tableLines[-c(1L, 2L)], splitRow)
   rows = rows[vapply(rows, length, integer(1)) == length(header)]
@@ -215,10 +221,10 @@ test_that("contributors and NEWS use the reviewed evidence key set", {
   }
 })
 
-test_that("unresolved facts remain blockers rather than people or roles", {
+test_that("the confirmed upstream alias preserves existing people and roles", {
   contract = attributionReadContract()
-  expect_true("DEPENDENCY_COMPATIBILITY_UNREVIEWED" %in% contract$blockers$fact)
-  expect_true("GIT_IDENTITY_ALIAS_UNRESOLVED" %in% contract$blockers$fact)
+  expect_equal(nrow(contract$blockers), 0L)
+  expect_identical(sort(unique(contract$rows[["person/entity"]])), c("David Zenz", "Maros Ivanic"))
   expect_false(any(grepl(
     "mivanicERS", contract$rows[["person/entity"]], fixed = TRUE
   )))
@@ -335,10 +341,10 @@ test_that("README records the reviewed predecessor and blocked boundary", {
   expect_true(grepl(
     "7e063c65a19713857ed13023f8b77dad45b15c90", text, fixed = TRUE
   ))
-  expect_true(grepl("docs/provenance/ATTRIBUTION.md", text, fixed = TRUE))
-  expect_true(grepl("docs/provenance/RIGHTS.md", text, fixed = TRUE))
+  expect_true(grepl("inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md", text, fixed = TRUE))
+  expect_true(grepl("GPL-3.0-or-later", text, fixed = TRUE))
   expect_true(grepl(
-    "Public redistribution remains[[:space:]]+blocked", text
+    "Public release remains pending", text, fixed = TRUE
   ))
 })
 
@@ -419,15 +425,15 @@ test_that("historical identity maps stay separate from current provenance", {
   )))
 })
 
-test_that("the settled GPL choice leaves only the dependency audit licensing blocker", {
+test_that("the audited dependencies clear the blocker while preserving the GPL choice", {
   contract = attributionReadContract()
   dependency = contract$blockers[
     contract$blockers$reason == "DEPENDENCY_COMPATIBILITY_AUDIT_PENDING",
     , drop = FALSE
   ]
-  expect_equal(nrow(dependency), 1L)
-  expect_identical(dependency$fact, "DEPENDENCY_COMPATIBILITY_UNREVIEWED")
-  expect_match(dependency$destination, "Dependency compatibility audit", fixed = TRUE)
+  expect_equal(nrow(dependency), 0L)
+  expect_equal(nrow(contract$blockers), 0L)
+  expect_true(file.exists(attributionPath("inst", "compatibility", "DEPENDENCY-LICENSE-AUDIT.md")))
   expect_false(any(grepl("LICENSE_UNFINALIZED", contract$blockers$fact, fixed = TRUE)))
 
   description = read.dcf(attributionPath("DESCRIPTION"))
@@ -444,7 +450,7 @@ test_that("the settled GPL choice leaves only the dependency audit licensing blo
                    unname(description[1L, "License"]))
   expect_identical(attributionMarker(release, "SPDX-License-Identifier"),
                    "GPL-3.0-or-later")
-  expect_identical(attributionMarker(provenance, "Decision-Status"), "selected")
+  expect_identical(attributionMarker(provenance, "Decision-Status"), "reviewed")
   expect_identical(attributionMarker(provenance, "Dependency-Audit-Artifact"),
-                   "pending")
+                   "inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md")
 })

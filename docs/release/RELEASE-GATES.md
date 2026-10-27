@@ -3,7 +3,7 @@
 ## Canonical release boundary
 
 Rights-Gate-Status: cleared
-Intentional-Blockers: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED
+Intentional-Blockers: NONE
 
 The executable source of truth is `tools/check_release_gates.R`. It evaluates
 the exact integrated evidence version before any legacy result, then validates
@@ -12,17 +12,12 @@ provenance, every public attribution destination, strict name evidence, the
 authoritative package-license selection and its compatibility status, approved
 governance, and the canonical repository boundary as one fail-closed decision.
 
-The checked-in repository is intentionally blocked by exactly two reviewed
-facts. The package license choice is recorded as GPL-3.0-or-later, but its
-compatibility clearance remains pending the LinkingTo, vendored, and native
-dependency audit. A Git identity alias remains unresolved and cannot be
-silently merged into a public attribution identity. Neither blocker authorizes
-an external repository or publication action.
-
-The package-license choice is complete and needs no further confirmation.
-`DEPENDENCY_COMPATIBILITY_AUDIT_PENDING` refers only to the outstanding dependency
-compatibility audit, including bundled native code. It must not be reported as
-an undecided package license.
+The selected package license is GPL-3.0-or-later. The dependency/native
+compatibility audit and maintainer-confirmed upstream alias disposition are
+recorded in the canonical license and attribution records. Their former
+intentional blocker set is now empty. Fresh source/ledger consistency, exact
+artifact qualification and publication authority remain required; stale evidence
+or an unexpected failure is never converted into success.
 
 | Gate | Evidence | Passing predicate | Blocking result |
 | --- | --- | --- | --- |

@@ -5,11 +5,16 @@ Decision-Status: reviewed
 SPDX-License-Identifier: GPL-3.0-or-later
 Description-License: GPL (>= 3)
 Decision-Authority: GOVERNANCE.md
-Reviewer: David Zenz
-Review-Date-UTC: 2026-10-19
+Reviewer: Codex automated technical review (maintainer-requested)
+Review-Date-UTC: 2026-10-27
 Referenced-License-Files: none
 Citation-File: inst/CITATION
-Outstanding-Blockers: DEPENDENCY_COMPATIBILITY_AUDIT_PENDING,ATTRIBUTION_IDENTITY_UNRESOLVED
+Outstanding-Blockers: NONE
+
+Dependency-Audit-Artifact: inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md
+Dependency-Audit-MD5: 7e92c9e09bd509fca57a1a368e7061e9
+License-Selection-Authority: David Zenz
+License-Selection-Date: 2026-10-19
 
 ## Decision
 
@@ -25,16 +30,14 @@ through `inst/CITATION`; these requests are not added GPL conditions.
 
 ## Scope and release status
 
-This decision supplies the authoritative license choice for package metadata
-and archive qualification. The standard GPL text is identified by the R license
-expression, so no separate license text file is referenced here. The citation
-metadata remains in the package at `inst/CITATION`.
+The package-license choice was approved by David Zenz on 2026-10-19. The
+2026-10-27 reviewer/date fields identify the subsequent maintainer-requested
+automated dependency compatibility review. The audited source uses standard
+GPL-compatible dependencies and native interfaces; the audit is retained at
+`inst/compatibility/DEPENDENCY-LICENSE-AUDIT.md`. It does not claim approval of
+arbitrary future dependencies or alternative binary runtime bundles.
 
-The Phase 1 dependency-compatibility and attribution-identity blockers remain
-open. This record does not clear either blocker and does not authorize a public
-release, repository change, or publication.
-
-The package-license choice is complete; no new license selection or confirmation
-is pending. The remaining licensing task is the dependency compatibility audit,
-recorded by `DEPENDENCY_COMPATIBILITY_AUDIT_PENDING`. This clarification does not
-claim that audit has run or resolve the separate attribution identity blocker.
+The maintainer also confirmed the upstream Git identity alias on 2026-10-27.
+Both previous intentional blockers are cleared for this reviewed source scope.
+Artifact qualification, exact source selection and publication authorization
+remain separate. This record does not authorize external publication.
