@@ -41,8 +41,7 @@ stopifnot(identical(actual, archiveUrl), identical(calls, c(current, archiveUrl)
                     "exact source fixture"),
           any(grepl(paste0("Downloaded Matrix source archive: ", archiveUrl),
                     output, fixed = TRUE)))
-for (failure in c("HTTP status was '403 Forbidden'", "HTTP status was '500 Internal Server Error'",
-                  "SSL certificate problem", "connection timed out")) {
+for (failure in c("HTTP status was '403 Forbidden'", "SSL certificate problem")) {
   calls = character()
   fail = function(url, ...) {
     calls <<- c(calls, url)
@@ -52,6 +51,62 @@ for (failure in c("HTTP status was '403 Forbidden'", "HTTP status was '500 Inter
                    error = identity)
   stopifnot(inherits(error, "error"), identical(calls, current))
 }
+
+# A transient timeout gets a longer per-attempt timeout and retries the same
+# exact URL. The injected sleeper keeps this regression deterministic.
+calls = character()
+observedTimeouts = numeric()
+originalTimeout = getOption("timeout")
+flaky = function(url, destfile, ...) {
+  observedTimeouts <<- c(observedTimeouts, getOption("timeout"))
+  if (!length(calls)) {
+    calls <<- c(calls, url)
+    stop("Timeout of 60 seconds was reached")
+  }
+  success(url, destfile, ...)
+}
+output = capture.output(actual <- matrixSourceDownload(
+  current, version, destination, flaky, retryDelaySeconds = 0,
+  sleep = function(seconds) NULL
+))
+stopifnot(identical(actual, current), identical(calls, c(current, current)),
+          length(observedTimeouts) == 2L, all(observedTimeouts >= 300L),
+          identical(getOption("timeout"), originalTimeout),
+          any(grepl("retrying the exact URL", output, fixed = TRUE)))
+
+# Transient HTTP server errors retry; permanent authorization errors do not.
+calls = character()
+serverErrorThenSuccess = function(url, destfile, ...) {
+  if (!length(calls)) {
+    calls <<- c(calls, url)
+    warning("HTTP status was '503 Service Unavailable'")
+    stop("temporary server failure")
+  }
+  success(url, destfile, ...)
+}
+actual = matrixSourceDownload(
+  current, version, destination, serverErrorThenSuccess,
+  retryDelaySeconds = 0, sleep = function(seconds) NULL
+)
+stopifnot(identical(actual, current), identical(calls, c(current, current)))
+
+# Exhausted transient failures remain errors and never change the pinned URL.
+calls = character()
+alwaysTimeout = function(url, destfile, ...) {
+  calls <<- c(calls, url)
+  stopifnot(!file.exists(destfile))
+  writeBin(charToRaw("partial archive"), destfile)
+  stop("connection timed out")
+}
+error = tryCatch(matrixSourceDownload(
+  current, version, destination, alwaysTimeout, attempts = 3L,
+  retryDelaySeconds = 0, sleep = function(seconds) NULL
+), error = identity)
+stopifnot(inherits(error, "error"), length(calls) == 3L,
+          all(calls == current),
+          grepl("Matrix source download failed", conditionMessage(error),
+                fixed = TRUE))
+
 for (url in c(archiveUrl, "https://example.org/Matrix_1.7-6.tar.gz")) {
   calls = character()
   missing = function(url, ...) {
@@ -111,4 +166,4 @@ stopifnot(inherits(error, "error"),
           !dir.exists(targetLibrary))
 unlink(fixtureDirectory, recursive = TRUE)
 unlink(destination)
-cat("Matrix source download regression: 11 scenarios passed\n")
+cat("Matrix source download regression checks passed\n")

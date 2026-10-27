@@ -27,6 +27,8 @@ jobs:
         uses: r-lib/actions/setup-r@f9a764fea8d5c63df6ef9a5c7795bf7deb5d7e05
         with:
           r-version: release
+      - name: Check exact Matrix download retry behavior
+        run: Rscript --vanilla tools/ci/test-matrix-source-download.R
       - name: Resolve official CRAN source index
         id: current
         shell: bash

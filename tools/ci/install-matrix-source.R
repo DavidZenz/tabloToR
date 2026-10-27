@@ -91,9 +91,22 @@ matrixSourceVerify = function(library, version) {
   invisible(installed)
 }
 
-matrixSourceDownload = function(url, version, archive,
-                                download = utils::download.file) {
+matrixSourceTransientDownloadFailure = function(details) {
+  if (!length(details)) return(FALSE)
+  any(grepl(paste(c(
+    "timeout", "timed[ -]out", "connection (reset|refused|closed|aborted)",
+    "could not resolve", "temporary failure in name resolution",
+    "network is unreachable", "HTTP status[^\\n]*(429|500|502|503|504)",
+    "downloaded length", "transfer closed", "unexpected end of file"
+  ), collapse = "|"), details, ignore.case = TRUE, perl = TRUE))
+}
+
+matrixSourceDownloadAttempt = function(url, archive, download,
+                                       timeoutSeconds) {
   warnings = character()
+  oldTimeout = getOption("timeout")
+  on.exit(options(timeout = oldTimeout), add = TRUE)
+  options(timeout = max(as.integer(oldTimeout), as.integer(timeoutSeconds)))
   status = tryCatch(withCallingHandlers(
     download(url, archive, mode = "wb", quiet = FALSE),
     warning = function(condition) {
@@ -101,25 +114,87 @@ matrixSourceDownload = function(url, version, archive,
       invokeRestart("muffleWarning")
     }
   ), error = identity)
-  if (!identical(status, 0L)) {
-    detail = c(warnings, if (inherits(status, "error")) conditionMessage(status))
-    current = paste0("https://cran.r-project.org/src/contrib/Matrix_",
-                     version, ".tar.gz")
+  detail = c(warnings, if (inherits(status, "error")) conditionMessage(status))
+  if (!identical(status, 0L) && !length(detail)) {
+    detail = paste("download returned status", paste(status, collapse = ", "))
+  }
+  list(
+    success = identical(status, 0L),
+    detail = detail,
     missing = any(grepl("HTTP[^\n]*404|404[^\n]*Not Found", detail,
-                       ignore.case = TRUE))
-    if (!identical(url, current) || !missing) {
-      stop(paste(c("Matrix source download failed", detail), collapse = ": "),
-           call. = FALSE)
+                        ignore.case = TRUE))
+  )
+}
+
+matrixSourceDownloadWithRetries = function(url, archive, download,
+                                           attempts, timeoutSeconds,
+                                           retryDelaySeconds, sleep) {
+  for (attempt in seq_len(attempts)) {
+    # A failed download may leave a partial file. Never let a later attempt
+    # mistake those bytes for a complete package archive.
+    unlink(archive)
+    result = matrixSourceDownloadAttempt(
+      url, archive, download, timeoutSeconds
+    )
+    if (result$success || !matrixSourceTransientDownloadFailure(result$detail) ||
+        attempt == attempts) {
+      return(result)
     }
+    delay = retryDelaySeconds * 2^(attempt - 1L)
+    cat(sprintf(
+      "Transient Matrix source download failure (attempt %d/%d); retrying the exact URL in %s seconds: %s\n",
+      attempt, attempts, format(delay, scientific = FALSE), url
+    ))
+    sleep(delay)
+  }
+}
+
+matrixSourceDownload = function(url, version, archive,
+                                download = utils::download.file,
+                                attempts = 3L, timeoutSeconds = 300L,
+                                retryDelaySeconds = 5, sleep = Sys.sleep) {
+  if (length(attempts) != 1L || !is.numeric(attempts) ||
+      !is.finite(attempts) || attempts < 1L || attempts != floor(attempts)) {
+    stop("Download attempts must be a positive whole number", call. = FALSE)
+  }
+  if (length(timeoutSeconds) != 1L || !is.numeric(timeoutSeconds) ||
+      !is.finite(timeoutSeconds) || timeoutSeconds < 1L ||
+      timeoutSeconds != floor(timeoutSeconds)) {
+    stop("Download timeout must be positive", call. = FALSE)
+  }
+  if (length(retryDelaySeconds) != 1L || !is.numeric(retryDelaySeconds) ||
+      !is.finite(retryDelaySeconds) || retryDelaySeconds < 0) {
+    stop("Retry delay must be nonnegative", call. = FALSE)
+  }
+
+  result = matrixSourceDownloadWithRetries(
+    url, archive, download, as.integer(attempts),
+    as.integer(timeoutSeconds), retryDelaySeconds, sleep
+  )
+  if (result$success) {
+    cat("Downloaded Matrix source archive:", url, "\n")
+    return(invisible(url))
+  }
+
+  current = paste0("https://cran.r-project.org/src/contrib/Matrix_",
+                   version, ".tar.gz")
+  if (identical(url, current) && result$missing) {
     url = paste0("https://cran.r-project.org/src/contrib/Archive/Matrix/Matrix_",
                  version, ".tar.gz")
     cat("Current source returned HTTP 404; retrying exact version:", url, "\n")
-    unlink(archive)
-    status = download(url, archive, mode = "wb", quiet = FALSE)
-    if (!identical(status, 0L)) stop("Matrix source download failed", call. = FALSE)
+    result = matrixSourceDownloadWithRetries(
+      url, archive, download, as.integer(attempts),
+      as.integer(timeoutSeconds), retryDelaySeconds, sleep
+    )
+    if (result$success) {
+      cat("Downloaded Matrix source archive:", url, "\n")
+      return(invisible(url))
+    }
   }
-  cat("Downloaded Matrix source archive:", url, "\n")
-  invisible(url)
+  detail = if (length(result$detail)) result$detail else
+    "download returned a nonzero status"
+  stop(paste(c("Matrix source download failed", detail), collapse = ": "),
+       call. = FALSE)
 }
 
 matrixSourceInstall = function(inputs) {
