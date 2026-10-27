@@ -77,7 +77,7 @@ Verification evidence and the local staged snapshot are external under
   returns 404 with "This repository is empty." Pages remains HTTP 404. The
   source guide and Pages are still pending publication.
 - All sixteen preserved pre-existing file hashes remain unchanged. Development
-  remotes remain origin tabloToR (SSH port 443) and upstream mivanic/tabloToR.
+  development origin (SSH port 443) and upstream remotes remain unchanged.
   Shared R libraries were not changed. No push, tag, deployment or remote setting
   change occurred; the packet remains unqualified and publication_authorized=false.
 
