@@ -80,11 +80,11 @@ backend.
 `SuiteSparse` is recognized but unavailable in supported installed builds
 pending portable support. Installing system libraries or setting its reserved
 ordering option does not enable it. Select `backend = "Matrix"` for the
-supported general sparse path. Structured and native backends also have
-explicit capability requirements, such as a supported model layout and, for a
-native implementation, compatible compiled symbols, ABI, Matrix factors, and
-thread capabilities. An unavailable request fails preflight rather than
-falling back to Matrix.
+supported general sparse path. `StructuredSchur` and
+`StructuredSchurFGMRES` are supported R backends for recognized model layouts.
+`SparseM` and `StructuredSchurFGMRESCpp` remain recognized identifiers for
+compatibility, but are not supported solver choices. An unavailable request
+fails preflight rather than silently falling back to Matrix.
 
 The following illustrates an unavailable request only; it is deliberately not
 run as part of the vignette:
@@ -95,6 +95,7 @@ model$solveModel(engine = "sparse", backend = "SuiteSparse")
 
 For package-name, option, and saved-state replacements from `tabloToR`, use the
 [local migration guide](legacy-to-sparse.html) and the authoritative
-`MIGRATION.md` in the source checkout. The canonical repository's first source
-publication and hosted documentation are pending. Backend selection does not
-change that package identity migration.
+`MIGRATION.md` in the source checkout. The GEModelR source is publicly available
+from the [canonical repository](https://github.com/DavidZenz/GEModelR), while
+the configured pkgdown GitHub Pages site has not yet been deployed. Backend
+selection does not change the package identity migration.

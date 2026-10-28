@@ -92,6 +92,8 @@ If your code still names the predecessor package, replace `tabloToR` with
 environment-variable, and saved-state replacements; this vignette covers only
 the legacy-versus-sparse runtime choice.
 
-The canonical repository's first source publication and hosted documentation
-are pending. This installed vignette and the local source guide remain usable
-before those publication links are available.
+The GEModelR source is publicly available from the
+[canonical repository](https://github.com/DavidZenz/GEModelR). The configured
+pkgdown GitHub Pages site has not yet been deployed. Until it is available,
+open this guide with `browseVignettes("GEModelR")` after installation or read
+`MIGRATION.md` in the source checkout.

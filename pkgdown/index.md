@@ -20,6 +20,20 @@ diagnostics, migration, and package development.
 
 Browse the [package reference](reference/index.html) for the documented API.
 
-The canonical repository is reserved for publication snapshots. The hosted
-documentation site and first public source release are pending; the guides also
-work in a locally built site and as installed package vignettes.
+The GEModelR source is publicly available from the
+[canonical GitHub repository](https://github.com/DavidZenz/GEModelR). Install
+the package from R-universe with:
+
+```r
+install.packages(
+  "GEModelR",
+  repos = c(
+    GEModelR = "https://davidzenz.r-universe.dev",
+    CRAN = "https://cloud.r-project.org"
+  )
+)
+```
+
+The pkgdown site is configured for GitHub Pages but has not yet been deployed.
+Until deployment, the installed package vignettes are available with
+`browseVignettes("GEModelR")`.

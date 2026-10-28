@@ -15,6 +15,14 @@ the repository's existing A/B runner and acceptance checker; it does not run
 them. Source-package, vignette, and pkgdown builds need no GTAP files or
 benchmark hardware.
 
+The current A/B runner compares the supported `StructuredSchurFGMRES` R
+backend with `StructuredSchurFGMRESCpp`. The C++ identifier is classified as
+compatibility-only in the public API documentation, so this runner is a
+development and qualification tool, not a recommendation for production
+solves. Use `Matrix` or a supported structured R backend in package workflows.
+Benchmark results from this harness do not establish package-wide or
+end-to-end speedups.
+
 ## Prepare an external benchmark environment
 
 Run from a GEModelR source checkout on a machine where R and the required
@@ -25,8 +33,8 @@ appropriate machine; the package repository does not contain them. You need:
 - the corresponding TABLO model file;
 - an RDS closure file, and optionally a shocks file;
 - enough physical memory and time to run each solver process; and
-- a compiler and build environment suitable for installing GEModelR with the
-  requested native backend.
+- a compiler and build environment suitable for the exact source build being
+  benchmarked.
 
 Choose a fresh output directory outside the repository. The runner writes
 per-run CSV, RDS, and log artifacts there; these may contain full solution
@@ -51,8 +59,9 @@ Rscript benchmarks/run_gtap12a_ab.R \
 The runner launches fresh R processes for its configured reference and
 candidate backends, records warmup and measured runs, and invokes the gate.
 The current defaults compare `StructuredSchurFGMRES` with
-`StructuredSchurFGMRESCpp`. Follow the runner's `--help`-style argument
-validation and repository documentation for additional supported options.
+`StructuredSchurFGMRESCpp`. The example shows required inputs and common
+options; consult the runner's argument definitions for the full accepted
+option set and value constraints.
 
 The gate can also be run directly against an existing output directory:
 
