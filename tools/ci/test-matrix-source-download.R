@@ -90,6 +90,22 @@ actual = matrixSourceDownload(
 )
 stopifnot(identical(actual, current), identical(calls, c(current, current)))
 
+# A transient TLS connection failure retries, while certificate-validation
+# failures remain permanent and are covered by the check above.
+calls = character()
+sslConnectThenSuccess = function(url, destfile, ...) {
+  if (!length(calls)) {
+    calls <<- c(calls, url)
+    stop("status was 'SSL connect error'")
+  }
+  success(url, destfile, ...)
+}
+actual = matrixSourceDownload(
+  current, version, destination, sslConnectThenSuccess,
+  retryDelaySeconds = 0, sleep = function(seconds) NULL
+)
+stopifnot(identical(actual, current), identical(calls, c(current, current)))
+
 # Exhausted transient failures remain errors and never change the pinned URL.
 calls = character()
 alwaysTimeout = function(url, destfile, ...) {

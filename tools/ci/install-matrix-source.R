@@ -94,7 +94,8 @@ matrixSourceVerify = function(library, version) {
 matrixSourceTransientDownloadFailure = function(details) {
   if (!length(details)) return(FALSE)
   any(grepl(paste(c(
-    "timeout", "timed[ -]out", "connection (reset|refused|closed|aborted)",
+    "timeout", "timed[ -]out", "SSL connect error", "TLS connect error",
+    "connection (reset|refused|closed|aborted)",
     "could not resolve", "temporary failure in name resolution",
     "network is unreachable", "HTTP status[^\\n]*(429|500|502|503|504)",
     "downloaded length", "transfer closed", "unexpected end of file"
