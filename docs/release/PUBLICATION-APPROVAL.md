@@ -372,5 +372,8 @@ The candidate regression, build, strict 190-entry archive scan, isolated install
 and numerical smoke all pass. After reviewing this exact candidate, the maintainer
 explicitly approved its publication. Public main advanced by normal fast-forward from
 `ece78a9` to `fff2158` on2026-10-28; no tag, draft release, registry configuration or
-Pages settings were changed. The GitHub workflows for `fff2158` are pending; the
-detached read-only monitor's first poll is scheduled no earlier than08:53:00Z.
+Pages settings were changed. All three hosted workflows passed on the exact
+`fff2158` head in attempt1: Native portability run40658145478, Package documentation
+run40658145646 and Source archive qualification run40658145583. Native portability
+completed successfully at08:56:53Z, including its Windows matrix. The detached
+read-only monitor recorded `verification=passed` at09:08:01Z.
