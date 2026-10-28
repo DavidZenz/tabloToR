@@ -345,7 +345,7 @@ workflow results no more frequently than every15minutes; the first check is sche
 for2026-10-28T08:00:34Z. The observer retains raw status and failed-job identifiers
 under `/tmp/GEModelR-publication-s456sck4`.
 
-## Windows TLS retry follow-up — local candidate only
+## Windows TLS retry follow-up — approved and pushed
 
 The hosted Native portability run40651973892 for `ece78a9` failed in two Windows
 Matrix source-install steps, before GEModelR compilation or core tests. The Windows
@@ -369,6 +369,8 @@ the permanent certificate-error check.
 | Built archive SHA256 | `7321695c4f9cd7127915c5231942552b0943c2621968d41af39423ca1caffa4b` |
 
 The candidate regression, build, strict 190-entry archive scan, isolated installation
-and numerical smoke all pass. The candidate is local only. The maintainer's approval
-for publishing `ece78a9` does not cover these new source bytes; a new explicit
-publication decision is required before pushing `fff2158`.
+and numerical smoke all pass. After reviewing this exact candidate, the maintainer
+explicitly approved its publication. Public main advanced by normal fast-forward from
+`ece78a9` to `fff2158` on2026-10-28; no tag, draft release, registry configuration or
+Pages settings were changed. The GitHub workflows for `fff2158` are pending; the
+detached read-only monitor's first poll is scheduled no earlier than08:53:00Z.
