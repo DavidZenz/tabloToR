@@ -37,8 +37,8 @@ remotes::install_github("DavidZenz/GEModelR", ref = "main")
 Source installation requires a working compiler toolchain for your R and
 platform. Package dependencies are listed in `DESCRIPTION` and are installed
 by standard R package installation tools. Package metadata declares R >= 3.5.0
-and Matrix >= 1.6-5; the supported combinations depend on R version, Matrix
-version, and platform. See the [backend-selection guide](vignettes/backend-selection.Rmd)
+and Matrix >= 1.6-5. Current tested Matrix support: 1.6-5 through 1.7-6,
+with combinations varying by R version and platform. See the [backend-selection guide](vignettes/backend-selection.Rmd)
 and [current GitHub Actions checks](https://github.com/DavidZenz/GEModelR/actions)
 for compatibility details.
 
