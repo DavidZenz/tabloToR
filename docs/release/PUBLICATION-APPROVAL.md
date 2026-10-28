@@ -344,3 +344,31 @@ claimed for ece78a9. A detached read-only observer will poll this commit's GitHu
 workflow results no more frequently than every15minutes; the first check is scheduled
 for2026-10-28T08:00:34Z. The observer retains raw status and failed-job identifiers
 under `/tmp/GEModelR-publication-s456sck4`.
+
+## Windows TLS retry follow-up — local candidate only
+
+The hosted Native portability run40651973892 for `ece78a9` failed in two Windows
+Matrix source-install steps, before GEModelR compilation or core tests. The Windows
+R oldrel-1 / Matrix1.6-5 job and R release / Matrix1.7-6 job each retried after a
+transient download timeout, then stopped on `SSL connect error`. Package
+documentation40651973849 and source archive qualification40651973856 passed.
+Raw job logs are retained as `published-native-failure-122694217678.log` and
+`published-native-failure-122694217731.log` under the external publication logs.
+
+The local follow-up classifies `SSL connect error` and `TLS connect error` as
+transient for the same exact URL; certificate-validation failures remain terminal.
+The regression simulates a TLS connection failure followed by success and retains
+the permanent certificate-error check.
+
+| Identity | Value |
+| --- | --- |
+| Development commit | `cc00e526bfa80e6ae0a4ad88e4359a1a77a4b60c` |
+| Public candidate | `fff2158aba752f00ed68c5571cc8a859879ddde8` |
+| Public candidate tree | `eac9b562c8628f6647e3c58fba1c642652ca3ef1` |
+| Public parent | `ece78a9d086a0886183f3c8d7fcdd823539d236a` |
+| Built archive SHA256 | `7321695c4f9cd7127915c5231942552b0943c2621968d41af39423ca1caffa4b` |
+
+The candidate regression, build, strict 190-entry archive scan, isolated installation
+and numerical smoke all pass. The candidate is local only. The maintainer's approval
+for publishing `ece78a9` does not cover these new source bytes; a new explicit
+publication decision is required before pushing `fff2158`.
