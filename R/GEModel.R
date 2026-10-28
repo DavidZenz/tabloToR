@@ -168,7 +168,10 @@
 #' shocks, solving with the legacy or sparse engine, and inspecting the
 #' resulting model state and solve diagnostics. Use the model methods for
 #' supported state changes rather than modifying compiler, index, or cache
-#' fields directly.
+#' fields directly. For full-scale GTAP data, select the sparse runtime; the
+#' legacy in-memory engine remains the API default for compatibility and
+#' smaller workloads. Sparse backend support tiers are documented in the
+#' package help. SuiteSparse is recognized but unavailable in supported builds.
 #'
 #' @name GEModel
 #' @aliases GEModel-class

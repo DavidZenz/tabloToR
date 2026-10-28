@@ -1,6 +1,6 @@
 Package: GEModelR
 Type: Package
-Title: TABLO Models in R with Legacy and Sparse Solvers
+Title: GEMPACK-Style TABLO Models in R with Sparse and Legacy Solvers
 Version: 0.1.0
 Depends: R (>= 3.5.0)
 Authors@R: c(
@@ -14,9 +14,10 @@ Maintainer: David Zenz <zenz@wiiw.ac.at>
 URL: https://github.com/DavidZenz/GEModelR
 Config/Documentation/Status: pending
 BugReports: https://github.com/DavidZenz/GEModelR/issues
-Description: Interpret GEMPACK-style TABLO models in R.  The package keeps
-    the original in-memory solver and adds an opt-in integer-indexed sparse
-    execution engine for low-memory simulations.
+Description: Interpret GEMPACK-style TABLO models in R. The integer-indexed
+    sparse execution engine targets low-memory, full-scale simulations; the
+    legacy in-memory solver remains available for compatibility and smaller
+    workloads.
 License: GPL (>= 3)
 Encoding: UTF-8
 Imports:

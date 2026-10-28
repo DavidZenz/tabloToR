@@ -11,11 +11,10 @@ interface for loading a TABLO model and its data, configuring closure and
 shocks, solving with the legacy or sparse engine, and inspecting the
 resulting model state and solve diagnostics. Use the model methods for
 supported state changes rather than modifying compiler, index, or cache
-fields directly.
-SuiteSparse is a recognized backend identifier but is unavailable in supported
-installed builds pending portable support. Explicitly select
-\code{backend="Matrix"} for a supported sparse solve. Explicit SuiteSparse
-requests fail capability preflight before matrix emission or runtime compilation.
+fields directly. For full-scale GTAP data, select the sparse runtime; the
+legacy in-memory engine remains the API default for compatibility and
+smaller workloads. Sparse backend support tiers are documented in the
+package help. SuiteSparse is recognized but unavailable in supported builds.
 }
 
 \seealso{

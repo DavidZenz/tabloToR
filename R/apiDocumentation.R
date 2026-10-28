@@ -1,9 +1,11 @@
 #' GEModelR package
 #'
 #' GEModelR interprets GEMPACK-style TABLO models in R. The supported public
-#' facade is the \code{GEModel} reference-class generator. It preserves the
-#' established load, configure, solve, and inspect workflow while offering a
-#' legacy in-memory engine and an opt-in sparse engine.
+#' facade is the \code{GEModel} reference-class generator. Its integer-indexed
+#' sparse runtime targets low-memory, full-scale simulations. The legacy
+#' in-memory runtime remains the API default for compatibility and smaller
+#' models; it is not practical for the complete GTAP workload used in this
+#' project.
 #'
 #' @section Supported workflow:
 #' Create an instance with \code{GEModel$new()}, load a TABLO file with

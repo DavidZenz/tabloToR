@@ -9,13 +9,17 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+<!-- generated-by: gsd-doc-writer -->
 
 This guide maps the public model workflow to the R and native subsystems that
 implement it. The supported entry point is the `GEModel` reference-class
 generator. Call its methods to load a TABLO model and data, configure a
-closure and shocks, solve, and inspect results. Compiler, index, cache, and
-source-data fields are implementation state; they are not supported mutation
-inputs.
+closure and shocks, solve, and inspect results. For full-size, unaggregated
+GTAP data, use the sparse runtime: the original in-memory path was not
+practical for the complete workload. The legacy engine remains the default
+for API compatibility and is useful for smaller models. Compiler, index,
+cache, and source-data fields are implementation state; they are not supported
+mutation inputs.
 
 ```r
 model = GEModelR::GEModel$new()
@@ -28,35 +32,36 @@ model$solveModel(engine = "sparse", backend = "Matrix")
 
 ## From TABLO text to a model runtime
 
-`loadTablo()` runs the TABLO parser and prepares both the established R path
-and the sparse specification. The legacy path creates R functions for data
-skeletons, coefficients, variables, and updates. The sparse compiler turns
+`loadTablo()` runs the TABLO parser and prepares both the legacy generators
+and the sparse specification. For sparse execution, the compiler turns
 supported equation and update forms into indexed structures used by the
-sparse runtime. `loadData(engine = "legacy" or "sparse")` initializes the
-selected runtime; `solveModel()` must use that same engine. The engine is the
-model runtime choice, while `backend` selects an implementation within the
-sparse runtime.
+sparse runtime, avoiding the complete dense in-memory system. The legacy path
+creates R functions for data skeletons, coefficients, variables, and updates
+and remains available for smaller workloads and compatibility. Select the
+runtime with `loadData(engine = "legacy" or "sparse")`; `solveModel()` must
+use that same engine. The engine is the model runtime choice, while `backend`
+selects an implementation within the sparse runtime.
 
 | Responsibility | Main source files |
 |---|---|
-| Public orchestration and legacy solve loop | `R/GEModel.R` |
-| TABLO statements and legacy generators | `R/tabloToStatements.R`, `R/processTablo.R`, `R/*Statement.R`, `R/*Generator.R` |
+| Public orchestration and runtime dispatch | `R/GEModel.R` |
 | Sparse equation and update compilation | `R/sparseCompiler.R` |
 | Sparse indexing, emission, solve acceptance, and diagnostics | `R/sparseSolver.R`, `R/sparsePartition.R`, `R/sparseElimination.R`, `R/sparseSchur*.R` |
-| Optional native capability checks and R adapters | `R/zzzSparseSchurCpp.R`, `R/zzzzSparseSchurOpenMP.R` |
 | Native sparse LU, Schur, and block-elimination kernels | `src/sparse-lu.cpp`, `src/sparse-schur*.cpp`, `src/sparse-elimination.cpp` |
+| Optional native capability checks and R adapters | `R/zzzSparseSchurCpp.R`, `R/zzzzSparseSchurOpenMP.R` |
+| Legacy TABLO statements and generators | `R/tabloToStatements.R`, `R/processTablo.R`, `R/*Statement.R`, `R/*Generator.R` |
 
 ## Solver and native boundaries
 
 The sparse `Matrix` backend is the supported general-purpose default. The
-structured R backends use a validated partition when the model has the
-required structure. The experimental C++ structured backend is an explicit
-capability choice: its preflight checks the registered routines, ABI, Matrix
-factor contract, LAPACK, and requested thread support before solving. A
-request that cannot run fails capability checks; GEModelR does not silently
-substitute another backend. `SuiteSparse` is recognized but unavailable in
-supported installed builds. See the [backend selection guide](backend-selection.html)
-for the user-facing choices and their current tiers.
+supported `StructuredSchur` and `StructuredSchurFGMRES` R backends use a
+validated partition when the model has the required structure. `SparseM` and
+`StructuredSchurFGMRESCpp` are compatibility-only backend requests; they are
+not supported solver choices. `SuiteSparse` is recognized but unavailable in
+supported installed builds. A request that cannot run fails capability checks;
+GEModelR does not silently substitute another backend. See the
+[backend selection guide](backend-selection.html) for the current public
+backend tiers.
 
 Rcpp entry points are declared in the C++ sources and registered through the
 generated `R/RcppExports.R` and `src/RcppExports.cpp` files. Regenerate these
@@ -65,13 +70,21 @@ hand. Native code checks dimensions, storage, and finite values before use.
 OpenMP workers operate on prepared native buffers; R API calls and R memory
 allocation stay on the main thread. Serial builds remain supported.
 
-Sparse triangular solves share one native kernel between serial and OpenMP
-execution. The kernel packs at most 32 right-hand sides into contiguous rows,
-then restores the caller's matrix layout and permutations. Its temporary
-workspace is bounded by that tile width. Worker buffers are allocated before
-entering OpenMP, and worker failures are reported on the R thread. CSC storage
-and one-based positions are validated before native indexing; dense factor
-handles are tagged and released only by their owning implementation.
+The C++ optimization work targets sparse kernels such as triangular solves,
+Schur accumulation, and block elimination. Sparse triangular solves share one
+native kernel between serial and OpenMP execution. The kernel packs at most 32
+right-hand sides into contiguous rows, then restores the caller's matrix
+layout and permutations. Its temporary workspace is bounded by that tile
+width. Worker buffers are allocated before entering OpenMP, and worker
+failures are reported on the R thread. CSC storage and one-based positions are
+validated before native indexing; dense factor handles are tagged and
+released only by their owning implementation.
+
+The C++ FGMRES A/B harness is development and qualification material. Its
+candidate identifier is compatibility-only in the public API, so it is not a
+production recommendation and its measurements do not guarantee a full-model
+speedup. The [external benchmark guide](external-full-scale-benchmarking.html)
+describes the harness and its input requirements.
 
 ## Numerical acceptance, diagnostics, and cleanup
 

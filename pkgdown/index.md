@@ -4,6 +4,19 @@ GEModelR parses GEMPACK-style TABLO models and solves them in R through the
 `GEModel` workflow. These guides cover the first simulation, solver choices,
 diagnostics, migration, and package development.
 
+## Full-scale models
+
+For full-size, unaggregated GTAP data, select the sparse runtime when loading
+model data. The legacy in-memory engine remains the API default for compatibility
+and smaller models, but it was not practical for the complete GTAP workload used
+in this project. The supported `Matrix` backend handles general sparse systems;
+the structured R backends are intended for recognized GTAP-family layouts.
+
+Native C++ kernels optimize sparse operations. The separately named
+`StructuredSchurFGMRESCpp` backend is compatibility-only, and its A/B benchmark
+is development and qualification material rather than a production solver
+recommendation.
+
 ## Start here
 
 - [Run your first simulation](articles/first-simulation.html)

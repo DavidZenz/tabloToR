@@ -9,11 +9,16 @@ vignette: >
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+<!-- generated-by: gsd-doc-writer -->
 
-GEModelR keeps the legacy in-memory engine as the default and offers sparse
-execution as an explicit runtime choice. This article runs one small generated
-model through both workflows. The fixture is deterministic and contains no
-external TABLO or HAR inputs.
+Use the sparse engine for full-size, unaggregated GTAP data. The legacy
+in-memory solver was not a practical route for the complete dataset in this
+project. It remains the API default for compatibility and is useful for
+smaller models, so select `engine = "sparse"` explicitly for large workloads.
+
+This article demonstrates both runtimes on a small generated model. The
+fixture is deterministic and contains no external TABLO or HAR inputs; it
+shows the API choices, not full-scale memory or performance behavior.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
@@ -31,30 +36,12 @@ source(helperPath, local = knitr::knit_global())
 fixture = makeFirstSimulationFixture()
 ```
 
-## Run the legacy workflow
+## Use sparse execution for large models
 
-Load the same TABLO recipe and input arrays with `engine = "legacy"`, set the
-closure and shock, then solve with the matching engine. `postsim = FALSE` keeps
-this example focused on the numerical solution.
-
-```{r legacy-solve}
-legacyModel = GEModelR::GEModel$new()
-legacyModel$loadTablo(fixture$tabloPath)
-legacyModel$setClosure("tax")
-legacyModel$loadData(fixture$inputData, engine = "legacy")
-legacyModel$setShocks(setNames(4, 'tax["south"]'))
-legacyModel$solveModel(
-  iter = 1,
-  steps = 1,
-  engine = "legacy",
-  postsim = FALSE
-)
-```
-
-## Opt in to sparse execution
-
-To use sparse execution, load the data with `engine = "sparse"` and use that
-same engine for the solve. The Matrix backend is selected explicitly here.
+Load the data with `engine = "sparse"` and use the same engine for the solve.
+The Matrix backend is the supported general sparse choice and is selected
+explicitly here. The supported structured R backends apply when the model
+passes their layout checks; see the [backend selection guide](backend-selection.html).
 When changing an existing model to a different engine, load its data again so
 the runtime state matches the selected engine.
 
@@ -70,6 +57,27 @@ sparseModel$solveModel(
   engine = "sparse",
   postsim = FALSE,
   backend = "Matrix"
+)
+```
+
+## Keep the legacy engine for compatibility and small models
+
+The legacy engine remains the default for existing code. Load the same small
+fixture with `engine = "legacy"` to keep its runtime state consistent with the
+solver call. This example illustrates compatibility; it is not the recommended
+path for a full-size GTAP dataset.
+
+```{r legacy-solve}
+legacyModel = GEModelR::GEModel$new()
+legacyModel$loadTablo(fixture$tabloPath)
+legacyModel$setClosure("tax")
+legacyModel$loadData(fixture$inputData, engine = "legacy")
+legacyModel$setShocks(setNames(4, 'tax["south"]'))
+legacyModel$solveModel(
+  iter = 1,
+  steps = 1,
+  engine = "legacy",
+  postsim = FALSE
 )
 ```
 

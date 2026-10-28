@@ -21,7 +21,9 @@ compatibility-only in the public API documentation, so this runner is a
 development and qualification tool, not a recommendation for production
 solves. Use `Matrix` or a supported structured R backend in package workflows.
 Benchmark results from this harness do not establish package-wide or
-end-to-end speedups.
+end-to-end speedups. It compares structured R FGMRES with its C++ candidate; it
+does not measure a full-scale legacy-versus-sparse result. The full-data legacy
+guidance above reflects project experience, not an outcome from this harness.
 
 ## Prepare an external benchmark environment
 

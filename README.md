@@ -1,14 +1,15 @@
 <!-- generated-by: gsd-doc-writer -->
 # GEModelR
 
-GEModelR parses GEMPACK-style TABLO models and solves them in R. It preserves
-the established `GEModel` workflow and adds an opt-in sparse engine for models
-that need a lower-memory solve.
+GEModelR parses GEMPACK-style TABLO models and solves them in R. Its sparse
+engine and supported structured-R solvers target full-scale GTAP-family
+workloads. The established `GEModel` API remains compatible with the legacy
+in-memory engine for smaller workloads, but that engine is not a practical path
+for solving the whole GTAP model and data.
 
 The package is licensed under GPL-3.0-or-later. It builds on the reviewed
 public-domain/CC0 `tabloToR` baseline authored by Maros Ivanic; David Zenz
-maintains GEModelR and authored its reviewed post-baseline sparse and native
-solver work.
+maintains GEModelR and authored its sparse and native solver work.
 
 ## Install
 
@@ -35,7 +36,11 @@ remotes::install_github("DavidZenz/GEModelR", ref = "main")
 
 Source installation requires a working compiler toolchain for your R and
 platform. Package dependencies are listed in `DESCRIPTION` and are installed
-by standard R package installation tools.
+by standard R package installation tools. Package metadata declares R >= 3.5.0
+and Matrix >= 1.6-5; the supported combinations depend on R version, Matrix
+version, and platform. See the [backend-selection guide](vignettes/backend-selection.Rmd)
+and [current GitHub Actions checks](https://github.com/DavidZenz/GEModelR/actions)
+for compatibility details.
 
 ## Start here
 
@@ -54,22 +59,30 @@ For package help, use `help(package = "GEModelR")` or
 ## Engines and solver backends
 
 The `GEModel` object loads TABLO text and model data, applies a closure and
-shocks, and runs a simulation. The legacy engine remains the default. Choose
-`engine = "sparse"` when initializing data for sparse execution.
+shocks, and runs a simulation. For API compatibility, `loadData()` still
+defaults to the legacy engine; it remains useful for smaller models and
+existing workflows. Its in-memory approach is not practical for the full GTAP
+workload. Use `engine = "sparse"` for full-scale GTAP, with a supported
+structured-R backend when the model has a recognized GTAP-family block layout.
+Use the same engine in `loadData()` and `solveModel()`.
 
 | Choice | Intended use |
 | --- | --- |
-| `engine = "legacy"` | Existing in-memory solver workflow and compatibility. |
-| `engine = "sparse", backend = "Matrix"` | Supported general sparse solver and a good starting point for sparse execution. |
-| `backend = "StructuredSchur"` or `"StructuredSchurFGMRES"` | Supported structured R methods for models with recognized block layouts. |
-| `backend = "SparseM"` or `"StructuredSchurFGMRESCpp"` | Recognized for compatibility; these are not currently supported solver choices. |
+| `engine = "sparse", backend = "Matrix"` | Supported general-purpose sparse solver and default sparse backend. |
+| `backend = "StructuredSchur"` or `"StructuredSchurFGMRES"` | Supported structured-R methods for recognized GTAP-family layouts and the intended route for full-scale GTAP solves. |
+| `engine = "legacy"` | API default for compatibility and smaller workloads; not practical for the whole GTAP workload. |
+| `backend = "SparseM"` | Recognized for compatibility; not a currently supported solver choice. |
+| `backend = "StructuredSchurFGMRESCpp"` | Compatibility-only identifier, not a supported solver choice. C++ sparse-kernel optimization remains development and qualification work. |
 
 `SuiteSparse` is recognized as a backend identifier but is unavailable in the
 supported installed builds. Explicit backend requests fail capability checks
 rather than silently switching to a different solver. See the
 [backend-selection guide](vignettes/backend-selection.Rmd) for details and
 examples. The [diagnostics and memory guide](vignettes/diagnostics-memory-budgeting.Rmd)
-covers memory estimates, budgets, compact output, and solve diagnostics.
+covers memory estimates, budgets, compact output, and solve diagnostics. Native
+C++ kernels support low-level sparse operations; the separate C++ FGMRES solver
+remains compatibility-only. Current component measurements do not establish
+package-wide or end-to-end GTAP speedups.
 
 ## Guides
 
@@ -77,7 +90,7 @@ covers memory estimates, budgets, compact output, and solve diagnostics.
 - [Migrate from `tabloToR`](vignettes/legacy-to-sparse.Rmd) and read the detailed [migration reference](MIGRATION.md).
 - [Choose a solver backend](vignettes/backend-selection.Rmd).
 - [Estimate memory and inspect diagnostics](vignettes/diagnostics-memory-budgeting.Rmd).
-- [Read about development full-scale benchmarking](vignettes/external-full-scale-benchmarking.Rmd); its experimental candidate is not a supported production backend.
+- [Read the full-scale benchmarking guide](vignettes/external-full-scale-benchmarking.Rmd) for development and qualification procedures. It requires external model data; component measurements are not package-wide or end-to-end speedup claims.
 - [Understand the package architecture](vignettes/architecture.Rmd).
 - [Contribute changes](vignettes/contributing.Rmd).
 

@@ -7,8 +7,9 @@ template:
 home:
   title: GEModelR
   description: >
-    Parse GEMPACK-style TABLO models and solve them in R with legacy and
-    sparse engines.
+    Parse GEMPACK-style TABLO models and solve full-scale simulations with an
+    integer-indexed sparse engine, while retaining the legacy solver for
+    compatibility and smaller workloads.
   sidebar: false
 
 search:
