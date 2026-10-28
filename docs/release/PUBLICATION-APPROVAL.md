@@ -308,3 +308,39 @@ Both processes have PPID1 and run independently of the editor session, with a3ho
 monitor window and honest pending/failure output if external services remain blocked.
 Original tag/draft/four assets, frozen packet, human approval and all16pre-existing
 local work files remain unchanged. No Pages publication or draft promotion occurred.
+
+
+## Approved native-CI download repair — pushed
+
+On2026-10-28 the maintainer explicitly approved pushing the prepared snapshot
+`ece78a9d086a0886183f3c8d7fcdd823539d236a` to `DavidZenz/GEModelR:main`.
+The normal fast-forward completed over the existing SSH connection from parent
+`9b257ccf9baf9a79b5b3748d2ee60bcb10e84508`; no tag, draft release, registry
+configuration or Pages settings were changed.
+
+| Identity | Value |
+| --- | --- |
+| Development commit | `5ce6aa7266bb72af29772dc9fa464af6d898b5c0` |
+| Public snapshot commit | `ece78a9d086a0886183f3c8d7fcdd823539d236a` |
+| Public snapshot tree | `e5120120f36dd11344689a0177ee24d97702c6ce` |
+| Public parent | `9b257ccf9baf9a79b5b3748d2ee60bcb10e84508` |
+| Built source archive SHA256 | `24dc056909581cc2d7db86dddd9b79dcc85940ee1775be60a2c994d93dbe7070` |
+
+The snapshot changes only `.github/workflows/native-ci.yaml`,
+`tools/ci/install-matrix-source.R`, and `tools/ci/test-matrix-source-download.R`.
+The installer now gives the exact HTTPS source URL up to3 attempts with a300-second
+timeout and short exponential waits for transient network failures. HTTP404 current
+source fallback remains pinned to the same Matrix version; permanent failures still
+fail. A deterministic retry regression runs once in the endpoint job.
+
+Local validation: source build passed; strict archive scan passed (190 entries);
+isolated installation and the approved numerical smoke passed with Matrix1.6.5;
+the Matrix retry regression passed. R CMD check on local R4.3.0 did not pass in this
+environment: 3 provenance-path test errors and PDF manual generation failed because
+`pdflatex` is unavailable. The saved full R4.3 check for parent9b passed, and the
+canonical hosted R4.6.1 check for parent9b passed with3060 assertions,0 test failures,
+0 errors/0 warnings and one approved New submission NOTE. No hosted result is yet
+claimed for ece78a9. A detached read-only observer will poll this commit's GitHub
+workflow results no more frequently than every15minutes; the first check is scheduled
+for2026-10-28T08:00:34Z. The observer retains raw status and failed-job identifiers
+under `/tmp/GEModelR-publication-s456sck4`.
