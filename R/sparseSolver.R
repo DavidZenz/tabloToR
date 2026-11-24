@@ -835,6 +835,7 @@ sparse_process_tablo = function(tabloPath) {
   # derived arrays through the old vectorized generator.
   skeleton_statements = Filter(function(statement) {
     statement$class %in% c("set", "coefficient", "read") &&
+      !isTRUE(statement$initialize_read) &&
       !grepl("^mapping\\s", statement$parsed$equation,
              ignore.case = TRUE)
   }, statements)
@@ -1112,10 +1113,6 @@ sparse_ref_value = function(expr, state, bindings, index) {
   if (is.name(expr) && !is.null(bindings[[as.character(expr)]])) {
     return(bindings[[as.character(expr)]])
   }
-  if (is.character(expr) && length(expr) == 1L &&
-      !is.null(bindings[[expr]])) {
-    return(bindings[[expr]])
-  }
   if (!is.language(expr) && length(expr) == 1L) return(expr)
   sparse_eval_expr(expr, state, bindings, index)
 }
@@ -1186,7 +1183,8 @@ sparse_data_linear_index = function(ref, state, bindings, index) {
   as.integer(linear)
 }
 
-sparse_global_for_ref = function(ref, state, bindings, index) {
+sparse_global_for_ref = function(ref, state, bindings, index,
+                                 allow_positional_label = FALSE) {
   id = index$variable_by_name[[ref$name]]
   if (is.null(id)) {
     stop(sprintf("Unknown variable in sparse expression: %s", ref$name),
@@ -1219,10 +1217,12 @@ sparse_global_for_ref = function(ref, state, bindings, index) {
         !is.na(value) && value == as.integer(value) &&
         value >= 1L && value <= length(set$values)) {
       positions[[d]] = as.integer(value)
-    } else {
+    } else if (allow_positional_label) {
       positions[[d]] = sparse_position_for_label(
         as.character(value), set_name, index
       )
+    } else {
+      positions[[d]] = match(as.character(value), set$values)
     }
     if (is.na(positions[[d]])) {
       stop(sprintf("Cannot resolve index %s of %s",
@@ -1335,11 +1335,8 @@ sparse_resolve_shocks = function(model, state, index) {
   if (is.null(explicit) || !length(explicit$labels)) {
     explicit = sparse_shocks_from_variable_values(model, state, index)
   }
-  if (!length(explicit$labels)) {
-    return(list(positions = integer(), values = numeric(),
-                labels = character()))
-  }
   positions = integer(length(explicit$labels))
+  ordinary = logical(length(explicit$labels))
   for (i in seq_along(explicit$labels)) {
     ref = sparse_parse_label(explicit$labels[[i]])
     id = index$variable_by_name[[ref$name]]
@@ -1352,17 +1349,22 @@ sparse_resolve_shocks = function(model, state, index) {
       stop(sprintf("Shock variable %s is not in the configured closure",
                    ref$name), call. = FALSE)
     }
-    positions[[i]] = sparse_global_for_ref(ref, state, list(), index)
+    positions[[i]] = sparse_global_for_ref(
+      ref, state, list(), index, allow_positional_label = TRUE
+    )
+    ordinary[[i]] = isTRUE(variable$change)
   }
   unique_positions = unique(positions)
   values = vapply(unique_positions, function(position) {
     sum(explicit$values[positions == position])
   }, numeric(1))
   keep = !is.na(values) & values != 0
+  first = match(unique_positions, positions)[keep]
   list(
     positions = as.integer(unique_positions[keep]),
     values = values[keep],
-    labels = explicit$labels[match(unique_positions, positions)][keep]
+    labels = explicit$labels[first],
+    ordinary = ordinary[first]
   )
 }
 
@@ -1476,17 +1478,17 @@ sparse_emit_system_scalar = function(state, index, shocks) {
                   )))
                 }, logical(1)))
               }
-              value = if (guard_ok) sparse_eval_expr(
+              if (!guard_ok) return(invisible(NULL))
+              value = sparse_eval_expr(
                 term$coefficient, state, sum_bindings, index
-              ) else 0
-              if (guard_ok && (length(value) != 1L ||
-                               !is.finite(value[[1L]]))) {
+              )
+              if (length(value) != 1L || !is.finite(value[[1L]])) {
                 stop(sprintf(
                   "Sparse coefficient for %s -> %s is not a finite scalar",
                   equation$name, term$ref$name
                 ), call. = FALSE)
               }
-              value = if (guard_ok) as.numeric(value[[1L]]) else 0
+              value = as.numeric(value[[1L]])
               ref_position = sparse_global_for_ref(
                 term$ref, state, sum_bindings, index
               )
@@ -1587,10 +1589,6 @@ sparse_vectorized_index_value = function(expr, bindings, state, index, n) {
   if (is.name(expr) && !is.null(bindings[[as.character(expr)]])) {
     return(rep(bindings[[as.character(expr)]], length.out = n))
   }
-  if (is.character(expr) && length(expr) == 1L &&
-      !is.null(bindings[[expr]])) {
-    return(rep(bindings[[expr]], length.out = n))
-  }
   if (!is.language(expr)) return(rep(expr, length.out = n))
   sparse_eval_expr_vectorized(expr, state, bindings, index, n)
 }
@@ -1599,37 +1597,33 @@ sparse_vectorized_positions = function(value, dimension, dim_names = NULL,
                                        set_name = NULL, source_set = NULL,
                                        index, n) {
   value = rep(value, length.out = n)
-  if (!is.null(source_set) && !is.null(set_name) &&
+  if (is.numeric(value) && !is.null(source_set) && !is.null(set_name) &&
       !identical(source_set, set_name) &&
       !is.null(index$sets[[source_set]]) &&
       !is.null(index$sets[[set_name]])) {
     source_values = index$sets[[source_set]]$values
-    source_numeric = suppressWarnings(as.numeric(value))
     source_positions = suppressWarnings(as.integer(value))
     source_valid = !is.na(source_positions) &
-      !is.na(source_numeric) & source_numeric == source_positions &
+      value == source_positions &
       source_positions >= 1L & source_positions <= length(source_values)
-    if (any(source_valid)) {
-      value[source_valid] = source_values[source_positions[source_valid]]
-    }
+    source_positions[!source_valid] = NA_integer_
+    value = source_values[source_positions]
   }
-  numeric_value = suppressWarnings(as.numeric(value))
-  positions = suppressWarnings(as.integer(value))
-  valid = !is.na(positions) & !is.na(numeric_value) &
-    numeric_value == positions &
-    positions >= 1L & positions <= dimension
+  positions = rep(NA_integer_, n)
+  valid = rep(FALSE, n)
+  if (is.numeric(value)) {
+    positions = suppressWarnings(as.integer(value))
+    valid = !is.na(positions) & value == positions &
+      positions >= 1L & positions <= dimension
+  }
   if (any(!valid)) {
-    lookup = NULL
-    if (!is.null(dim_names)) {
-      lookup = dim_names
-    } else if (!is.null(set_name) && !is.null(index$sets[[set_name]])) {
+    lookup = dim_names
+    if (is.null(lookup) && !is.null(set_name)) {
       lookup = index$sets[[set_name]]$values
     }
-    if (!is.null(lookup)) {
-      positions[!valid] = match(as.character(value[!valid]), lookup)
-    }
+    positions[!valid] = match(as.character(value[!valid]), lookup)
   }
-  as.integer(positions)
+  positions
 }
 
 sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
@@ -1682,9 +1676,8 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
     }
     data_dim_names = dimnames(data)
     positions = lapply(seq_along(dims), function(d) {
-      value = sparse_vectorized_index_value(
-        ref$indices[[d]], bindings, state, index, n
-      )
+      item = ref$indices[[d]]
+      value = sparse_vectorized_index_value(item, bindings, state, index, n)
       dim_names = if (!is.null(data_dim_names) &&
                      d <= length(data_dim_names)) {
         data_dim_names[[d]]
@@ -1694,7 +1687,9 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
                      d <= length(names(data_dim_names))) {
         names(data_dim_names)[[d]]
       } else NULL
-      source_set = bindings[[paste0(".set:", as.character(ref$indices[[d]]))]]
+      source_set = if (is.name(item)) {
+        bindings[[paste0(".set:", as.character(item))]]
+      } else NULL
       sparse_vectorized_positions(
         value, dims[[d]], dim_names, set_name, source_set, index, n
       )
@@ -1858,13 +1853,14 @@ sparse_vectorized_ref_positions = function(ref, bindings, state, index, n) {
          call. = FALSE)
   }
   positions = lapply(seq_along(variable$sets), function(d) {
-    value = sparse_vectorized_index_value(
-      ref$indices[[d]], bindings, state, index, n
-    )
+    item = ref$indices[[d]]
+    value = sparse_vectorized_index_value(item, bindings, state, index, n)
+    source_set = if (is.name(item)) {
+      bindings[[paste0(".set:", as.character(item))]]
+    } else NULL
     sparse_vectorized_positions(
       value, variable$lengths[[d]], set_name = variable$sets[[d]],
-      source_set = bindings[[paste0(".set:",
-                                      as.character(ref$indices[[d]]))]],
+      source_set = source_set,
       index = index, n = n
     )
   })
@@ -2534,6 +2530,10 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
   if (!length(updates)) return(invisible(NULL))
   for (update_id in seq_along(updates)) {
     update = updates[[update_id]]
+    if (identical(update$class, "read")) {
+      state$data = update$generate(sparse_state_data(state))
+      next
+    }
     sparse_initialize_update_target(update, state, index)
     vectorized = tryCatch(
       sparse_apply_update_vectorized(update, state, index),
@@ -2698,19 +2698,16 @@ sparse_add_solution = function(accumulator, current, change_mask) {
 }
 
 sparse_substep_shocks = function(total, applied, denominator) {
-  if (!length(total$values)) return(total)
-  if (is.list(applied)) applied = applied$values
-  remaining = sparse_remaining_percent(total$values, applied)
-  list(
-    positions = total$positions,
-    values = remaining / denominator,
-    labels = total$labels
-  )
+  total$values = .remaining_shock_changes(
+    total$values, applied$values, total$ordinary
+  ) / denominator
+  total
 }
 
 sparse_advance_applied_shocks = function(applied, substep) {
-  if (!length(applied$values)) return(applied)
-  applied$values = sparse_compound_percent(applied$values, substep$values)
+  applied$values = .accumulate_shock_changes(
+    applied$values, substep$values, substep$ordinary
+  )
   applied
 }
 
@@ -3033,71 +3030,11 @@ sparse_gc_bytes = function() {
   as.numeric(sum(info[, "used"])) * 8
 }
 
-sparse_restrict_index = function(index, equation_ids, state) {
-  active = index
-  active$equations = index$equations[equation_ids]
-  references = unique(unlist(lapply(active$equations, function(equation) {
-    vapply(equation$terms, function(term) term$ref$name, character(1))
-  }), use.names = FALSE))
-  references = union(references, index$closure_names)
-  variable_ids = which(vapply(index$variables, function(variable) {
-    variable$name %in% references
-  }, logical(1)))
-  active$variables = index$variables[variable_ids]
-  active$variable_by_name = setNames(
-    as.list(seq_along(active$variables)),
-    vapply(active$variables, function(variable) variable$name, character(1))
-  )
-
-  global_start = 1L
-  endo_start = 1L
-  for (id in seq_along(active$variables)) {
-    variable = active$variables[[id]]
-    variable$global_start = as.integer(global_start)
-    variable$global_end = as.integer(global_start + variable$n - 1L)
-    variable$exogenous = variable$name %in% index$closure_names
-    if (variable$exogenous) {
-      variable$endo_start = NA_integer_
-    } else {
-      variable$endo_start = as.integer(endo_start)
-      endo_start = endo_start + variable$n
-    }
-    active$variables[[id]] = variable
-    global_start = global_start + variable$n
-  }
-
-  active$variable_count = as.integer(global_start - 1L)
-  active$endogenous_count = as.integer(endo_start - 1L)
-  active$equation_ids = as.integer(equation_ids)
-  active$full_equation_count = index$equation_count
-  active$full_endogenous_count = index$endogenous_count
-  active$row_layout_ready = FALSE
-  active$pattern_cache = NULL
-  active$column_order = NULL
-  sparse_build_row_layout(NULL, active, state)
-}
-
 sparse_select_simulation_index = function(index, spec, state,
                                           postsim = TRUE) {
-  # Post-simulation formulas are evaluated lazily after the numerical solve.
-  # They must not expand the solve to include reporting equations.
-  if (is.null(spec) || !length(spec$simulation_equation_candidates)) {
-    return(index)
-  }
-  if (!isTRUE(index$row_layout_ready)) {
-    index = sparse_build_row_layout(spec, index, state)
-  }
-  for (cut in spec$simulation_equation_candidates) {
-    candidate = sparse_restrict_index(
-      index, seq_len(as.integer(cut)), state
-    )
-    if (candidate$equation_count == candidate$endogenous_count &&
-        candidate$equation_count > 0L) {
-      candidate$simulation_boundary = as.integer(cut)
-      return(candidate)
-    }
-  }
-  index
+  # Output retention does not change which declared equations are solved.
+  if (isTRUE(index$row_layout_ready)) return(index)
+  sparse_build_row_layout(spec, index, state)
 }
 
 sparse_estimate_memory = function(model, index, engine = "sparse",
@@ -3441,9 +3378,9 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
          call. = FALSE)
   }
   index = sparse_rebuild_columns(index, closure)
-  if (!isTRUE(index$row_layout_ready)) {
-    index = sparse_build_row_layout(model$sparseSpec, index, state)
-  }
+  index = sparse_select_simulation_index(
+    index, model$sparseSpec, state, postsim = postsim
+  )
   full_index = index
   budget = memory_budget
   if (is.null(budget) || !length(budget)) budget = model$memoryBudget
@@ -3470,9 +3407,6 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     variables = validated$variables
     dimensions = validated$dimensions
   }
-  index = sparse_select_simulation_index(
-    index, model$sparseSpec, state, postsim = postsim
-  )
   if (index$equation_count != index$endogenous_count) {
     stop(sprintf(
       "Sparse system is not square: %s equations, %s endogenous variables.",

@@ -357,9 +357,6 @@ GEModel = setRefClass(
           sparse_state = sparse_make_state(generated_data)
           sparse_index = sparse_build_index(sparseSpec, generated_data)
           sparse_index = sparse_rebuild_columns(sparse_index, closure)
-          sparse_index = sparse_build_row_layout(
-            sparseSpec, sparse_index, sparse_state
-          )
           sparse_initialize_update_targets(
             sparse_state, sparse_index, sparseSpec,
             updates = sparseSpec$simulation_updates
@@ -368,8 +365,11 @@ GEModel = setRefClass(
             sparse_state, sparse_index, sparseSpec,
             updates = sparseSpec$formula_initialization_updates
           )
+          sparse_index = sparse_build_row_layout(
+            sparseSpec, sparse_index, sparse_state
+          )
           list(
-            data = generated_data,
+            data = sparse_state_data(sparse_state),
             variable_values = list(),
             change_variables = basicChangeVariables,
             sparse_state = sparse_state,
@@ -498,9 +498,6 @@ GEModel = setRefClass(
           )
         }
         idx = sparse_rebuild_columns(sparseIndex, closure)
-        if (!isTRUE(idx$row_layout_ready) && is.environment(sparseState)) {
-          idx = sparse_build_row_layout(sparseSpec, idx, sparseState)
-        }
         idx = sparse_select_simulation_index(
           idx, sparseSpec, sparseState, postsim = postsim
         )
@@ -848,15 +845,20 @@ GEModel = setRefClass(
 
       appliedShocks = shocks
       appliedShocks[] = 0
+      ordinaryShocks = names(shocks) %in% changeVariables
 
       # Go through each iteration (subinterval)
       for (it in 1:iter) {
         message(sprintf('Iteration %s/%s', it, iter))
 
-        remainingShocks = sparse_remaining_percent(shocks, appliedShocks)
+        remainingShocks = .remaining_shock_changes(
+          shocks, appliedShocks, ordinaryShocks
+        )
         subShocks = remainingShocks/(iter-it+1)
 
-        appliedShocks = sparse_compound_percent(appliedShocks, subShocks)
+        appliedShocks = .accumulate_shock_changes(
+          appliedShocks, subShocks, ordinaryShocks
+        )
 
         # Within each iteration (subinterval) do steps
 
@@ -886,11 +888,15 @@ GEModel = setRefClass(
 
           for(currentStep in 1:steps[step]){
 
-            remainingSubShocks = sparse_remaining_percent(subShocks, appliedSubShocks)
+            remainingSubShocks = .remaining_shock_changes(
+              subShocks, appliedSubShocks, ordinaryShocks
+            )
 
             stepShocks = remainingSubShocks/(steps[step]-currentStep+1)
 
-            appliedSubShocks = sparse_compound_percent(appliedSubShocks, stepShocks)
+            appliedSubShocks = .accumulate_shock_changes(
+              appliedSubShocks, stepShocks, ordinaryShocks
+            )
 
 
             data <<- equationCoefficientGenerator(data)

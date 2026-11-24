@@ -332,6 +332,6 @@ tabloToStatements = function(tablo){
     return(f)
   },cleanLines)
 
-  return(cleanLinesParsed)
+  return(.mark_optional_read_defaults(cleanLinesParsed))
 
 }

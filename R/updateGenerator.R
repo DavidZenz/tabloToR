@@ -2,7 +2,8 @@ generateUpdates = function(statements) {
   toRet = list('"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y))
 ')
   for (s in statements) {
-    if (any(grepl('\\(initial\\)', s$parsed$elements, ignore.case = T)) == F) {
+    if (!isTRUE(s$read_default) &&
+        !any(grepl('\\(initial\\)', s$parsed$elements, ignore.case = TRUE))) {
       toRet[[length(toRet) + 1]] = processUpdateStatement(s)
     }
   }

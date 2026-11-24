@@ -95,9 +95,18 @@ sparse_expr_data_names = function(expr) {
     }
     return(unique(result))
   }
-  if (length(expr) <= 1L) return(character())
-  unique(unlist(lapply(as.list(expr)[-1L], sparse_expr_data_names),
-                use.names = FALSE))
+  arguments = unlist(lapply(as.list(expr)[-1L], sparse_expr_data_names),
+                     use.names = FALSE)
+  unique(c(op, arguments))
+}
+
+.sparse_term_expressions = function(term) {
+  c(list(term$coefficient), term$guards, term$ref$indices)
+}
+
+.sparse_update_expressions = function(update) {
+  c(list(update$expression), update$target$indices,
+    lapply(update$domains, function(domain) domain$predicate))
 }
 
 sparse_required_formula_names = function(equations, updates) {
@@ -112,19 +121,27 @@ sparse_required_formula_names = function(equations, updates) {
   dependencies = lapply(
     split(seq_along(formulas), formula_targets),
     function(ids) unique(unlist(lapply(formulas[ids], function(update) {
-      intersect(sparse_expr_data_names(update$expression), formula_names)
+      intersect(unlist(lapply(.sparse_update_expressions(update),
+                              sparse_expr_data_names), use.names = FALSE),
+                formula_names)
     }), use.names = FALSE))
   )
   needed = unique(unlist(lapply(equations, function(equation) {
-    unlist(lapply(equation$terms, function(term) {
-      sparse_expr_data_names(term$coefficient)
-    }), use.names = FALSE)
+    expressions = c(lapply(equation$domains, function(domain) domain$predicate),
+                    unlist(lapply(equation$terms, .sparse_term_expressions),
+                           recursive = FALSE))
+    unlist(lapply(expressions, sparse_expr_data_names), use.names = FALSE)
   }), use.names = FALSE))
   update_needed = unique(unlist(lapply(
     Filter(function(update) update$class == "update", updates),
-    function(update) sparse_expr_data_names(update$expression)
+    function(update) unlist(lapply(.sparse_update_expressions(update),
+                                   sparse_expr_data_names), use.names = FALSE)
   ), use.names = FALSE))
-  needed = intersect(union(needed, update_needed), formula_names)
+  read_defaults = vapply(Filter(function(update) {
+    isTRUE(update$read_default)
+  }, formulas), function(update) update$target$name, character(1))
+  needed = intersect(union(c(needed, read_defaults), update_needed),
+                     formula_names)
   repeat {
     more = unique(unlist(dependencies[needed], use.names = FALSE))
     next_needed = union(needed, more)
@@ -263,49 +280,12 @@ sparse_terms_from_expr = function(expr,
   list()
 }
 
-sparse_infer_simulation_equation_candidates = function(equations) {
-  n = length(equations)
-  if (n < 3L) return(integer())
-  references = lapply(equations, function(equation) {
-    unique(vapply(equation$terms, function(term) term$ref$name,
-                  character(1)))
-  })
-  definitions = list()
-  for (equation_id in seq_along(equations)) {
-    lhs = unique(vapply(
-      equations[[equation_id]]$lhs_terms,
-      function(term) term$ref$name,
-      character(1)
-    ))
-    for (name in lhs) {
-      if (is.null(definitions[[name]])) {
-        definitions[[name]] = equation_id
-      }
-    }
-  }
-  candidates = integer()
-  prefix_references = character()
-  for (cut in seq_len(n - 1L)) {
-    prefix_references = union(prefix_references, references[[cut]])
-    later = vapply(prefix_references, function(name) {
-      definition = definitions[[name]]
-      !is.null(definition) && definition > cut
-    }, logical(1))
-    if (any(later)) next
-    suffix_references = unique(unlist(
-      references[seq.int(cut + 1L, n)], use.names = FALSE
-    ))
-    if (length(intersect(prefix_references, suffix_references))) {
-      candidates = c(candidates, cut)
-    }
-  }
-  as.integer(candidates)
-}
-
 sparse_compile_spec = function(statements) {
   variable_statements = Filter(function(s) s$class == "variable", statements)
   equation_statements = Filter(function(s) s$class == "equation", statements)
-  update_statements = Filter(function(s) s$class %in% c("update", "formula"), statements)
+  update_statements = Filter(function(s) {
+    s$class %in% c("update", "formula") || isTRUE(s$initialize_read)
+  }, statements)
 
   variable_names = unique(vapply(variable_statements, function(s) {
     ref = correctFormula(s$parsed$equation)
@@ -395,8 +375,16 @@ sparse_compile_spec = function(statements) {
 
   updates = list()
   for (s in update_statements) {
-    is_initial = any(grepl("\\(initial\\)", s$parsed$elements,
-                           ignore.case = TRUE))
+    if (isTRUE(s$initialize_read)) {
+      updates[[length(updates) + 1L]] = list(
+        class = "read",
+        target = list(name = .parse_header_read(s)$target),
+        generate = generateReads(list(s))
+      )
+      next
+    }
+    is_initial = isTRUE(s$read_default) ||
+      any(grepl("\\(initial\\)", s$parsed$elements, ignore.case = TRUE))
     formula = tryCatch(correctFormula(s$parsed$equation),
                        error = function(e) NULL)
     if (is.null(formula) || length(formula) < 3L) next
@@ -436,6 +424,7 @@ sparse_compile_spec = function(statements) {
       target = target,
       expression = rhs,
       initial = is_initial,
+      read_default = isTRUE(s$read_default),
       domains = update_domains
     )
   }
@@ -445,8 +434,6 @@ sparse_compile_spec = function(statements) {
     function(update) update$target$name, character(1)
   ))
   required_formula_names = sparse_required_formula_names(equations, updates)
-  simulation_equation_candidates =
-    sparse_infer_simulation_equation_candidates(equations)
   initial_updates = Filter(function(update) {
     update$class == "formula" &&
       isTRUE(update$initial) &&
@@ -459,8 +446,9 @@ sparse_compile_spec = function(statements) {
          update$target$name %in% required_formula_names)
   }, updates)
   formula_initialization_updates = Filter(function(update) {
-    update$class == "formula" &&
-      update$target$name %in% required_formula_names
+    update$class == "read" ||
+      (update$class == "formula" &&
+         update$target$name %in% required_formula_names)
   }, updates)
   post_updates = Filter(function(update) {
     update$class == "formula" && !isTRUE(update$initial)
@@ -469,14 +457,13 @@ sparse_compile_spec = function(statements) {
     variables = variables,
     variable_by_name = variable_by_name,
     equations = equations,
-    updates = updates,
+    updates = Filter(function(update) update$class != "read", updates),
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
     formula_initialization_updates = formula_initialization_updates,
     post_updates = post_updates,
     formula_names = formula_names,
     required_formula_names = required_formula_names,
-    simulation_equation_candidates = simulation_equation_candidates,
     variable_names = variable_names,
     compile_errors = unique(compile_errors),
     statements = statements
@@ -526,9 +513,10 @@ sparse_build_index = function(spec, data) {
   }
   for (equation in spec$equations) {
     for (term in equation$terms) {
-      for (guard in term$guards) {
-        set_expressions[[length(set_expressions) + 1L]] = guard
-      }
+      set_names = c(set_names, vapply(term$sums, function(sum_spec) {
+        sum_spec$set
+      }, character(1)))
+      set_expressions = c(set_expressions, .sparse_term_expressions(term))
     }
   }
   set_names = unique(c(
@@ -538,11 +526,8 @@ sparse_build_index = function(spec, data) {
   for (update in spec$updates) {
     for (domain in update$domains) {
       set_names = c(set_names, domain$set)
-      if (!is.null(domain$predicate)) {
-        set_expressions[[length(set_expressions) + 1L]] = domain$predicate
-      }
     }
-    set_expressions[[length(set_expressions) + 1L]] = update$expression
+    set_expressions = c(set_expressions, .sparse_update_expressions(update))
   }
   set_names = unique(c(
     set_names, unlist(lapply(set_expressions, sparse_expr_set_names),
@@ -760,12 +745,7 @@ sparse_eval_expr = function(expr, state, bindings, index) {
     }
     return(name)
   }
-  if (!is.language(expr)) {
-    if (is.name(expr)) expr = as.character(expr)
-    if (is.character(expr) && length(expr) == 1L &&
-        !is.null(bindings[[expr]])) return(bindings[[expr]])
-    return(expr)
-  }
+  if (!is.language(expr)) return(expr)
   if (length(expr) == 0L) return(NA_real_)
 
   op = as.character(expr[[1]])
@@ -886,6 +866,7 @@ sparse_eval_expr = function(expr, state, bindings, index) {
     for (position in seq_along(set$values)) {
       next_bindings = bindings
       next_bindings[[as.character(expr[[2]])]] = position
+      next_bindings[[paste0(".set:", as.character(expr[[2]]))]] = set_name
       value = sparse_eval_expr(expr[[4]], state, next_bindings, index)
       if (length(value) != 1L) value = sum(value)
       total = total + value

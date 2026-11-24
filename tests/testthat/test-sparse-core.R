@@ -351,7 +351,7 @@ test_that("GEModel exposes sparse closure, shocks, memory, and compact output", 
   expect_length(compact$data, 0L)
 })
 
-test_that("postsim keeps reporting equations outside the numerical solve", {
+test_that("sparse solves every declared equation in a triangular model", {
   fixture <- tempfile(fileext = ".tab")
   writeLines(c(
     "variable (change) x;",
@@ -364,21 +364,16 @@ test_that("postsim keeps reporting equations outside the numerical solve", {
   ), fixture)
   on.exit(unlink(fixture), add = TRUE)
 
-  model <- GEModel$new()
-  model$loadTablo(fixture)
-  model$setClosure("a")
-  model$loadData(list(), engine = "sparse")
-  full <- sparse_rebuild_columns(model$sparseIndex, model$closure)
-  simulation <- sparse_select_simulation_index(
-    full, model$sparseSpec, model$sparseState, postsim = FALSE
-  )
-  with_postsim <- sparse_select_simulation_index(
-    full, model$sparseSpec, model$sparseState, postsim = TRUE
-  )
+  for (postsim in c(FALSE, TRUE)) {
+    model <- GEModel$new()
+    model$loadTablo(fixture)
+    model$setClosure("a")
+    model$loadData(list(), engine = "sparse")
+    model$setShocks(c("a[]" = 4))
+    model$solveModel(iter = 1, steps = 1, engine = "sparse", postsim = postsim)
 
-  expect_lt(simulation$equation_count, full$equation_count)
-  expect_equal(with_postsim$equation_count, simulation$equation_count)
-  expect_equal(with_postsim$endogenous_count, simulation$endogenous_count)
+    expect_equal(model$solution, c("x[]" = 4, "y[]" = 4, "z[]" = 4))
+  }
 })
 
 test_that("closure changes rebuild endogenous columns and invalidate patterns", {

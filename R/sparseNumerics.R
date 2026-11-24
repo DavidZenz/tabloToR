@@ -53,6 +53,27 @@ sparse_remaining_percent = function(total, applied) {
   remaining
 }
 
+.remaining_shock_changes = function(total, applied, ordinary) {
+  remaining = total - applied
+  percent = !ordinary
+  remaining[percent] = sparse_remaining_percent(total[percent], applied[percent])
+  if (any(!is.finite(remaining))) {
+    stop("Remaining shocks cannot be represented as finite changes",
+         call. = FALSE)
+  }
+  remaining
+}
+
+.accumulate_shock_changes = function(applied, current, ordinary) {
+  result = applied + current
+  percent = !ordinary
+  result[percent] = sparse_compound_percent(applied[percent], current[percent])
+  if (any(!is.finite(result))) {
+    stop("Accumulated shocks contain non-finite changes", call. = FALSE)
+  }
+  result
+}
+
 sparse_compound_rows = function(value) {
   result = setNames(numeric(nrow(value)), rownames(value))
   for (column in seq_len(ncol(value))) {
