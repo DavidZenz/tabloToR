@@ -19,14 +19,46 @@ correctFormula = function(formulaText, preserve_assignment = TRUE) {
                        perl = TRUE)
   }
   formulaText = gsub("\\]", ")", gsub("\\[", "(", formulaText))
-  exp = normalizeIfCalls(str2lang(formulaText))
+  exp = normalizeIfCalls(.normalize_tablo_filtered_sums(str2lang(formulaText)))
   return(functionToData(exp))
+}
+
+.tablo_sum_filter = function(domain) {
+  if (!is.call(domain) || length(domain) < 2L) return(NULL)
+  if (identical(domain[[1L]], as.name(":")) && is.name(domain[[2L]])) {
+    return(list(set = domain[[2L]], condition = domain[[3L]]))
+  }
+  # R binds the colon more tightly than a comparison. Retain the remaining
+  # operators when the set/condition separator is on their left operand.
+  filter = .tablo_sum_filter(domain[[2L]])
+  if (is.null(filter)) return(NULL)
+  domain[[2L]] = filter$condition
+  filter$condition = domain
+  filter
+}
+
+.normalize_tablo_filtered_sums = function(expression) {
+  if (!is.call(expression)) return(expression)
+  if (identical(expression[[1L]], as.name("sum")) && length(expression) == 4L) {
+    filter = .tablo_sum_filter(expression[[3L]])
+    if (!is.null(filter)) {
+      expression[[3L]] = filter$set
+      expression[[4L]] = call("ifelse", filter$condition, expression[[4L]], 0)
+    }
+  }
+  for (i in seq_along(expression)[-1L]) {
+    expression[[i]] = .normalize_tablo_filtered_sums(expression[[i]])
+  }
+  expression
 }
 
 functionToData = function(exp) {
   dataNames = c('sum',
                 'exp',
                 'loge',
+                'log',
+                'sqrt',
+                'abs',
                 '=',
                 '-',
                 '+',

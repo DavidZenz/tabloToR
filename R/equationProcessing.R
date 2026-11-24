@@ -1,37 +1,48 @@
 getVarCoef = function(expr,
                       sets = list(),
-                      coefficient = 1) {
+                      coefficient = 1,
+                      guards = list()) {
   toRet = list()
   if (length(expr) == 1) {
+    if (is.numeric(expr) && isTRUE(expr == 0)) return(toRet)
     toRet[[length(toRet) + 1]] = list(variable = expr,
                                       sets = sets,
-                                      coefficient = coefficient)
+                                      coefficient = coefficient,
+                                      guards = guards)
   }
   # If the top operator is sum: add to set/index
   else if (expr[[1]] == 'sum') {
     sets[[length(sets) + 1]] = list(index = expr[[2]], set = expr[[3]])
 
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[4]], sets, coefficient = coefficient)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[4]], sets, coefficient, guards)
 
   } else if (expr[[1]] == '[') {
     toRet[[length(toRet) + 1]] = list(variable = expr,
                                       sets = sets,
-                                      coefficient = coefficient)
+                                      coefficient = coefficient,
+                                      guards = guards)
+  } else if (expr[[1]] == "ifelse") {
+    toRet[[1L]] = getVarCoef(expr[[3L]], sets, coefficient,
+                             c(guards, list(expr[[2L]])))
+    if (length(expr) >= 4L) {
+      toRet[[2L]] = getVarCoef(expr[[4L]], sets, coefficient,
+                               c(guards, list(call("!", expr[[2L]]))))
+    }
   } else if (expr[[1]] == '(') {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient = coefficient)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient, guards)
   } else if (expr[[1]] == '+') {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient = coefficient)
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, coefficient = coefficient)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient, guards)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, coefficient, guards)
   } else if (expr[[1]] == '-' & length(expr)==3) {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient = coefficient)
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, coefficient = call('-',coefficient))
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient, guards)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, call('-',coefficient), guards)
   } else if (expr[[1]] == '-' & length(expr)==2) {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient = call('-',coefficient))
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, call('-',coefficient), guards)
   } else if (expr[[1]] == '*') {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, coefficient = call('*', coefficient, expr[[2]]))
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, call('*', coefficient, expr[[2]]), guards)
   } else if (expr[[1]] == '=') {
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient = coefficient)
-    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, coefficient = call('*', coefficient,-1))
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient, guards)
+    toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, call('*', coefficient,-1), guards)
 
   }
   return(toRet)
@@ -62,7 +73,7 @@ generateEquationCoefficients = function(equationStatements) {
 
     variables = unlistVarCoef(getVarCoef(frm))
 
-    for (v in 1:length(variables)) {
+    for (v in seq_along(variables)) {
       if (length(variables[[v]]$variable) == 1) {
         variables[[v]]$indices = list()
         variables[[v]]$varname = variables[[v]]$variable
@@ -117,6 +128,11 @@ generateEquationCoefficients = function(equationStatements) {
         ),
         deparse1(sumToMap(v$coefficient))
       )
+      for (guard in rev(v$guards)) {
+        context = encodeString(paste("Equation", equationName), quote = '"')
+        expr = sprintf("if (.tablo_condition(%s, %s)) %s else list()",
+                       deparse1(sumToMap(guard)), context, expr)
+      }
       for (qualifier in c(qualifiers, v$qualifiers)) {
         q = str2lang(qualifier)
         expr = sprintf(

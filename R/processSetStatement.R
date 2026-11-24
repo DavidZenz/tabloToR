@@ -69,7 +69,10 @@ processSetStatement = function(s) {
     preCommand[[3]][[1]] = as.name('[')
     preCommand[[3]][[2]] = NULL
 
-    preCommand[[3]][[3]] = removeFunctions(preCommand[[3]][[3]])
+    preCommand[[3]][[3]] = call(
+      ".tablo_condition", removeFunctions(preCommand[[3]][[3]]),
+      paste("Set", deparse1(preCommand[[2L]]))
+    )
 
     #toRet[[deparse(preCommand[[2]])]] = eval(preCommand[[3]], toRet)
     toRet = sprintf('%s=%s', deparse1(preCommand[[2]]), deparse1(preCommand[[3]]))

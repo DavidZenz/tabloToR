@@ -109,7 +109,8 @@ sparse_expr_data_names = function(expr) {
     lapply(update$domains, function(domain) domain$predicate))
 }
 
-sparse_required_formula_names = function(equations, updates) {
+sparse_required_formula_names = function(equations, updates,
+                                         additional = character()) {
   formulas = Filter(function(update) update$class == "formula", updates)
   if (!length(formulas)) return(character())
   formula_names = unique(vapply(
@@ -140,7 +141,7 @@ sparse_required_formula_names = function(equations, updates) {
   read_defaults = vapply(Filter(function(update) {
     isTRUE(update$read_default)
   }, formulas), function(update) update$target$name, character(1))
-  needed = intersect(union(c(needed, read_defaults), update_needed),
+  needed = intersect(union(c(needed, read_defaults, additional), update_needed),
                      formula_names)
   repeat {
     more = unique(unlist(dependencies[needed], use.names = FALSE))
@@ -280,12 +281,31 @@ sparse_terms_from_expr = function(expr,
   list()
 }
 
+.tablo_assertion_expressions = function(assertion) {
+  c(list(assertion$expression),
+    lapply(assertion$domains, function(domain) domain$predicate))
+}
+
+.compile_tablo_assertion = function(statement) {
+  elements = trimws(unlist(statement$parsed$elements, use.names = FALSE))
+  list(
+    label = statement$comment,
+    expression = correctFormula(statement$parsed$equation,
+                                preserve_assignment = FALSE),
+    domains = lapply(elements[grepl("^\\(\\s*all\\s*,", elements)],
+                     sparse_parse_qualifier),
+    initial = any(grepl("^\\(\\s*initial\\s*\\)$", elements))
+  )
+}
+
 sparse_compile_spec = function(statements) {
   variable_statements = Filter(function(s) s$class == "variable", statements)
   equation_statements = Filter(function(s) s$class == "equation", statements)
-  update_statements = Filter(function(s) {
+  update_ids = which(vapply(statements, function(s) {
     s$class %in% c("update", "formula") || isTRUE(s$initialize_read)
-  }, statements)
+  }, logical(1)))
+  assertions = lapply(Filter(function(s) s$class == "assertion", statements),
+                      .compile_tablo_assertion)
 
   variable_names = unique(vapply(variable_statements, function(s) {
     ref = correctFormula(s$parsed$equation)
@@ -374,11 +394,13 @@ sparse_compile_spec = function(statements) {
   }
 
   updates = list()
-  for (s in update_statements) {
+  for (statement_id in update_ids) {
+    s = statements[[statement_id]]
     if (isTRUE(s$initialize_read)) {
       updates[[length(updates) + 1L]] = list(
         class = "read",
         target = list(name = .parse_header_read(s)$target),
+        statement_id = statement_id,
         generate = generateReads(list(s))
       )
       next
@@ -393,25 +415,7 @@ sparse_compile_spec = function(statements) {
     if (is.null(target)) next
     rhs = formula[[3]]
     if (s$class == "update") {
-      is_change = any(grepl("\\(change\\)", s$parsed$elements,
-                             ignore.case = TRUE))
-      if (is_change) {
-        rhs = call("+", formula[[2]], rhs)
-      } else if (length(rhs) == 1L) {
-        rhs = call("*", formula[[2]],
-                   call("+", quote(1), call("/", rhs, quote(100))))
-      } else if (is.language(rhs) && identical(as.character(rhs[[1]]), "*") &&
-                 length(rhs) == 3L) {
-        rhs = call(
-          "*", formula[[2]],
-          call("*",
-               call("+", quote(1), call("/", rhs[[2]], quote(100))),
-               call("+", quote(1), call("/", rhs[[3]], quote(100))))
-        )
-      } else {
-        rhs = call("*", formula[[2]],
-                   call("+", quote(1), call("/", rhs, quote(100))))
-      }
+      rhs = .tablo_update_expression(formula[[2L]], rhs, s$parsed$elements)
     }
     update_domains = lapply(
       s$parsed$elements[grepl("^\\s*\\(all,", s$parsed$elements,
@@ -425,6 +429,7 @@ sparse_compile_spec = function(statements) {
       expression = rhs,
       initial = is_initial,
       read_default = isTRUE(s$read_default),
+      statement_id = statement_id,
       domains = update_domains
     )
   }
@@ -433,7 +438,33 @@ sparse_compile_spec = function(statements) {
     Filter(function(update) update$class == "formula", updates),
     function(update) update$target$name, character(1)
   ))
-  required_formula_names = sparse_required_formula_names(equations, updates)
+  setup_through = 0L
+  setup_inputs = character()
+  for (statement_id in seq_along(statements)) {
+    s = statements[[statement_id]]
+    if (s$class != "set" || !grepl("=\\s*\\(\\s*all\\s*,", s$command)) next
+    inputs = all.vars(str2lang(processSetStatement(s))[[3L]])
+    prior = Filter(function(update) {
+      update$statement_id < statement_id && update$class != "update"
+    }, updates)
+    targets = vapply(prior, function(update) update$target$name, character(1))
+    if (any(inputs %in% targets)) {
+      setup_through = statement_id
+      setup_inputs = union(setup_inputs, inputs)
+    }
+  }
+  assertion_inputs = unlist(lapply(assertions, function(assertion) {
+    unlist(lapply(.tablo_assertion_expressions(assertion),
+                  sparse_expr_data_names), use.names = FALSE)
+  }), use.names = FALSE)
+  required_formula_names = sparse_required_formula_names(
+    equations, updates, additional = assertion_inputs
+  )
+  initialization_formula_names = if (length(setup_inputs)) {
+    sparse_required_formula_names(
+      equations, updates, additional = c(setup_inputs, assertion_inputs)
+    )
+  } else required_formula_names
   initial_updates = Filter(function(update) {
     update$class == "formula" &&
       isTRUE(update$initial) &&
@@ -448,7 +479,7 @@ sparse_compile_spec = function(statements) {
   formula_initialization_updates = Filter(function(update) {
     update$class == "read" ||
       (update$class == "formula" &&
-         update$target$name %in% required_formula_names)
+         update$target$name %in% initialization_formula_names)
   }, updates)
   post_updates = Filter(function(update) {
     update$class == "formula" && !isTRUE(update$initial)
@@ -457,6 +488,8 @@ sparse_compile_spec = function(statements) {
     variables = variables,
     variable_by_name = variable_by_name,
     equations = equations,
+    assertions = assertions,
+    setup_through = setup_through,
     updates = Filter(function(update) update$class != "read", updates),
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
@@ -498,13 +531,26 @@ sparse_find_set_values = function(data, set_name) {
   value[!is.na(value)]
 }
 
+.tablo_sets_for_expressions = function(domains, expressions) {
+  unique(c(vapply(domains, function(domain) domain$set, character(1)),
+           unlist(lapply(expressions, sparse_expr_set_names), use.names = FALSE)))
+}
+
+.tablo_index_sets = function(data, set_names) {
+  setNames(lapply(set_names, function(set_name) {
+    values = sparse_find_set_values(data, set_name)
+    list(name = set_name, values = values,
+         positions = setNames(seq_along(values), values))
+  }), set_names)
+}
+
 sparse_build_index = function(spec, data) {
-  sets = list()
-  all_domains = unlist(lapply(c(spec$variables, spec$equations), function(x) x$domains),
+  definitions = c(spec$variables, spec$equations, spec$assertions)
+  all_domains = unlist(lapply(definitions, function(x) x$domains),
                        recursive = FALSE)
   set_names = unique(vapply(all_domains, function(x) x$set, ""))
-  set_expressions = list()
-  for (definition in c(spec$variables, spec$equations)) {
+  set_expressions = lapply(spec$assertions, function(assertion) assertion$expression)
+  for (definition in definitions) {
     for (domain in definition$domains) {
       if (!is.null(domain$predicate)) {
         set_expressions[[length(set_expressions) + 1L]] = domain$predicate
@@ -532,14 +578,7 @@ sparse_build_index = function(spec, data) {
   set_names = unique(c(
     set_names, unlist(lapply(set_expressions, sparse_expr_set_names),
                       use.names = FALSE)))
-  for (set_name in set_names) {
-    values = sparse_find_set_values(data, set_name)
-    sets[[set_name]] = list(
-      name = set_name,
-      values = values,
-      positions = setNames(seq_along(values), values)
-    )
-  }
+  sets = .tablo_index_sets(data, set_names)
 
   variables = list()
   global_start = 1L
@@ -938,9 +977,10 @@ sparse_for_each_domain = function(domains, state, index, bindings = list(),
     next_bindings[[paste0(".set:", domain$index)]] = domain$set
     valid = TRUE
     if (!is.null(domain$predicate)) {
-      valid = isTRUE(as.logical(sparse_eval_expr(
-        domain$predicate, state, next_bindings, index
-      )))
+      valid = .tablo_condition(
+        sparse_eval_expr(domain$predicate, state, next_bindings, index),
+        sprintf("TABLO qualifier (%s in %s)", domain$index, domain$set)
+      )
     }
     if (valid) {
       sparse_for_each_domain(domains, state, index, next_bindings,

@@ -2,6 +2,14 @@ loge = log
 # TABLO's membership operator is also used by generated legacy formulas.
 isin = function(x, set) x %in% set
 
+.tablo_condition = function(value, context, active = TRUE) {
+  logical_value = as.logical(value)
+  if (anyNA(logical_value) && anyNA(logical_value[active])) {
+    stop(sprintf("%s has an indeterminate condition", context), call. = FALSE)
+  }
+  logical_value
+}
+
 # `%loosein%` = function(a, b) {
 #   return(as.logical(apply(do.call(`cbind`,as.list(Map(function(f)grepl(f,a),b))),MARGIN=1,max)))
 #   #return(unlist(Map(function(f)as.logical(max(grepl(f,a))),b)))

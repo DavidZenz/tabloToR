@@ -827,18 +827,44 @@ sparse_make_state = function(data) {
   model$.postsimRecord = list()
   invisible(model)
 }
+.sparse_setup_formula = function(formula, bindings) {
+  data = as.list(bindings, all.names = TRUE)
+  set_names = .tablo_sets_for_expressions(formula$domains,
+                                          .sparse_update_expressions(formula))
+  index = list(sets = .tablo_index_sets(data, set_names))
+  state = sparse_make_state(data)
+  sparse_apply_updates(state, index, list(), updates = list(formula))
+  target = formula$target$name
+  assign(target, sparse_state_data(state)[[target]], envir = bindings)
+  invisible(NULL)
+}
+
 sparse_process_tablo = function(tabloPath) {
   statements = tabloToStatements(tabloPath)
   sparse_spec = sparse_compile_spec(statements)
-  # The sparse update evaluator initializes formula targets after indexing.
-  # Keeping formulas out of the legacy skeleton avoids materializing large
-  # derived arrays through the old vectorized generator.
+  # Evaluate the required initial formulas and reads in source order up to
+  # the last set that needs them. Later formulas use the completed index.
+  early = vapply(sparse_spec$formula_initialization_updates, function(update) {
+    update$statement_id < sparse_spec$setup_through
+  }, logical(1))
+  setup_statements = statements
+  for (update in sparse_spec$formula_initialization_updates[early]) {
+    id = update$statement_id
+    if (update$class == "read") {
+      setup_statements[[id]]$initialize_read = FALSE
+    } else {
+      setup_statements[[id]]$setup_formula = update
+    }
+  }
+  sparse_spec$formula_initialization_updates =
+    sparse_spec$formula_initialization_updates[!early]
   skeleton_statements = Filter(function(statement) {
+    if (!is.null(statement$setup_formula)) return(TRUE)
     statement$class %in% c("set", "coefficient", "read") &&
       !isTRUE(statement$initialize_read) &&
       !grepl("^mapping\\s", statement$parsed$equation,
              ignore.case = TRUE)
-  }, statements)
+  }, setup_statements)
   base_generator = generateSkeleton(skeleton_statements)
   mapping_statements = Filter(function(statement) {
     statement$class == "formula" &&
@@ -1470,15 +1496,13 @@ sparse_emit_system_scalar = function(state, index, shocks) {
           sparse_for_each_sum(
             term$sums, state, index, bindings,
             callback = function(sum_bindings) {
-              guard_ok = TRUE
-              if (length(term$guards)) {
-                guard_ok = all(vapply(term$guards, function(guard) {
-                  isTRUE(as.logical(sparse_eval_expr(
-                    guard, state, sum_bindings, index
-                  )))
-                }, logical(1)))
+              for (guard in term$guards) {
+                valid = .tablo_condition(
+                  sparse_eval_expr(guard, state, sum_bindings, index),
+                  paste("Equation", equation$name)
+                )
+                if (!valid) return(invisible(NULL))
               }
-              if (!guard_ok) return(invisible(NULL))
               value = sparse_eval_expr(
                 term$coefficient, state, sum_bindings, index
               )
@@ -1583,6 +1607,49 @@ sparse_vectorized_bindings = function(domains, index) {
       domains[[d]]$set
   }
   list(bindings = bindings, n = n)
+}
+
+.check_tablo_assertions = function(assertions, state, index = NULL,
+                                   initial = FALSE) {
+  if (!length(assertions)) return(invisible(NULL))
+  for (assertion in assertions) {
+    if (isTRUE(assertion$initial) && !initial) next
+    label = if (nzchar(assertion$label)) assertion$label else
+      deparse1(assertion$expression)
+    context = sprintf('TABLO assertion "%s"', label)
+    assertion_index = index
+    if (is.null(assertion_index)) {
+      set_names = .tablo_sets_for_expressions(
+        assertion$domains, .tablo_assertion_expressions(assertion)
+      )
+      assertion_index = list(
+        sets = .tablo_index_sets(sparse_state_data(state), set_names)
+      )
+    }
+
+    if (any(vapply(assertion$domains, function(domain) {
+      !is.null(domain$predicate)
+    }, logical(1)))) {
+      sparse_for_each_domain(
+        assertion$domains, state, assertion_index, callback = function(bindings) {
+          value = sparse_eval_expr(assertion$expression, state, bindings,
+                                  assertion_index)
+          if (!isTRUE(.tablo_condition(value, context))) {
+            stop(sprintf("%s failed", context), call. = FALSE)
+          }
+        }
+      )
+    } else {
+      domain = sparse_vectorized_bindings(assertion$domains, assertion_index)
+      value = sparse_eval_expr_vectorized(
+        assertion$expression, state, domain$bindings, assertion_index, domain$n
+      )
+      if (length(value) != domain$n || any(!.tablo_condition(value, context))) {
+        stop(sprintf("%s failed", context), call. = FALSE)
+      }
+    }
+  }
+  invisible(NULL)
 }
 
 sparse_vectorized_index_value = function(expr, bindings, state, index, n) {
@@ -1951,11 +2018,11 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
       guard_ok = rep(TRUE, n)
       if (length(term$guards)) {
         for (guard in term$guards) {
-          valid = as.logical(sparse_eval_expr_vectorized(
+          valid = sparse_eval_expr_vectorized(
             guard, state, bindings, index, n
-          ))
-          valid = rep(valid, length.out = n)
-          valid[is.na(valid)] = FALSE
+          )
+          valid = .tablo_condition(rep_len(valid, n),
+                                   paste("Equation", equation$name), guard_ok)
           guard_ok = guard_ok & valid
         }
         value[!guard_ok] = 0
@@ -3118,6 +3185,7 @@ sparse_check_budget = function(estimate, budget) {
     matrix_start = proc.time()[[3L]]
   }
   .transaction_fault("compilation")
+  .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   column_order = sparse_lhs_column_order(index, state)
   index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
@@ -3579,6 +3647,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   if (is.null(final_solution)) final_solution = numeric(index$endogenous_count)
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
+  .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   solution = final_solution
   if (output == "full") names(solution) = sparse_endogenous_labels(index)
   diagnostics_result = list(

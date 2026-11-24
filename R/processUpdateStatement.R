@@ -1,3 +1,25 @@
+.tablo_product_multiplier = function(expression) {
+  if (is.call(expression) && identical(expression[[1L]], as.name("("))) {
+    return(.tablo_product_multiplier(expression[[2L]]))
+  }
+  if (is.call(expression) && identical(expression[[1L]], as.name("*"))) {
+    return(call("*", .tablo_product_multiplier(expression[[2L]]),
+                .tablo_product_multiplier(expression[[3L]])))
+  }
+  call("+", 1, call("/", expression, 100))
+}
+
+.tablo_update_expression = function(target, expression, qualifiers) {
+  if (any(grepl("^\\(\\s*change\\s*\\)$", qualifiers, ignore.case = TRUE))) {
+    return(call("+", target, expression))
+  }
+  if (any(grepl("^\\(\\s*percent_change\\s*\\)$", qualifiers,
+                ignore.case = TRUE))) {
+    return(call("*", target, call("+", 1, call("/", expression, 100))))
+  }
+  call("*", target, .tablo_product_multiplier(expression))
+}
+
 processUpdateStatement = function(s) {
   dimensions = s$parsed$elements[grep('\\(all,', s$parsed$elements)]
   qualifiers = gsub('<>', '!=', gsub(':', ",", gsub(
@@ -8,23 +30,10 @@ processUpdateStatement = function(s) {
 
   frm = correctFormula(s$parsed$equation)
 
-  if(s$class=='update'){
-    if (any(grepl('\\(change\\)', s$parsed$elements, ignore.case = T)) == T) {
-      frm[[3]] = call('+', frm[[2]], frm[[3]])
-    } else  if (length(frm[[3]]) == 1) {
-      frm[[3]] = call('*', frm[[2]], call('+', 1, call('/', frm[[3]], 100)))
-    } else {
-      if (frm[[3]][[1]] == '*') {
-        # frm[[3]] = call('*', frm[[2]] , call('+', 1, call('+', call(
-        #   '/', frm[[3]][[2]], 100
-        # ),  call('/', frm[[3]][[3]], 100))))
-        frm[[3]] = call('*', frm[[2]] ,  call("*", call('+', 1, call(
-          '/', frm[[3]][[2]], 100
-        )), call('+',1, call('/', frm[[3]][[3]], 100))))
-      } else{
-        frm[[3]] = call('*', frm[[2]], call('+', 1, call('/', frm[[3]], 100)))
-      }
-    }
+  if (s$class == "update") {
+    frm[[3L]] = .tablo_update_expression(
+      frm[[2L]], frm[[3L]], s$parsed$elements
+    )
   }
 
 

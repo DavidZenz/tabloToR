@@ -365,6 +365,8 @@ GEModel = setRefClass(
             sparse_state, sparse_index, sparseSpec,
             updates = sparseSpec$formula_initialization_updates
           )
+          .check_tablo_assertions(sparseSpec$assertions, sparse_state,
+                                 sparse_index, initial = TRUE)
           sparse_index = sparse_build_row_layout(
             sparseSpec, sparse_index, sparse_state
           )
@@ -378,6 +380,8 @@ GEModel = setRefClass(
             loaded_engine = "sparse"
           )
         } else {
+          .check_tablo_assertions(sparseSpec$assertions, generated_data,
+                                 initial = TRUE)
           generated_data = equationCoefficientMatrixGenerator(generated_data)
           generated_data = generateVariables(generated_data)
           variable_values = generated_data[variables]
@@ -899,6 +903,7 @@ GEModel = setRefClass(
             )
 
 
+            .check_tablo_assertions(sparseSpec$assertions, data)
             data <<- equationCoefficientGenerator(data)
             message(sprintf('Step %s/%s', currentStep,steps[step]))
             #browser()
@@ -1057,6 +1062,7 @@ GEModel = setRefClass(
 
       invisible(NULL)
       data <<- legacy_apply_labeled_values(data, shocks)
+      .check_tablo_assertions(sparseSpec$assertions, data)
 
       legacy_details = if (diagnostics_requested) {
         elapsed = proc.time()[[3L]] - solve_started
