@@ -698,6 +698,27 @@ sparse_make_state = function(data) {
   invisible(model)
 }
 
+.sparse_run_postsim = function(state, index, spec, check_assertions = TRUE) {
+  for (action in spec$post_actions) {
+    if (action$class == "assertion" && !check_assertions) next
+    if (action$class %in% c("set", "coefficient", "read")) {
+      bindings = list2env(sparse_state_data(state),
+                          parent = environment(.sparse_run_postsim))
+      state$data[[action$field]] = eval(action$expression, bindings)
+    }
+    missing = setdiff(action$sets, names(index$sets))
+    if (length(missing)) {
+      index$sets[missing] = .tablo_index_sets(state$data, missing)
+    }
+    if (action$class == "assertion") {
+      .check_tablo_assertions(list(action), state, index, phase = "postsim")
+    } else if (action$class == "formula") {
+      sparse_apply_updates(state, index, spec, updates = list(action))
+    }
+  }
+  index
+}
+
 .retry_postsim_from_record = function(model, diagnostics = FALSE) {
   record = model$.postsimRecord
   required = c(
@@ -713,6 +734,7 @@ sparse_make_state = function(data) {
   if (!is.null(record$structural_cache)) {
     state$.solver_cache = record$structural_cache
   }
+  output_index = record$index
   tryCatch({
     .transaction_phase("post-update", {
       .transaction_fault("post-update")
@@ -722,15 +744,7 @@ sparse_make_state = function(data) {
           updates = Filter(function(update) !isTRUE(update$postsim),
                            record$spec$post_updates)
         )
-        for (action in record$spec$post_actions) {
-          if (action$class == "assertion") {
-            .check_tablo_assertions(list(action), state, record$index,
-                                    phase = "postsim")
-          } else {
-            sparse_apply_updates(state, record$index, record$spec,
-                                 updates = list(action))
-          }
-        }
+        output_index = .sparse_run_postsim(state, output_index, record$spec)
       } else if (length(record$variables)) {
         formulas = record$spec$ordinary_output_formulas
         required = sparse_required_formula_names(
@@ -750,7 +764,7 @@ sparse_make_state = function(data) {
                      !is.null(record$variables) ||
                      !is.null(record$dimensions)) {
         sparse_project_outputs(
-          state, record$index, record$variables, record$dimensions,
+          state, output_index, record$variables, record$dimensions,
           if (record$output == "compact") record$solution else NULL,
           memory_budget = record$memory_budget, spec = record$spec
         )
@@ -873,6 +887,7 @@ sparse_process_tablo = function(tabloPath) {
     setup_statements[[formula$statement_id]]$setup_formula = formula
   }
   skeleton_statements = Filter(function(statement) {
+    if (isTRUE(statement$postsim)) return(FALSE)
     if (!is.null(statement$setup_formula)) return(TRUE)
     (statement$class %in% c("set", "coefficient", "read") ||
       (statement$class == "assertion" && !isTRUE(statement$postsim))) &&
@@ -881,7 +896,7 @@ sparse_process_tablo = function(tabloPath) {
   }, setup_statements)
   base_generator = generateSkeleton(skeleton_statements)
   mapping_statements = Filter(function(statement) {
-    statement$class == "formula" &&
+    statement$class == "formula" && !isTRUE(statement$postsim) &&
       grepl("\\$pos", statement$parsed$equation, ignore.case = TRUE)
   }, statements)
   generator = function(input_data) {
@@ -1124,6 +1139,16 @@ sparse_set_closure_state = function(model, exogenous_variables) {
     )
   }
 
+  retired_variables = setdiff(model$closure, exogenous_variables)
+  explicit = model$explicitShocks
+  if (length(retired_variables) && length(explicit$labels)) {
+    shock_variables = tolower(sub("\\[.*$", "", trimws(explicit$labels)))
+    keep = !shock_variables %in% retired_variables
+    if (any(!keep)) {
+      sparse_set_shocks_state(model, list(labels = explicit$labels[keep],
+                                         values = explicit$values[keep]))
+    }
+  }
   model$closure = exogenous_variables
   if (has_sparse_index) model$sparseIndex = replacement_index
   invisible(model)
@@ -1782,26 +1807,8 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
   }
 
 
-  if (op == "setpos" && length(expr) >= 2L) {
-    value = sparse_vectorized_index_value(
-      expr[[2]], bindings, state, index, n
-    )
-    source_name = bindings[[paste0(".set:", as.character(expr[[2]]))]]
-    if (is.numeric(value) && !is.null(source_name) &&
-        !is.null(index$sets[[source_name]])) {
-      source_values = index$sets[[source_name]]$values
-      labels = source_values[as.integer(value)]
-      result = rep(NA_real_, n)
-      candidates = names(index$sets)
-      candidates = c(setdiff(candidates, source_name), source_name)
-      for (candidate in candidates) {
-        positions = match(labels, index$sets[[candidate]]$values)
-        take = is.na(result) & !is.na(positions)
-        result[take] = positions[take]
-      }
-      return(result)
-    }
-    return(as.numeric(value))
+  if (op == "setpos") {
+    return(.sparse_set_position(expr, state, bindings, index, n))
   }
 
   if (op == "isin" && length(expr) >= 3L) {
@@ -2835,10 +2842,12 @@ sparse_extrapolate_steps = function(step_results, steps) {
   if (length(steps) == 1L) return(step_results[[1L]])
 
   weights = .tablo_euler_weights(steps)
-  result = step_results[[1L]] * weights[[1L]]
+  anchor = step_results[[1L]]
+  differences = numeric(length(anchor))
   for (i in seq_along(steps)[-1L]) {
-    result = result + step_results[[i]] * weights[[i]]
+    differences = differences + (step_results[[i]] - anchor) * weights[[i]]
   }
+  result = anchor + differences
   if (any(!is.finite(result))) {
     stop("TABLO extrapolation produced a non-finite candidate solution",
          call. = FALSE)
@@ -2865,7 +2874,9 @@ sparse_output_selector_error = function(argument, selector, cause, action) {
 sparse_validate_output_selectors = function(index, variables = NULL,
                                             dimensions = NULL,
                                             memory_budget = NULL,
-                                            state = NULL) {
+                                            state = NULL,
+                                            post_fields = character(),
+                                            post_sets = character()) {
   indexed_variables = vapply(
     index$variables, function(variable) variable$name, character(1)
   )
@@ -2874,7 +2885,7 @@ sparse_validate_output_selectors = function(index, variables = NULL,
     is.atomic(value) && !is.object(value) &&
       (is.numeric(value) || is.logical(value))
   }, logical(1))]
-  available_variables = unique(c(indexed_variables, data_variables))
+  available_variables = unique(c(indexed_variables, data_variables, post_fields))
   if (is.null(variables)) variables = character()
   if (!is.character(variables) || is.object(variables) || anyNA(variables) ||
       any(!nzchar(variables))) {
@@ -2915,14 +2926,15 @@ sparse_validate_output_selectors = function(index, variables = NULL,
         "name each selector with its model dimension, for example list(reg = \"south\")"
       )
     }
-    unknown_dimensions = setdiff(dimension_names, names(index$sets))
+    available_dimensions = c(names(index$sets), post_sets)
+    unknown_dimensions = setdiff(dimension_names, available_dimensions)
     if (length(unknown_dimensions)) {
       sparse_output_selector_error(
         "dimensions", dimensions,
         sprintf("unknown dimension name(s): %s",
                 paste(shQuote(unknown_dimensions), collapse = ", ")),
         sprintf("choose dimension names from: %s",
-                paste(shQuote(names(index$sets)), collapse = ", "))
+                paste(shQuote(available_dimensions), collapse = ", "))
       )
     }
     for (dimension in dimension_names) {
@@ -2937,6 +2949,7 @@ sparse_validate_output_selectors = function(index, variables = NULL,
                   dimension)
         )
       }
+      if (!dimension %in% names(index$sets)) next
       available_labels = index$sets[[dimension]]$values
       unknown_labels = setdiff(selector, available_labels)
       if (length(unknown_labels)) {
@@ -3475,6 +3488,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     # copy-on-modify lists isolate a failed transaction from committed state.
     state$.solver_cache = committed_state$.solver_cache
   }
+  state$data[intersect(names(state$data), model$sparseSpec$post_fields)] = NULL
   closure = model$closure
   if (is.null(closure)) closure = character()
   index_is_invalid = is.null(index) || !length(index) ||
@@ -3517,7 +3531,10 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   if (project_outputs) {
     validated = sparse_validate_output_selectors(
       full_index, variables, dimensions, memory_budget = budget,
-      state = state
+      state = state,
+      post_fields = if (postsim) setdiff(model$sparseSpec$post_fields,
+                                        model$sparseSpec$post_sets),
+      post_sets = if (postsim) model$sparseSpec$post_dimensions
     )
     variables = validated$variables
     dimensions = validated$dimensions
@@ -3686,7 +3703,7 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       if (extrapolate_coefficients) {
         coefficient_result = .tablo_add_euler_coefficients(
           coefficient_result, sparse_state_data(state)[coefficient_names],
-          original_coefficients, weights[[step_id]]
+          weights[[step_id]]
         )
       }
     }

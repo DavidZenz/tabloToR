@@ -69,7 +69,7 @@ sparse_expr_set_names = function(expr) {
   if (!is.language(expr) || is.name(expr) || length(expr) == 0L) return(character())
   op = tolower(as.character(expr[[1]]))
   result = character()
-  if (op %in% c("isin", "sum") && length(expr) >= 3L) {
+  if (op %in% c("isin", "sum", "setpos") && length(expr) >= 3L) {
     result = c(result, tolower(as.character(expr[[3]])))
   }
   if (length(expr) > 1L) result = c(result, unlist(lapply(as.list(expr)[-1L], sparse_expr_set_names), use.names = FALSE))
@@ -312,7 +312,8 @@ sparse_compile_spec = function(statements) {
   variable_statements = Filter(function(s) s$class == "variable", statements)
   equation_statements = Filter(function(s) s$class == "equation", statements)
   update_ids = which(vapply(statements, function(s) {
-    s$class %in% c("update", "formula")
+    s$class %in% c("update", "formula") &&
+      !(s$class == "update" && isTRUE(s$postsim))
   }, logical(1)))
   assertion_ids = which(vapply(statements, function(s) s$class == "assertion",
                                logical(1)))
@@ -478,9 +479,9 @@ sparse_compile_spec = function(statements) {
   }
   ordinary_names = setdiff(formula_targets, deferred)
   setup_inputs = unique(unlist(lapply(statements, function(statement) {
-    if (statement$class != "set" ||
+    if (statement$class != "set" || isTRUE(statement$postsim) ||
         !grepl("=\\s*\\(\\s*all\\s*,", statement$command)) return(NULL)
-    all.vars(str2lang(processSetStatement(statement))[[3L]])
+    all.vars(processSetStatement(statement)[[3L]])
   }), use.names = FALSE))
   normal_assertions = Filter(function(assertion) !assertion$postsim, assertions)
   assertion_inputs = unlist(lapply(normal_assertions, function(assertion) {
@@ -491,7 +492,7 @@ sparse_compile_spec = function(statements) {
     equations, updates, additional = assertion_inputs
   )
   initial_formula_names = vapply(Filter(function(update) {
-    update$class == "formula" && isTRUE(update$initial)
+    update$class == "formula" && !update$postsim && isTRUE(update$initial)
   }, updates), function(update) update$target$name, "")
   initialization_formula_names = sparse_required_formula_names(
     equations, updates,
@@ -516,13 +517,44 @@ sparse_compile_spec = function(statements) {
     update$class == "formula" &&
       (!isTRUE(update$initial) || isTRUE(update$postsim))
   }, updates)
+  post_structure = lapply(seq_along(statements), function(id) {
+    statement = statements[[id]]
+    expression = .tablo_postsim_structure(statement)
+    if (is.null(expression)) return(NULL)
+    list(class = statement$class, statement_id = id,
+         field = as.character(expression[[2L]]), expression = expression)
+  })
+  post_structure = Filter(Negate(is.null), post_structure)
+  post_declarations = Filter(function(action) action$class != "read",
+                             post_structure)
+  post_sets = vapply(Filter(function(action) action$class == "set",
+                            post_declarations), function(action) action$field, "")
+  post_fields = unique(vapply(post_declarations, function(action) action$field, ""))
   post_actions = c(
+    post_structure,
     Filter(function(update) isTRUE(update$postsim), post_updates),
     Filter(function(assertion) assertion$postsim, assertions)
   )
   post_actions = post_actions[order(vapply(post_actions, function(action) {
     action$statement_id
   }, integer(1)))]
+  post_actions = lapply(post_actions, function(action) {
+    action$sets = switch(action$class,
+      set = action$field,
+      coefficient = {
+        elements = statements[[action$statement_id]]$parsed$elements
+        domains = lapply(elements[grepl("^\\s*\\(all,", elements)],
+                         sparse_parse_qualifier)
+        vapply(domains, function(domain) domain$set, "")
+      },
+      formula = .tablo_sets_for_expressions(action$domains,
+                                            .sparse_update_expressions(action)),
+      assertion = .tablo_sets_for_expressions(action$domains,
+                                             .tablo_assertion_expressions(action)),
+      character()
+    )
+    action
+  })
   list(
     variables = variables,
     variable_by_name = variable_by_name,
@@ -541,6 +573,10 @@ sparse_compile_spec = function(statements) {
     }, ordinary_formulas),
     post_updates = post_updates,
     post_actions = post_actions,
+    post_fields = post_fields,
+    post_sets = unique(post_sets),
+    post_dimensions = unique(unlist(lapply(post_actions, `[[`, "sets"),
+                                    use.names = FALSE)),
     formula_names = formula_names,
     required_formula_names = required_formula_names,
     variable_names = variable_names,
@@ -591,11 +627,12 @@ sparse_find_set_values = function(data, set_name) {
 }
 
 sparse_build_index = function(spec, data) {
-  definitions = c(spec$variables, spec$equations, spec$assertions)
+  assertions = Filter(function(assertion) !assertion$postsim, spec$assertions)
+  definitions = c(spec$variables, spec$equations, assertions)
   all_domains = unlist(lapply(definitions, function(x) x$domains),
                        recursive = FALSE)
   set_names = unique(vapply(all_domains, function(x) x$set, ""))
-  set_expressions = lapply(spec$assertions, function(assertion) assertion$expression)
+  set_expressions = lapply(assertions, function(assertion) assertion$expression)
   for (definition in definitions) {
     for (domain in definition$domains) {
       if (!is.null(domain$predicate)) {
@@ -616,6 +653,7 @@ sparse_build_index = function(spec, data) {
     unlist(lapply(set_expressions, sparse_expr_set_names), use.names = FALSE)
   ))
   for (update in spec$updates) {
+    if (update$postsim) next
     for (domain in update$domains) {
       set_names = c(set_names, domain$set)
     }
@@ -818,6 +856,30 @@ sparse_implicit_exogenous_zero = function(value, name, index) {
   value
 }
 
+.sparse_set_position = function(expr, state, bindings, index, n = NULL) {
+  member = expr[[2L]]
+  source = if (is.name(member)) bindings[[paste0(".set:", as.character(member))]]
+  target = if (length(expr) == 3L) as.character(expr[[3L]]) else source
+  if (is.null(target) || is.null(index$sets[[target]])) {
+    stop("$POS requires a known index set", call. = FALSE)
+  }
+  position = if (is.null(n)) {
+    sparse_eval_expr(member, state, bindings, index)
+  } else {
+    sparse_eval_expr_vectorized(member, state, bindings, index, n)
+  }
+  if (!is.null(source) && is.numeric(position)) {
+    labels = index$sets[[source]]$values
+    if (anyNA(position) || any(position < 1 | position > length(labels)) ||
+        any(position != floor(position))) {
+      stop(sprintf("$POS cannot resolve an index in SET %s", source), call. = FALSE)
+    }
+    if (identical(source, target)) return(position)
+    position = labels[as.integer(position)]
+  }
+  .tablo_set_position(position, index$sets[[target]]$values, target)
+}
+
 sparse_eval_expr = function(expr, state, bindings, index) {
   if (is.null(expr)) return(NA_real_)
   if (is.name(expr)) {
@@ -870,31 +932,7 @@ sparse_eval_expr = function(expr, state, bindings, index) {
     ))
   }
 
-  if (op == "setpos" && length(expr) >= 2L) {
-    value = sparse_eval_expr(expr[[2]], state, bindings, index)
-    source_name = bindings[[paste0(".set:", as.character(expr[[2]]))]]
-    label = as.character(value)
-    if (is.numeric(value) && length(value) == 1L &&
-        !is.null(source_name) && !is.null(index$sets[[source_name]])) {
-      source = index$sets[[source_name]]
-      if (value >= 1L && value <= length(source$values)) {
-        label = source$values[[as.integer(value)]]
-      }
-    }
-    candidates = names(index$sets)
-    if (!is.null(source_name)) {
-      candidates = c(setdiff(candidates, source_name), source_name)
-    }
-    for (candidate in candidates) {
-      candidate_values = index$sets[[candidate]]$values
-      position = match(label, candidate_values)
-      if (is.na(position) && grepl("\\.", label)) {
-        position = match(sub("^[^.]*\\.", "", label), candidate_values)
-      }
-      if (!is.na(position)) return(as.numeric(position))
-    }
-    return(if (is.numeric(value)) as.numeric(value) else NA_real_)
-  }
+  if (op == "setpos") return(.sparse_set_position(expr, state, bindings, index))
   if (op == "sum" && length(expr) >= 4L) {
     set_name = tolower(as.character(expr[[3]]))
     set = index$sets[[set_name]]

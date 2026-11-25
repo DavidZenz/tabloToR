@@ -100,6 +100,11 @@ generateEquationCoefficients = function(equationStatements) {
 
     #Loop throuch each variable mentioned in this equation
     for (v in variables) {
+      loops = lapply(c(qualifiers, v$qualifiers), str2lang)
+      index_sets = setNames(
+        lapply(loops, function(q) q[[3L]]),
+        vapply(loops, function(q) as.character(q[[2L]]), "")
+      )
       #Loop through the qualifiers (zeroth is the initial equation)
       expr = sprintf(
         "list(list(equation=%s,variable = %s, expression= %s))",
@@ -129,15 +134,14 @@ generateEquationCoefficients = function(equationStatements) {
             paste(rep('\"%s\"', length(v$indices)), collapse = ',')
           )
         ),
-        deparse1(sumToMap(.tablo_with_division(v$coefficient)))
+        deparse1(sumToMap(.tablo_with_division(v$coefficient), index_sets))
       )
       for (guard in rev(v$guards)) {
         context = encodeString(paste("Equation", equationName), quote = '"')
         expr = sprintf("if (.tablo_condition(%s, %s)) %s else list()",
-                       deparse1(sumToMap(.tablo_with_division(guard))), context, expr)
+                       deparse1(sumToMap(.tablo_with_division(guard), index_sets)), context, expr)
       }
-      for (qualifier in c(qualifiers, v$qualifiers)) {
-        q = str2lang(qualifier)
+      for (q in loops) {
         expr = sprintf(
           'unlist(Map(function(%s)%s,%s),recursive=F,use.names=F)',
           deparse1(q[[2]]),

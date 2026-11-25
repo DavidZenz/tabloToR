@@ -790,6 +790,7 @@ GEModel = setRefClass(
       }
 
       .transaction_fault("compilation")
+      data <<- data[setdiff(names(data), sparseSpec$post_fields)]
 
       # Create a shock variable
 
@@ -959,8 +960,7 @@ GEModel = setRefClass(
           }
           if (extrapolate_coefficients) {
             coefficient_result = .tablo_add_euler_coefficients(
-              coefficient_result, data[coefficient_names],
-              originalData[coefficient_names], weights[[step]]
+              coefficient_result, data[coefficient_names], weights[[step]]
             )
           }
         }

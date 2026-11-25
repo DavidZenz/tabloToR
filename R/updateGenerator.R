@@ -9,6 +9,7 @@
 generateUpdates = function(statements) {
   formula_block = quote({})
   post_block = quote({})
+  post_fields = character()
   update_block = quote({})
   targets = character()
   for (s in statements) {
@@ -21,20 +22,30 @@ generateUpdates = function(statements) {
         str2lang(processUpdateStatement(s, target))
     } else if (s$class == "assertion") {
       assertion = .compile_tablo_assertion(s)
-      post_block[[length(post_block) + 1L]] = bquote(.check_tablo_assertions(
-        list(.(assertion)), as.list(environment(), all.names = TRUE),
-        phase = "postsim"
-      ))
+      post_block[[length(post_block) + 1L]] = bquote(
+        if (.tablo_check_post_assertions) .check_tablo_assertions(
+          list(.(assertion)), as.list(environment(), all.names = TRUE),
+          phase = "postsim"
+        )
+      )
     } else if (isTRUE(s$postsim)) {
-      post_block[[length(post_block) + 1L]] =
-        str2lang(processFormulaStatement(s))
+      if (s$class == "formula") {
+        expression = str2lang(processFormulaStatement(s))
+        target = sparse_parse_ref(correctFormula(s$parsed$equation)[[2L]])$name
+      } else {
+        expression = .tablo_postsim_structure(s)
+        if (is.null(expression)) next
+        target = as.character(expression[[2L]])
+      }
+      post_fields = union(post_fields, target)
+      post_block[[length(post_block) + 1L]] = expression
     } else if (!.tablo_formula_is_initial(s)) {
       formula_block[[length(formula_block) + 1L]] =
         str2lang(processFormulaStatement(s))
     }
   }
 
-  function(data, phase = "all") {
+  function(data, phase = "all", check_assertions = TRUE) {
     if (phase %in% c("all", "formula") && length(formula_block) > 1L) {
       data = eval(call("within", quote(data), formula_block))
     }
@@ -47,7 +58,10 @@ generateUpdates = function(statements) {
       data[targets] = bindings$.tablo_pending
     }
     if (phase == "postsim" && length(post_block) > 1L) {
-      data = eval(call("within", quote(data), post_block))
+      .tablo_check_post_assertions = check_assertions
+      result = eval(call("within", quote(data), post_block))
+      fields = intersect(post_fields, names(result))
+      data[fields] = result[fields]
     }
     data
   }
@@ -67,29 +81,26 @@ generateUpdates = function(statements) {
   }, numeric(1))
 }
 
-.tablo_add_euler_coefficients = function(accumulator, current, original, weight) {
+.tablo_add_euler_coefficients = function(accumulator, current, weight) {
+  if (is.null(accumulator)) return(list(anchor = current, differences = list()))
   for (name in names(current)) {
-    value = current[[name]]
-    reference = original[[name]]
-    # Extrapolate changes to keep unchanged coefficients exact.
-    missing = !is.finite(reference)
-    if (any(missing)) {
-      value[missing & !is.finite(value)] = NA_real_
-      reference[missing] = 0
-    }
-    weighted = (value - reference) * weight
-    previous = accumulator[[name]]
-    accumulator[[name]] = if (is.null(previous)) weighted else previous + weighted
+    # Center on a completed trajectory. Subtracting the original level can
+    # erase small final levels when all trajectories move far from it.
+    anchor = accumulator$anchor[[name]]
+    weighted = (current[[name]] - anchor) * weight
+    previous = accumulator$differences[[name]]
+    accumulator$differences[[name]] =
+      if (is.null(previous)) weighted else previous + weighted
   }
   accumulator
 }
 
-.tablo_finish_euler_coefficients = function(result, original) {
+.tablo_finish_euler_coefficients = function(accumulator, original) {
+  result = accumulator$anchor
   for (name in names(result)) {
-    value = result[[name]]
+    value = result[[name]] + accumulator$differences[[name]]
     reference = original[[name]]
     missing = !is.finite(reference)
-    value[!missing] = value[!missing] + reference[!missing]
     if (any(is.infinite(value)) || any(is.na(value) & !missing)) {
       stop(sprintf("TABLO extrapolation produced a non-finite value for %s",
                    name), call. = FALSE)

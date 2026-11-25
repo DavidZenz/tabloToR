@@ -1,6 +1,15 @@
+.tablo_formula_qualifiers = function(statement) {
+  elements = unlist(statement$parsed$elements, use.names = FALSE)
+  elements = elements[!grepl("^\\(\\s*all\\s*,", elements)]
+  elements = gsub('"[^"]*"', '""', elements)
+  trimws(unlist(strsplit(sub("\\)$", "", sub("^\\(", "", elements)),
+                         ",", fixed = TRUE), use.names = FALSE))
+}
+
 .tablo_formula_is_initial = function(statement) {
-  isTRUE(statement$read_default) ||
-    any(grepl("^\\(\\s*initial\\s*[,)]", statement$parsed$elements))
+  qualifiers = .tablo_formula_qualifiers(statement)
+  isTRUE(statement$read_default) || "initial" %in% qualifiers ||
+    (!("always" %in% qualifiers) && isTRUE(statement$formula_initial_default))
 }
 
 processFormulaStatement = function(s){

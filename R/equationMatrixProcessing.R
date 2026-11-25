@@ -45,7 +45,7 @@ generateEquationCoefficientMatrix = function(variableStatements, equationStateme
       toRet[[length(toRet) + 1]] = sprintf('equations = c(equations,%s)' , expr)
 
     } else{
-      toRet[[length(toRet) + 1]] = sprintf('equations = c(equations,unlist(do.call(c,%s)))' , expr)
+      toRet[[length(toRet) + 1]] = sprintf('equations = c(equations,unlist(%s))' , expr)
 
     }
   }
@@ -99,7 +99,7 @@ generateEquationCoefficientMatrix = function(variableStatements, equationStateme
       toRet[[length(toRet) + 1]] = sprintf('variables = c(variables,%s)' , expr)
 
     } else{
-      toRet[[length(toRet) + 1]] = sprintf('variables = c(variables,unlist(do.call(c,%s)))' , expr)
+      toRet[[length(toRet) + 1]] = sprintf('variables = c(variables,unlist(%s))' , expr)
 
     }
   }

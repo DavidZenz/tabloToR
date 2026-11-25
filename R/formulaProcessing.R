@@ -1,10 +1,34 @@
-sumToMap = function(expr) {
-  if (!is.call(expr)) return(expr)
+.tablo_set_position = function(member, labels, set_name) {
+  positions = match(tolower(as.character(member)), tolower(as.character(labels)))
+  if (anyNA(positions)) {
+    stop(sprintf("$POS cannot resolve a member of SET %s", set_name),
+         call. = FALSE)
+  }
+  positions
+}
 
-  if (identical(expr[[1L]], as.name("sum")) && length(expr) == 4L) {
+sumToMap = function(expr, index_sets = list()) {
+  if (!is.call(expr)) return(expr)
+  op = expr[[1L]]
+
+  if (identical(op, as.name("setpos"))) {
+    set = if (length(expr) == 3L) expr[[3L]] else if (
+      length(expr) == 2L && is.name(expr[[2L]])
+    ) index_sets[[as.character(expr[[2L]])]]
+    if (!is.name(set)) stop("$POS requires a known index set", call. = FALSE)
+    return(call(".tablo_set_position", sumToMap(expr[[2L]], index_sets),
+                set, as.character(set)))
+  }
+  if (identical(op, as.name("for"))) {
+    index_sets[[as.character(expr[[2L]])]] = expr[[3L]]
+    expr[[4L]] = sumToMap(expr[[4L]], index_sets)
+    return(expr)
+  }
+  if (identical(op, as.name("sum")) && length(expr) == 4L) {
     index = expr[[2L]]
     set = expr[[3L]]
-    expression = sumToMap(expr[[4L]])
+    index_sets[[as.character(index)]] = set
+    expression = sumToMap(expr[[4L]], index_sets)
     mapped = str2lang(sprintf("Map(function(%s)%s, %s)",
                               deparse1(index), deparse1(expression),
                               deparse1(set)))
@@ -12,7 +36,7 @@ sumToMap = function(expr) {
   }
   for (i in seq_along(expr)[-1L]) {
     if (!identical(expr[[i]], quote(expr = ))) {
-      expr[i] = list(sumToMap(expr[[i]]))
+      expr[i] = list(sumToMap(expr[[i]], index_sets))
     }
   }
   expr

@@ -182,8 +182,9 @@ processReadStatement = function(s) {
   # A formula before an optional read provides the initial fallback.
   for (id in seq_along(statements)) {
     statement = statements[[id]]
+    if (isTRUE(statement$postsim)) next
     if (statement$class == "formula" &&
-        !any(grepl("^\\(\\s*always\\s*\\)$", statement$parsed$elements))) {
+        !("always" %in% .tablo_formula_qualifiers(statement))) {
       expression = trimws(statement$parsed$equation)
       target = regmatches(expression, regexpr("^[a-z][a-z0-9_.]*", expression))
       if (length(target)) formulas[[target]] = c(formulas[[target]], id)

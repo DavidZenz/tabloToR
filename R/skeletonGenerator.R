@@ -1,3 +1,14 @@
+.tablo_postsim_structure = function(statement) {
+  if (!isTRUE(statement$postsim)) return(NULL)
+  expression = switch(statement$class,
+    set = processSetStatement(statement),
+    coefficient = if (!grepl("^mapping\\s", statement$parsed$equation))
+      processCoefficientStatement(statement),
+    read = processReadStatement(statement)
+  )
+  if (is.character(expression)) str2lang(expression) else expression
+}
+
 generateSkeleton = function(statements) {
   toRet = list('"/" <- .tablo_divide')
   for (s in statements) {

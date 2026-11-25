@@ -1,8 +1,10 @@
 .tablo_mark_division = function(statements) {
   normal = post = list(zero = 0, nonzero = NULL)
   postsim = FALSE
+  formula_initial_default = FALSE
   for (id in seq_along(statements)) {
     statement = statements[[id]]
+    statements[[id]]$postsim = postsim
     if (statement$class == "postsim") {
       postsim = grepl("^\\(\\s*begin\\s*\\)", statement$command)
     } else if (statement$class == "zerodivide") {
@@ -36,10 +38,17 @@
         normal[kind] = list(replacement)
       }
     } else if (statement$class == "formula") {
-      statements[[id]]$division = if (postsim) post else normal
-      statements[[id]]$postsim = postsim
-    } else if (statement$class == "assertion") {
-      statements[[id]]$postsim = postsim
+      if (grepl("^\\(\\s*default\\s*=\\s*(always|initial)\\s*\\)$",
+                trimws(statement$command))) {
+        if (!postsim) {
+          formula_initial_default = grepl("initial\\s*\\)$",
+                                          trimws(statement$command))
+        }
+        statements[[id]]$class = "formula_default"
+      } else {
+        statements[[id]]$formula_initial_default = formula_initial_default
+        statements[[id]]$division = if (postsim) post else normal
+      }
     }
   }
   statements

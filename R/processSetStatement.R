@@ -4,6 +4,16 @@
     stop(sprintf('SET %s from file %s header "%s" is missing',
                  set, file, header), call. = FALSE)
   }
+  .tablo_unique_set_members(values, set)
+}
+
+.tablo_unique_set_members = function(values, set) {
+  labels = tolower(as.character(values))
+  duplicates = unique(labels[duplicated(labels)])
+  if (length(duplicates)) {
+    stop(sprintf("SET %s has duplicate members: %s", set,
+                 paste(duplicates, collapse = ", ")), call. = FALSE)
+  }
   values
 }
 
@@ -32,6 +42,22 @@ processSetStatement = function(s) {
     target = as.name(read[[2L]])
     return(call("=", target, call(".tablo_read_set", read[[2L]], read[[3L]],
                                  read[[4L]], quote(environment()))))
+  }
+  conditional = regexec("^([a-z][a-z0-9_.]*)\\s*=\\s*(\\(\\s*all\\s*,.*\\))$",
+                        s$command, perl = TRUE)
+  conditional = regmatches(s$command, conditional)[[1L]]
+  if (length(conditional)) {
+    name = conditional[[2L]]
+    domain = sparse_parse_qualifier(conditional[[3L]])
+    label = as.name(domain$index)
+    set = as.name(domain$set)
+    predicate = correctFormula(domain$predicate, preserve_assignment = FALSE)
+    predicate = sumToMap(predicate, setNames(list(set), domain$index))
+    predicate = call(".tablo_condition", predicate, paste("Set", name))
+    select = as.call(list(as.name("function"), as.pairlist(setNames(
+      list(quote(expr = )), as.character(label)
+    )), predicate))
+    return(call("=", as.name(name), call("[", set, call("vapply", set, select, FALSE))))
   }
   # SET DIFFERENCE
   if (grepl(".* = .* - .*", s$command)) {
@@ -73,33 +99,6 @@ processSetStatement = function(s) {
     #toRet[[deparse(command[[2]])]] = eval(command[[3]], toRet)
     toRet = sprintf('%s=%s', deparse1(command[[2]]), deparse1(command[[3]]))
   }
-  # SET FORMULA
-  else if (grepl(".* = \\(all,.*,.*\\)", s$command)) {
-    command = normalizeTabloExpression(s$command)
-    command = sub("=", "==", command, fixed = TRUE)
-    preCommand = str2lang(gsub(":", ",", gsub("\\(all,", "all(", command)))
-
-    setName = deparse1(preCommand[[3]][[3]])
-    standIn = deparse1(preCommand[[3]][[2]])
-    preCommand[[3]][[4]] = str2lang(gsub(
-      paste0('\\b', standIn, '\\b'),
-      setName ,
-      deparse1(preCommand[[3]][[4]])
-    ))
-
-    preCommand[[3]][[1]] = as.name('[')
-    preCommand[[3]][[2]] = NULL
-
-    preCommand[[3]][[3]] = call(
-      ".tablo_condition", removeFunctions(preCommand[[3]][[3]]),
-      paste("Set", deparse1(preCommand[[2L]]))
-    )
-
-    #toRet[[deparse(preCommand[[2]])]] = eval(preCommand[[3]], toRet)
-    toRet = sprintf('%s=%s', deparse1(preCommand[[2]]), deparse1(preCommand[[3]]))
-    #eval(str2lang('SLUG[ENDW_COMM]'), toRet)
-    #eval(quote(SLUG[ENDW_COMM]),toRet)
-  }
   # SET SPECIFIED
   else if (grepl(".*\\(.*\\)", s$command)) {
     from = regexpr('\\(', s$command)
@@ -109,7 +108,8 @@ processSetStatement = function(s) {
     set_name = as.name(trimws(substr(s$command, 1, from - 1)))
     elements = unlist(lapply(elements, .tablo_expand_set_range),
                       use.names = FALSE)
-    toRet = call("=", set_name, elements)
+    toRet = call("=", set_name,
+                 call(".tablo_unique_set_members", elements, as.character(set_name)))
   }
 
   return(toRet)

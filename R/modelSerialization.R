@@ -791,6 +791,16 @@
   invisible(TRUE)
 }
 
+.serialization_has_accepted_levels = function(payload, variable_names) {
+  if (length(payload$accepted$solution) ||
+      isTRUE(payload$diagnostics$accepted_numerical_state)) return(TRUE)
+  # Closure and shock changes can clear the solution or diagnostics while
+  # retaining the numerical levels. An untouched variable has NA storage.
+  any(vapply(payload$levels[variable_names], function(value) {
+    is.double(value) && any(is.finite(value))
+  }, logical(1)))
+}
+
 .validate_reconstructed_logical_state = function(payload, restored) {
   rebuilt_levels = if (identical(payload$engine, "sparse")) {
     sparse_state_data(restored$sparseState)
@@ -819,7 +829,7 @@
     )
   } else character()
   reconstructed_numeric_fields = if (
-    length(payload[["accepted"]][["solution"]])
+    .serialization_has_accepted_levels(payload, available_variables)
   ) {
     fields = available_variables
     post_simulation_retained = isTRUE(
@@ -844,12 +854,14 @@
   rebuilt_levels = .serialization_promote_reconstructed_fields(
     rebuilt_levels, reconstructed_numeric_fields
   )
+  post_fields = intersect(names(payload$levels), restored$sparseSpec$post_fields)
+  saved_levels = payload$levels[setdiff(names(payload$levels), post_fields)]
   if (identical(payload$engine, "sparse")) {
     .serialization_validate_structure(
-      payload$levels, rebuilt_levels, "levels"
+      saved_levels, rebuilt_levels, "levels"
     )
   } else {
-    if (!identical(names(payload$levels), names(rebuilt_levels))) {
+    if (!identical(names(saved_levels), names(rebuilt_levels))) {
       .serialization_stop(
         "levels fields do not match the reconstructed model"
       )
@@ -870,10 +882,59 @@
     ))
     for (field in names(rebuilt_levels)) {
       .serialization_validate_structure(
-        payload$levels[[field]], rebuilt_levels[[field]],
+        saved_levels[[field]], rebuilt_levels[[field]],
         paste0("levels$", field),
         allow_dimension_drop = field %in% dimension_dropping_fields
       )
+    }
+  }
+  if (length(post_fields)) {
+    if (!setequal(post_fields, restored$sparseSpec$post_fields)) {
+      .serialization_stop(
+        "PostSim levels fields do not match the reconstructed model"
+      )
+    }
+    validate_postsim = function(template) {
+      for (field in post_fields) {
+        .serialization_validate_structure(
+          payload$levels[[field]], template[[field]], paste0("levels$", field)
+        )
+      }
+    }
+    spec = restored$sparseSpec
+    # Report dimensions can depend on the final numerical levels.
+    final_error = tryCatch({
+      post_levels = if (identical(payload$engine, "sparse")) {
+        state = sparse_make_state(saved_levels)
+        .sparse_run_postsim(state, restored$sparseIndex, spec,
+                            check_assertions = FALSE)
+        sparse_state_data(state)
+      } else {
+        saved_levels[["/"]] = .tablo_divide
+        restored$generateUpdates(saved_levels, phase = "postsim",
+                                  check_assertions = FALSE)
+      }
+      validate_postsim(post_levels)
+      NULL
+    }, error = identity)
+    if (!is.null(final_error)) {
+      # Earlier version-1 checkpoints allocated report fields at load time.
+      spec$post_actions = Filter(function(action) {
+        action$class %in% c("set", "coefficient", "read")
+      }, spec$post_actions)
+      tryCatch({
+        state = sparse_make_state(rebuilt_levels)
+        .sparse_run_postsim(state, restored$sparseIndex, spec)
+        validate_postsim(.serialization_promote_reconstructed_fields(
+          sparse_state_data(state), reconstructed_numeric_fields
+        ))
+      }, error = function(error) {
+        message = conditionMessage(final_error)
+        if (startsWith(message, "Invalid logical state payload:")) {
+          stop(final_error)
+        }
+        .serialization_stop(sprintf("PostSim reconstruction failed: %s", message))
+      })
     }
   }
   if (any(!payload$closure %in% available_variables)) {
@@ -1059,8 +1120,9 @@
   })
   .validate_reconstructed_logical_state(payload, restored)
 
-  accepted_simulation = length(payload$accepted$solution) > 0L ||
-    isTRUE(payload$diagnostics$accepted_numerical_state)
+  accepted_simulation = .serialization_has_accepted_levels(
+    payload, restored$sparseSpec$variable_names
+  )
   if (!accepted_simulation && length(restored$sparseSpec$assertions)) {
     initial_levels = if (identical(payload$engine, "sparse")) {
       sparse_state_data(restored$sparseState)

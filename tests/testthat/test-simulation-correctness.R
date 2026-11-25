@@ -17,6 +17,156 @@ solve_from_tablo = function(lines, closure, shocks, engine = "sparse",
   model
 }
 
+test_that("Euler extrapolation preserves small final coefficient levels", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 1e16;",
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;",
+    "update (explicit) stock = 1;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (steps in list(1L, 2L, c(1L, 2L), c(1L, 2L, 4L))) {
+      model = solve_from_tablo(lines, "a", c("a[]" = 1), engine, steps = steps)
+      expect_identical(model$data$stock, 1)
+    }
+  }
+})
+
+test_that("set positions use the bound or explicitly named set", {
+  lines = c(
+    "set parent (p1,p2,p3);", "set child (p2,p3);", "set other (p3,p2);",
+    "subset child is subset of parent;",
+    "set active = (all,c,child: $pos(c,parent) gt 2);",
+    "coefficient (all,c,child)(all,j,other) rank(c,j);",
+    "formula (initial) (all,c,child)(all,j,other) rank(c,j) = $pos(c);",
+    "variable (change) a;", "variable (change)(all,c,child) x(c);",
+    "variable (change)(all,c,active) y(c);",
+    paste0('equation positions (all,c,child) x(c) = 10 * rank(c,"p3") * a',
+           ' + $pos(c,parent) * a + $pos("p2",parent) * a;'),
+    "equation selection (all,c,active) y(c) = $pos(c) * a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (vectorized in if (engine == "sparse") c(FALSE, TRUE) else TRUE) {
+      withr::local_options(list(GEModelR.sparse.vectorized = vectorized))
+      model = solve_from_tablo(lines, "a", c("a[]" = 1), engine)
+      expect_identical(model$data$active, "p3")
+      expected = c('x["p2"]' = 14, 'x["p3"]' = 25, 'y["p3"]' = 1)
+      expect_equal(model$solution[names(expected)], expected)
+    }
+  }
+})
+
+test_that("initial formula defaults and reordered qualifiers survive updates", {
+  initial = list(
+    c("formula (default = initial);", "formula stock = 100;"),
+    'formula (initial, write updated value to file basedata header "STOK") stock = 100;',
+    'formula (write updated value to file basedata header "STOK", initial) stock = 100;'
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (directives in initial) {
+      lines = c(
+        "file (new, for_updates) basedata;", "coefficient stock;", directives,
+        "coefficient refreshed;", "formula (always) refreshed = stock;",
+        "variable (change) a;", "variable (change) x;",
+        "equation outcome x = a;", "update (change) stock = a;"
+      )
+      model = solve_from_tablo(lines, "a", c("a[]" = 10), engine,
+                               steps = c(1L, 2L))
+      expect_equal(model$data$stock, 110)
+      expect_equal(model$data$refreshed, 110)
+    }
+  }
+})
+
+test_that("sets read from headers reject duplicate members", {
+  lines = c(
+    'set reg read elements from file basedata header "REGS";',
+    "variable (change)(all,r,reg) a(r);", "variable (change)(all,r,reg) x(r);",
+    "equation outcome (all,r,reg) x(r) = a(r);"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (duplicate in c("north", "NORTH")) {
+      expect_error(
+        load_from_tablo(lines, "a", engine, list(basedata = list(
+          regs = c("north", duplicate, "south")
+        ))),
+        "SET reg has duplicate members: north"
+      )
+    }
+    valid = list(basedata = list(regs = c("north", "south")))
+    model = solve_from_tablo(lines, "a", c('a["north"]' = 5), engine, valid)
+    expect_equal(model$solution, c('x["north"]' = 5, 'x["south"]' = 0))
+  }
+})
+
+test_that("PostSim runs reads, sets and formulas in order on final levels", {
+  lines = c(
+    "set reg (north,south);", "coefficient (all,r,reg) stock(r);",
+    'read stock from file basedata header "STOK";',
+    "variable (change)(all,r,reg) a(r);", "variable (change)(all,r,reg) x(r);",
+    "equation outcome (all,r,reg) x(r) = a(r);",
+    "update (change)(all,r,reg) stock(r) = a(r);",
+    "postsim (begin);", "file (old) reportfile;", "coefficient cutoff;",
+    'read cutoff from file reportfile header "CUT";',
+    "set winners = (all,r,reg: stock(r) gt cutoff);",
+    "coefficient (all,w,winners) report(w);",
+    "formula (all,w,winners) report(w) = stock(w);",
+    "assertion (all,w,winners) report(w) gt cutoff;",
+    "postsim (end);"
+  )
+  input = list(basedata = list(stok = c(5, 12)))
+  for (engine in c("sparse", "legacy")) {
+    model = load_from_tablo(lines, "a", engine, input)
+    expect_null(model$data$winners)
+    model$setShocks(c('a["north"]' = 10))
+    suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine,
+                                      postsim = FALSE))
+    expect_equal(model$solution, c('x["north"]' = 10, 'x["south"]' = 0))
+    expect_null(model$data$report)
+
+    model = load_from_tablo(lines, "a", engine,
+                            c(input, list(reportfile = list(cut = 10))))
+    model$setShocks(c('a["north"]' = 10))
+    if (engine == "sparse") {
+      model$solveModel(iter = 1, steps = 1, engine = engine, output = "compact",
+                       variables = "report", dimensions = list(winners = "north"))
+      expect_equal(as.numeric(model$compactOutput$report), 15)
+      expect_identical(dimnames(model$compactOutput$report)$winners, "north")
+    } else {
+      suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine))
+    }
+    expect_identical(model$data$winners, c("north", "south"))
+    expect_equal(as.numeric(model$data$report), c(15, 12))
+    saved = withr::local_tempfile()
+    model$saveState(saved)
+    restored = GEModel$new()
+    restored$loadState(saved)
+    expect_identical(restored$data$report, model$data$report)
+    expect_identical(restored$compactOutput, model$compactOutput)
+  }
+})
+
+test_that("checkpoints after a closure change retain numerical levels", {
+  lines = c(
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 4), engine)
+    model$setClosure("x")
+    expect_length(model$solution, 0)
+    saved = withr::local_tempfile()
+    model$saveState(saved)
+    restored = GEModel$new()
+    restored$loadState(saved)
+    expect_identical(restored$closure, "x")
+    expect_equal(restored$data$a, 4)
+    expect_equal(restored$data$x, 4)
+    expect_length(restored$explicitShocks$labels, 0)
+    restored$setShocks(c("x[]" = 3))
+    suppressMessages(restored$solveModel(iter = 1, steps = 1, engine = engine))
+    expect_equal(restored$solution, c("a[]" = 3))
+  }
+})
+
 test_that("ordinary and percentage shocks retain their units across steps", {
   lines = c(
     "set reg (r1,r2);",
