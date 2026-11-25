@@ -463,3 +463,223 @@ test_that("division by zero is an error in active equations and updates", {
     }
   }
 })
+
+test_that("sparse coefficient references align subset labels with parent axes", {
+  lines = c(
+    "set reg (north,south,east);", "set active (south,east);",
+    "subset active is subset of reg;",
+    "coefficient (all,r,reg) weight(r);",
+    'read weight from file basedata header "WGHT";',
+    "variable a;", "variable (all,r,active) x(r);",
+    "equation outcome (all,r,active) x(r) = weight(r) * a;"
+  )
+  input = list(basedata = list(wght = c(10, 20, 30)))
+  expected = c('x["south"]' = 80, 'x["east"]' = 120)
+  for (vectorized in c(FALSE, TRUE)) {
+    withr::local_options(list(GEModelR.sparse.vectorized = vectorized))
+    sparse = solve_from_tablo(lines, "a", c("a[]" = 4), input = input)
+    expect_equal(sparse$solution, expected)
+  }
+  legacy = solve_from_tablo(lines, "a", c("a[]" = 4), "legacy", input)
+  expect_equal(legacy$solution, expected)
+})
+
+test_that("Euler extrapolation retains updated coefficients across subintervals", {
+  lines = c(
+    "coefficient first;", "formula (initial) first = 2;",
+    "coefficient second;", "formula (initial) second = 100;",
+    "variable (change) a;", "variable (change) x;",
+    "equation outcome x = a;",
+    "update (change) first = a;", "update (change) second = first * a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (iter in c(1L, 2L)) {
+      model = solve_from_tablo(lines, "a", c("a[]" = 10), engine,
+                                iter = iter, steps = c(1L, 2L))
+      expect_equal(model$solution, c("x[]" = 10))
+      expect_equal(model$data$first, 12)
+      expect_equal(model$data$second, 170)
+    }
+  }
+})
+
+test_that("three Euler counts extrapolate the solution and updated data", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 1;",
+    "variable (change) a;", "variable (change) x;",
+    "equation outcome x = stock * a;", "update (change) stock = x;"
+  )
+  steps = c(1, 2, 4)
+  by_count = (1 + 1 / steps) ^ steps - 1
+  expected = sum(c(1 / 3, -2, 8 / 3) * by_count)
+  for (engine in c("sparse", "legacy")) {
+    for (order in list(steps, rev(steps))) {
+      model = solve_from_tablo(lines, "a", c("a[]" = 1), engine, steps = order)
+      expect_equal(model$solution, c("x[]" = expected), tolerance = 1e-12)
+      expect_equal(model$data$stock, 1 + expected, tolerance = 1e-12)
+    }
+  }
+})
+
+test_that("explicit updates assign the calculated level", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 100;",
+    "variable (change) a;", "variable (change) x;",
+    "equation outcome x = a;", "update (explicit) stock = stock + a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 10), engine, steps = 2L)
+    expect_equal(model$data$stock, 110)
+  }
+})
+
+test_that("SET ranges expand and header lookup requires the exact name", {
+  lines = c(
+    "variable a;", "variable (all,r,reg) x(r);",
+    "equation outcome (all,r,reg) x(r) = a;"
+  )
+  expected = c("r01", "r02", "r03", "other")
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(c("set reg (r01-r03,other);", lines),
+                            "a", c("a[]" = 4), engine)
+    expect_identical(model$data$reg, expected)
+    expect_equal(model$solution, setNames(rep(4, 4), sprintf('x["%s"]', expected)))
+
+    for (limit in c("", "maximum size 4 ")) {
+      read = sprintf('set reg %sread elements from file basedata header "REGS";',
+                     limit)
+      expect_error(
+        load_from_tablo(c(read, lines), "a", engine,
+                        list(basedata = list(regs_backup = expected))),
+        'SET reg from file basedata header "regs" is missing'
+      )
+      model = load_from_tablo(c(read, lines), "a", engine,
+                             list(basedata = list(regs = expected)))
+      expect_identical(model$data$reg, expected)
+    }
+  }
+})
+
+test_that("a recognizable HAR axis must appear in its declared position", {
+  lines = c(
+    "set origin (north,south);", "set destination (north,south);",
+    "coefficient (all,o,origin)(all,d,destination) weight(o,d);",
+    'read weight from file basedata header "WGHT";',
+    "variable a;", "variable x;",
+    'equation outcome x = weight("north","south") * a;'
+  )
+  header = matrix(c(2, 3, 5, 7), nrow = 2L,
+                  dimnames = list(origin = c("north", "south"),
+                                  destination = c("north", "south")))
+  swapped = t(header)
+  names(dimnames(swapped))[2L] = ""
+  names(dimnames(header))[1L] = ""
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 4), engine,
+                            list(basedata = list(wght = header)))
+    expect_equal(model$solution, c("x[]" = 20))
+    expect_error(
+      load_from_tablo(lines, "a", engine, list(basedata = list(wght = swapped))),
+      "named dimensions in the wrong order"
+    )
+  }
+})
+
+test_that("initial assertions run in source order and before a new simulation", {
+  equation = c("variable (change) a;", "variable (change) x;",
+               "equation outcome x = a;", "update (change) stock = a;")
+  before = c("coefficient stock;", "formula (initial) stock = 1;",
+             "assertion (initial) # positive stock # stock gt 0;")
+  passing = c(before, "formula (initial) stock = -1;", equation)
+  failing = c(before[1L], "formula (initial) stock = -1;",
+              before[3L], "formula (initial) stock = 1;", equation)
+  for (engine in c("sparse", "legacy")) {
+    expect_error(load_from_tablo(failing, "a", engine), 'assertion "positive stock"')
+    model = solve_from_tablo(passing, "a", c("a[]" = -1), engine)
+    expect_equal(model$data$stock, -2)
+    saved = withr::local_tempfile()
+    model$saveState(saved)
+    restored = GEModel$new()
+    restored$loadState(saved)
+    restored$setShocks(c("a[]" = 3))
+    expect_error(
+      suppressMessages(restored$solveModel(iter = 1, steps = 1, engine = engine)),
+      'assertion "positive stock"'
+    )
+
+    model$setClosure("a")
+    model$setShocks(c("a[]" = 3))
+    expect_error(suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine)),
+                 'assertion "positive stock"')
+    expect_equal(model$data$stock, -2)
+  }
+})
+
+test_that("PostSim assertions observe final values and their source position", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 100;",
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;",
+    "update (change) stock = a;",
+    "postsim (begin);",
+    "coefficient observed;", "formula observed = stock;",
+    "assertion # final stock # observed gt 100;",
+    "formula observed = -1;",
+    "postsim (end);"
+  )
+  for (engine in c("sparse", "legacy")) {
+    success = solve_from_tablo(lines, "a", c("a[]" = 10), engine)
+    expect_equal(success$data$observed, -1)
+    expect_error(solve_from_tablo(lines, "a", c("a[]" = -10), engine),
+                 'assertion "final stock"')
+    skipped = load_from_tablo(lines, "a", engine)
+    skipped$setShocks(c("a[]" = -10))
+    suppressMessages(skipped$solveModel(iter = 1, steps = 1, engine = engine,
+                                       postsim = FALSE))
+    expect_equal(skipped$solution, c("x[]" = -10))
+  }
+})
+
+test_that("invalid coefficient updates leave both engines at their prior state", {
+  lines = c(
+    "coefficient first;", "formula (initial) first = 2;",
+    "coefficient stock;", "formula (initial) stock = 100;",
+    "coefficient multiplier;", 'read multiplier from file basedata header "MULT";',
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;",
+    "update (change) first = a;", "update (change) stock = multiplier * a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (multiplier in c(NA_real_, 1e308)) {
+      model = load_from_tablo(lines, "a", engine,
+                             list(basedata = list(mult = multiplier)))
+      before = model$data
+      model$setShocks(c("a[]" = 4))
+      expect_error(
+        suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine)),
+        "UPDATE of stock produced a non-finite"
+      )
+      expect_identical(model$data, before)
+      expect_length(model$solution, 0L)
+    }
+  }
+})
+
+test_that("sparse compact output refreshes ordinary formula dependencies", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 2;",
+    "coefficient scaled;", "formula scaled = stock * 2;",
+    "coefficient report;", "formula (always) report = scaled * 5;",
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;",
+    "update (change) stock = a;"
+  )
+  model = load_from_tablo(lines, "a")
+  model$setShocks(c("a[]" = 4))
+  model$solveModel(iter = 1, steps = 1, engine = "sparse", output = "compact",
+                   postsim = FALSE, variables = "report")
+  expect_equal(model$compactOutput$report, 60)
+
+  saved = withr::local_tempfile()
+  model$saveState(saved)
+  restored = GEModel$new()
+  restored$loadState(saved)
+  expect_equal(restored$compactOutput$report, 60)
+})

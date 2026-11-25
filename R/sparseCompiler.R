@@ -297,7 +297,9 @@ sparse_terms_from_expr = function(expr,
 .compile_tablo_assertion = function(statement) {
   elements = trimws(unlist(statement$parsed$elements, use.names = FALSE))
   list(
+    class = "assertion",
     label = statement$comment,
+    postsim = isTRUE(statement$postsim),
     expression = correctFormula(statement$parsed$equation,
                                 preserve_assignment = FALSE),
     domains = lapply(elements[grepl("^\\(\\s*all\\s*,", elements)],
@@ -312,8 +314,13 @@ sparse_compile_spec = function(statements) {
   update_ids = which(vapply(statements, function(s) {
     s$class %in% c("update", "formula")
   }, logical(1)))
-  assertions = lapply(Filter(function(s) s$class == "assertion", statements),
-                      .compile_tablo_assertion)
+  assertion_ids = which(vapply(statements, function(s) s$class == "assertion",
+                               logical(1)))
+  assertions = lapply(assertion_ids, function(id) {
+    assertion = .compile_tablo_assertion(statements[[id]])
+    assertion$statement_id = id
+    assertion
+  })
 
   variable_names = unique(vapply(variable_statements, function(s) {
     ref = correctFormula(s$parsed$equation)
@@ -447,12 +454,36 @@ sparse_compile_spec = function(statements) {
     Filter(function(update) update$class == "formula", updates),
     function(update) update$target$name, character(1)
   ))
+  ordinary_formulas = Filter(function(update) {
+    update$class == "formula" && !isTRUE(update$postsim)
+  }, updates)
+  formula_targets = vapply(ordinary_formulas, function(update) {
+    update$target$name
+  }, "")
+  formula_inputs = lapply(ordinary_formulas, function(update) {
+    inputs = unlist(lapply(.sparse_update_expressions(update),
+                           sparse_expr_data_names), use.names = FALSE)
+    setdiff(inputs, vapply(update$domains, function(domain) domain$index, ""))
+  })
+  # Older models also use ordinary-looking formulas to compute reports
+  # from solved variables. Those formulas must wait for the post-solve pass.
+  deferred = variable_names
+  repeat {
+    uses_solution = vapply(formula_inputs, function(inputs) {
+      any(inputs %in% deferred)
+    }, logical(1))
+    next_deferred = union(deferred, formula_targets[uses_solution])
+    if (length(next_deferred) == length(deferred)) break
+    deferred = next_deferred
+  }
+  ordinary_names = setdiff(formula_targets, deferred)
   setup_inputs = unique(unlist(lapply(statements, function(statement) {
     if (statement$class != "set" ||
         !grepl("=\\s*\\(\\s*all\\s*,", statement$command)) return(NULL)
     all.vars(str2lang(processSetStatement(statement))[[3L]])
   }), use.names = FALSE))
-  assertion_inputs = unlist(lapply(assertions, function(assertion) {
+  normal_assertions = Filter(function(assertion) !assertion$postsim, assertions)
+  assertion_inputs = unlist(lapply(normal_assertions, function(assertion) {
     unlist(lapply(.tablo_assertion_expressions(assertion),
                   sparse_expr_data_names), use.names = FALSE)
   }), use.names = FALSE)
@@ -485,6 +516,13 @@ sparse_compile_spec = function(statements) {
     update$class == "formula" &&
       (!isTRUE(update$initial) || isTRUE(update$postsim))
   }, updates)
+  post_actions = c(
+    Filter(function(update) isTRUE(update$postsim), post_updates),
+    Filter(function(assertion) assertion$postsim, assertions)
+  )
+  post_actions = post_actions[order(vapply(post_actions, function(action) {
+    action$statement_id
+  }, integer(1)))]
   list(
     variables = variables,
     variable_by_name = variable_by_name,
@@ -498,7 +536,11 @@ sparse_compile_spec = function(statements) {
     coefficient_updates = Filter(function(update) update$class == "update",
                                   simulation_updates),
     formula_initialization_updates = formula_initialization_updates,
+    ordinary_output_formulas = Filter(function(update) {
+      update$target$name %in% ordinary_names && !isTRUE(update$initial)
+    }, ordinary_formulas),
     post_updates = post_updates,
+    post_actions = post_actions,
     formula_names = formula_names,
     required_formula_names = required_formula_names,
     variable_names = variable_names,
@@ -822,54 +864,7 @@ sparse_eval_expr = function(expr, state, bindings, index) {
         as.numeric(array), ref$name, index
       ))
     }
-    positions = integer(length(ref$indices))
-    dim_names = dimnames(array)
-    for (d in seq_along(ref$indices)) {
-      item = ref$indices[[d]]
-      value = if (is.name(item) && !is.null(bindings[[as.character(item)]])) {
-        bindings[[as.character(item)]]
-      } else if (is.character(item) && length(item) == 1L) {
-        item
-      } else if (!is.language(item) && length(item) == 1L) {
-        item
-      } else {
-        sparse_eval_expr(item, state, bindings, index)
-      }
-      set_name = NULL
-      if (length(index$sets)) {
-        for (candidate in names(index$sets)) {
-          if (!is.null(dim_names) && d <= length(dim_names) &&
-              !is.null(dim_names[[d]]) &&
-              any(as.character(dim_names[[d]]) == as.character(value))) {
-            set_name = candidate
-            break
-          }
-        }
-      }
-      if (is.numeric(value) && length(value) == 1L && !is.na(value) &&
-          value == as.integer(value) && value >= 1 && value <= dims[[d]]) {
-        positions[[d]] = as.integer(value)
-      } else if (!is.null(dim_names) && d <= length(dim_names) &&
-                 !is.null(dim_names[[d]])) {
-        positions[[d]] = match(as.character(value), dim_names[[d]])
-      } else if (!is.null(set_name)) {
-        positions[[d]] = sparse_position_for_label(as.character(value),
-                                                   set_name, index)
-      } else {
-        positions[[d]] = suppressWarnings(as.integer(value))
-      }
-      if (is.na(positions[[d]]) || positions[[d]] < 1L ||
-          positions[[d]] > dims[[d]]) {
-        stop(sprintf("Cannot resolve data index %s[%s]", ref$name, d),
-             call. = FALSE)
-      }
-    }
-    linear = 1L
-    stride = 1L
-    for (d in seq_along(positions)) {
-      linear = linear + (positions[[d]] - 1L) * stride
-      stride = stride * dims[[d]]
-    }
+    linear = sparse_data_linear_index(ref, state, bindings, index)
     return(sparse_implicit_exogenous_zero(
       as.numeric(array[[linear]]), ref$name, index
     ))

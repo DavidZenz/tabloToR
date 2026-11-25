@@ -8,7 +8,7 @@ processTablo = function(tablo) {
 
   generator = generateSkeleton(Filter(
     function(f)
-      f$class %in% c('set', 'coefficient', 'read', 'formula') &&
+      f$class %in% c('set', 'coefficient', 'read', 'formula', 'assertion') &&
         !isTRUE(f$postsim),
     statements
   ))
@@ -27,7 +27,8 @@ processTablo = function(tablo) {
   geq = generateEquationLevels(Filter(function(f)
     f$class == 'equation', statements))
   gup = generateUpdates(Filter(function(f)
-    f$class %in% c('update','formula'), statements))
+    f$class %in% c('update','formula') ||
+      (f$class == "assertion" && isTRUE(f$postsim)), statements))
 
   return(
     list(

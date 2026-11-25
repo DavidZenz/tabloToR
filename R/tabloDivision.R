@@ -38,6 +38,8 @@
     } else if (statement$class == "formula") {
       statements[[id]]$division = if (postsim) post else normal
       statements[[id]]$postsim = postsim
+    } else if (statement$class == "assertion") {
+      statements[[id]]$postsim = postsim
     }
   }
   statements

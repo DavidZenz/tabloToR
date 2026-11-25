@@ -361,8 +361,6 @@ GEModel = setRefClass(
             sparse_state, sparse_index, sparseSpec,
             updates = sparseSpec$simulation_updates
           )
-          .check_tablo_assertions(sparseSpec$assertions, sparse_state,
-                                 sparse_index, initial = TRUE)
           sparse_index = sparse_build_row_layout(
             sparseSpec, sparse_index, sparse_state
           )
@@ -376,8 +374,6 @@ GEModel = setRefClass(
             loaded_engine = "sparse"
           )
         } else {
-          .check_tablo_assertions(sparseSpec$assertions, generated_data,
-                                 initial = TRUE)
           generated_data = equationCoefficientMatrixGenerator(generated_data)
           generated_data = generateVariables(generated_data)
           variable_values = generated_data[variables]
@@ -839,6 +835,9 @@ GEModel = setRefClass(
 
       #names(subShocks)=names(shocks)
 
+      if (isTRUE(sparseState$.accepted_simulation)) {
+        .check_tablo_assertions(sparseSpec$assertions, data, phase = "initial")
+      }
       solution <<- as.numeric(c())
 
       iterationSolution = list()
@@ -846,6 +845,11 @@ GEModel = setRefClass(
       appliedShocks = shocks
       appliedShocks[] = 0
       ordinaryShocks = names(shocks) %in% changeVariables
+
+      extrapolate = length(steps) > 1L
+      weights = .tablo_euler_weights(steps)
+      coefficient_names = .tablo_updated_coefficients(sparseSpec)
+      extrapolate_coefficients = extrapolate && length(coefficient_names) > 0L
 
       # Go through each iteration (subinterval)
       for (it in 1:iter) {
@@ -866,6 +870,7 @@ GEModel = setRefClass(
         originalData = data
 
         stepSolution = list()
+        coefficient_result = NULL
 
         for(step in 1:length(steps)){
 
@@ -952,70 +957,26 @@ GEModel = setRefClass(
               call. = FALSE
             )
           }
-          #browser()
-          # If any step <-100 we have to treat it as a change variable (like GEMPACK)
-          # sols = apply(do.call(cbind,subStepSolution)<=-100,MARGIN = 1, any)
-          #
-          # solutionPctChangeVariables=setdiff(solutionPctChangeVariables, names(sols[sols]))
-
-          #stepSolution[[step]][solutionPctChangeVariables] = (exp(rowSums(log(1+do.call(cbind,subStepSolution)[solutionPctChangeVariables,, drop = FALSE]/100)))-1)*100
+          if (extrapolate_coefficients) {
+            coefficient_result = .tablo_add_euler_coefficients(
+              coefficient_result, data[coefficient_names],
+              originalData[coefficient_names], weights[[step]]
+            )
+          }
         }
 
-        #browser()
-
-        if(length(steps)==1){
-
-          # We only have one set of steps--this is the solution
-          iterationSolution[[it]] = stepSolution[[1]]
-
-        } else if(length(steps)==2) {
-
-          # We have two sets of steps and so we can extrapolate
-          #browser()
-          iterationSolution[[it]] = colSums(t(do.call(cbind,stepSolution)) * (steps[c(1,2)] * c(1,-1))) / (steps[1]-steps[2])
-
-
-
-        } else if(length(steps)==3) {
-
-          # We have three sets of steps and so we can extrapolate and provide accuracy
-          iterationSolution[[it]] = colSums(t(do.call(cbind,stepSolution)) * (steps[c(2,3)] * c(1,-1))) / (steps[2]-steps[3])
-
-        }
-
-        if (any(!is.finite(iterationSolution[[it]]))) {
-          stop(
-            "Legacy extrapolation produced a non-finite candidate solution",
-            call. = FALSE
-          )
-        }
-
-        # tictoc::tic()
-        # data <<- equationCoefficientGenerator(data)
-        # tictoc::toc()
-        #
-        # iterationSolution = generateSolution(subShocks)
-        #
-        # if (length(solution)==0) {
-        #   solution <<- c(iterationSolution, shocks)
-        # } else{
-        #
-        #   namesToUse = names(solution)
-        #   intermediateSolution = ifelse(names(c(iterationSolution, shocks)) %in% changeVariables, solution + c(iterationSolution, shocks), ((1 + solution / 100) * (1 + c(iterationSolution, shocks) / 100) - 1) * 100)
-        #   names(intermediateSolution)=namesToUse
-        #   solution<<-intermediateSolution
-        # }
-
-        #browser()
-
-        if (length(steps) > 1L) {
-          data <<- generateUpdates(originalData, phase = "formula")
-          data <<- legacy_apply_labeled_values(data, iterationSolution[[it]])
+        iterationSolution[[it]] = sparse_extrapolate_steps(stepSolution, steps)
+        if (extrapolate) {
+          data <<- legacy_apply_labeled_values(originalData, iterationSolution[[it]])
           data <<- legacy_apply_labeled_values(
             data, setNames(subShocks[names(shocks)], names(shocks))
           )
           .transaction_fault("simulation-update")
-          data <<- generateUpdates(data, phase = "update")
+          if (extrapolate_coefficients) {
+            data[coefficient_names] <<- .tablo_finish_euler_coefficients(
+              coefficient_result, originalData[coefficient_names]
+            )
+          }
         }
       }
 

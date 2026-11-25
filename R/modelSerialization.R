@@ -1059,6 +1059,18 @@
   })
   .validate_reconstructed_logical_state(payload, restored)
 
+  accepted_simulation = length(payload$accepted$solution) > 0L ||
+    isTRUE(payload$diagnostics$accepted_numerical_state)
+  if (!accepted_simulation && length(restored$sparseSpec$assertions)) {
+    initial_levels = if (identical(payload$engine, "sparse")) {
+      sparse_state_data(restored$sparseState)
+    } else restored$data
+    changed_coefficients = .tablo_updated_coefficients(restored$sparseSpec)
+    accepted_simulation = any(vapply(changed_coefficients, function(name) {
+      !identical(as.numeric(payload$levels[[name]]),
+                 as.numeric(initial_levels[[name]]))
+    }, logical(1)))
+  }
   restored$sourceData = payload$source
   if (identical(payload$engine, "sparse")) {
     restored$sparseState = sparse_make_state(payload$levels)
@@ -1070,6 +1082,7 @@
     }
     restored$data = rebuilt_data
   }
+  restored$sparseState$.accepted_simulation = accepted_simulation
   restored$solution = payload$accepted$solution
   restored$compactOutput = payload$accepted$compact_output
   restored$explicitShocks = payload$shocks

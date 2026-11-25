@@ -670,6 +670,7 @@ sparse_make_state = function(data) {
   .transaction_fault(
     "commit-accepted-state", list(engine = record$loaded_engine)
   )
+  record$state$.accepted_simulation = TRUE
   model$sparseState = record$state
   model$sparseIndex = record$index
   model$solution = record$solution
@@ -708,6 +709,7 @@ sparse_make_state = function(data) {
     stop("No retryable post-simulation record is available", call. = FALSE)
   }
   state = sparse_make_state(record$state_data)
+  state$.accepted_simulation = TRUE
   if (!is.null(record$structural_cache)) {
     state$.solver_cache = record$structural_cache
   }
@@ -717,7 +719,28 @@ sparse_make_state = function(data) {
       if (isTRUE(record$postsim)) {
         sparse_apply_updates(
           state, record$index, record$spec,
-          updates = record$spec$post_updates
+          updates = Filter(function(update) !isTRUE(update$postsim),
+                           record$spec$post_updates)
+        )
+        for (action in record$spec$post_actions) {
+          if (action$class == "assertion") {
+            .check_tablo_assertions(list(action), state, record$index,
+                                    phase = "postsim")
+          } else {
+            sparse_apply_updates(state, record$index, record$spec,
+                                 updates = list(action))
+          }
+        }
+      } else if (length(record$variables)) {
+        formulas = record$spec$ordinary_output_formulas
+        required = sparse_required_formula_names(
+          list(), formulas, additional = record$variables
+        )
+        required = setdiff(required, record$spec$required_formula_names)
+        sparse_apply_updates(
+          state, record$index, record$spec, updates = Filter(function(update) {
+            update$target$name %in% required
+          }, formulas)
         )
       }
     })
@@ -825,6 +848,7 @@ sparse_make_state = function(data) {
   )
   model$loadedEngine = working$loadedEngine
   model$.postsimRecord = list()
+  model$sparseState$.accepted_simulation = TRUE
   invisible(model)
 }
 .sparse_setup_formula = function(formula, bindings) {
@@ -850,7 +874,8 @@ sparse_process_tablo = function(tabloPath) {
   }
   skeleton_statements = Filter(function(statement) {
     if (!is.null(statement$setup_formula)) return(TRUE)
-    statement$class %in% c("set", "coefficient", "read") &&
+    (statement$class %in% c("set", "coefficient", "read") ||
+      (statement$class == "assertion" && !isTRUE(statement$postsim))) &&
       !grepl("^mapping\\s", statement$parsed$equation,
              ignore.case = TRUE)
   }, setup_statements)
@@ -1163,26 +1188,9 @@ sparse_data_linear_index = function(ref, state, bindings, index) {
         target_set = index$variables[[data_id]]$sets[[d]]
       }
     }
-    if (!is.null(source_set) && !is.null(target_set) &&
-        !identical(source_set, target_set) &&
-        !is.null(index$sets[[source_set]]) &&
-        is.numeric(value) && length(value) == 1L && !is.na(value) &&
-        value >= 1L && value <= length(index$sets[[source_set]]$values)) {
-      value = index$sets[[source_set]]$values[[as.integer(value)]]
-    }
-    if (is.numeric(value) && length(value) == 1L &&
-        !is.na(value) && value == as.integer(value) &&
-        value >= 1L && value <= dims[[d]]) {
-      positions[[d]] = as.integer(value)
-    } else if (!is.null(dim_names) && !is.null(dim_names[[d]])) {
-      positions[[d]] = match(as.character(value), dim_names[[d]])
-    } else {
-      positions[[d]] = sparse_position_for_label(
-        as.character(value),
-        if (d <= length(index$sets)) names(index$sets)[[d]] else "",
-        index
-      )
-    }
+    positions[[d]] = sparse_vectorized_positions(
+      value, dims[[d]], dim_names[[d]], target_set, source_set, index, 1L
+    )
     if (is.na(positions[[d]]) || positions[[d]] < 1L ||
         positions[[d]] > dims[[d]]) {
       stop(sprintf("Cannot resolve data index %s[%s]", ref$name, d),
@@ -1274,9 +1282,9 @@ sparse_initialize_update_target = function(update, state, index) {
     dimensions = vapply(domains, function(domain) {
       length(index$sets[[domain$set]]$values)
     }, integer(1))
-    dim_names = lapply(domains, function(domain) {
+    dim_names = setNames(lapply(domains, function(domain) {
       index$sets[[domain$set]]$values
-    })
+    }), vapply(domains, function(domain) domain$set, ""))
     data[[name]] = array(
       NA_real_, dim = dimensions, dimnames = dim_names
     )
@@ -1600,10 +1608,17 @@ sparse_vectorized_bindings = function(domains, index) {
 }
 
 .check_tablo_assertions = function(assertions, state, index = NULL,
-                                   initial = FALSE) {
+                                   phase = "step") {
   if (!length(assertions)) return(invisible(NULL))
   for (assertion in assertions) {
-    if (isTRUE(assertion$initial) && !initial) next
+    check = switch(
+      phase,
+      source = !isTRUE(assertion$postsim),
+      initial = isTRUE(assertion$initial) && !isTRUE(assertion$postsim),
+      step = !isTRUE(assertion$initial) && !isTRUE(assertion$postsim),
+      postsim = isTRUE(assertion$postsim)
+    )
+    if (!check) next
     label = if (nzchar(assertion$label)) assertion$label else
       deparse1(assertion$expression)
     context = sprintf('TABLO assertion "%s"', label)
@@ -1654,10 +1669,12 @@ sparse_vectorized_positions = function(value, dimension, dim_names = NULL,
                                        set_name = NULL, source_set = NULL,
                                        index, n) {
   value = rep(value, length.out = n)
-  if (is.numeric(value) && !is.null(source_set) && !is.null(set_name) &&
-      !identical(source_set, set_name) &&
-      !is.null(index$sets[[source_set]]) &&
-      !is.null(index$sets[[set_name]])) {
+  lookup = dim_names
+  if (is.null(lookup) && !is.null(set_name)) {
+    lookup = index$sets[[set_name]]$values
+  }
+  if (is.numeric(value) && !is.null(source_set) &&
+      !identical(source_set, set_name) && !is.null(lookup)) {
     source_values = index$sets[[source_set]]$values
     source_positions = suppressWarnings(as.integer(value))
     source_valid = !is.na(source_positions) &
@@ -1674,10 +1691,6 @@ sparse_vectorized_positions = function(value, dimension, dim_names = NULL,
       positions >= 1L & positions <= dimension
   }
   if (any(!valid)) {
-    lookup = dim_names
-    if (is.null(lookup) && !is.null(set_name)) {
-      lookup = index$sets[[set_name]]$values
-    }
     positions[!valid] = match(as.character(value[!valid]), lookup)
   }
   positions
@@ -2635,6 +2648,9 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
           value = sparse_eval_expr(
             update$expression, state, bindings, index
           )
+          if (is_update[[update_id]]) {
+            value = .tablo_finite_update(value, update$target$name)
+          }
           sparse_set_data_ref(
             update$target, output, bindings, index, value, source = state
           )
@@ -2706,9 +2722,13 @@ sparse_apply_update_vectorized = function(update, state, index,
   }
   selected = which(active)
   if (!length(selected)) return(TRUE)
-  value = as.numeric(sparse_eval_selected(
+  value = sparse_eval_selected(
     update$expression, source, vectorized$bindings, index, selected, n
-  ))
+  )
+  if (identical(update$class, "update")) {
+    value = .tablo_finite_update(value, update$target$name)
+  }
+  value = as.numeric(value)
 
   data = sparse_state_data(state)
   array = data[[update$target$name]]
@@ -2802,7 +2822,8 @@ sparse_advance_applied_shocks = function(applied, substep) {
 }
 
 sparse_extrapolate_steps = function(step_results, steps) {
-  if (!length(step_results) || length(step_results) > 3L) {
+  if (!length(step_results) || length(step_results) > 3L ||
+      length(step_results) != length(steps)) {
     stop("Sparse solver supports one, two, or three Euler step counts",
          call. = FALSE)
   }
@@ -2811,19 +2832,15 @@ sparse_extrapolate_steps = function(step_results, steps) {
   }, logical(1)))) {
     stop("Sparse Euler step result contains non-finite values", call. = FALSE)
   }
-  result = if (length(step_results) == 1L) {
-    step_results[[1L]]
-  } else if (length(step_results) == 2L) {
-    (step_results[[1L]] * steps[[1L]] -
-       step_results[[2L]] * steps[[2L]]) /
-      (steps[[1L]] - steps[[2L]])
-  } else {
-    (step_results[[2L]] * steps[[2L]] -
-       step_results[[3L]] * steps[[3L]]) /
-      (steps[[2L]] - steps[[3L]])
+  if (length(steps) == 1L) return(step_results[[1L]])
+
+  weights = .tablo_euler_weights(steps)
+  result = step_results[[1L]] * weights[[1L]]
+  for (i in seq_along(steps)[-1L]) {
+    result = result + step_results[[i]] * weights[[i]]
   }
   if (any(!is.finite(result))) {
-    stop("Sparse extrapolation produced a non-finite candidate solution",
+    stop("TABLO extrapolation produced a non-finite candidate solution",
          call. = FALSE)
   }
   result
@@ -3471,6 +3488,10 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
          call. = FALSE)
   }
+  if (isTRUE(committed_state$.accepted_simulation)) {
+    .check_tablo_assertions(model$sparseSpec$assertions, state, index,
+                            phase = "initial")
+  }
   index = sparse_rebuild_columns(index, closure)
   index = sparse_select_simulation_index(
     index, model$sparseSpec, state, postsim = postsim
@@ -3542,6 +3563,10 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     values = numeric(length(shocks$values)),
     labels = shocks$labels
   )
+  extrapolate = length(steps) > 1L
+  weights = .tablo_euler_weights(steps)
+  coefficient_names = .tablo_updated_coefficients(model$sparseSpec)
+  extrapolate_coefficients = extrapolate && length(coefficient_names) > 0L
   max_nnz = 0
   residual_history = list()
   solver_diagnostics_history = list()
@@ -3557,6 +3582,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     applied_shocks = sparse_advance_applied_shocks(
       applied_shocks, remaining
     )
+    coefficient_result = NULL
+    original_coefficients = sparse_state_data(state)[coefficient_names]
     step_results = vector("list", length(steps))
     for (step_id in seq_along(steps)) {
       sparse_restore_checkpoint(state, outer_checkpoint)
@@ -3656,20 +3683,24 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
         )
       }
       step_results[[step_id]] = step_result
+      if (extrapolate_coefficients) {
+        coefficient_result = .tablo_add_euler_coefficients(
+          coefficient_result, sparse_state_data(state)[coefficient_names],
+          original_coefficients, weights[[step_id]]
+        )
+      }
     }
     iteration_solution = sparse_extrapolate_steps(step_results, steps)
-    if (length(steps) > 1L) {
+    if (extrapolate) {
       sparse_restore_checkpoint(state, outer_checkpoint)
-      sparse_apply_updates(
-        state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
-      )
       sparse_apply_solution(state, index, iteration_solution)
       sparse_apply_shocks(state, index, remaining)
       .transaction_fault("simulation-update", list(iteration = iteration))
-      sparse_apply_updates(
-        state, index, model$sparseSpec,
-        updates = model$sparseSpec$coefficient_updates
-      )
+      if (extrapolate_coefficients) {
+        state$data[coefficient_names] = .tablo_finish_euler_coefficients(
+          coefficient_result, original_coefficients
+        )
+      }
     }
     final_solution = sparse_add_solution(
       final_solution, iteration_solution, change_mask

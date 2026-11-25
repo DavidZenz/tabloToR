@@ -10,6 +10,9 @@
 }
 
 .tablo_update_expression = function(target, expression, qualifiers) {
+  if (any(grepl("^\\(\\s*explicit\\s*\\)$", qualifiers, ignore.case = TRUE))) {
+    return(expression)
+  }
   if (any(grepl("^\\(\\s*change\\s*\\)$", qualifiers, ignore.case = TRUE))) {
     return(call("+", target, expression))
   }
@@ -37,6 +40,10 @@ processUpdateStatement = function(s, target = NULL) {
     )
   }
   frm[[3L]] = .tablo_with_division(frm[[3L]])
+  if (s$class == "update") {
+    name = sparse_parse_ref(frm[[2L]])$name
+    frm[[3L]] = call(".tablo_finite_update", frm[[3L]], name)
+  }
   if (!is.null(target)) {
     if (is.name(frm[[2L]])) {
       frm[[2L]] = target

@@ -1,19 +1,40 @@
-processSetStatement = function(s) {
-  # SET READ
-  if (grepl(".* maximum size .* read elements from file .* header \"*\"",
-            s$command)) {
-    words = strsplit(s$command, " ")[[1]]
-    #toRet[[words[1]]] = files[[words[9]]][[gsub("\"", "", words[11])]]
-    toRet = sprintf('%s=%s$%s', words[[1]], words[[9]], gsub("\"", "", words[11]))
+.tablo_read_set = function(set, file, header, bindings) {
+  values = get0(file, envir = bindings, inherits = FALSE)[[header]]
+  if (is.null(values)) {
+    stop(sprintf('SET %s from file %s header "%s" is missing',
+                 set, file, header), call. = FALSE)
   }
-  else if (grepl(".* read elements from file .* header \"*\"",
-            s$command)) {
-    words = strsplit(s$command, " ")[[1]]
-    #toRet[[words[1]]] = files[[words[9]]][[gsub("\"", "", words[11])]]
-    toRet = sprintf('%s=%s$%s', words[[1]], words[[6]], gsub("\"", "", words[8]))
+  values
+}
+
+.tablo_expand_set_range = function(element) {
+  quoted = grepl('^"[^"]*"$', element)
+  if (quoted) return(substr(element, 2L, nchar(element) - 1L))
+  pattern = "^([a-z0-9_.]*?)([0-9]+)\\s*-\\s*([a-z0-9_.]*?)([0-9]+)$"
+  range = regmatches(element, regexec(pattern, element, perl = TRUE))[[1L]]
+  if (!length(range) || range[[2L]] != range[[4L]]) return(element)
+  first = suppressWarnings(as.integer(range[[3L]]))
+  last = suppressWarnings(as.integer(range[[5L]]))
+  if (is.na(first) || is.na(last) || first > last) {
+    stop(sprintf("Invalid TABLO set range %s", element), call. = FALSE)
+  }
+  paste0(range[[2L]], sprintf("%0*d", nchar(range[[3L]]), seq.int(first, last)))
+}
+
+processSetStatement = function(s) {
+  pattern = paste0(
+    "^([a-z][a-z0-9_.]*)\\s+(?:maximum\\s+size\\s+[0-9]+\\s+)?",
+    "read\\s+elements\\s+from\\s+file\\s+([a-z][a-z0-9_.]*)\\s+",
+    "header\\s+\"([^\"]+)\""
+  )
+  read = regmatches(s$command, regexec(pattern, s$command, perl = TRUE))[[1L]]
+  if (length(read)) {
+    target = as.name(read[[2L]])
+    return(call("=", target, call(".tablo_read_set", read[[2L]], read[[3L]],
+                                 read[[4L]], quote(environment()))))
   }
   # SET DIFFERENCE
-  else if (grepl(".* = .* - .*", s$command)) {
+  if (grepl(".* = .* - .*", s$command)) {
     command = str2lang(s$command)
     command[[3]][[1]] = as.name('setdiff')
     #toRet[[deparse(command[[2]])]] = eval(command[[3]], toRet)
@@ -85,10 +106,10 @@ processSetStatement = function(s) {
     to = regexpr('\\)', s$command)
     elements = trimws(strsplit(substr(s$command, from + 1, to - 1), ',')[[1]])
 
-    #toRet[[trimws(substr(s$command, 1, from - 1))]] = elements
-    toRet = sprintf('%s=c(%s)',
-                    trimws(substr(s$command, 1, from - 1)),
-                    paste('"', elements, '"', sep = '', collapse = ','))
+    set_name = as.name(trimws(substr(s$command, 1, from - 1)))
+    elements = unlist(lapply(elements, .tablo_expand_set_range),
+                      use.names = FALSE)
+    toRet = call("=", set_name, elements)
   }
 
   return(toRet)

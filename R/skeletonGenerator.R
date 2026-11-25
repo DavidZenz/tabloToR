@@ -5,6 +5,12 @@ generateSkeleton = function(statements) {
       toRet[[length(toRet) + 1L]] = bquote(
         .sparse_setup_formula(.(s$setup_formula), environment())
       )
+    } else if (s$class == "assertion" && !isTRUE(s$postsim)) {
+      assertion = .compile_tablo_assertion(s)
+      toRet[[length(toRet) + 1L]] = bquote(.check_tablo_assertions(
+        list(.(assertion)), as.list(environment(), all.names = TRUE),
+        phase = "source"
+      ))
     } else if (s$class == 'set')
       toRet[[length(toRet) + 1]] = processSetStatement(s)
     else if (s$class == 'formula') {

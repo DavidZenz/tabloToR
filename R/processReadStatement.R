@@ -65,14 +65,13 @@
   source_names = tolower(names(source_labels)[value_axes])
   expected_names = tolower(names(target_labels)[target_axes])
   shared_names = intersect(source_names, expected_names)
-  # A pair of recognized set names out of order distinguishes switched
-  # axes even when the sets have identical element labels.
+  # Each unambiguous set name identifies its axis, even when some other
+  # names are absent or differ from the TABLO declarations.
   shared_names = setdiff(shared_names, c("", NA_character_,
     source_names[duplicated(source_names)],
     expected_names[duplicated(expected_names)]))
-  if (length(shared_names) > 1L &&
-      !identical(source_names[source_names %in% shared_names],
-                 expected_names[expected_names %in% shared_names])) {
+  if (any(match(shared_names, source_names) !=
+          match(shared_names, expected_names))) {
     stop(sprintf("%s has named dimensions in the wrong order (%s, expected %s)",
                  context, paste(source_names, collapse = ", "),
                  paste(expected_names, collapse = ", ")), call. = FALSE)
