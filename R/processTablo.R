@@ -8,7 +8,8 @@ processTablo = function(tablo) {
 
   generator = generateSkeleton(Filter(
     function(f)
-      f$class %in% c('set', 'coefficient', 'read', 'formula'),
+      f$class %in% c('set', 'coefficient', 'read', 'formula') &&
+        !isTRUE(f$postsim),
     statements
   ))
 

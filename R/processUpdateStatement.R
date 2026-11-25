@@ -1,12 +1,12 @@
-.tablo_product_multiplier = function(expression) {
+.tablo_sum_product_factors = function(expression) {
   if (is.call(expression) && identical(expression[[1L]], as.name("("))) {
-    return(.tablo_product_multiplier(expression[[2L]]))
+    return(.tablo_sum_product_factors(expression[[2L]]))
   }
   if (is.call(expression) && identical(expression[[1L]], as.name("*"))) {
-    return(call("*", .tablo_product_multiplier(expression[[2L]]),
-                .tablo_product_multiplier(expression[[3L]])))
+    return(call("+", .tablo_sum_product_factors(expression[[2L]]),
+                .tablo_sum_product_factors(expression[[3L]])))
   }
-  call("+", 1, call("/", expression, 100))
+  expression
 }
 
 .tablo_update_expression = function(target, expression, qualifiers) {
@@ -17,10 +17,11 @@
                 ignore.case = TRUE))) {
     return(call("*", target, call("+", 1, call("/", expression, 100))))
   }
-  call("*", target, .tablo_product_multiplier(expression))
+  change = .tablo_sum_product_factors(expression)
+  call("*", target, call("+", 1, call("/", change, 100)))
 }
 
-processUpdateStatement = function(s) {
+processUpdateStatement = function(s, target = NULL) {
   dimensions = s$parsed$elements[grep('\\(all,', s$parsed$elements)]
   qualifiers = gsub('<>', '!=', gsub(':', ",", gsub(
     '=', '==', gsub('\\(all,', 'all(', dimensions)
@@ -35,15 +36,23 @@ processUpdateStatement = function(s) {
       frm[[2L]], frm[[3L]], s$parsed$elements
     )
   }
-
-
+  frm[[3L]] = .tablo_with_division(frm[[3L]])
+  if (!is.null(target)) {
+    if (is.name(frm[[2L]])) {
+      frm[[2L]] = target
+    } else {
+      frm[[2L]][[2L]] = target
+    }
+  }
 
   if (length(qualifiers) > 0) {
     condition = list()
     for (l in 1:length(qualifiers)) {
       q = str2lang(qualifiers[[l]])
       if (length(q) == 4) {
-        condition[[length(condition) + 1]] = deparse1(correctFormula(deparse(q[[4]]), preserve_assignment = FALSE))
+        condition[[length(condition) + 1]] = deparse1(.tablo_with_division(correctFormula(
+          deparse1(q[[4]]), preserve_assignment = FALSE
+        )))
       }
     }
 

@@ -59,6 +59,8 @@ readFirstWord = function(statement){
     firstWord = "update"
   } else if(grepl("^formula",statement, ignore.case = TRUE)){
     firstWord = "formula"
+  } else if(grepl("^postsim\\b", statement, ignore.case = TRUE)){
+    firstWord = "postsim"
   } else if(grepl("^zerodivide",statement, ignore.case = TRUE)){
     firstWord = "zerodivide"
   } else {
@@ -332,6 +334,6 @@ tabloToStatements = function(tablo){
     return(f)
   },cleanLines)
 
-  return(.mark_optional_read_defaults(cleanLinesParsed))
+  return(.mark_optional_read_defaults(.tablo_mark_division(cleanLinesParsed)))
 
 }

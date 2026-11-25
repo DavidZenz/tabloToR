@@ -250,6 +250,14 @@ sparse_terms_from_expr = function(expr,
     return(c(yes_terms, no_terms))
   }
 
+  if (op == "/" && length(expr) == 3L &&
+      !sparse_expr_has_variable(expr[[3L]], variable_names)) {
+    return(sparse_terms_from_expr(
+      expr[[2L]], variable_names, call("/", coefficient, expr[[3L]]),
+      guards, sums
+    ))
+  }
+
   if (op == "*" && length(expr) == 3L) {
     left_has = sparse_expr_has_variable(expr[[2]], variable_names)
     right_has = sparse_expr_has_variable(expr[[3]], variable_names)
@@ -302,7 +310,7 @@ sparse_compile_spec = function(statements) {
   variable_statements = Filter(function(s) s$class == "variable", statements)
   equation_statements = Filter(function(s) s$class == "equation", statements)
   update_ids = which(vapply(statements, function(s) {
-    s$class %in% c("update", "formula") || isTRUE(s$initialize_read)
+    s$class %in% c("update", "formula")
   }, logical(1)))
   assertions = lapply(Filter(function(s) s$class == "assertion", statements),
                       .compile_tablo_assertion)
@@ -396,17 +404,7 @@ sparse_compile_spec = function(statements) {
   updates = list()
   for (statement_id in update_ids) {
     s = statements[[statement_id]]
-    if (isTRUE(s$initialize_read)) {
-      updates[[length(updates) + 1L]] = list(
-        class = "read",
-        target = list(name = .parse_header_read(s)$target),
-        statement_id = statement_id,
-        generate = generateReads(list(s))
-      )
-      next
-    }
-    is_initial = isTRUE(s$read_default) ||
-      any(grepl("\\(initial\\)", s$parsed$elements, ignore.case = TRUE))
+    is_initial = s$class == "formula" && .tablo_formula_is_initial(s)
     formula = tryCatch(correctFormula(s$parsed$equation),
                        error = function(e) NULL)
     if (is.null(formula) || length(formula) < 3L) next
@@ -416,6 +414,8 @@ sparse_compile_spec = function(statements) {
     rhs = formula[[3]]
     if (s$class == "update") {
       rhs = .tablo_update_expression(formula[[2L]], rhs, s$parsed$elements)
+    } else {
+      rhs = .tablo_with_division(rhs, s$division)
     }
     update_domains = lapply(
       s$parsed$elements[grepl("^\\s*\\(all,", s$parsed$elements,
@@ -423,11 +423,20 @@ sparse_compile_spec = function(statements) {
       sparse_parse_qualifier
     )
     update_domains = sparse_order_domains(update_domains, target$indices)
+    if (s$class == "formula") {
+      update_domains = lapply(update_domains, function(domain) {
+        domain["predicate"] = list(
+          .tablo_with_division(domain$predicate, s$division)
+        )
+        domain
+      })
+    }
     updates[[length(updates) + 1L]] = list(
       class = s$class,
       target = target,
       expression = rhs,
       initial = is_initial,
+      postsim = isTRUE(s$postsim),
       read_default = isTRUE(s$read_default),
       statement_id = statement_id,
       domains = update_domains
@@ -438,21 +447,11 @@ sparse_compile_spec = function(statements) {
     Filter(function(update) update$class == "formula", updates),
     function(update) update$target$name, character(1)
   ))
-  setup_through = 0L
-  setup_inputs = character()
-  for (statement_id in seq_along(statements)) {
-    s = statements[[statement_id]]
-    if (s$class != "set" || !grepl("=\\s*\\(\\s*all\\s*,", s$command)) next
-    inputs = all.vars(str2lang(processSetStatement(s))[[3L]])
-    prior = Filter(function(update) {
-      update$statement_id < statement_id && update$class != "update"
-    }, updates)
-    targets = vapply(prior, function(update) update$target$name, character(1))
-    if (any(inputs %in% targets)) {
-      setup_through = statement_id
-      setup_inputs = union(setup_inputs, inputs)
-    }
-  }
+  setup_inputs = unique(unlist(lapply(statements, function(statement) {
+    if (statement$class != "set" ||
+        !grepl("=\\s*\\(\\s*all\\s*,", statement$command)) return(NULL)
+    all.vars(str2lang(processSetStatement(statement))[[3L]])
+  }), use.names = FALSE))
   assertion_inputs = unlist(lapply(assertions, function(assertion) {
     unlist(lapply(.tablo_assertion_expressions(assertion),
                   sparse_expr_data_names), use.names = FALSE)
@@ -460,39 +459,44 @@ sparse_compile_spec = function(statements) {
   required_formula_names = sparse_required_formula_names(
     equations, updates, additional = assertion_inputs
   )
-  initialization_formula_names = if (length(setup_inputs)) {
-    sparse_required_formula_names(
-      equations, updates, additional = c(setup_inputs, assertion_inputs)
-    )
-  } else required_formula_names
+  initial_formula_names = vapply(Filter(function(update) {
+    update$class == "formula" && isTRUE(update$initial)
+  }, updates), function(update) update$target$name, "")
+  initialization_formula_names = sparse_required_formula_names(
+    equations, updates,
+    additional = c(setup_inputs, assertion_inputs, initial_formula_names)
+  )
   initial_updates = Filter(function(update) {
-    update$class == "formula" &&
+    update$class == "formula" && !isTRUE(update$postsim) &&
       isTRUE(update$initial) &&
       update$target$name %in% required_formula_names
   }, updates)
   simulation_updates = Filter(function(update) {
     update$class == "update" ||
       (update$class == "formula" &&
-         !isTRUE(update$initial) &&
+         !isTRUE(update$initial) && !isTRUE(update$postsim) &&
          update$target$name %in% required_formula_names)
   }, updates)
   formula_initialization_updates = Filter(function(update) {
-    update$class == "read" ||
-      (update$class == "formula" &&
-         update$target$name %in% initialization_formula_names)
+    update$class == "formula" && !isTRUE(update$postsim) &&
+      update$target$name %in% initialization_formula_names
   }, updates)
   post_updates = Filter(function(update) {
-    update$class == "formula" && !isTRUE(update$initial)
+    update$class == "formula" &&
+      (!isTRUE(update$initial) || isTRUE(update$postsim))
   }, updates)
   list(
     variables = variables,
     variable_by_name = variable_by_name,
     equations = equations,
     assertions = assertions,
-    setup_through = setup_through,
-    updates = Filter(function(update) update$class != "read", updates),
+    updates = updates,
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
+    simulation_formulas = Filter(function(update) update$class == "formula",
+                                 simulation_updates),
+    coefficient_updates = Filter(function(update) update$class == "update",
+                                  simulation_updates),
     formula_initialization_updates = formula_initialization_updates,
     post_updates = post_updates,
     formula_names = formula_names,
@@ -782,14 +786,14 @@ sparse_eval_expr = function(expr, state, bindings, index) {
         sparse_state_data(state)[[tolower(name)]], name, index
       ))
     }
-    return(name)
+    stop(sprintf("Undefined TABLO name '%s'", name), call. = FALSE)
   }
   if (!is.language(expr)) return(expr)
   if (length(expr) == 0L) return(NA_real_)
 
   op = as.character(expr[[1]])
   builtin_ops = c(
-    "[", "(", "setpos", "sum", "isin", "ifelse", "!",
+    "[", "(", "setpos", "sum", "isin", "ifelse", "!", ".tablo_divide",
     "+", "-", "*", "/", "^", "==", "!=", "<", ">",
     "<=", ">=", "&", "|", "exp", "loge", "log", "sqrt", "abs"
   )
@@ -931,11 +935,21 @@ sparse_eval_expr = function(expr, state, bindings, index) {
 
   if (op == "ifelse") {
     condition = sparse_eval_expr(expr[[2]], state, bindings, index)
-    yes = sparse_eval_expr(expr[[3]], state, bindings, index)
-    no = if (length(expr) >= 4L) sparse_eval_expr(
-      expr[[4]], state, bindings, index
-    ) else 0
-    return(ifelse(condition, yes, no))
+    if (is.na(condition)) return(NA_real_)
+    if (condition) return(sparse_eval_expr(expr[[3L]], state, bindings, index))
+    if (length(expr) >= 4L) {
+      return(sparse_eval_expr(expr[[4L]], state, bindings, index))
+    }
+    return(0)
+  }
+
+  if (op == ".tablo_divide") {
+    return(.tablo_divide(
+      sparse_eval_expr(expr[[2L]], state, bindings, index),
+      sparse_eval_expr(expr[[3L]], state, bindings, index),
+      if (!is.null(expr[[4L]])) sparse_eval_expr(expr[[4L]], state, bindings, index),
+      if (!is.null(expr[[5L]])) sparse_eval_expr(expr[[5L]], state, bindings, index)
+    ))
   }
 
   if (op == "!") return(!sparse_eval_expr(expr[[2]], state, bindings, index))
@@ -946,7 +960,7 @@ sparse_eval_expr = function(expr, state, bindings, index) {
                   state = state, bindings = bindings, index = index)
     if (op == "-" && length(args) == 1L) return(-args[[1]])
     if (op == "/" && length(args) == 2L) {
-      return(ifelse(args[[2]] == 0, 0, args[[1]] / args[[2]]))
+      return(.tablo_divide(args[[1]], args[[2]]))
     }
     return(do.call(op, args))
   }

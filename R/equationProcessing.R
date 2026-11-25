@@ -40,6 +40,9 @@ getVarCoef = function(expr,
     toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, call('-',coefficient), guards)
   } else if (expr[[1]] == '*') {
     toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, call('*', coefficient, expr[[2]]), guards)
+  } else if (expr[[1]] == "/") {
+    toRet[[1L]] = getVarCoef(expr[[2L]], sets,
+                             call("/", coefficient, expr[[3L]]), guards)
   } else if (expr[[1]] == '=') {
     toRet[[length(toRet) + 1]] = getVarCoef(expr[[2]], sets, coefficient, guards)
     toRet[[length(toRet) + 1]] = getVarCoef(expr[[3]], sets, call('*', coefficient,-1), guards)
@@ -126,12 +129,12 @@ generateEquationCoefficients = function(equationStatements) {
             paste(rep('\"%s\"', length(v$indices)), collapse = ',')
           )
         ),
-        deparse1(sumToMap(v$coefficient))
+        deparse1(sumToMap(.tablo_with_division(v$coefficient)))
       )
       for (guard in rev(v$guards)) {
         context = encodeString(paste("Equation", equationName), quote = '"')
         expr = sprintf("if (.tablo_condition(%s, %s)) %s else list()",
-                       deparse1(sumToMap(guard)), context, expr)
+                       deparse1(sumToMap(.tablo_with_division(guard))), context, expr)
       }
       for (qualifier in c(qualifiers, v$qualifiers)) {
         q = str2lang(qualifier)

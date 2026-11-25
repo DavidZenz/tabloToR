@@ -151,22 +151,65 @@ test_that("data-dependent sets see optional reads in declaration order", {
   }
 })
 
-test_that("product updates convert every factor to a percentage multiplier", {
+test_that("product updates linearize all factors within each substep", {
   lines = c(
     "coefficient stock;",
     'read stock from file basedata header "STOK";',
     "variable a;", "variable b;", "variable c;", "variable x;",
-    "equation example x = a;"
+    "equation example x = stock * a;"
   )
   input = list(basedata = list(stok = 100))
+  closure = c("a", "b", "c")
   shocks = c("a[]" = 10, "b[]" = 20, "c[]" = 30)
   for (engine in c("sparse", "legacy")) {
     for (product in c("a * b * c", "a * (b * c)")) {
-      model = solve_from_tablo(
-        c(lines, sprintf("update (product) stock = %s;", product)),
-        c("a", "b", "c"), shocks, engine, input, iter = 2L, steps = 2L
+      model_lines = c(lines, sprintf("update (product) stock = %s;", product))
+      model = solve_from_tablo(model_lines, closure, shocks, engine, input)
+      expect_equal(as.numeric(model$data$stock), 160, tolerance = 1e-12)
+      two_steps = solve_from_tablo(model_lines, closure, shocks, engine, input,
+                                   steps = 2L)
+      first = unname(shocks) / 2
+      second = first / (1 + first / 100)
+      expected = 100 * (1 + sum(first) / 100) * (1 + sum(second) / 100)
+      expect_equal(as.numeric(two_steps$data$stock), expected)
+
+      model = solve_from_tablo(model_lines, closure, shocks, engine, input,
+                                iter = 2L, steps = 2L)
+      reference = solve_from_tablo(
+        c(lines, "update (change) stock = (stock / 100) * (a + b + c);"),
+        closure, shocks, engine, input, iter = 2L, steps = 2L
       )
-      expect_equal(as.numeric(model$data$stock), 171.6, tolerance = 1e-12)
+      expect_equal(model$data$stock, reference$data$stock)
+      expect_equal(model$solution, reference$solution)
+    }
+  }
+})
+
+test_that("coefficient updates share formula values and stage disjoint writes", {
+  lines = c(
+    "set reg (r1,r2);",
+    "coefficient first;",
+    "formula (initial) first = 2;",
+    "coefficient (all,r,reg) second(r);",
+    "formula (initial)(all,r,reg) second(r) = 100;",
+    "coefficient factor;",
+    "variable (change) shock;", "variable (change) outcome;",
+    "equation example outcome = factor * shock;"
+  )
+  updates = c(
+    "update (change) first = shock;",
+    'update (change) second("r1") = first * shock;',
+    'update (change) second("r2") = factor * shock;'
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (order in list(updates, rev(updates))) {
+      model_lines = c(lines, order, "formula (always) factor = 2 * first;")
+      model = solve_from_tablo(model_lines, "shock", c("shock[]" = 10), engine)
+      expect_equal(model$data$first, 12)
+      expect_equal(as.numeric(model$data$second), c(120, 140))
+      model = solve_from_tablo(model_lines, "shock", c("shock[]" = 10), engine,
+                                steps = 2L)
+      expect_equal(model$solution, c("outcome[]" = 90))
     }
   }
 })
@@ -250,6 +293,173 @@ test_that("equation conditions choose the correct branch and reject missing data
       expect_equal(model$solution, c('x["r1"]' = 4, 'x["r2"]' = 8))
       expect_error(solve_from_tablo(lines, "a", shocks, engine, input(c(1, NA))),
                    "Equation example has an indeterminate condition")
+    }
+  }
+})
+
+test_that("equal-sized HAR axes retain distinct set identities", {
+  lines = c(
+    "set origin (north,south);", "set destination (north,south);",
+    "coefficient (all,o,origin)(all,d,destination) weight(o,d);",
+    'read weight from file basedata header "WGHT";',
+    "variable a;", "variable x;",
+    'equation example x = weight("north","south") * a;'
+  )
+  header = matrix(c(2, 3, 5, 7), nrow = 2L,
+                  dimnames = list(origin = c("north", "south"),
+                                  destination = c("north", "south")))
+  for (engine in c("sparse", "legacy")) {
+    solve = function(weight) solve_from_tablo(
+      lines, "a", c("a[]" = 4), engine,
+      input = list(basedata = list(wght = weight))
+    )
+    expect_equal(solve(header)$solution, c("x[]" = 20))
+    expect_equal(solve(unname(header))$solution, c("x[]" = 20))
+    expect_error(solve(t(header)), "named dimensions in the wrong order")
+  }
+})
+
+test_that("partial reads and initialization formulas execute in TABLO order", {
+  lines = c(
+    "set reg (r1,r2,r3);", "set active (r2,r3);", "set market (home,world);",
+    "coefficient (all,r,reg)(all,m,market) weight(r,m);",
+    "formula (initial)(all,r,reg)(all,m,market) weight(r,m) = 2;",
+    "coefficient before;",
+    'formula (initial) before = weight("r2","home");',
+    'read (all,r,active) weight(r,"home") from file basedata header "WGHT";',
+    'read (ifheaderexists) weight("r1","world") from file basedata header "OPTN";',
+    "coefficient after;",
+    'formula (initial) after = weight("r2","home");',
+    "coefficient threshold;",
+    "formula (initial) threshold = 1;",
+    'read threshold from file basedata header "LIMT";',
+    "variable a;", "variable x;",
+    'equation example x = (before + after + threshold + weight("r1","world")) * a;'
+  )
+  header = array(c(7, 5), dim = 2L,
+                 dimnames = list(active = c("r3", "r2")))
+  for (engine in c("sparse", "legacy")) {
+    for (present in c(TRUE, FALSE)) {
+      basedata = list(wght = header, limt = 9)
+      if (present) basedata$optn = 11
+      model = solve_from_tablo(lines, "a", c("a[]" = 4), engine,
+                                input = list(basedata = basedata))
+      expect_equal(model$data$before, 2)
+      expect_equal(model$data$after, 5)
+      expect_equal(as.numeric(model$data$weight[, "home"]), c(2, 5, 7))
+      expected = if (present) 11 else 2
+      expect_equal(as.numeric(model$data$weight[, "world"]), c(expected, 2, 2))
+      expect_equal(model$solution, c("x[]" = (2 + 5 + 9 + expected) * 4))
+    }
+    expect_error(
+      load_from_tablo(lines, "a", engine,
+                      input = list(basedata = list(wght = 1, limt = 9))),
+      "READ weight.*has 1 values, expected 2"
+    )
+  }
+})
+
+test_that("undefined names fail in assertions and conditioned equations", {
+  inputs = c(
+    "set reg (r1,r2);", "set active (r2);",
+    "coefficient (all,r,reg) weight(r);",
+    "formula (initial)(all,r,reg) weight(r) = 2;",
+    "variable (all,r,reg) a(r);", "variable (all,r,reg) x(r);"
+  )
+  equation = paste("equation example (all,r,reg)",
+                   'x(r) = IF(r in active, weight("r1") * a(r), a(r));')
+  bad_equation = paste("equation example (all,r,reg)",
+                       "x(r) = IF(thresholdd gt 0, a(r), 2 * a(r));")
+  shocks = c('a["r1"]' = 4, 'a["r2"]' = 4)
+  for (engine in c("sparse", "legacy")) {
+    for (vectorized in c(FALSE, TRUE)) {
+      withr::local_options(list(GEModelR.sparse.vectorized = vectorized))
+      model = solve_from_tablo(
+        c(inputs, 'assertion (initial) weight("r1") ge 0;', equation),
+        "a", shocks, engine
+      )
+      expect_equal(model$solution, c('x["r1"]' = 4, 'x["r2"]' = 8))
+      expect_error(
+        load_from_tablo(c(inputs, "assertion (initial) thresholdd gt 0;",
+                          equation), "a", engine),
+        "Undefined TABLO name 'thresholdd'"
+      )
+      expect_error(solve_from_tablo(c(inputs, bad_equation), "a", shocks, engine),
+                   "thresholdd")
+    }
+  }
+})
+
+test_that("ZERODIVIDE defaults follow formula scope and type", {
+  lines = c(
+    "coefficient denominator;", "formula (initial) denominator = 0;",
+    "coefficient replacement;", "formula (initial) replacement = 5;",
+    "coefficient builtin;", "formula (initial) builtin = 0 / denominator;",
+    "zerodivide (nonzero_by_zero) default replacement;",
+    "zerodivide default 7;",
+    "coefficient share;",
+    "formula share = 1 / denominator + 0 / denominator;",
+    "zerodivide (nonzero_by_zero) off;", "zerodivide off;",
+    "coefficient guarded;",
+    "formula guarded = IF(denominator gt 0, 1 / denominator, 2);",
+    "variable a;", "variable x;",
+    "equation example x = (share + builtin + guarded) * a;",
+    "zerodivide default 9;",
+    "postsim (begin);",
+    "coefficient post;",
+    "formula post = 0 / denominator;",
+    "postsim (end);", "zerodivide off;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 4), engine)
+    expect_equal(model$solution, c("x[]" = 56))
+    expect_equal(model$data$post, 0)
+    for (numerator in c(0, 1)) {
+      expect_error(
+        load_from_tablo(c(
+          lines, "coefficient forbidden;",
+          sprintf("formula (initial) forbidden = %s / denominator;", numerator)
+        ), "a", engine),
+        "TABLO division by zero"
+      )
+    }
+  }
+})
+
+test_that("division by zero is an error in active equations and updates", {
+  lines = c(
+    "set reg (r1,r2);",
+    "coefficient (all,r,reg) denominator(r);",
+    'read denominator from file basedata header "DENM";',
+    "coefficient stock;", "formula (initial) stock = 100;",
+    "zerodivide default 9;", "zerodivide (nonzero_by_zero) default 8;",
+    "variable (all,r,reg) a(r);", "variable (all,r,reg) x(r);"
+  )
+  equation = "equation example (all,r,reg) x(r) = a(r) / denominator(r);"
+  guarded = paste("equation example (all,r,reg) x(r) =",
+                  "IF(denominator(r) ne 0, a(r) / denominator(r), a(r));")
+  input = list(basedata = list(denm = c(0, 2)))
+  shocks = c('a["r1"]' = 4, 'a["r2"]' = 4)
+  for (engine in c("sparse", "legacy")) {
+    for (vectorized in c(FALSE, TRUE)) {
+      withr::local_options(list(GEModelR.sparse.vectorized = vectorized))
+      expect_error(
+        solve_from_tablo(c(lines, equation), "a", shocks, engine, input),
+        "TABLO division by zero"
+      )
+      model = solve_from_tablo(c(lines, guarded), "a", shocks, engine, input)
+      expect_equal(model$solution, c('x["r1"]' = 4, 'x["r2"]' = 2))
+      failing = load_from_tablo(
+        c(lines, guarded, 'update (change) stock = a("r1") / denominator("r1");'),
+        "a", engine, input
+      )
+      failing$setShocks(shocks)
+      expect_error(
+        suppressMessages(failing$solveModel(engine = engine, iter = 1, steps = 1)),
+        "TABLO division by zero"
+      )
+      expect_equal(failing$data$stock, 100)
+      expect_length(failing$solution, 0L)
     }
   }
 })

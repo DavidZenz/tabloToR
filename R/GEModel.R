@@ -361,10 +361,6 @@ GEModel = setRefClass(
             sparse_state, sparse_index, sparseSpec,
             updates = sparseSpec$simulation_updates
           )
-          sparse_apply_updates(
-            sparse_state, sparse_index, sparseSpec,
-            updates = sparseSpec$formula_initialization_updates
-          )
           .check_tablo_assertions(sparseSpec$assertions, sparse_state,
                                  sparse_index, initial = TRUE)
           sparse_index = sparse_build_row_layout(
@@ -903,6 +899,7 @@ GEModel = setRefClass(
             )
 
 
+            data <<- generateUpdates(data, phase = "formula")
             .check_tablo_assertions(sparseSpec$assertions, data)
             data <<- equationCoefficientGenerator(data)
             message(sprintf('Step %s/%s', currentStep,steps[step]))
@@ -910,6 +907,7 @@ GEModel = setRefClass(
             # Solve the model for this shock
             .transaction_fault("factorization")
             subStepSolution[[currentStep]] = generateSolution(stepShocks)
+            data$equationMatrixList <<- NULL
             .transaction_fault("convergence")
             .transaction_fault("finiteness")
             if (any(!is.finite(subStepSolution[[currentStep]]))) {
@@ -930,7 +928,7 @@ GEModel = setRefClass(
 
             # Update the data
             .transaction_fault("simulation-update")
-            data <<- generateUpdates(data)
+            data <<- generateUpdates(data, phase = "update")
 
           }
           #browser()
@@ -1010,24 +1008,15 @@ GEModel = setRefClass(
 
         #browser()
 
-        data <<-originalData
-
-        invisible(NULL)
-        data <<- legacy_apply_labeled_values(
-          data, iterationSolution[[it]]
-        )
-        invisible(NULL)
-
-
-        invisible(NULL)
-        data <<- legacy_apply_labeled_values(
-          data, setNames(subShocks[names(shocks)], names(shocks))
-        )
-        invisible(NULL)
-
-        #browser()
-        .transaction_fault("simulation-update")
-        data <<- generateUpdates(data)
+        if (length(steps) > 1L) {
+          data <<- generateUpdates(originalData, phase = "formula")
+          data <<- legacy_apply_labeled_values(data, iterationSolution[[it]])
+          data <<- legacy_apply_labeled_values(
+            data, setNames(subShocks[names(shocks)], names(shocks))
+          )
+          .transaction_fault("simulation-update")
+          data <<- generateUpdates(data, phase = "update")
+        }
       }
 
       #browser()
@@ -1062,7 +1051,9 @@ GEModel = setRefClass(
 
       invisible(NULL)
       data <<- legacy_apply_labeled_values(data, shocks)
+      data <<- generateUpdates(data, phase = "formula")
       .check_tablo_assertions(sparseSpec$assertions, data)
+      if (postsim) data <<- generateUpdates(data, phase = "postsim")
 
       legacy_details = if (diagnostics_requested) {
         elapsed = proc.time()[[3L]] - solve_started

@@ -1,5 +1,11 @@
+.tablo_formula_is_initial = function(statement) {
+  isTRUE(statement$read_default) ||
+    any(grepl("^\\(\\s*initial\\s*[,)]", statement$parsed$elements))
+}
+
 processFormulaStatement = function(s){
   frm = correctFormula(s$parsed$equation)
+  frm[[3L]] = .tablo_with_division(frm[[3L]], s$division)
   #frm = correctFormula(gsub(":","%:%",gsub('>==','>=',gsub('<==','<=',gsub('=','=',s$parsed$equation)))))
 
   dimensions = s$parsed$elements[grep('\\(all,', s$parsed$elements)]
@@ -12,7 +18,9 @@ processFormulaStatement = function(s){
     for (l in 1:length(qualifiers)) {
       q = str2lang(qualifiers[[l]])
       if (length(q) == 4) {
-        condition[[length(condition) + 1]] = paste0(deparse1(correctFormula(deparse1(q[[4]]), preserve_assignment = FALSE)),collapse=' ')
+        condition[[length(condition) + 1]] = deparse1(.tablo_with_division(correctFormula(
+          deparse1(q[[4]]), preserve_assignment = FALSE
+        ), s$division))
       }
     }
 

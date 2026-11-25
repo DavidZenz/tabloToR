@@ -1,33 +1,22 @@
 sumToMap = function(expr) {
-  if (inherits(expr, "name")) {
-    return(expr)
+  if (!is.call(expr)) return(expr)
+
+  if (identical(expr[[1L]], as.name("sum")) && length(expr) == 4L) {
+    index = expr[[2L]]
+    set = expr[[3L]]
+    expression = sumToMap(expr[[4L]])
+    mapped = str2lang(sprintf("Map(function(%s)%s, %s)",
+                              deparse1(index), deparse1(expression),
+                              deparse1(set)))
+    return(call("sum", call("unlist", mapped)))
   }
-
-  if (expr[[1]] == 'sum') {
-    index = expr[[2]]
-    set = expr[[3]]
-    expression = expr[[4]]
-
-    expr[[2]] = str2lang('unlist()')
-    expr[[4]] = NULL
-    expr[[3]] = NULL
-    expr[[2]][[2]] = str2lang(sprintf(
-      'Map(function(%s)%s,%s)',
-      deparse1(index),
-      paste0(deparse1(sumToMap(expression)),collapse=' '),
-      deparse1(set)
-    ))
-
-  }else  if (length(expr) > 1) {
-    for (i in 2:length(expr)) {
-      expr[[i]] = sumToMap(expr[[i]])
+  for (i in seq_along(expr)[-1L]) {
+    if (!identical(expr[[i]], quote(expr = ))) {
+      expr[i] = list(sumToMap(expr[[i]]))
     }
-
   }
-  return(expr)
+  expr
 }
-
-
 
 generateFormulas = function(formulaStatements) {
   toRet = list()

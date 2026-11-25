@@ -1,6 +1,5 @@
 generateVariables = function(statements) {
-  toRet = list('"/" <- function(x,y) ifelse(y==0,0,base:::"/"(x,y))
-')
+  toRet = list('"/" <- .tablo_divide')
   for (s in statements) {
       toRet[[length(toRet) + 1]] = processCoefficientStatement(s)
   }

@@ -842,26 +842,15 @@ sparse_make_state = function(data) {
 sparse_process_tablo = function(tabloPath) {
   statements = tabloToStatements(tabloPath)
   sparse_spec = sparse_compile_spec(statements)
-  # Evaluate the required initial formulas and reads in source order up to
-  # the last set that needs them. Later formulas use the completed index.
-  early = vapply(sparse_spec$formula_initialization_updates, function(update) {
-    update$statement_id < sparse_spec$setup_through
-  }, logical(1))
+  # Run initialization formulas alongside reads so each sees all prior
+  # assignments, including values used to populate subsequent sets.
   setup_statements = statements
-  for (update in sparse_spec$formula_initialization_updates[early]) {
-    id = update$statement_id
-    if (update$class == "read") {
-      setup_statements[[id]]$initialize_read = FALSE
-    } else {
-      setup_statements[[id]]$setup_formula = update
-    }
+  for (formula in sparse_spec$formula_initialization_updates) {
+    setup_statements[[formula$statement_id]]$setup_formula = formula
   }
-  sparse_spec$formula_initialization_updates =
-    sparse_spec$formula_initialization_updates[!early]
   skeleton_statements = Filter(function(statement) {
     if (!is.null(statement$setup_formula)) return(TRUE)
     statement$class %in% c("set", "coefficient", "read") &&
-      !isTRUE(statement$initialize_read) &&
       !grepl("^mapping\\s", statement$parsed$equation,
              ignore.case = TRUE)
   }, setup_statements)
@@ -923,7 +912,7 @@ sparse_process_tablo = function(tabloPath) {
     equationCoefficientMatrixGenerator = gem,
     equationCoefficientGenerator = gec,
     generateVariables = gev,
-    generateUpdates = function(data) data,
+    generateUpdates = function(data, phase = "all") data,
     generateEquationLevelValues = geq,
     variables = sparse_spec$variable_names,
     changeVariables = sparse_spec$variable_names[change],
@@ -1265,9 +1254,10 @@ sparse_global_for_ref = function(ref, state, bindings, index,
   as.integer(variable$global_start + local - 1L)
 }
 
-sparse_set_data_ref = function(ref, state, bindings, index, value) {
+sparse_set_data_ref = function(ref, state, bindings, index, value,
+                               source = state) {
   data = sparse_state_data(state)
-  linear = sparse_data_linear_index(ref, state, bindings, index)
+  linear = sparse_data_linear_index(ref, source, bindings, index)
   array = data[[ref$name]]
   array[[linear]] = as.numeric(value)[1L]
   data[[ref$name]] = array
@@ -1576,7 +1566,7 @@ sparse_vectorized_expr_supported = function(expr) {
   supported = c(
     "[", "(", "sum", "setpos", "isin", "ifelse", "!", "+", "-", "*", "/", "^",
     "==", "!=", "<", ">", "<=", ">=", "&", "|",
-    "exp", "loge", "log", "sqrt", "abs"
+    "exp", "loge", "log", "sqrt", "abs", ".tablo_divide"
   )
   if (!(op %in% supported) &&
       (!grepl("^[A-Za-z][A-Za-z0-9_.]*$", op) || length(expr) < 2L)) {
@@ -1706,7 +1696,9 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
       return(rep(bindings[[name]], length.out = n))
     }
     data = if (!is.null(state)) sparse_state_data(state)[[tolower(name)]] else NULL
-    if (is.null(data)) return(rep(name, n))
+    if (is.null(data)) {
+      stop(sprintf("Undefined TABLO name '%s'", name), call. = FALSE)
+    }
     data = sparse_implicit_exogenous_zero(data, name, index)
     return(rep(as.numeric(data), length.out = n))
   }
@@ -1715,7 +1707,7 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
 
   op = tolower(as.character(expr[[1]]))
   if (!(op %in% c(
-    "[", "(", "sum", "setpos", "isin", "ifelse", "!",
+    "[", "(", "sum", "setpos", "isin", "ifelse", "!", ".tablo_divide",
     "+", "-", "*", "/", "^", "==", "!=", "<", ">",
     "<=", ">=", "&", "|", "exp", "loge", "log", "sqrt", "abs"
   )) && !is.null(sparse_state_data(state)[[op]])) {
@@ -1867,14 +1859,26 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
   }
 
   if (op == "ifelse") {
-    condition = sparse_eval_expr_vectorized(
-      expr[[2]], state, bindings, index, n
-    )
-    yes = sparse_eval_expr_vectorized(expr[[3]], state, bindings, index, n)
-    no = if (length(expr) >= 4L) {
-      sparse_eval_expr_vectorized(expr[[4]], state, bindings, index, n)
+    condition = rep_len(sparse_eval_expr_vectorized(
+      expr[[2L]], state, bindings, index, n
+    ), n)
+    yes = which(condition)
+    no = which(!condition)
+    result = rep(NA_real_, n)
+    result[yes] = sparse_eval_selected(expr[[3L]], state, bindings, index, yes, n)
+    result[no] = if (length(expr) >= 4L) {
+      sparse_eval_selected(expr[[4L]], state, bindings, index, no, n)
     } else 0
-    return(ifelse(condition, yes, no))
+    return(result)
+  }
+
+  if (op == ".tablo_divide") {
+    return(.tablo_divide(
+      sparse_eval_expr_vectorized(expr[[2L]], state, bindings, index, n),
+      sparse_eval_expr_vectorized(expr[[3L]], state, bindings, index, n),
+      if (!is.null(expr[[4L]])) sparse_eval_expr(expr[[4L]], state, bindings, index),
+      if (!is.null(expr[[5L]])) sparse_eval_expr(expr[[5L]], state, bindings, index)
+    ))
   }
 
   if (op == "!") {
@@ -1889,7 +1893,7 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
                   state = state, bindings = bindings, index = index, n = n)
     if (op == "-" && length(args) == 1L) return(-args[[1]])
     if (op == "/" && length(args) == 2L) {
-      return(ifelse(args[[2]] == 0, 0, args[[1]] / args[[2]]))
+      return(.tablo_divide(args[[1]], args[[2]]))
     }
     return(do.call(op, args))
   }
@@ -1904,6 +1908,16 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
 
   stop(sprintf("Unsupported sparse expression operator: %s", op),
        call. = FALSE)
+}
+
+sparse_eval_selected = function(expr, state, bindings, index, selected, n) {
+  if (!length(selected)) return(numeric())
+  if (length(selected) != n) {
+    for (name in names(bindings)) {
+      if (!startsWith(name, ".set:")) bindings[[name]] = bindings[[name]][selected]
+    }
+  }
+  sparse_eval_expr_vectorized(expr, state, bindings, index, length(selected))
 }
 
 sparse_vectorized_ref_positions = function(ref, bindings, state, index, n) {
@@ -2011,21 +2025,22 @@ sparse_emit_system_vectorized = function(state, index, shocks) {
       } else {
         seq.int(equation$row_start, equation$row_end)
       }
-      value = sparse_eval_expr_vectorized(
-        term$coefficient, state, bindings, index, n
-      )
-      value = rep(value, length.out = n)
       guard_ok = rep(TRUE, n)
-      if (length(term$guards)) {
-        for (guard in term$guards) {
-          valid = sparse_eval_expr_vectorized(
-            guard, state, bindings, index, n
-          )
-          valid = .tablo_condition(rep_len(valid, n),
-                                   paste("Equation", equation$name), guard_ok)
-          guard_ok = guard_ok & valid
-        }
-        value[!guard_ok] = 0
+      for (guard in term$guards) {
+        active = which(guard_ok)
+        context = paste("Equation", equation$name)
+        guard_ok[active] = .tablo_condition(
+          sparse_eval_selected(guard, state, bindings, index, active, n), context
+        )
+      }
+      active = which(guard_ok)
+      value = sparse_eval_selected(
+        term$coefficient, state, bindings, index, active, n
+      )
+      if (length(active) != n) {
+        active_values = value
+        value = numeric(n)
+        value[active] = active_values
       }
       invalid = guard_ok & !is.finite(value)
       if (any(invalid)) {
@@ -2595,15 +2610,21 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
   if (is.null(spec)) return(invisible(NULL))
   if (is.null(updates)) updates = spec$updates
   if (!length(updates)) return(invisible(NULL))
-  for (update_id in seq_along(updates)) {
+  is_update = vapply(updates, function(update) update$class == "update",
+                     logical(1))
+  update_order = c(which(!is_update), which(is_update))
+  pending = NULL
+  for (update_id in update_order) {
     update = updates[[update_id]]
-    if (identical(update$class, "read")) {
-      state$data = update$generate(sparse_state_data(state))
-      next
+    output = state
+    if (is_update[[update_id]]) {
+      # Stage writes separately so every UPDATE sees the same inputs.
+      if (is.null(pending)) pending = sparse_make_state(sparse_state_data(state))
+      output = pending
     }
-    sparse_initialize_update_target(update, state, index)
+    sparse_initialize_update_target(update, output, index)
     vectorized = tryCatch(
-      sparse_apply_update_vectorized(update, state, index),
+      sparse_apply_update_vectorized(update, output, index, source = state),
       error = function(error) FALSE
     )
     result = if (isTRUE(vectorized)) {
@@ -2615,7 +2636,7 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
             update$expression, state, bindings, index
           )
           sparse_set_data_ref(
-            update$target, state, bindings, index, value
+            update$target, output, bindings, index, value, source = state
           )
         }
       )
@@ -2628,6 +2649,7 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
       ), call. = FALSE)
     }
   }
+  if (!is.null(pending)) state$data = sparse_state_data(pending)
   invisible(NULL)
 }
 
@@ -2655,7 +2677,8 @@ sparse_restore_checkpoint = function(state, checkpoint) {
   invisible(NULL)
 }
 
-sparse_apply_update_vectorized = function(update, state, index) {
+sparse_apply_update_vectorized = function(update, state, index,
+                                            source = state) {
   domains = update$domains
   if (!sparse_vectorized_expr_supported(update$expression)) return(FALSE)
   if (any(vapply(domains, function(domain) {
@@ -2672,21 +2695,20 @@ sparse_apply_update_vectorized = function(update, state, index) {
   } else integer()
   n = if (length(lengths)) as.numeric(prod(lengths)) else 1
   vectorized = sparse_vectorized_bindings(domains, index)
-  value = sparse_eval_expr_vectorized(
-    update$expression, state, vectorized$bindings, index, n
-  )
-  value = rep(as.numeric(value), length.out = n)
   active = rep(TRUE, n)
   for (domain in domains) {
     if (!is.null(domain$predicate)) {
-      predicate = sparse_eval_expr_vectorized(
-        domain$predicate, state, vectorized$bindings, index, n
-      )
-      predicate = rep(as.logical(predicate), length.out = n)
-      predicate[is.na(predicate)] = FALSE
-      active = active & predicate
+      selected = which(active)
+      active[selected] = .tablo_condition(sparse_eval_selected(
+        domain$predicate, source, vectorized$bindings, index, selected, n
+      ), paste("Domain", domain$index))
     }
   }
+  selected = which(active)
+  if (!length(selected)) return(TRUE)
+  value = as.numeric(sparse_eval_selected(
+    update$expression, source, vectorized$bindings, index, selected, n
+  ))
 
   data = sparse_state_data(state)
   array = data[[update$target$name]]
@@ -2695,7 +2717,7 @@ sparse_apply_update_vectorized = function(update, state, index) {
   target_indices = update$target$indices
   if (!length(target_indices)) {
     if (length(array) != 1L) return(FALSE)
-    if (active[[1L]]) data[[update$target$name]] = value[[1L]]
+    data[[update$target$name]] = value[[1L]]
   } else {
     if (is.null(dimensions) ||
         length(dimensions) != length(target_indices)) return(FALSE)
@@ -2712,7 +2734,7 @@ sparse_apply_update_vectorized = function(update, state, index) {
       } else NULL
       sparse_vectorized_positions(
         sparse_vectorized_index_value(
-          item, vectorized$bindings, state, index, n
+          item, vectorized$bindings, source, index, n
         ),
         dimensions[[d]],
         if (!is.null(array_dim_names)) array_dim_names[[d]] else NULL,
@@ -2722,7 +2744,8 @@ sparse_apply_update_vectorized = function(update, state, index) {
         n
       )
     })
-    if (any(vapply(positions, anyNA, logical(1)))) return(FALSE)
+    if (any(vapply(positions, function(position) anyNA(position[selected]),
+                   logical(1)))) return(FALSE)
     target_linear = rep(1, n)
     target_stride = 1
     for (d in seq_along(positions)) {
@@ -2730,7 +2753,7 @@ sparse_apply_update_vectorized = function(update, state, index) {
         (positions[[d]] - 1) * target_stride
       target_stride = target_stride * dimensions[[d]]
     }
-    array[as.integer(target_linear[active])] = value[active]
+    array[as.integer(target_linear[selected])] = value
     data[[update$target$name]] = array
   }
   if (is.environment(state)) state$data = data
@@ -3185,6 +3208,9 @@ sparse_check_budget = function(estimate, budget) {
     matrix_start = proc.time()[[3L]]
   }
   .transaction_fault("compilation")
+  sparse_apply_updates(
+    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
+  )
   .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   column_order = sparse_lhs_column_order(index, state)
   index$column_order = column_order
@@ -3294,7 +3320,7 @@ sparse_check_budget = function(estimate, budget) {
   sparse_apply_shocks(state, index, shocks)
   sparse_apply_updates(
     state, index, model$sparseSpec,
-    updates = model$sparseSpec$simulation_updates
+    updates = model$sparseSpec$coefficient_updates
   )
   if (isTRUE(measure)) {
     update_end = proc.time()[[3L]]
@@ -3632,14 +3658,19 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
       step_results[[step_id]] = step_result
     }
     iteration_solution = sparse_extrapolate_steps(step_results, steps)
-    sparse_restore_checkpoint(state, outer_checkpoint)
-    sparse_apply_solution(state, index, iteration_solution)
-    sparse_apply_shocks(state, index, remaining)
-    .transaction_fault("simulation-update", list(iteration = iteration))
-    sparse_apply_updates(
-      state, index, model$sparseSpec,
-      updates = model$sparseSpec$simulation_updates
-    )
+    if (length(steps) > 1L) {
+      sparse_restore_checkpoint(state, outer_checkpoint)
+      sparse_apply_updates(
+        state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
+      )
+      sparse_apply_solution(state, index, iteration_solution)
+      sparse_apply_shocks(state, index, remaining)
+      .transaction_fault("simulation-update", list(iteration = iteration))
+      sparse_apply_updates(
+        state, index, model$sparseSpec,
+        updates = model$sparseSpec$coefficient_updates
+      )
+    }
     final_solution = sparse_add_solution(
       final_solution, iteration_solution, change_mask
     )
@@ -3647,6 +3678,9 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   if (is.null(final_solution)) final_solution = numeric(index$endogenous_count)
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
+  sparse_apply_updates(
+    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
+  )
   .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   solution = final_solution
   if (output == "full") names(solution) = sparse_endogenous_labels(index)
