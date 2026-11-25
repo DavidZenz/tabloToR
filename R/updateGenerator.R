@@ -22,12 +22,20 @@ generateUpdates = function(statements) {
         str2lang(processUpdateStatement(s, target))
     } else if (s$class == "assertion") {
       assertion = .compile_tablo_assertion(s)
-      post_block[[length(post_block) + 1L]] = bquote(
-        if (.tablo_check_post_assertions) .check_tablo_assertions(
-          list(.(assertion)), as.list(environment(), all.names = TRUE),
-          phase = "postsim"
+      if (assertion$postsim) {
+        post_block[[length(post_block) + 1L]] = bquote(
+          if (.tablo_check_post_assertions) .check_tablo_assertions(
+            list(.(assertion)), as.list(environment(), all.names = TRUE),
+            phase = "postsim"
+          )
         )
-      )
+      } else if (!assertion$initial) {
+        formula_block[[length(formula_block) + 1L]] = bquote(
+          .check_tablo_assertions(
+            list(.(assertion)), as.list(environment(), all.names = TRUE)
+          )
+        )
+      }
     } else if (isTRUE(s$postsim)) {
       if (s$class == "formula") {
         expression = str2lang(processFormulaStatement(s))

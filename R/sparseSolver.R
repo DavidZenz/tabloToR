@@ -1909,8 +1909,12 @@ sparse_eval_expr_vectorized = function(expr, state, bindings, index, n = NULL) {
 
   if (op %in% c("+", "-", "*", "/", "^", "==", "!=", "<", ">",
                 "<=", ">=", "&", "|")) {
-    args = lapply(as.list(expr)[-1L], sparse_eval_expr_vectorized,
+    operands = as.list(expr)[-1L]
+    args = lapply(operands, sparse_eval_expr_vectorized,
                   state = state, bindings = bindings, index = index, n = n)
+    if (op %in% c("==", "!=")) {
+      return(.sparse_compare_indices(op, operands, args, bindings, index))
+    }
     if (op == "-" && length(args) == 1L) return(-args[[1]])
     if (op == "/" && length(args) == 2L) {
       return(.tablo_divide(args[[1]], args[[2]]))
@@ -2636,6 +2640,10 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
   pending = NULL
   for (update_id in update_order) {
     update = updates[[update_id]]
+    if (update$class == "assertion") {
+      .check_tablo_assertions(list(update), state, index)
+      next
+    }
     output = state
     if (is_update[[update_id]]) {
       # Stage writes separately so every UPDATE sees the same inputs.
@@ -3239,9 +3247,8 @@ sparse_check_budget = function(estimate, budget) {
   }
   .transaction_fault("compilation")
   sparse_apply_updates(
-    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
+    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_actions
   )
-  .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   column_order = sparse_lhs_column_order(index, state)
   index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
@@ -3727,9 +3734,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
   sparse_apply_solution(state, index, final_solution)
   sparse_apply_shocks(state, index, shocks)
   sparse_apply_updates(
-    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_formulas
+    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_actions
   )
-  .check_tablo_assertions(model$sparseSpec$assertions, state, index)
   solution = final_solution
   if (output == "full") names(solution) = sparse_endogenous_labels(index)
   diagnostics_result = list(

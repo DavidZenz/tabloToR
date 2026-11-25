@@ -26,6 +26,43 @@ test_that("saveState writes exact current GEModelR package lineage", {
   )
 })
 
+test_that("schema-1 checkpoints restore across writer versions", {
+  # Patch only the writer version in an uncompressed XDR header to exercise
+  # both fingerprint formats without depending on a second R installation.
+  writer_bytes = writeBin(as.integer(4L * 65536L + 5L * 256L + 1L),
+                          raw(), endian = "big")
+  other_writer = function(value) {
+    bytes = serialize(value, NULL, version = 3L)
+    bytes[7L:10L] = writer_bytes
+    bytes
+  }
+  original_file = withr::local_tempfile()
+  load_file = withr::local_tempfile()
+  resave_file = withr::local_tempfile()
+  model = make_three_region_model("sparse")
+  model$saveState(original_file)
+  current = readRDS(original_file)
+  old = current
+  old$source$tablo_fingerprint =
+    .serialization_raw_fingerprint(other_writer(old$source$tablo_source))
+  old$source$data_fingerprint =
+    .serialization_raw_fingerprint(other_writer(old$source$loaded_data))
+
+  for (payload in list(current, old)) {
+    writeBin(other_writer(payload), load_file)
+    expect_identical(infoRDS(load_file)$writer_version, "4.5.1")
+    restored = GEModel$new()
+    restored$loadState(load_file)
+    expect_identical(restored$sourceData, current$source)
+    restored$saveState(resave_file)
+    expect_identical(readRDS(resave_file)$source, current$source)
+  }
+
+  old$source$loaded_data$basedata$stock[1L] = -99
+  writeBin(other_writer(old), load_file)
+  expect_error(GEModel$new()$loadState(load_file), "loaded source data fingerprint mismatch")
+})
+
 test_that("failed state replacement preserves the previous checkpoint", {
   model = make_three_region_model("sparse")
   state_file = tempfile(fileext = ".rds")

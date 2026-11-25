@@ -27,9 +27,10 @@ processTablo = function(tablo) {
   geq = generateEquationLevels(Filter(function(f)
     f$class == 'equation', statements))
   gup = generateUpdates(Filter(function(f)
-    f$class == "formula" || (f$class == "update" && !isTRUE(f$postsim)) ||
+    f$class %in% c("formula", "assertion") ||
+      (f$class == "update" && !isTRUE(f$postsim)) ||
       (isTRUE(f$postsim) &&
-       f$class %in% c("assertion", "set", "coefficient", "read")), statements))
+       f$class %in% c("set", "coefficient", "read")), statements))
 
   return(
     list(
@@ -46,9 +47,7 @@ processTablo = function(tablo) {
           }
         },
         Filter(
-          function(f)
-            #!'(change)' %in% f$parsed$element,
-            any(grepl('change',f$parsed$elements)),
+          function(f) "change" %in% .tablo_qualifiers(f),
           Filter(function(f)
             f$class == 'variable', statements)
         )

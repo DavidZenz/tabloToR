@@ -16,6 +16,11 @@
        header = parts[[5L]], indices = indices, domains = domains)
 }
 
+.tablo_shared_axis_names = function(source, target) {
+  setdiff(intersect(source, target), c("", NA_character_,
+    source[duplicated(source)], target[duplicated(target)]))
+}
+
 .tablo_header_values = function(target, values, coefficient, file, header) {
   context = sprintf('READ %s from file %s header "%s"', coefficient, file, header)
   if (is.null(values)) {
@@ -62,21 +67,31 @@
   common_axes = seq_len(common_rank)
   value_axes = value_axes[common_axes]
   target_axes = target_axes[common_axes]
-  source_names = tolower(names(source_labels)[value_axes])
-  expected_names = tolower(names(target_labels)[target_axes])
-  shared_names = intersect(source_names, expected_names)
+  all_source_names = tolower(names(source_labels))
+  all_expected_names = tolower(names(target_labels))
+  source_names = all_source_names[value_axes]
+  expected_names = all_expected_names[target_axes]
   # Each unambiguous set name identifies its axis, even when some other
   # names are absent or differ from the TABLO declarations.
-  shared_names = setdiff(shared_names, c("", NA_character_,
-    source_names[duplicated(source_names)],
-    expected_names[duplicated(expected_names)]))
+  shared_names = .tablo_shared_axis_names(source_names, expected_names)
   if (any(match(shared_names, source_names) !=
           match(shared_names, expected_names))) {
     stop(sprintf("%s has named dimensions in the wrong order (%s, expected %s)",
                  context, paste(source_names, collapse = ", "),
                  paste(expected_names, collapse = ", ")), call. = FALSE)
   }
-  for (axis in seq_len(common_rank)) {
+  # Singleton axes may move or be omitted when matching shapes. Named axes
+  # present in both arrays still provide an element label to check.
+  shared = .tablo_shared_axis_names(all_source_names, all_expected_names)
+  source_singletons = match(shared, all_source_names)
+  target_singletons = match(shared, all_expected_names)
+  paired_targets = target_axes[match(source_singletons, value_axes)]
+  keep = value_dims[source_singletons] == 1L &
+    target_dims[target_singletons] == 1L &
+    (is.na(paired_targets) | paired_targets != target_singletons)
+  value_axes = c(value_axes, source_singletons[keep])
+  target_axes = c(target_axes, target_singletons[keep])
+  for (axis in seq_along(value_axes)) {
     if (is.null(source_labels) || is.null(target_labels)) break
     source = source_labels[[value_axes[[axis]]]]
     expected = target_labels[[target_axes[[axis]]]]
@@ -87,7 +102,7 @@
     if (anyNA(source) || anyNA(positions) || anyDuplicated(source) ||
         anyDuplicated(positions)) {
       stop(sprintf("%s has incompatible labels on dimension %s",
-                   context, axis), call. = FALSE)
+                   context, target_axes[[axis]]), call. = FALSE)
     }
     orders[[value_axes[[axis]]]] = positions
     reorder = reorder || !identical(positions, seq_along(positions))
@@ -184,7 +199,7 @@ processReadStatement = function(s) {
     statement = statements[[id]]
     if (isTRUE(statement$postsim)) next
     if (statement$class == "formula" &&
-        !("always" %in% .tablo_formula_qualifiers(statement))) {
+        !("always" %in% .tablo_qualifiers(statement))) {
       expression = trimws(statement$parsed$equation)
       target = regmatches(expression, regexpr("^[a-z][a-z0-9_.]*", expression))
       if (length(target)) formulas[[target]] = c(formulas[[target]], id)

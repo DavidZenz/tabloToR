@@ -563,15 +563,15 @@ GEModel = setRefClass(
         stop("Logical-state file is empty or exceeds the configured size limit",
              call. = FALSE)
       }
-      payload = tryCatch(
-        readRDS(file),
+      saved = tryCatch(
+        list(payload = readRDS(file), writer = infoRDS(file)),
         error = function(error) {
           .serialization_stop(sprintf(
             "RDS decoding failed: %s", conditionMessage(error)
           ))
         }
       )
-      restored = .restore_logical_state_payload(payload)
+      restored = .restore_logical_state_payload(saved$payload, saved$writer)
       .install_restored_logical_state(.self, restored)
     },
     generateSolution = function(subShocks){
@@ -906,7 +906,6 @@ GEModel = setRefClass(
 
 
             data <<- generateUpdates(data, phase = "formula")
-            .check_tablo_assertions(sparseSpec$assertions, data)
             data <<- equationCoefficientGenerator(data)
             message(sprintf('Step %s/%s', currentStep,steps[step]))
             #browser()
@@ -1013,7 +1012,6 @@ GEModel = setRefClass(
       invisible(NULL)
       data <<- legacy_apply_labeled_values(data, shocks)
       data <<- generateUpdates(data, phase = "formula")
-      .check_tablo_assertions(sparseSpec$assertions, data)
       if (postsim) data <<- generateUpdates(data, phase = "postsim")
 
       legacy_details = if (diagnostics_requested) {

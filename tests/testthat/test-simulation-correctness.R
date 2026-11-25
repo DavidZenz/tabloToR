@@ -17,6 +17,92 @@ solve_from_tablo = function(lines, closure, shocks, engine = "sparse",
   model
 }
 
+test_that("explicit PERCENT_CHANGE variables compound like the default", {
+  for (engine in c("sparse", "legacy")) {
+    for (qualifier in c("", "(percent_change)")) {
+      lines = c(
+        "coefficient stock;", "formula (initial) stock = 100;",
+        paste("variable", qualifier, "a;"), paste("variable", qualifier, "x;"),
+        "equation outcome x = 2 * a;", "update (product) stock = a;"
+      )
+      model = solve_from_tablo(lines, "a", c("a[]" = 20), engine, steps = 2L)
+      expect_equal(model$data$stock, 120)
+      expect_equal(model$solution, c("x[]" = 460 / 11))
+    }
+  }
+})
+
+test_that("index equality compares labels across different sets", {
+  lines = c(
+    "set parent (xx,aa,bb);", "set child (aa,bb);",
+    "subset child is subset of parent;",
+    'assertion (initial) # label in a sum # sum(i,parent: "bb" eq i,1) eq 1;',
+    "variable (change)(all,j,child) a(j);",
+    "variable (change)(all,i,parent) x(i);",
+    "variable (change)(all,i,parent) y(i);",
+    "variable (change)(all,j,child) z(j);",
+    "equation match (all,i,parent) x(i) = sum(j,child: i eq j,a(j));",
+    "equation other (all,i,parent) y(i) = sum(j,child: i ne j,a(j));",
+    'equation quoted (all,j,child) z(j) = IF(j eq "bb", a(j));'
+  )
+  expected = c('x["xx"]' = 0, 'x["aa"]' = 11, 'x["bb"]' = 7,
+               'y["xx"]' = 18, 'y["aa"]' = 7, 'y["bb"]' = 11,
+               'z["aa"]' = 0, 'z["bb"]' = 7)
+  for (engine in c("sparse", "legacy")) {
+    for (vectorized in if (engine == "sparse") c(FALSE, TRUE) else TRUE) {
+      withr::local_options(list(GEModelR.sparse.vectorized = vectorized))
+      model = solve_from_tablo(lines, "a", c('a["aa"]' = 11, 'a["bb"]' = 7),
+                               engine)
+      expect_equal(model$solution[names(expected)], expected)
+    }
+  }
+})
+
+test_that("ordinary assertions run between formulas on each simulation pass", {
+  lines = c(
+    "coefficient stock;", "formula (initial) stock = 10;",
+    "coefficient observed;", "formula (always) observed = stock;",
+    "assertion (always) # positive stock at this point # observed gt 0;",
+    "formula (always) observed = -1;",
+    "variable (change) a;", "variable (change) x;", "equation outcome x = a;",
+    "update (change) stock = a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 1), engine, steps = c(1L, 2L))
+    expect_equal(model$data$stock, 11)
+    expect_equal(model$data$observed, -1)
+    expect_error(solve_from_tablo(lines, "a", c("a[]" = -11), engine),
+                 'assertion "positive stock at this point" failed')
+  }
+})
+
+test_that("named singleton labels are checked when HAR dimensions collapse", {
+  lines = c(
+    "set yr (y2021);", "set reg (north,south);",
+    "coefficient (all,y,yr)(all,r,reg) stock(y,r);",
+    'read stock from file basedata header "STOK";',
+    "variable (change) a;", "variable (change) x;",
+    'equation outcome x = stock("y2021","north") * a;'
+  )
+  header = function(value) list(basedata = list(stok = value))
+  positional = array(c(100, 200), c(2L, 1L))
+  labeled = array(c(100, 200), c(2L, 1L),
+                  list(reg = c("north", "south"), yr = "y2021"))
+  padded = array(c(100, 200), c(1L, 2L, 1L),
+                 list(padding = NULL, reg = c("north", "south"), yr = "y2021"))
+  for (engine in c("sparse", "legacy")) {
+    for (values in list(positional, labeled, padded)) {
+      model = solve_from_tablo(lines, "a", c("a[]" = 1), engine, header(values))
+      expect_equal(model$solution, c("x[]" = 100))
+    }
+    for (values in list(labeled, padded)) {
+      dimnames(values)$yr = "y2020"
+      expect_error(load_from_tablo(lines, "a", engine, header(values)),
+                   "incompatible labels on dimension 1")
+    }
+  }
+})
+
 test_that("Euler extrapolation preserves small final coefficient levels", {
   lines = c(
     "coefficient stock;", "formula (initial) stock = 1e16;",

@@ -342,7 +342,7 @@ sparse_compile_spec = function(statements) {
         name = ref$name,
         indices = ref$indices,
         domains = domains,
-        change = any(grepl("change", s$parsed$elements, ignore.case = TRUE))
+        change = "change" %in% .tablo_qualifiers(s)
       )
       variables[[length(variables) + 1L]] = variable
       variable_by_name[[ref$name]] = length(variables)
@@ -355,8 +355,7 @@ sparse_compile_spec = function(statements) {
         stop(sprintf("Variable %s has incompatible TABLO declarations",
                      ref$name), call. = FALSE)
       }
-      old$change = old$change ||
-        any(grepl("change", s$parsed$elements, ignore.case = TRUE))
+      old$change = old$change || "change" %in% .tablo_qualifiers(s)
       variables[[variable_by_name[[ref$name]]]] = old
     }
   }
@@ -509,6 +508,13 @@ sparse_compile_spec = function(statements) {
          !isTRUE(update$initial) && !isTRUE(update$postsim) &&
          update$target$name %in% required_formula_names)
   }, updates)
+  simulation_actions = c(
+    Filter(function(update) update$class == "formula", simulation_updates),
+    Filter(function(assertion) !assertion$initial, normal_assertions)
+  )
+  simulation_actions = simulation_actions[order(vapply(
+    simulation_actions, function(action) action$statement_id, integer(1)
+  ))]
   formula_initialization_updates = Filter(function(update) {
     update$class == "formula" && !isTRUE(update$postsim) &&
       update$target$name %in% initialization_formula_names
@@ -563,8 +569,7 @@ sparse_compile_spec = function(statements) {
     updates = updates,
     initial_updates = initial_updates,
     simulation_updates = simulation_updates,
-    simulation_formulas = Filter(function(update) update$class == "formula",
-                                 simulation_updates),
+    simulation_actions = simulation_actions,
     coefficient_updates = Filter(function(update) update$class == "update",
                                   simulation_updates),
     formula_initialization_updates = formula_initialization_updates,
@@ -880,6 +885,30 @@ sparse_implicit_exogenous_zero = function(value, name, index) {
   .tablo_set_position(position, index$sets[[target]]$values, target)
 }
 
+.sparse_compare_indices = function(op, operands, values, bindings, index) {
+  sets = vapply(operands, function(operand) {
+    if (is.name(operand)) {
+      set = bindings[[paste0(".set:", as.character(operand))]]
+      if (!is.null(set)) return(set)
+    }
+    ""
+  }, "")
+  # Positions are comparable within one set. Across sets or against a
+  # quoted element, compare the labels carried by the index bindings.
+  if (!identical(sets[[1L]], sets[[2L]])) {
+    for (i in seq_along(sets)) {
+      if (nzchar(sets[[i]]) &&
+          (nzchar(sets[[3L - i]]) || is.character(values[[3L - i]]))) {
+        values[[i]] = index$sets[[sets[[i]]]]$values[values[[i]]]
+      }
+    }
+  }
+  if (any(nzchar(sets)) && all(vapply(values, is.character, logical(1)))) {
+    values = lapply(values, tolower)
+  }
+  do.call(op, values)
+}
+
 sparse_eval_expr = function(expr, state, bindings, index) {
   if (is.null(expr)) return(NA_real_)
   if (is.name(expr)) {
@@ -989,8 +1018,12 @@ sparse_eval_expr = function(expr, state, bindings, index) {
 
   if (op %in% c("+", "-", "*", "/", "^", "==", "!=", "<", ">",
                 "<=", ">=", "&", "|")) {
-    args = lapply(as.list(expr)[-1L], sparse_eval_expr,
+    operands = as.list(expr)[-1L]
+    args = lapply(operands, sparse_eval_expr,
                   state = state, bindings = bindings, index = index)
+    if (op %in% c("==", "!=")) {
+      return(.sparse_compare_indices(op, operands, args, bindings, index))
+    }
     if (op == "-" && length(args) == 1L) return(-args[[1]])
     if (op == "/" && length(args) == 2L) {
       return(.tablo_divide(args[[1]], args[[2]]))

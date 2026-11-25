@@ -241,13 +241,32 @@
 
 .serialization_object_fingerprint = function(value) {
   bytes = serialize(value, NULL, version = 3L)
-  path = tempfile("tabloToR-fingerprint-")
-  connection = file(path, open = "wb")
-  writeBin(bytes, connection)
-  close(connection)
-  fingerprint = unname(tools::md5sum(path))
-  unlink(path)
-  fingerprint
+  # The XDR header includes the writer's R version and native encoding.
+  # Fingerprint the object representation after the version-3 header.
+  .serialization_raw_fingerprint(.serialization_xdr_body(bytes))
+}
+
+.serialization_xdr_body = function(bytes) {
+  encoding_size = readBin(bytes[15L:18L], "integer", n = 1L, endian = "big")
+  bytes[-seq_len(18L + encoding_size)]
+}
+
+.serialization_legacy_object_fingerprint = function(value, writer) {
+  bytes = serialize(value, NULL, version = 3L)
+  if (identical(writer$version, 3L)) {
+    version_code = function(version) {
+      parts = as.integer(strsplit(version, ".", fixed = TRUE)[[1L]])
+      length(parts) = 3L
+      parts[is.na(parts)] = 0L
+      as.integer(sum(parts * c(65536, 256, 1)))
+    }
+    encoding = charToRaw(writer$native_encoding)
+    header = writeBin(c(3L, version_code(writer$writer_version),
+                        version_code(writer$min_reader_version),
+                        length(encoding)), raw(), endian = "big")
+    bytes = c(charToRaw("X\n"), header, encoding, .serialization_xdr_body(bytes))
+  }
+  .serialization_raw_fingerprint(bytes)
 }
 
 .serialization_predecessor_data = function() {
@@ -550,9 +569,8 @@
       call. = FALSE
     )
   }
-  # R's serialization header records the writer version. Re-save the exact
-  # allowlisted predecessor source with this runtime's fingerprints after its
-  # immutable content has been checked; read-time lineage checks stay strict.
+  # Re-save the exact allowlisted predecessor source using portable fingerprints
+  # after checking its immutable content.
   if (.serialization_is_exact_predecessor_source(source, "predecessor")) {
     source$tablo_fingerprint =
       .serialization_object_fingerprint(source$tablo_source)
@@ -588,7 +606,7 @@
 }
 
 .validate_logical_state_payload = function(
-    payload, max_bytes = .serialization_max_bytes()) {
+    payload, max_bytes = .serialization_max_bytes(), writer = NULL) {
   if (!is.numeric(max_bytes) || length(max_bytes) != 1L ||
       is.na(max_bytes) || !is.finite(max_bytes) || max_bytes <= 0) {
     .serialization_stop("maximum byte limit must be one positive number")
@@ -658,6 +676,18 @@
   }
   tablo_fingerprint = .serialization_object_fingerprint(source$tablo_source)
   data_fingerprint = .serialization_object_fingerprint(source$loaded_data)
+  if (identical(lineage, "current") && !is.null(writer) &&
+      !identical(source$tablo_fingerprint, tablo_fingerprint)) {
+    legacy_fingerprint = .serialization_legacy_object_fingerprint(
+      source$tablo_source, writer
+    )
+    if (identical(source$tablo_fingerprint, legacy_fingerprint)) {
+      tablo_fingerprint = legacy_fingerprint
+      data_fingerprint = .serialization_legacy_object_fingerprint(
+        source$loaded_data, writer
+      )
+    }
+  }
   if (!.serialization_source_fingerprints_match(
     source, lineage, tablo_fingerprint, data_fingerprint
   )) {
@@ -1089,8 +1119,8 @@
   invisible(payload)
 }
 
-.restore_logical_state_payload = function(payload) {
-  .validate_logical_state_payload(payload)
+.restore_logical_state_payload = function(payload, writer = NULL) {
+  .validate_logical_state_payload(payload, writer = writer)
   lineage = .serialization_validate_package_lineage(
     payload$package_lineage
   )
@@ -1133,7 +1163,11 @@
                  as.numeric(initial_levels[[name]]))
     }, logical(1)))
   }
-  restored$sourceData = payload$source
+  if (identical(lineage, "predecessor")) {
+    restored$sourceData = payload$source
+  } else {
+    restored$sourceData$name = payload$source$name
+  }
   if (identical(payload$engine, "sparse")) {
     restored$sparseState = sparse_make_state(payload$levels)
     restored$data = payload$accepted$data
