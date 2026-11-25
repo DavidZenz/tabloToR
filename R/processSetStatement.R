@@ -9,6 +9,9 @@
 
 .tablo_unique_set_members = function(values, set) {
   labels = tolower(as.character(values))
+  if (anyNA(labels) || any(!nzchar(trimws(labels)))) {
+    stop(sprintf("SET %s has missing or blank members", set), call. = FALSE)
+  }
   duplicates = unique(labels[duplicated(labels)])
   if (length(duplicates)) {
     stop(sprintf("SET %s has duplicate members: %s", set,

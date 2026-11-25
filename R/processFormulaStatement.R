@@ -12,9 +12,16 @@
     (!("always" %in% qualifiers) && isTRUE(statement$formula_initial_default))
 }
 
-processFormulaStatement = function(s){
+processFormulaStatement = function(s, previous_levels = NULL){
   frm = correctFormula(s$parsed$equation)
   frm[[3L]] = .tablo_with_division(frm[[3L]], s$division)
+  if (!is.null(previous_levels)) {
+    ref = sparse_parse_ref(frm[[2L]])
+    previous = call("[[", previous_levels, ref$name)
+    frm[[3L]] = if (length(ref$indices)) {
+      as.call(c(list(as.name("["), previous), ref$indices))
+    } else previous
+  }
   #frm = correctFormula(gsub(":","%:%",gsub('>==','>=',gsub('<==','<=',gsub('=','=',s$parsed$equation)))))
 
   dimensions = s$parsed$elements[grep('\\(all,', s$parsed$elements)]

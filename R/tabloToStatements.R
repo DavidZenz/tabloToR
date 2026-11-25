@@ -334,6 +334,8 @@ tabloToStatements = function(tablo){
     return(f)
   },cleanLines)
 
-  return(.mark_optional_read_defaults(.tablo_mark_division(cleanLinesParsed)))
+  .tablo_mark_step_reloads(
+    .mark_optional_read_defaults(.tablo_mark_division(cleanLinesParsed))
+  )
 
 }

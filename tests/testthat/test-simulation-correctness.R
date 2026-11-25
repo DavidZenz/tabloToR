@@ -17,6 +17,88 @@ solve_from_tablo = function(lines, closure, shocks, engine = "sparse",
   model
 }
 
+test_that("loaded formula and read order governs every first Euler step", {
+  for (engine in c("sparse", "legacy")) {
+    for (later in c('read weight from file basedata header "WGHT";',
+                    "formula (initial) weight = 2;")) {
+      lines = c(
+        "coefficient weight;", "formula (always) weight = 5;", later,
+        "assertion (always) # weight at this point # weight eq 2;",
+        "variable (change) a;", "variable (change) x;",
+        "equation outcome x = weight * a;"
+      )
+      model = solve_from_tablo(lines, "a", c("a[]" = 3), engine,
+                               input = list(basedata = list(wght = 2)),
+                               iter = 2L, steps = c(1L, 3L))
+      expect_equal(model$solution, c("x[]" = 6))
+      expect_equal(model$data$weight, 2)
+    }
+  }
+})
+
+test_that("later partial reads pick up updated values from the same slice", {
+  lines = c(
+    "set reg (north,south);", "coefficient (all,r,reg) stock(r);",
+    "formula (always)(all,r,reg) stock(r) = 5;",
+    'read stock("north") from file basedata header "STOK";',
+    "variable (change) a;", "variable (change) x;",
+    'equation outcome x = stock("north") * a;',
+    'update (change) stock("north") = a;'
+  )
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 4), engine,
+                             input = list(basedata = list(stok = 2)), steps = 2L)
+    expect_equal(model$solution, c("x[]" = 12))
+    expect_equal(as.numeric(model$data$stock), c(6, 5))
+  }
+})
+
+test_that("PostSim never replays ordinary formulas used in the solve", {
+  lines = c(
+    "coefficient weight;", "formula (initial) weight = 2;",
+    "formula (always) weight = weight + 1;",
+    "variable (change) a;", "variable (change) x;",
+    "equation outcome x = weight * a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (postsim in c(FALSE, TRUE)) {
+      model = load_from_tablo(lines, "a", engine)
+      model$setShocks(c("a[]" = 1))
+      suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine,
+                                        postsim = postsim))
+      expect_equal(model$solution, c("x[]" = 3))
+      suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine,
+                                        postsim = FALSE))
+      expect_equal(model$solution, c("x[]" = 5))
+    }
+  }
+})
+
+test_that("missing set members and non-finite shocks fail before a solve", {
+  lines = c(
+    'set reg read elements from file basedata header "REGS";',
+    "variable (change) a;", "variable (change)(all,r,reg) x(r);",
+    "equation outcome (all,r,reg) x(r) = a;"
+  )
+  for (engine in c("sparse", "legacy")) {
+    for (missing in c(NA_character_, "", "  ")) {
+      input = list(basedata = list(regs = c("north", missing, "south")))
+      expect_error(load_from_tablo(lines, "a", engine, input),
+                   "SET reg has missing or blank members")
+    }
+    model = load_from_tablo(lines, "a", engine,
+                            list(basedata = list(regs = c("north", "south"))))
+    model$setShocks(c("a[]" = 7))
+    expect_error(model$setShocks(setNames(c(Inf, -Inf, 7), rep("a[]", 3L))),
+                 "Shock values must be finite")
+    expect_error(model$setShocks(setNames(c(1e308, 1e308), rep("a[]", 2L))),
+                 "Combined shock values must be finite")
+    expect_identical(model$shocks, c("a[]" = 7))
+    suppressMessages(model$solveModel(iter = 1, steps = 1, engine = engine))
+    expect_equal(model$solution, c('x["north"]' = 7, 'x["south"]' = 7))
+  }
+})
+
 test_that("explicit PERCENT_CHANGE variables compound like the default", {
   for (engine in c("sparse", "legacy")) {
     for (qualifier in c("", "(percent_change)")) {

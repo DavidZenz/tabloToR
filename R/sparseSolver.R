@@ -741,8 +741,7 @@ sparse_make_state = function(data) {
       if (isTRUE(record$postsim)) {
         sparse_apply_updates(
           state, record$index, record$spec,
-          updates = Filter(function(update) !isTRUE(update$postsim),
-                           record$spec$post_updates)
+          updates = record$spec$deferred_output_actions
         )
         output_index = .sparse_run_postsim(state, output_index, record$spec)
       } else if (length(record$variables)) {
@@ -754,7 +753,7 @@ sparse_make_state = function(data) {
         sparse_apply_updates(
           state, record$index, record$spec, updates = Filter(function(update) {
             update$target$name %in% required
-          }, formulas)
+          }, record$spec$deferred_output_actions)
         )
       }
     })
@@ -1093,6 +1092,9 @@ sparse_normalize_shocks = function(shocks) {
       stop("Sparse shocks must be a named numeric vector", call. = FALSE)
     }
   }
+  if (any(is.infinite(values) | is.nan(values))) {
+    stop("Shock values must be finite numbers or NA", call. = FALSE)
+  }
   keep = !is.na(values) & values != 0 & !is.na(labels) & nzchar(labels)
   labels = labels[keep]
   values = values[keep]
@@ -1103,7 +1105,10 @@ sparse_normalize_shocks = function(shocks) {
   values = vapply(unique_labels, function(label) {
     sum(values[labels == label])
   }, numeric(1))
-  keep = !is.na(values) & values != 0
+  if (any(!is.finite(values))) {
+    stop("Combined shock values must be finite", call. = FALSE)
+  }
+  keep = values != 0
   list(labels = unique_labels[keep], values = values[keep])
 }
 
@@ -2636,6 +2641,10 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
   if (!length(updates)) return(invisible(NULL))
   is_update = vapply(updates, function(update) update$class == "update",
                      logical(1))
+  has_reloads = any(vapply(updates, function(update) {
+    update$class %in% c("reload_read", "reload_formula")
+  }, logical(1)))
+  previous = if (has_reloads) sparse_state_data(state)
   update_order = c(which(!is_update), which(is_update))
   pending = NULL
   for (update_id in update_order) {
@@ -2644,6 +2653,15 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
       .check_tablo_assertions(list(update), state, index)
       next
     }
+    if (update$class == "reload_read") {
+      name = update$target$name
+      bindings = list2env(state$data, parent = environment(sparse_apply_updates))
+      state$data[[name]] = .tablo_read_coefficient(
+        state$data[[name]], update$read, bindings, previous[[name]]
+      )
+      next
+    }
+    source = if (update$class == "reload_formula") previous else state
     output = state
     if (is_update[[update_id]]) {
       # Stage writes separately so every UPDATE sees the same inputs.
@@ -2652,22 +2670,22 @@ sparse_apply_updates = function(state, index, spec, updates = NULL) {
     }
     sparse_initialize_update_target(update, output, index)
     vectorized = tryCatch(
-      sparse_apply_update_vectorized(update, output, index, source = state),
+      sparse_apply_update_vectorized(update, output, index, source = source),
       error = function(error) FALSE
     )
     result = if (isTRUE(vectorized)) {
       NULL
     } else tryCatch({
       sparse_for_each_domain(
-        update$domains, state, index, callback = function(bindings) {
+        update$domains, source, index, callback = function(bindings) {
           value = sparse_eval_expr(
-            update$expression, state, bindings, index
+            update$expression, source, bindings, index
           )
           if (is_update[[update_id]]) {
             value = .tablo_finite_update(value, update$target$name)
           }
           sparse_set_data_ref(
-            update$target, output, bindings, index, value, source = state
+            update$target, output, bindings, index, value, source = source
           )
         }
       )
@@ -3246,9 +3264,11 @@ sparse_check_budget = function(estimate, budget) {
     matrix_start = proc.time()[[3L]]
   }
   .transaction_fault("compilation")
-  sparse_apply_updates(
-    state, index, model$sparseSpec, updates = model$sparseSpec$simulation_actions
-  )
+  if (!isTRUE(state$.initial_data_ready)) {
+    sparse_apply_updates(
+      state, index, model$sparseSpec, updates = model$sparseSpec$simulation_actions
+    )
+  }
   column_order = sparse_lhs_column_order(index, state)
   index$column_order = column_order
   emitted = sparse_emit_system(state, index, shocks)
@@ -3509,7 +3529,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
     stop("Sparse engine is not loaded; call loadTablo() and loadData() first",
          call. = FALSE)
   }
-  if (isTRUE(committed_state$.accepted_simulation)) {
+  accepted_simulation = isTRUE(committed_state$.accepted_simulation)
+  if (accepted_simulation) {
     .check_tablo_assertions(model$sparseSpec$assertions, state, index,
                             phase = "initial")
   }
@@ -3625,6 +3646,8 @@ sparse_solve_one_step = function(state, model, index, shocks, backend,
         applied_subshocks = sparse_advance_applied_shocks(
           applied_subshocks, substep
         )
+        state$.initial_data_ready =
+          !accepted_simulation && iteration == 1L && current_step == 1L
         solved = sparse_solve_one_step(
           state, model, index, substep, backend, reduction,
           measure = diagnostics,

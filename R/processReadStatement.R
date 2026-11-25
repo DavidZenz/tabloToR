@@ -111,16 +111,21 @@
   values
 }
 
-.tablo_read_coefficient = function(target, read, bindings) {
+.tablo_read_coefficient = function(target, read, bindings, previous = NULL) {
   input = get0(read$file, envir = bindings, inherits = FALSE)
   values = input[[read$header]]
   if (read$optional && is.null(values)) return(target)
 
   selection = target
+  if (is.null(dim(selection)) && !is.null(names(selection))) {
+    # Legacy one-dimensional assignments can leave a named vector.
+    selection = array(as.vector(selection), length(selection),
+                      list(names(selection)))
+  }
   positions = list()
   if (length(read$indices)) {
-    dims = dim(target)
-    labels = dimnames(target)
+    dims = dim(selection)
+    labels = dimnames(selection)
     domain_names = vapply(read$domains, function(domain) domain$index, "")
     indices = vapply(read$indices, function(index) {
       if (is.name(index)) as.character(index) else ""
@@ -159,7 +164,7 @@
                      read$target, axis), call. = FALSE)
       }
     }
-    selection = do.call("[", c(list(target), positions, list(drop = FALSE)))
+    selection = do.call("[", c(list(selection), positions, list(drop = FALSE)))
     if (length(slice_axes)) {
       dimnames(selection) = NULL
       dim(selection) = lengths(positions)[slice_axes]
@@ -175,8 +180,14 @@
          call. = FALSE)
   }
 
-  values = .tablo_header_values(selection, values, read$target,
-                               read$file, read$header)
+  if (is.null(previous)) {
+    values = .tablo_header_values(selection, values, read$target,
+                                 read$file, read$header)
+  } else if (length(positions)) {
+    values = do.call("[", c(list(previous), positions, list(drop = FALSE)))
+  } else {
+    values = previous
+  }
   if (length(positions)) {
     return(do.call("[<-", c(list(target), positions, list(value = values))))
   }
@@ -184,12 +195,35 @@
   target
 }
 
-processReadStatement = function(s) {
+processReadStatement = function(s, previous_levels = NULL) {
   read = .parse_header_read(s)
   if (is.null(read)) return(NULL)
   target = as.name(read$target)
-  call("=", target, call(".tablo_read_coefficient", target, read,
-                          quote(environment())))
+  expression = call(".tablo_read_coefficient", target, read, quote(environment()))
+  if (!is.null(previous_levels)) {
+    expression[[5L]] = call("[[", previous_levels, read$target)
+  }
+  call("=", target, expression)
+}
+
+.tablo_mark_step_reloads = function(statements) {
+  formula_targets = character()
+  for (id in seq_along(statements)) {
+    statement = statements[[id]]
+    if (isTRUE(statement$postsim) ||
+        !statement$class %in% c("formula", "read")) next
+    if (statement$class == "formula") {
+      target = sub("^([a-z][a-z0-9_.]*).*$", "\\1", statement$parsed$equation)
+      if (!.tablo_formula_is_initial(statement)) {
+        formula_targets = union(formula_targets, target)
+        next
+      }
+    } else {
+      target = .parse_header_read(statement)$target
+    }
+    statements[[id]]$step_reload = length(target) && target %in% formula_targets
+  }
+  statements
 }
 
 .mark_optional_read_defaults = function(statements) {

@@ -239,11 +239,35 @@
   stop(sprintf("Invalid logical state payload: %s", message), call. = FALSE)
 }
 
-.serialization_object_fingerprint = function(value) {
+.serialization_map_text = function(value, convert) {
+  value_attributes = attributes(value)
+  if (is.character(value)) {
+    value = convert(value)
+  } else if (is.list(value) && !is.object(value)) {
+    value = lapply(value, .serialization_map_text, convert)
+  }
+  if (!is.null(value_attributes)) {
+    names(value_attributes) = convert(names(value_attributes))
+    attributes(value) = lapply(value_attributes, .serialization_map_text, convert)
+  }
+  value
+}
+
+.serialization_body_fingerprint = function(value) {
   bytes = serialize(value, NULL, version = 3L)
   # The XDR header includes the writer's R version and native encoding.
   # Fingerprint the object representation after the version-3 header.
   .serialization_raw_fingerprint(.serialization_xdr_body(bytes))
+}
+
+.serialization_object_fingerprint = function(value) {
+  .serialization_body_fingerprint(.serialization_map_text(value, enc2utf8))
+}
+
+.serialization_unmark_utf8 = function(value) {
+  translated = Encoding(value) == "UTF-8"
+  if (any(translated)) Encoding(value)[translated] = "unknown"
+  value
 }
 
 .serialization_xdr_body = function(bytes) {
@@ -676,6 +700,23 @@
   }
   tablo_fingerprint = .serialization_object_fingerprint(source$tablo_source)
   data_fingerprint = .serialization_object_fingerprint(source$loaded_data)
+  if (identical(lineage, "current") &&
+      identical(source$tablo_fingerprint, tablo_fingerprint) &&
+      !identical(source$data_fingerprint, data_fingerprint)) {
+    # Version-1 checkpoints written before text normalization fingerprinted
+    # the XDR body with the string encodings used by their original runtime.
+    data_fingerprint = .serialization_body_fingerprint(source$loaded_data)
+    if (!identical(source$data_fingerprint, data_fingerprint) &&
+        identical(writer$native_encoding, "UTF-8") &&
+        !isTRUE(l10n_info()[["UTF-8"]])) {
+      # readRDS() marks translated native strings as UTF-8. Recover the
+      # older digest when validating that exact byte representation.
+      native_data = .serialization_map_text(
+        source$loaded_data, .serialization_unmark_utf8
+      )
+      data_fingerprint = .serialization_body_fingerprint(native_data)
+    }
+  }
   if (identical(lineage, "current") && !is.null(writer) &&
       !identical(source$tablo_fingerprint, tablo_fingerprint)) {
     legacy_fingerprint = .serialization_legacy_object_fingerprint(

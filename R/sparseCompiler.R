@@ -445,6 +445,7 @@ sparse_compile_spec = function(statements) {
       initial = is_initial,
       postsim = isTRUE(s$postsim),
       read_default = isTRUE(s$read_default),
+      step_reload = isTRUE(s$step_reload),
       statement_id = statement_id,
       domains = update_domains
     )
@@ -508,13 +509,33 @@ sparse_compile_spec = function(statements) {
          !isTRUE(update$initial) && !isTRUE(update$postsim) &&
          update$target$name %in% required_formula_names)
   }, updates)
-  simulation_actions = c(
+  reads = which(vapply(statements, function(s) {
+    s$class == "read" && isTRUE(s$step_reload)
+  }, logical(1)))
+  reloads = lapply(reads, function(id) {
+    read = .parse_header_read(statements[[id]])
+    list(class = "reload_read", target = list(name = read$target),
+         read = read, statement_id = id)
+  })
+  reloads = c(reloads, lapply(Filter(function(update) update$step_reload, updates),
+                             function(update) {
+    update$class = "reload_formula"
+    update$expression = correctFormula(
+      statements[[update$statement_id]]$parsed$equation
+    )[[2L]]
+    update
+  }))
+  ordered_actions = function(formulas, assertions = list()) {
+    targets = vapply(formulas, function(update) update$target$name, "")
+    actions = c(formulas, assertions, Filter(function(reload) {
+      reload$target$name %in% targets
+    }, reloads))
+    actions[order(vapply(actions, function(action) action$statement_id, integer(1)))]
+  }
+  simulation_actions = ordered_actions(
     Filter(function(update) update$class == "formula", simulation_updates),
     Filter(function(assertion) !assertion$initial, normal_assertions)
   )
-  simulation_actions = simulation_actions[order(vapply(
-    simulation_actions, function(action) action$statement_id, integer(1)
-  ))]
   formula_initialization_updates = Filter(function(update) {
     update$class == "formula" && !isTRUE(update$postsim) &&
       update$target$name %in% initialization_formula_names
@@ -523,6 +544,9 @@ sparse_compile_spec = function(statements) {
     update$class == "formula" &&
       (!isTRUE(update$initial) || isTRUE(update$postsim))
   }, updates)
+  deferred_output_actions = ordered_actions(Filter(function(update) {
+    !update$postsim && !update$target$name %in% required_formula_names
+  }, post_updates))
   post_structure = lapply(seq_along(statements), function(id) {
     statement = statements[[id]]
     expression = .tablo_postsim_structure(statement)
@@ -577,6 +601,7 @@ sparse_compile_spec = function(statements) {
       update$target$name %in% ordinary_names && !isTRUE(update$initial)
     }, ordinary_formulas),
     post_updates = post_updates,
+    deferred_output_actions = deferred_output_actions,
     post_actions = post_actions,
     post_fields = post_fields,
     post_sets = unique(post_sets),
@@ -614,8 +639,7 @@ sparse_find_set_values = function(data, set_name) {
     stop(sprintf("TABLO set %s is missing from loaded data",
                  set_name), call. = FALSE)
   }
-  value = as.character(value)
-  value[!is.na(value)]
+  .tablo_unique_set_members(as.character(value), set_name)
 }
 
 .tablo_sets_for_expressions = function(domains, expressions) {

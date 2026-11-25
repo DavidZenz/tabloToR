@@ -47,6 +47,13 @@ generateUpdates = function(statements) {
       }
       post_fields = union(post_fields, target)
       post_block[[length(post_block) + 1L]] = expression
+    } else if (isTRUE(s$step_reload)) {
+      previous = quote(.tablo_previous_levels)
+      formula_block[[length(formula_block) + 1L]] = if (s$class == "read") {
+        processReadStatement(s, previous)
+      } else {
+        str2lang(processFormulaStatement(s, previous))
+      }
     } else if (!.tablo_formula_is_initial(s)) {
       formula_block[[length(formula_block) + 1L]] =
         str2lang(processFormulaStatement(s))
@@ -55,6 +62,7 @@ generateUpdates = function(statements) {
 
   function(data, phase = "all", check_assertions = TRUE) {
     if (phase %in% c("all", "formula") && length(formula_block) > 1L) {
+      .tablo_previous_levels = data
       data = eval(call("within", quote(data), formula_block))
     }
     if (phase %in% c("all", "update") && length(targets)) {

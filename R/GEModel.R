@@ -836,7 +836,8 @@ GEModel = setRefClass(
 
       #names(subShocks)=names(shocks)
 
-      if (isTRUE(sparseState$.accepted_simulation)) {
+      accepted_simulation = isTRUE(sparseState$.accepted_simulation)
+      if (accepted_simulation) {
         .check_tablo_assertions(sparseSpec$assertions, data, phase = "initial")
       }
       solution <<- as.numeric(c())
@@ -905,7 +906,9 @@ GEModel = setRefClass(
             )
 
 
-            data <<- generateUpdates(data, phase = "formula")
+            if (accepted_simulation || it != 1L || currentStep != 1L) {
+              data <<- generateUpdates(data, phase = "formula")
+            }
             data <<- equationCoefficientGenerator(data)
             message(sprintf('Step %s/%s', currentStep,steps[step]))
             #browser()

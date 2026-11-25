@@ -26,6 +26,21 @@ test_that("saveState writes exact current GEModelR package lineage", {
   )
 })
 
+test_that("source fingerprints canonicalize text in values and array labels", {
+  utf8 = enc2utf8("caf\u00e9")
+  latin1 = iconv(utf8, from = "UTF-8", to = "latin1")
+  source = function(label) {
+    list(values = array(1, 1L, list(region = label)),
+         note = setNames(label, label))
+  }
+  expect_identical(Encoding(utf8), "UTF-8")
+  expect_identical(Encoding(latin1), "latin1")
+  expect_identical(.serialization_object_fingerprint(source(utf8)),
+                   .serialization_object_fingerprint(source(latin1)))
+  expect_false(identical(.serialization_object_fingerprint(source(utf8)),
+                         .serialization_object_fingerprint(source("cafe"))))
+})
+
 test_that("schema-1 checkpoints restore across writer versions", {
   # Patch only the writer version in an uncompressed XDR header to exercise
   # both fingerprint formats without depending on a second R installation.

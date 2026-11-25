@@ -29,6 +29,7 @@ processTablo = function(tablo) {
   gup = generateUpdates(Filter(function(f)
     f$class %in% c("formula", "assertion") ||
       (f$class == "update" && !isTRUE(f$postsim)) ||
+      (f$class == "read" && isTRUE(f$step_reload)) ||
       (isTRUE(f$postsim) &&
        f$class %in% c("set", "coefficient", "read")), statements))
 
