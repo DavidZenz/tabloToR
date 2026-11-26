@@ -228,7 +228,7 @@ processReadStatement = function(s, previous_levels = NULL) {
 
 .mark_optional_read_defaults = function(statements) {
   formulas = list()
-  # A formula before an optional read provides the initial fallback.
+  # A preceding formula can provide the fallback during data loading.
   for (id in seq_along(statements)) {
     statement = statements[[id]]
     if (isTRUE(statement$postsim)) next

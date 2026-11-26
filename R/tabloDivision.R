@@ -2,6 +2,7 @@
   normal = post = list(zero = 0, nonzero = NULL)
   postsim = FALSE
   formula_initial_default = FALSE
+  integer_coefficients = character()
   for (id in seq_along(statements)) {
     statement = statements[[id]]
     statements[[id]]$postsim = postsim
@@ -37,6 +38,10 @@
       } else {
         normal[kind] = list(replacement)
       }
+    } else if (statement$class == "coefficient" &&
+               "integer" %in% .tablo_qualifiers(statement)) {
+      target = sub("\\s*\\(.*$", "", statement$parsed$equation)
+      integer_coefficients = c(integer_coefficients, trimws(target))
     } else if (statement$class == "formula") {
       if (grepl("^\\(\\s*default\\s*=\\s*(always|initial)\\s*\\)$",
                 trimws(statement$command))) {
@@ -46,7 +51,9 @@
         }
         statements[[id]]$class = "formula_default"
       } else {
-        statements[[id]]$formula_initial_default = formula_initial_default
+        target = sub("\\s*[(=].*$", "", statement$parsed$equation)
+        statements[[id]]$formula_initial_default =
+          formula_initial_default || trimws(target) %in% integer_coefficients
         statements[[id]]$division = if (postsim) post else normal
       }
     }

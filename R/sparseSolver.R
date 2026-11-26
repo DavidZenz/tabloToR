@@ -1236,17 +1236,13 @@ sparse_data_linear_index = function(ref, state, bindings, index) {
   as.integer(linear)
 }
 
-sparse_global_for_ref = function(ref, state, bindings, index,
-                                 allow_positional_label = FALSE) {
+sparse_global_for_ref = function(ref, state, bindings, index) {
   id = index$variable_by_name[[ref$name]]
   if (is.null(id)) {
     stop(sprintf("Unknown variable in sparse expression: %s", ref$name),
          call. = FALSE)
   }
   variable = index$variables[[id]]
-  if (!length(variable$sets)) {
-    return(as.integer(variable$global_start))
-  }
   if (length(ref$indices) != length(variable$sets)) {
     stop(sprintf("Variable %s expects %s indices, got %s",
                  ref$name, length(variable$sets), length(ref$indices)),
@@ -1270,12 +1266,14 @@ sparse_global_for_ref = function(ref, state, bindings, index,
         !is.na(value) && value == as.integer(value) &&
         value >= 1L && value <= length(set$values)) {
       positions[[d]] = as.integer(value)
-    } else if (allow_positional_label) {
-      positions[[d]] = sparse_position_for_label(
-        as.character(value), set_name, index
-      )
     } else {
       positions[[d]] = match(as.character(value), set$values)
+      if (is.na(positions[[d]]) && length(ref$positions)) {
+        ordinal = ref$positions[[d]]
+        if (!is.na(ordinal) && ordinal >= 1L && ordinal <= length(set$values)) {
+          positions[[d]] = ordinal
+        }
+      }
     }
     if (is.na(positions[[d]])) {
       stop(sprintf("Cannot resolve index %s of %s",
@@ -1392,7 +1390,7 @@ sparse_resolve_shocks = function(model, state, index) {
   positions = integer(length(explicit$labels))
   ordinary = logical(length(explicit$labels))
   for (i in seq_along(explicit$labels)) {
-    ref = sparse_parse_label(explicit$labels[[i]])
+    ref = sparse_parse_label(explicit$labels[[i]], include_positions = TRUE)
     id = index$variable_by_name[[ref$name]]
     if (is.null(id)) {
       stop(sprintf("Shock references unknown variable %s", ref$name),
@@ -1403,9 +1401,7 @@ sparse_resolve_shocks = function(model, state, index) {
       stop(sprintf("Shock variable %s is not in the configured closure",
                    ref$name), call. = FALSE)
     }
-    positions[[i]] = sparse_global_for_ref(
-      ref, state, list(), index, allow_positional_label = TRUE
-    )
+    positions[[i]] = sparse_global_for_ref(ref, state, list(), index)
     ordinary[[i]] = isTRUE(variable$change)
   }
   unique_positions = unique(positions)
@@ -2266,7 +2262,6 @@ solve_sparse_system = function(A, rhs, backend = "Matrix",
   if (backend == "Matrix") {
     .identity_guard_old_options("tabloToR.sparse.lu_order")
   }
-  if (!any(rhs != 0)) return(numeric(ncol(A)))
   if (backend == "Matrix") {
     lu_order = getOption("GEModelR.sparse.lu_order", 3L)
     lu_order = suppressWarnings(as.integer(lu_order)[1L])

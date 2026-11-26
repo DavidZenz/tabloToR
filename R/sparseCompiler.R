@@ -54,6 +54,34 @@ sparse_parse_ref = function(expr) {
                paste(deparse(expr), collapse = " ")), call. = FALSE)
 }
 
+sparse_validate_equation_indices = function(expr, ranks, indices, equation) {
+  if (is.name(expr) && !as.character(expr) %in% indices ||
+      is.call(expr) && identical(expr[[1L]], as.name("["))) {
+    ref = sparse_parse_ref(expr)
+    expected = ranks[[ref$name]]
+    if (!is.null(expected) && length(ref$indices) != expected) {
+      stop(sprintf("Equation %s: %s expects %s indices, got %s",
+                   equation, ref$name, expected, length(ref$indices)),
+           call. = FALSE)
+    }
+  }
+  if (!is.call(expr)) return(invisible(NULL))
+  op = as.character(expr[[1L]])
+  if (op == "sum" && length(expr) == 4L) {
+    next_indices = c(indices, as.character(expr[[2L]]))
+    return(sparse_validate_equation_indices(expr[[4L]], ranks, next_indices,
+                                            equation))
+  }
+  args = switch(op, "[" = seq_along(expr)[-(1:2)],
+                "setpos" = 2L, "isin" = 2L, seq_along(expr)[-1L])
+  for (i in args) {
+    if (!identical(expr[[i]], quote(expr = ))) {
+      sparse_validate_equation_indices(expr[[i]], ranks, indices, equation)
+    }
+  }
+  invisible(NULL)
+}
+
 sparse_ref_is_variable = function(expr, variable_names) {
   ref = tryCatch(sparse_parse_ref(expr), error = function(e) NULL)
   !is.null(ref) && ref$name %in% variable_names
@@ -360,6 +388,20 @@ sparse_compile_spec = function(statements) {
     }
   }
 
+  variable_ranks = setNames(lapply(variables, function(variable) {
+    length(variable$indices)
+  }), names(variable_by_name))
+  product_variables = variable_ranks[!vapply(variables, function(variable) {
+    variable$change
+  }, logical(1))]
+  equation_ranks = variable_ranks
+  for (s in Filter(function(s) s$class == "coefficient" && !isTRUE(s$postsim),
+                   statements)) {
+    ref = tryCatch(sparse_parse_ref(correctFormula(s$parsed$equation)),
+                   error = function(e) NULL)
+    if (!is.null(ref)) equation_ranks[[ref$name]] = length(ref$indices)
+  }
+
   equations = list()
   compile_errors = character()
   for (s in equation_statements) {
@@ -378,6 +420,13 @@ sparse_compile_spec = function(statements) {
       }
     )
     if (!is.null(formula) && length(formula) >= 3L) {
+      indices = vapply(domains, function(domain) domain$index, "")
+      sparse_validate_equation_indices(formula, equation_ranks, indices,
+                                      s$parsed$equationName)
+      for (domain in domains) {
+        sparse_validate_equation_indices(domain$predicate, equation_ranks,
+                                         indices, s$parsed$equationName)
+      }
       equation_ref = tryCatch(sparse_parse_ref(formula[[2]]),
                               error = function(e) NULL)
       if (!is.null(equation_ref)) {
@@ -420,7 +469,8 @@ sparse_compile_spec = function(statements) {
     if (is.null(target)) next
     rhs = formula[[3]]
     if (s$class == "update") {
-      rhs = .tablo_update_expression(formula[[2L]], rhs, s$parsed$elements)
+      rhs = .tablo_update_expression(formula[[2L]], rhs, s$parsed$elements,
+                                     product_variables)
     } else {
       rhs = .tablo_with_division(rhs, s$division)
     }
@@ -783,7 +833,7 @@ sparse_rebuild_columns = function(index, closure_names) {
   index
 }
 
-sparse_parse_label = function(label) {
+sparse_parse_label = function(label, include_positions = FALSE) {
   label = trimws(as.character(label))
   match = regexec("^([A-Za-z][A-Za-z0-9_.]*)\\[(.*)\\]$", label)
   parts = regmatches(label, match)[[1]]
@@ -791,9 +841,20 @@ sparse_parse_label = function(label) {
     stop(sprintf("Shock name is not an indexed TABLO label: %s", label),
          call. = FALSE)
   }
-  indices = trimws(strsplit(parts[[3]], ",", fixed = TRUE)[[1]])
-  indices = gsub("^['\"]|['\"]$", "", indices)
-  list(name = tolower(parts[[2]]), indices = indices)
+  text = trimws(parts[[3]])
+  token = "(?:\"[^\"]+\"|'[^']+'|[^,\"'\\[\\][:space:]]+)"
+  if (nzchar(text) && !grepl(paste0("^", token, "(?:\\s*,\\s*", token, ")*$"),
+                            text, perl = TRUE)) {
+    stop(sprintf("Invalid indices in shock label: %s", label), call. = FALSE)
+  }
+  tokens = regmatches(text, gregexpr(token, text, perl = TRUE))[[1L]]
+  ref = list(name = tolower(parts[[2]]),
+             indices = gsub("^['\"]|['\"]$", "", tokens))
+  if (include_positions) {
+    ordinals = ifelse(grepl("^[0-9]+$", tokens), tokens, NA_character_)
+    ref$positions = suppressWarnings(as.integer(ordinals))
+  }
+  ref
 }
 
 sparse_position_for_label = function(label, set_name, index) {

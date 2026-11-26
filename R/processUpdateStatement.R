@@ -1,15 +1,27 @@
-.tablo_sum_product_factors = function(expression) {
+.tablo_sum_product_factors = function(expression, product_variables = NULL) {
   if (is.call(expression) && identical(expression[[1L]], as.name("("))) {
-    return(.tablo_sum_product_factors(expression[[2L]]))
+    return(.tablo_sum_product_factors(expression[[2L]], product_variables))
   }
   if (is.call(expression) && identical(expression[[1L]], as.name("*"))) {
-    return(call("+", .tablo_sum_product_factors(expression[[2L]]),
-                .tablo_sum_product_factors(expression[[3L]])))
+    return(call("+", .tablo_sum_product_factors(expression[[2L]], product_variables),
+                .tablo_sum_product_factors(expression[[3L]], product_variables)))
+  }
+  if (!is.null(product_variables)) {
+    ref = if (is.name(expression) ||
+              is.call(expression) && identical(expression[[1L]], as.name("["))) {
+      sparse_parse_ref(expression)
+    } else NULL
+    rank = if (!is.null(ref)) product_variables[[ref$name]]
+    if (is.null(rank) || length(ref$indices) != rank) {
+      stop(sprintf("UPDATE (PRODUCT) requires percentage-change variable factors, got %s",
+                   deparse1(expression)), call. = FALSE)
+    }
   }
   expression
 }
 
-.tablo_update_expression = function(target, expression, qualifiers) {
+.tablo_update_expression = function(target, expression, qualifiers,
+                                    product_variables = NULL) {
   if (any(grepl("^\\(\\s*explicit\\s*\\)$", qualifiers, ignore.case = TRUE))) {
     return(expression)
   }
@@ -20,7 +32,7 @@
                 ignore.case = TRUE))) {
     return(call("*", target, call("+", 1, call("/", expression, 100))))
   }
-  change = .tablo_sum_product_factors(expression)
+  change = .tablo_sum_product_factors(expression, product_variables)
   call("*", target, call("+", 1, call("/", change, 100)))
 }
 

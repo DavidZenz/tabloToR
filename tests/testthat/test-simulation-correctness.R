@@ -17,6 +17,109 @@ solve_from_tablo = function(lines, closure, shocks, engine = "sparse",
   model
 }
 
+test_that("zero right-hand sides still require a nonsingular closure", {
+  variables = c("variable (change) a;", "variable (change) b;",
+                "variable (change) x;", "variable (change) y;")
+  singular = c(variables, "equation first x + y = a + b;",
+               "equation second 2 * x + 2 * y = 2 * a + 2 * b;")
+  identified = c(variables, "equation first x = a + b;",
+                 "equation second y = 2 * a + 2 * b;")
+  for (engine in c("sparse", "legacy")) {
+    for (offset in c(0, 1)) {
+      shocks = c("a[]" = offset, "b[]" = -offset)
+      expect_error(solve_from_tablo(singular, c("a", "b"), shocks, engine),
+                   "singular|factorization")
+      model = solve_from_tablo(identified, c("a", "b"), shocks, engine)
+      expect_equal(model$solution, c("x[]" = 0, "y[]" = 0))
+    }
+  }
+})
+
+test_that("optional reads do not change the timing of ordinary formulas", {
+  base = c("coefficient stock;", "formula (initial) stock = 2;")
+  equations = c("variable (change) a;", "variable (change) x;",
+                'equation outcome x = weight("north") * a;',
+                "update (change) stock = a;")
+  lines = c("set reg (north,south);", base,
+            "coefficient (all,r,reg) weight(r);",
+            'formula (initial) weight("south") = 3;',
+            'formula weight("north") = stock;',
+            'read (ifheaderexists) weight("south") from file basedata header "WGHT";',
+            equations)
+  for (engine in c("sparse", "legacy")) {
+    for (present in c(FALSE, TRUE)) {
+      input = list(basedata = if (present) list(wght = 8) else list())
+      model = solve_from_tablo(lines, "a", c("a[]" = 4), engine, input, steps = 2L)
+      expect_equal(model$solution, c("x[]" = 12))
+      expect_equal(as.numeric(model$data$weight), c(6, if (present) 8 else 3))
+    }
+    scalar = c(base, "coefficient weight;", "formula weight = stock;",
+               'read (ifheaderexists) weight from file basedata header "WGHT";',
+               sub('weight\\("north"\\)', "weight", equations))
+    missing = solve_from_tablo(scalar, "a", c("a[]" = 4), engine,
+                                list(basedata = list()), steps = 2L)
+    expect_equal(missing$solution, c("x[]" = 12))
+    supplied = solve_from_tablo(scalar, "a", c("a[]" = 4), engine,
+                                 list(basedata = list(wght = 7)), steps = 2L)
+    expect_equal(supplied$solution, c("x[]" = 28))
+  }
+})
+
+test_that("integer coefficient formulas default to INITIAL", {
+  lines = c("coefficient stock;", "formula (initial) stock = 2;",
+            "coefficient (integer) count;", "formula (default = always);",
+            "formula count = stock;", "coefficient refreshed;",
+            "formula refreshed = stock;", "variable (change) a;",
+            "variable (change) x;", "equation outcome x = count * a;",
+            "update (change) stock = a;")
+  for (engine in c("sparse", "legacy")) {
+    model = solve_from_tablo(lines, "a", c("a[]" = 4), engine, steps = 2L)
+    expect_equal(model$solution, c("x[]" = 8))
+    expect_equal(model$data$count, 2)
+    expect_equal(model$data$refreshed, 6)
+  }
+})
+
+test_that("shock selectors must match the variable's declared indices", {
+  scalar = c("variable (change) a;", "variable (change) x;",
+             "equation outcome x = a;")
+  indexed = c("set reg (north,south);", "variable (change)(all,r,reg) a(r);",
+              "variable (change)(all,r,reg) x(r);",
+              "equation outcome (all,r,reg) x(r) = a(r);")
+  for (engine in c("sparse", "legacy")) {
+    for (label in c('a["south"]', "a[1]", "a[,]")) {
+      expect_error(solve_from_tablo(scalar, "a", setNames(5, label), engine),
+                   "shock label|expects 0 indices")
+    }
+    for (label in c("a[south,]", "a[,south]", 'a["2"]', "a[1.9]")) {
+      expect_error(solve_from_tablo(indexed, "a", setNames(5, label), engine),
+                   "shock label|Cannot resolve index")
+    }
+    valid = solve_from_tablo(indexed, "a", c('a["south"]' = 5), engine)
+    expect_equal(valid$solution, c('x["north"]' = 0, 'x["south"]' = 5))
+  }
+  positional = solve_from_tablo(indexed, "a", c("a[2]" = 5))
+  expect_equal(positional$solution, c('x["north"]' = 0, 'x["south"]' = 5))
+})
+
+test_that("malformed equations and product updates cannot produce a solution", {
+  lines = c("set reg (north,south);", "coefficient (all,r,reg) weight(r);",
+            'read weight from file basedata header "WGHT";',
+            "coefficient stock;", "formula (initial) stock = 100;",
+            "variable a;", "variable (change) b;", "variable x;")
+  for (equation in c("equation outcome x = weight * a;",
+                     'equation outcome x = a("north");')) {
+    expect_error(load_from_tablo(c(lines, equation), "a"),
+                 "Equation outcome: .* expects [01] indices")
+  }
+  for (product in c("a * 2", 'a * weight("north")', "a + a", "a * b")) {
+    model = c(lines, 'equation outcome x = weight("north") * a;',
+              sprintf("update (product) stock = %s;", product))
+    expect_error(load_from_tablo(model, "a"),
+                 "UPDATE \\(PRODUCT\\) requires percentage-change variable factors")
+  }
+})
+
 test_that("loaded formula and read order governs every first Euler step", {
   for (engine in c("sparse", "legacy")) {
     for (later in c('read weight from file basedata header "WGHT";',

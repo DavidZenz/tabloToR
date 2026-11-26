@@ -8,7 +8,7 @@
 
 .tablo_formula_is_initial = function(statement) {
   qualifiers = .tablo_qualifiers(statement)
-  isTRUE(statement$read_default) || "initial" %in% qualifiers ||
+  "initial" %in% qualifiers ||
     (!("always" %in% qualifiers) && isTRUE(statement$formula_initial_default))
 }
 
